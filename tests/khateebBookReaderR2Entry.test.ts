@@ -23,6 +23,17 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain("document.fonts.ready");
     expect(reader).toContain("readingMode");
   });
+  it("keeps a book-shaped sheet, quiet heading and bottom page turner", () => {
+    const css = readFileSync("app/tools/khateeb-studio/BookReader.module.css", "utf8");
+    const client = readFileSync("app/tools/khateeb-studio/library/BookLibraryPageClient.tsx", "utf8");
+    expect(css).toContain("aspect-ratio: 148 / 210");
+    expect(css).toContain("width: min(100%, 47rem)");
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)");
+    expect(reader).toContain("<footer className={styles.pageFooter}>");
+    expect(reader).toContain("صفحہ ");
+    expect(reader).not.toContain("نسخے کی معلومات");
+    expect(client).toContain("max-w-[58rem]");
+  });
   it("keeps bookmarks, page controls and source paragraphs separate from translation", () => {
     expect(reader).toContain("KHATEEB_READER_PROGRESS_KEY");
     expect(reader).toContain("qalam-book-reader-print");

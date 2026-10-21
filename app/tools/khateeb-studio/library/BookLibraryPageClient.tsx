@@ -34,8 +34,8 @@ export default function BookLibraryPageClient() {
     }
   }
 
-  return <main dir={dir} className="min-h-screen bg-[#fbfaf5] px-3 py-3 text-[#1A3A2A] dark:bg-[#0c1710] dark:text-white sm:px-6 sm:py-5 lg:px-10">
-    <div className="mx-auto w-full max-w-[100rem]">
+  return <main dir={dir} className="min-h-screen bg-[#f2efe8] px-3 py-5 text-[#1A3A2A] dark:bg-[#0c1710] dark:text-white sm:px-6 sm:py-8 lg:px-10">
+    <div className="mx-auto w-full max-w-[58rem]">
       <BookReader locale={ur ? "ur" : "en"} onAdd={addToMySermon}/>
     </div>
   </main>;

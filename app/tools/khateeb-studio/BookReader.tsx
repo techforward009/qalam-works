@@ -436,6 +436,11 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         <details className={styles.menu}>
           <summary className={btn}>{ur ? "مزید" : "More"}</summary>
           <div className={styles.menuPanel}>
+            <div className={styles.editionInformation}>
+              <strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
+              {reading ? <p className="qalam-source-reference">{citation}</p> : null}
+              {reading?.translator ? <p>{ur ? "مترجم" : "Translator"}: {reading.translator}</p> : null}
+            </div>
             <label className={styles.menuLabel}>{ur ? "نقل کا متن" : "Copy"}
               <select className={field} value={copyMode} onChange={e => setCopyMode(e.target.value as BookCopyMode)}>
                 <option value="original">{ur ? "اصل عبارت" : "Original"}</option><option value="translation" disabled={!reading?.translations?.length}>{ur ? "اردو ترجمہ" : "Urdu translation"}</option><option value="combined">{ur ? "عربی اور اردو" : "Arabic and Urdu"}</option>
@@ -500,15 +505,12 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       </dialog>
       {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="rtl">
-          <div className={styles.bookIdentity}><strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
-            <details className={styles.editionDetails}><summary>{ur ? "نسخے کی معلومات" : "Edition details"}</summary><p className="qalam-source-reference">{citation}</p>{reading.translator ? <p>{ur ? "مترجم" : "Translator"}: {reading.translator}</p> : null}</details>
+          <div className={styles.bookIdentity}>
+            <strong title={selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
           </div>
-          <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کے صفحے" : "Reader page navigation"} dir="rtl">
-            <button type="button" className={btn} disabled={busy || isPaginating || (visualPageIndex === 0 && !reading.previousRecordId)} aria-label={ur ? "پچھلا مطالعہ صفحہ" : "Previous reader page"} onClick={previousPart}>‹</button>
-            <span className={styles.pageNumber}><small>{ur ? "مطالعہ صفحہ" : "Reader page"}</small><strong>{ur ? reading.recordOrdinal.toLocaleString("ur-PK") + " · " + (visualPageIndex + 1).toLocaleString("ur-PK") + " / " + visualPages.length.toLocaleString("ur-PK") : reading.recordOrdinal + " · " + (visualPageIndex + 1) + " / " + visualPages.length}</strong></span>
-            <button type="button" className={btn} disabled={busy || isPaginating || (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)} aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
-          </nav>
-          <div className={styles.chapterTitle}><span>{reading.kind === "front-matter" ? (ur ? "ابتدائی مواد" : "Front matter") : (ur ? "باب یا حصہ" : "Chapter or section")}</span><strong>{reading.title}</strong></div>
+          <div className={styles.chapterTitle}>
+            <strong title={reading.title}>{reading.title}</strong>
+          </div>
         </header>
         {missingTranslation || partialTranslation ? <p className={styles.translationStatus} role="status">
           <span>{partialTranslation
@@ -526,6 +528,15 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           </div>)}
         </div>
         {onAdd && selectedIds.length ? <div className={styles.selectionActions}><button type="button" className={btn} disabled={busy} onClick={() => void addToSermon()}>{ur ? "میری مجلس میں شامل کریں" : "Add to My Sermon"}</button></div> : null}
+        <footer className={styles.pageFooter}>
+          <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کے صفحے" : "Reader page navigation"} dir="rtl">
+            <button type="button" disabled={busy || isPaginating || (visualPageIndex === 0 && !reading.previousRecordId)} aria-label={ur ? "پچھلا مطالعہ صفحہ" : "Previous reader page"} onClick={previousPart}>‹</button>
+            <span className={styles.pageNumber} aria-live="polite">{ur
+              ? "صفحہ " + (visualPageIndex + 1).toLocaleString("ur-PK") + " از " + visualPages.length.toLocaleString("ur-PK")
+              : "Page " + (visualPageIndex + 1) + " of " + visualPages.length}</span>
+            <button type="button" disabled={busy || isPaginating || (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)} aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
+          </nav>
+        </footer>
       </article> : null}
     </> : null}
   </section>;
