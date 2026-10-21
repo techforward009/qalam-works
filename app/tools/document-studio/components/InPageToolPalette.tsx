@@ -42,6 +42,11 @@ function OutlineIcon({ children }: { children: ReactNode }) {
   return <svg width="27" height="22" viewBox="0 0 27 22" aria-hidden="true" fill="none" stroke="#000" strokeWidth="1" strokeLinecap="butt" strokeLinejoin="miter" shapeRendering="crispEdges">{children}</svg>;
 }
 
+const URDU_TOOL_LABELS: Partial<Record<StudioToolId, string>> = {
+  select: "انتخاب", text: "متن", image: "تصویر", rect: "مستطیل",
+  ellipse: "بیضوی", "round-rect": "گول کونوں والا مستطیل", line: "لکیر",
+};
+
 const TOOLS: ToolSpec[] = [
   {
     id: "select",
@@ -191,7 +196,7 @@ export function InPageToolPalette({
       data-studio-tool-palette="true"
       data-studio-tool={tool}
       role="toolbar"
-      aria-label="Tools"
+      aria-label={isUr ? "اوزار" : "Tools"}
     >
       <style>{`
         [data-studio-tool-enabled="false"] svg[stroke],
@@ -199,14 +204,15 @@ export function InPageToolPalette({
         [data-studio-tool-enabled="false"] svg [fill]:not([fill="none"]) { fill: #808080; }
       `}</style>
       {TOOLS.map((item, index) => {
+        const label = isUr ? URDU_TOOL_LABELS[item.id] ?? item.label : item.label;
         const active = item.enabled && tool === item.id;
         const gapAfter = index === 4 || index === 6 || index === 9 || index === 12;
         return (
           <button
             key={item.id}
             type="button"
-            title={item.enabled ? item.label : (isUr ? "جلد آ رہا ہے" : "Coming soon")}
-            aria-label={item.label}
+            title={item.enabled ? label : (isUr ? "جلد آ رہا ہے" : "Coming soon")}
+            aria-label={label}
             aria-pressed={active}
             disabled={!item.enabled}
             data-studio-tool-button={item.id}

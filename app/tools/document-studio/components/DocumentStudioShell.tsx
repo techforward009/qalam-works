@@ -62,7 +62,7 @@ export default function DocumentStudioShell({
       }
       data-studio-shell="true"
       data-studio-ui-language={isUr ? "ur" : "en"}
-      dir={isUr ? "rtl" : "ltr"}
+      dir="ltr"
     >
       <div
         className="studio-no-print sticky top-0 z-30 shrink-0 bg-white shadow-[0_1px_0_rgba(26,58,42,0.12)]"

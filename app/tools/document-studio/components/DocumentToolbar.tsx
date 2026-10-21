@@ -115,7 +115,7 @@ function BitmapEmphasis({ italic = false }: { italic?: boolean }) {
 }
 
 function DirectionArrow({ left = false }: { left?: boolean }) {
-  return <svg width="12" height="6" viewBox="0 0 12 6" aria-hidden="true" style={{ transform: left ? "scaleX(-1)" : undefined }}><path d="M0 2H8V0L12 3L8 6V4H0Z" fill="#000" /></svg>;
+  return <svg width="12" height="7" viewBox="0 0 12 7" aria-hidden="true" style={{ transform: left ? "scaleX(-1)" : undefined }}><path d="M0 1.5H8V0L12 3.5L8 7V4.5H0Z" fill="#000" /></svg>;
 }
 
 function openToolbarCombo(input: HTMLSelectElement | null) {

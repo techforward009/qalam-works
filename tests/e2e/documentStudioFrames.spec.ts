@@ -105,3 +105,38 @@ test("Latin runs in Urdu paragraphs follow the English font without changing Urd
   await expect(latin).not.toHaveCSS("font-family", /Jameel/);
   await expect(paragraph).toHaveText("یہ اردو عبارت ہے Hello Qalam 2026 اور پھر اردو۔");
 });
+
+test("Urdu keeps the English window geometry and every enabled tool accepts centre clicks", async ({ page }) => {
+  await openCanvas(page);
+  const geometry = () => page.evaluate(() => {
+    const box = (selector: string) => {
+      const rect = document.querySelector(selector)!.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    };
+    return ["[data-studio-tool-palette]", "[data-studio-vscroll]", "[data-studio-ruler]",
+      "[data-studio-vertical-ruler]", "[data-studio-page-paper]", "[data-studio-page-nav]"]
+      .map(box);
+  });
+  const englishGeometry = await geometry();
+  await page.locator('[data-studio-language-switch] button[lang="ur"]').click();
+  await expect(page.getByRole("textbox", { name: "دستاویز ایڈیٹر", exact: true })).toBeEditable();
+  await expect.poll(geometry).toEqual(englishGeometry);
+  expect(englishGeometry[0].x).toBe(0);
+  expect(englishGeometry[1].x).toBe(1903);
+  const labels = { select: "انتخاب", text: "متن", image: "تصویر", rect: "مستطیل",
+    ellipse: "بیضوی", "round-rect": "گول کونوں والا مستطیل", line: "لکیر" };
+  for (const [id, label] of Object.entries(labels)) {
+    const button = page.locator(`[data-studio-tool-button="${id}"]`);
+    await expect(button).toHaveAttribute("title", label);
+    await expect(button).toHaveAccessibleName(label);
+    const rect = (await button.boundingBox())!;
+    expect(rect.x).toBe(2);
+    // A real centre click catches scrollbar overlays that dispatchEvent would miss.
+    await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+  }
+  const master = page.getByRole("button", { name: "ماسٹر صفحات", exact: true });
+  await expect(master).toBeDisabled();
+  await expect(master).toHaveAttribute("title", "جلد آ رہا ہے");
+  await expect(master).toHaveCSS("color", "rgb(128, 128, 128)");
+});

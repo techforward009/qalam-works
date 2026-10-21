@@ -269,6 +269,7 @@ export default function DocumentCanvas({
   return (
     <div
       ref={workspaceRef}
+      dir="ltr"
       className="relative flex h-full min-h-0 overflow-hidden"
       style={{ background: "#FFFFFF" }}
       data-studio-view={viewMode}
@@ -562,7 +563,7 @@ export default function DocumentCanvas({
             style={{ height: INPAGE_HSCROLL_PX, background: "#f0f0f0", boxShadow: "inset 0 1px 0 #fff, inset 0 -1px 0 #696969" }}
           >
             <div className="flex h-full shrink-0 items-center gap-px px-px" data-studio-page-nav="true" data-latin-control="true" style={{ color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}>
-              <button type="button" aria-label="Master pages" style={{ ...navButton, width: 11 }}>M</button>
+              <button type="button" disabled aria-label={isUr ? "ماسٹر صفحات" : "Master pages"} title={isUr ? "جلد آ رہا ہے" : "Coming soon"} style={{ ...navButton, width: 11, color: "#808080" }}>M</button>
               <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} style={navButton} onClick={() => stepPage(-1)}>{"<"}</button>
               <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{pageCount}</span>
               <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} style={navButton} onClick={() => stepPage(1)}>{">"}</button>

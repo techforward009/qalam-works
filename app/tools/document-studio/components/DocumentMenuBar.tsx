@@ -193,7 +193,7 @@ export default function DocumentMenuBar({
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia("(min-width: 721px)");
-    const apply = () => setPinMenus(mq.matches && !isUr);
+    const apply = () => setPinMenus(mq.matches);
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
@@ -467,6 +467,8 @@ export default function DocumentMenuBar({
                 className="inline-flex items-center rounded-none px-0 leading-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#000]"
                 style={{
                   height: 19,
+                  minHeight: 19,
+                  maxHeight: 19,
                   padding: pinMenus ? 0 : "0 8px",
                   fontSize: 12,
                   fontWeight: 400,
