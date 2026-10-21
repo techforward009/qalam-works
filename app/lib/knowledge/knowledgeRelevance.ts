@@ -12,21 +12,26 @@ export function asksAboutRespectForParents(question: string): boolean {
   return parent && conduct;
 }
 
-function hasParentReference(value: string): boolean {
-  return /(?:والد|ابوي|اباء|ابناؤ|الام|الاب|ابويه|والديه|لهما|بهما|هما|والدين|ماں|باپ|والدين|امی|ابو|mother|father|parent)/u.test(value);
+/** Avoid pronouns and 'Abu' in isnads: they do not identify a parent topic. */
+function hasDirectParentReference(value: string): boolean {
+  return /(?:والد|والدين|والديه|ابويه|ابوين|ابويك|ابوه|امها|والدہ|ماں|باپ|پدر|فرزند|parents?|mother|father|(?:^| )الاب(?: |$)|(?:^| )الام(?: |$))/u.test(value);
 }
-function hasRespectConduct(value: string): boolean {
-  return /(?:البر|بر الوالدين|بِرِّ|بِرُّ|العقوق|عقوق|احسان|احسن|احسِن|إحسان|حسن صحب|صُحْبَ|اطاع|الطاع|اطع|تطع|حق|حقوق|شكر|اشكر|وصينا|خفض|اخفض|ارفق|رفيق|شفيق|ارحم|اكرم|كرامه|انفق|أف|اف|تنهر|تَنْهَر|قول كريم|قولا كريما|لين|صوتي|ادب|حسن سلو|احترام|عزت|نیکی|نيكي|خدمت|ادب|فرمانبردار|شفقت|نرمی|نرمى|آہستہ|آہستہ|عزّت|مہربان|بخشتا|respect|honou?r|kind|dutiful|obedien)/u.test(value);
+function hasEthicalConduct(value: string): boolean {
+  return /(?:البر(?: |$)|(?:^| )بر(?: |$)|العقوق|عقوق|احسان|احسن|حسن صحب|اطاع|الطاع|اطع|تطع|شكر|اشكر|وصينا|خفض|اخفض|ارفق|رفيق|شفيق|ارحم|اكرم|كرامه|تنهر|(?:^| )اف(?: |$)|قول كريم|قولا كريما|حسن سلو|احترام|عزت|نیکی|نيكي|خدمت|ادب|فرمانبردار|شفقت|نرمی|نرمى|آہستہ|عزت|مہربان|respect|honou?r|kindness|dutiful|obedien)/u.test(value);
+}
+/** Bare 'حق' is ambiguous in legal and inheritance records. */
+function teachesParentRights(body: string): boolean {
+  return /(?:والد|باپ|پدر|فرزند|الولد).{0,100}(?:حق|حقوق)|(?:حق|حقوق).{0,100}(?:والد|باپ|پدر|فرزند|الولد)/u.test(body);
+}
+function explicitlyAboutParents(title: string): boolean {
+  return hasDirectParentReference(title) &&
+    (hasEthicalConduct(title) || /(?:حقوق|حق|دعاؤ|دعا|دعاء|صلاه|صلوه)/u.test(title));
 }
 
-/**
- * A chapter heading gives context, but never alone establishes that the
- * returned passage teaches an ethical duty: the passage must itself contain
- * a conduct signal. Prevents legal parent-child testimony/inheritance hits.
- */
+/** Genuine source content, not merely subject words or a matching heading. */
 export function isRespectForParentsEvidence(text: string, heading = ""): boolean {
   const body = normalizeBookSearch(text);
   const title = normalizeBookSearch(heading);
-  if (!hasRespectConduct(body)) return false;
-  return hasParentReference(body) || hasParentReference(title);
+  if (!hasEthicalConduct(body) && !teachesParentRights(body)) return false;
+  return hasDirectParentReference(body) || explicitlyAboutParents(title);
 }
