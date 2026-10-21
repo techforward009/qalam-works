@@ -4,6 +4,8 @@ import { resolvePageLayout, mmToPx } from "../app/tools/document-studio/utils/pa
 import {
   DEFAULT_DOCUMENT_VIEW_MODE,
   DEFAULT_DOCUMENT_ZOOM,
+  NARROW_STUDIO_PX,
+  openingDocumentZoom,
   PAGELESS_MAX_WIDTH_PX,
   parseStoredViewMode,
   parseStoredZoom,
@@ -76,6 +78,14 @@ describe("document view mode", () => {
     expect(resolveZoomFactor(50, 400, 600, 800, 900)).toBe(0.5);
     expect(resolveZoomFactor("fit-width", 400, 600, 800, 900)).toBe(2);
     expect(resolveZoomFactor("fit-page", 400, 800, 400, 400)).toBe(0.5);
+  });
+
+  it("opens a narrow window at fit width and a desktop window at 100%", () => {
+    expect(NARROW_STUDIO_PX).toBe(900);
+    expect(openingDocumentZoom(390)).toBe("fit-width");
+    expect(openingDocumentZoom(899)).toBe("fit-width");
+    expect(openingDocumentZoom(900)).toBe(100);
+    expect(openingDocumentZoom(1366)).toBe(100);
   });
 });
 

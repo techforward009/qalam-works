@@ -123,7 +123,7 @@ describe("search-intent tool pages — metadata and discovery", () => {
     const pdf = read("app/tools/urdu-text-to-pdf/UrduTextToPdfContent.tsx");
     const layout = read("app/tools/SearchIntentToolLayout.tsx");
 
-    expect(studioPage).toContain("<DocumentStudioContent />");
+    expect(studioPage).toContain("<DocumentStudioContent fillWindow />");
     expect(studioPage).not.toMatch(/hideHeading/);
     expect(studio).toMatch(/<h1 className="sr-only">/);
     expect(studio).toContain("Qalam Page: Urdu Editor");

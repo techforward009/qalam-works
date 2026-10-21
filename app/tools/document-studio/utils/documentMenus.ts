@@ -4,7 +4,7 @@
  * never shown as working items.
  */
 
-export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | "help";
+export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | "window" | "help";
 
 export type MenuActionId =
   | "file.new"
@@ -36,6 +36,8 @@ export type MenuActionId =
   | "view.rulerUnit.cm"
   | "view.rulerUnit.in"
   | "view.fullscreen"
+  | "view.hand"
+  | "view.stats"
   | "insert.link"
   | "insert.table"
   | "insert.image"
@@ -78,6 +80,17 @@ export type MenuActionId =
   | "format.lh.1.8"
   | "format.lh.2"
   | "format.lh.2.2"
+  | "format.shade"
+  | "format.image.left"
+  | "format.image.center"
+  | "format.image.right"
+  | "format.image.wrap"
+  | "format.image.break"
+  | "format.image.alt"
+  | "format.image.delete"
+  | "window.outline"
+  | "window.quality"
+  | "window.settings"
   | "tools.standardize"
   | "tools.audit"
   | "tools.stats"
@@ -191,6 +204,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
           { type: "action", id: "view.zoom.fit-page", labelEn: "Fit page", labelUr: "صفحہ کے مطابق" },
         ],
       },
+      { type: "action", id: "view.hand", labelEn: "Hand", labelUr: "ہاتھ" },
       { type: "action", id: "view.ruler", labelEn: "Ruler", labelUr: "رولر" },
       {
         type: "submenu",
@@ -207,48 +221,9 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "view.quality", labelEn: "Quality and suggestions", labelUr: "معیار اور تجاویز" },
       { type: "action", id: "view.glossary", labelEn: "Glossary", labelUr: "اصطلاحات" },
       { type: "action", id: "view.settings", labelEn: "Settings", labelUr: "ترتیبات" },
+      { type: "action", id: "view.stats", labelEn: "Statistics", labelUr: "اعداد و شمار" },
       { type: "separator" },
       { type: "action", id: "view.fullscreen", labelEn: "Full screen", labelUr: "پوری اسکرین" },
-    ],
-  },
-  {
-    id: "insert",
-    labelEn: "Insert",
-    labelUr: "اندراج",
-    items: [
-      { type: "action", id: "insert.link", labelEn: "Link…", labelUr: "لنک…" },
-      { type: "action", id: "insert.table", labelEn: "Table…", labelUr: "جدول…" },
-      { type: "action", id: "insert.image", labelEn: "Image…", labelUr: "تصویر…" },
-      { type: "separator" },
-      { type: "action", id: "insert.pageBreak", labelEn: "Page break", labelUr: "صفحہ وقفہ" },
-      {
-        type: "submenu",
-        id: "insert.sectionBreak",
-        labelEn: "Section break",
-        labelUr: "حصہ وقفہ",
-        items: [
-          { type: "action", id: "insert.sectionBreakNextPage", labelEn: "Next page", labelUr: "اگلا صفحہ" },
-          { type: "action", id: "insert.sectionBreakContinuous", labelEn: "Continuous", labelUr: "مسلسل" },
-        ],
-      },
-      {
-        type: "submenu",
-        id: "insert.tableActions",
-        labelEn: "Table", labelUr: "جدول",
-        items: [
-          { type: "action", id: "table.addRowBefore", labelEn: "Add row before", labelUr: "اوپر قطار شامل کریں" },
-          { type: "action", id: "table.addRowAfter", labelEn: "Add row after", labelUr: "نیچے قطار شامل کریں" },
-          { type: "action", id: "table.deleteRow", labelEn: "Delete row", labelUr: "قطار حذف کریں" },
-          { type: "separator" },
-          { type: "action", id: "table.addColumnBefore", labelEn: "Add column before", labelUr: "پہلے ستون شامل کریں" },
-          { type: "action", id: "table.addColumnAfter", labelEn: "Add column after", labelUr: "بعد ستون شامل کریں" },
-          { type: "action", id: "table.deleteColumn", labelEn: "Delete column", labelUr: "ستون حذف کریں" },
-          { type: "separator" },
-          { type: "action", id: "table.toggleHeaderRow", labelEn: "Toggle header row", labelUr: "سرخی کی قطار بدلیں" },
-          { type: "action", id: "table.delete", labelEn: "Delete table", labelUr: "جدول حذف کریں" },
-        ],
-      },
-      { type: "action", id: "insert.example", labelEn: "Load example", labelUr: "مثال لوڈ کریں" },
     ],
   },
   {
@@ -324,11 +299,68 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
           { type: "action", id: "format.lh.2.2", labelEn: "2.2", labelUr: "2.2" },
         ],
       },
+      {
+        type: "submenu",
+        id: "format.image",
+        labelEn: "Image",
+        labelUr: "تصویر",
+        items: [
+          { type: "action", id: "format.image.left", labelEn: "Align left", labelUr: "بائیں" },
+          { type: "action", id: "format.image.center", labelEn: "Align center", labelUr: "درمیان" },
+          { type: "action", id: "format.image.right", labelEn: "Align right", labelUr: "دائیں" },
+          { type: "separator" },
+          { type: "action", id: "format.image.wrap", labelEn: "Wrap text", labelUr: "متن لپیٹیں" },
+          { type: "action", id: "format.image.break", labelEn: "Break text", labelUr: "متن توڑیں" },
+          { type: "action", id: "format.image.alt", labelEn: "Alt text", labelUr: "متبادل متن" },
+          { type: "action", id: "format.image.delete", labelEn: "Delete image", labelUr: "تصویر حذف" },
+        ],
+      },
+      { type: "action", id: "format.shade", labelEn: "Shade", labelUr: "شیڈ" },
+    ],
+  },
+  {
+    id: "insert",
+    labelEn: "Insert",
+    labelUr: "اندراج",
+    items: [
+      { type: "action", id: "insert.link", labelEn: "Link…", labelUr: "لنک…" },
+      { type: "action", id: "insert.table", labelEn: "Table…", labelUr: "جدول…" },
+      { type: "action", id: "insert.image", labelEn: "Image…", labelUr: "تصویر…" },
+      { type: "separator" },
+      { type: "action", id: "insert.pageBreak", labelEn: "Page break", labelUr: "صفحہ وقفہ" },
+      {
+        type: "submenu",
+        id: "insert.sectionBreak",
+        labelEn: "Section break",
+        labelUr: "حصہ وقفہ",
+        items: [
+          { type: "action", id: "insert.sectionBreakNextPage", labelEn: "Next page", labelUr: "اگلا صفحہ" },
+          { type: "action", id: "insert.sectionBreakContinuous", labelEn: "Continuous", labelUr: "مسلسل" },
+        ],
+      },
+      {
+        type: "submenu",
+        id: "insert.tableActions",
+        labelEn: "Table", labelUr: "جدول",
+        items: [
+          { type: "action", id: "table.addRowBefore", labelEn: "Add row before", labelUr: "اوپر قطار شامل کریں" },
+          { type: "action", id: "table.addRowAfter", labelEn: "Add row after", labelUr: "نیچے قطار شامل کریں" },
+          { type: "action", id: "table.deleteRow", labelEn: "Delete row", labelUr: "قطار حذف کریں" },
+          { type: "separator" },
+          { type: "action", id: "table.addColumnBefore", labelEn: "Add column before", labelUr: "پہلے ستون شامل کریں" },
+          { type: "action", id: "table.addColumnAfter", labelEn: "Add column after", labelUr: "بعد ستون شامل کریں" },
+          { type: "action", id: "table.deleteColumn", labelEn: "Delete column", labelUr: "ستون حذف کریں" },
+          { type: "separator" },
+          { type: "action", id: "table.toggleHeaderRow", labelEn: "Toggle header row", labelUr: "سرخی کی قطار بدلیں" },
+          { type: "action", id: "table.delete", labelEn: "Delete table", labelUr: "جدول حذف کریں" },
+        ],
+      },
+      { type: "action", id: "insert.example", labelEn: "Load example", labelUr: "مثال لوڈ کریں" },
     ],
   },
   {
     id: "tools",
-    labelEn: "Tools",
+    labelEn: "Utilities",
     labelUr: "آلات",
     items: [
       { type: "action", id: "tools.standardize", labelEn: "Standardize", labelUr: "معیاری بنائیں" },
@@ -338,6 +370,16 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "tools.glossary", labelEn: "Glossary", labelUr: "اصطلاحات" },
       // Hidden until writing quality is good enough for the public site.
       // { type: "action", id: "tools.qalamAi", labelEn: "Qalam AI — Experimental", labelUr: "قلم اے آئی — تجرباتی" },
+    ],
+  },
+  {
+    id: "window",
+    labelEn: "Window",
+    labelUr: "ونڈو",
+    items: [
+      { type: "action", id: "window.outline", labelEn: "Outline", labelUr: "خاکہ" },
+      { type: "action", id: "window.quality", labelEn: "Quality", labelUr: "معیار" },
+      { type: "action", id: "window.settings", labelEn: "Settings", labelUr: "ترتیبات" },
     ],
   },
   {

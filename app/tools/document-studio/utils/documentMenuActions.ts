@@ -4,8 +4,10 @@
  * in the supplied handlers.
  */
 import type { Editor } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import {
   applyBlockStyle,
+  applyHighlight,
   applyLineHeight,
   redo,
   selectAll,
@@ -57,6 +59,7 @@ export type DocumentMenuHandlers = {
   startDictation: () => void;
   openQalamAi: () => void;
   openHelp: (mode: HelpDialogMode) => void;
+  setCanvasTool?: (tool: "select" | "hand" | "text" | "zoom") => void;
 };
 
 const STYLE_ACTIONS: Record<string, BlockStyleId> = {
@@ -70,6 +73,12 @@ const STYLE_ACTIONS: Record<string, BlockStyleId> = {
   "format.style.quote": "quote",
   "format.style.caption": "caption",
 };
+
+function updateSelectedImage(editor: Editor, attrs: Record<string, unknown>): void {
+  const selection = editor.state.selection;
+  if (!(selection instanceof NodeSelection) || selection.node.type.name !== "image") return;
+  editor.chain().focus().updateAttributes("image", attrs).run();
+}
 
 export function lineHeightFromMenuAction(id: MenuActionId): number | null | undefined {
   if (id === "format.lh.default") return null;
@@ -166,6 +175,12 @@ export function dispatchDocumentMenuAction(
     case "view.rulerUnit.in":
       handlers.setRulerUnit("in");
       return;
+    case "view.hand":
+      handlers.setCanvasTool?.("hand");
+      return;
+    case "view.stats":
+      handlers.showStats();
+      return;
     case "insert.link":
       handlers.promptLink();
       return;
@@ -243,6 +258,44 @@ export function dispatchDocumentMenuAction(
       return;
     case "format.ordered":
       if (editor) toggleOrderedList(editor);
+      return;
+    case "format.shade":
+      if (editor) applyHighlight(editor, "#fff2a8");
+      return;
+    case "format.image.left":
+      if (editor) updateSelectedImage(editor, { alignment: "left" });
+      return;
+    case "format.image.center":
+      if (editor) updateSelectedImage(editor, { alignment: "center", wrapMode: "break" });
+      return;
+    case "format.image.right":
+      if (editor) updateSelectedImage(editor, { alignment: "right" });
+      return;
+    case "format.image.wrap":
+      if (editor) updateSelectedImage(editor, { wrapMode: "wrap", alignment: "left" });
+      return;
+    case "format.image.break":
+      if (editor) updateSelectedImage(editor, { wrapMode: "break" });
+      return;
+    case "format.image.alt":
+      if (editor && typeof window !== "undefined") {
+        const alt = window.prompt("Alternative text", String(editor.getAttributes("image").alt ?? ""));
+        if (alt !== null) updateSelectedImage(editor, { alt });
+      }
+      return;
+    case "format.image.delete":
+      if (editor && editor.state.selection instanceof NodeSelection && editor.state.selection.node.type.name === "image") {
+        editor.chain().focus().deleteSelection().run();
+      }
+      return;
+    case "window.outline":
+      handlers.toggleOutline();
+      return;
+    case "window.quality":
+      handlers.toggleQuality();
+      return;
+    case "window.settings":
+      handlers.toggleSettings();
       return;
     case "tools.standardize":
       handlers.standardize();

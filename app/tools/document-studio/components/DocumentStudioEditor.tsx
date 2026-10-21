@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "../../../lib/language-context";
-import { useEditor } from "@tiptap/react";
+import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
+import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
+import { useEditor, type Editor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
@@ -12,6 +14,7 @@ import {
   loadDocumentSettings,
   saveDocumentSettings,
   defaultDocumentSettings,
+  withStudioUrduFont,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
 import { resolvePageLayout, commitPhysicalMarginDrag, type PhysicalMarginEdge } from "../utils/pageLayout";
@@ -105,9 +108,9 @@ import { validateLineHeight } from "../utils/documentSettings";
 import {
   loadDocumentViewMode,
   saveDocumentViewMode,
-  loadDocumentZoom,
   saveDocumentZoom,
-  ZOOM_STORAGE_KEY,
+  openingDocumentZoom,
+  NARROW_STUDIO_PX,
   loadRulerVisible,
   saveRulerVisible,
   loadRulerUnit,
@@ -119,12 +122,14 @@ import {
   type RulerUnit,
 } from "../utils/documentView";
 import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fontRegistry";
+import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
+import type { StudioToolId } from "./InPageToolPalette";
+import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioObjectLayer";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
-import DocumentTopBar from "./DocumentTopBar";
 import DocumentMenuBar from "./DocumentMenuBar";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
@@ -149,6 +154,61 @@ export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
 export { buildDocumentStudioExample, buildReplaceAllTransaction };
 
 export const GENERIC_PDF_EXPORT_ERROR = "PDF بنانے میں خرابی ہوئی / Failed to generate PDF.";
+
+function shapePngDataUrl(kind: "rect" | "ellipse" | "round-rect" | "line"): string | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 180;
+  canvas.height = kind === "line" ? 80 : 110;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.strokeStyle = "#111111";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (kind === "rect") {
+    ctx.strokeRect(2, 2, 176, 106);
+  } else if (kind === "ellipse") {
+    ctx.ellipse(90, 55, 84, 48, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (kind === "round-rect") {
+    const x = 2;
+    const y = 2;
+    const w = 176;
+    const h = 106;
+    const r = 16;
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.stroke();
+  } else {
+    ctx.moveTo(6, 74);
+    ctx.lineTo(174, 6);
+    ctx.stroke();
+  }
+  return canvas.toDataURL("image/png");
+}
+
+function insertStudioShape(editor: Editor | null, kind: "rect" | "ellipse" | "round-rect" | "line") {
+  if (!editor) return;
+  const src = shapePngDataUrl(kind);
+  if (!src) return;
+  editor.chain().focus().insertContent({
+    type: "image",
+    attrs: {
+      src,
+      alt: kind,
+      title: kind,
+      width: 180,
+      height: kind === "line" ? 80 : 110,
+      alignment: "center",
+      wrapMode: "break",
+    },
+  }).run();
+  placeCaretAfterAtom(editor);
+}
 
 export async function readPdfExportError(response: Response): Promise<string> {
   try {
@@ -185,15 +245,25 @@ function getInitialDraftContent(): DocNode | string {
   return "<p></p>";
 }
 
-export default function DocumentStudioEditor() {
+export default function DocumentStudioEditor({ fillWindow = false }: { fillWindow?: boolean } = {}) {
   const { language: uiLanguage } = useLanguage();
   const isUr = uiLanguage === "ur";
-  const [dir, setDir] = useState<"rtl" | "ltr">(isUr ? "rtl" : "ltr");
+  const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  const [newDocOpen, setNewDocOpen] = useState(false);
+  const [visiblePage, setVisiblePage] = useState(1);
+  const [zoomPercent, setZoomPercent] = useState<number | null>(null);
+  const [columnCount, setColumnCount] = useState(1);
+  const [columnGutterMm, setColumnGutterMm] = useState(STUDIO_DEFAULT_GUTTER_MM);
+  const [minimumPages, setMinimumPages] = useState(1);
+  const minimumPagesRef = useRef(1);
+  const [frames, setFrames] = useState<StudioFrame[]>([]);
+  const [canvasTool, setCanvasTool] = useState<StudioToolId>("select");
+  const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
+  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
   const pageLayout = resolvePageLayout({
@@ -216,7 +286,7 @@ export default function DocumentStudioEditor() {
   }, [documentSettings]);
 
 
-  const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
+  const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("ur");
   const processingLanguageRef = useRef<ProcessingLanguage>(processingLanguage);
   useEffect(() => {
     processingLanguageRef.current = processingLanguage;
@@ -252,6 +322,8 @@ export default function DocumentStudioEditor() {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle" | "error">("idle");
   const [online, setOnline] = useState(true);
   const [storageDurability, setStorageDurability] = useState<DocumentLibrary["durability"] | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [englishFont, setEnglishFont] = useState("Arial Unicode MS");
   const [documentTitle, setDocumentTitle] = useState(() => defaultDocumentTitle(isUr));
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [libraryItems, setLibraryItems] = useState<DocumentListItem[]>([]);
@@ -311,16 +383,8 @@ export default function DocumentStudioEditor() {
   const [qalamAiOpen, setQalamAiOpen] = useState(false);
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [pageCount, setPageCount] = useState<number | null>(null);
-  const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
-  // On first visit, make a full page readable on narrow screens without
-  // overwriting an explicit zoom saved by the reader.
-  useEffect(() => {
-    if (window.innerWidth >= 820) return;
-    try {
-      if (window.localStorage.getItem(ZOOM_STORAGE_KEY) !== null) return;
-    } catch { /* Continue with an appropriate responsive default. */ }
-    setZoomState("fit-width");
-  }, []);
+  const [zoom, setZoomState] = useState<DocumentZoom>(100);
+  const zoomTouchedRef = useRef(false);
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
   const [findQuery, setFindQuery] = useState("");
@@ -366,9 +430,14 @@ export default function DocumentStudioEditor() {
   // autosave timer above, which has its own longer interval and purpose).
   const analysisTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [initialContent] = useState(() => getInitialDraftContent());
+  const dirRef = useRef(dir);
+  dirRef.current = dir;
+  const restoringEmptyRef = useRef(false);
+  const textLenRef = useRef(0);
+  const fullDeleteRef = useRef(false);
 
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamPagination],
+    extensions: [...createDocumentStudioExtensions(), QalamPagination, LatinScriptRuns],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -378,8 +447,37 @@ export default function DocumentStudioEditor() {
         spellcheck: EDITOR_SPELLCHECK_ATTR,
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
+      handleKeyDown: (_view, event) => {
+        if (event.key !== "Backspace" && event.key !== "Delete") return false;
+        const { from, to } = _view.state.selection;
+        const size = _view.state.doc.content.size;
+        if (from <= 1 && to >= Math.max(1, size - 1)) fullDeleteRef.current = true;
+        return false;
+      },
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor, transaction }) => {
+      if (transaction.docChanged) {
+        const nextLen = editor.getText().length;
+        const userEdit = transaction.getMeta("addToHistory") !== false;
+        const emptied = textLenRef.current > 0 && nextLen === 0;
+        if (userEdit && (emptied || fullDeleteRef.current)) {
+          minimumPagesRef.current = 1;
+          setMinimumPages(1);
+          const id = activeDocumentIdRef.current;
+          if (id) writeStoredMinimumPages(id, 1);
+        }
+        fullDeleteRef.current = false;
+        textLenRef.current = nextLen;
+      }
+      if (transaction.docChanged && editor.state.doc.childCount === 0 && !restoringEmptyRef.current) {
+        restoringEmptyRef.current = true;
+        const direction = dirRef.current;
+        queueMicrotask(() => {
+          restoringEmptyRef.current = false;
+          if (editor.isDestroyed || editor.state.doc.childCount > 0) return;
+          editor.commands.setContent(emptyDocumentContent(direction));
+        });
+      }
       if (hasAuditReportRef.current) {
         setIsAuditStale(true);
       }
@@ -540,12 +638,34 @@ export default function DocumentStudioEditor() {
   };
 
   const handleNewDocument = () => {
-    void createAndOpenDocument();
+    setNewDocOpen(true);
+  };
+
+  const confirmNewDocument = (draft: NewDocumentDraft) => {
+    const pages = pageCountFromNewDocument(draft);
+    setDir(draft.direction);
+    setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
+    setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
+    setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
+    minimumPagesRef.current = pages;
+    setMinimumPages(pages);
+    setZoom(openingDocumentZoom(window.innerWidth));
+    setVisiblePage(1);
+    setNewDocOpen(false);
+    void createAndOpenDocument({
+      content: contentFromNewDocument(draft),
+      documentSettings: settingsFromNewDocument(draft),
+      minimumPages: pages,
+    });
   };
 
   const handleClearDraft = () => {
     if (window.confirm(isUr ? "کیا آپ موجودہ دستاویز کو خالی کرنا چاہتے ہیں؟" : "Clear the current document text?")) {
       if (!editor) return;
+      minimumPagesRef.current = 1;
+      setMinimumPages(1);
+      const id = activeDocumentIdRef.current;
+      if (id) writeStoredMinimumPages(id, 1);
       setEditorContent(editor, emptyDocumentContent(dir), "user");
     }
   };
@@ -554,16 +674,25 @@ export default function DocumentStudioEditor() {
     setLibraryItems(await library.listDocuments());
   };
 
-  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean }) => {
+  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
     activeDocumentIdRef.current = record.id;
     setActiveDocumentId(record.id);
     saveActiveDocumentId(record.id);
     setDocumentTitle(record.title);
     documentTitleRef.current = record.title;
-    setDocumentSettings(record.documentSettings);
-    documentSettingsRef.current = record.documentSettings;
+    const settings = withStudioUrduFont(record.documentSettings);
+    setDocumentSettings(settings);
+    documentSettingsRef.current = settings;
     if (!options?.skipContent && editor) {
       setEditorContent(editor, record.content, "load");
+    }
+    const pages = options?.minimumPages ?? readStoredMinimumPages(record.id);
+    minimumPagesRef.current = pages;
+    setMinimumPages(pages);
+    writeStoredMinimumPages(record.id, pages);
+    setFrames(readStoredFrames(record.id));
+    if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
+      setZoomState("fit-width");
     }
     setSaveStatus("saved");
     setPreview(null);
@@ -573,6 +702,18 @@ export default function DocumentStudioEditor() {
     setAuditReport(null);
     hasAuditReportRef.current = false;
     setIsAuditStale(false);
+    setVisiblePage(1);
+    if (editor) {
+      const place = () => {
+        try {
+          editor.commands.focus("start");
+        } catch {
+          /* view not mounted yet */
+        }
+      };
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => requestAnimationFrame(place));
+      else place();
+    }
   };
 
   const persistActiveNow = async () => {
@@ -586,7 +727,7 @@ export default function DocumentStudioEditor() {
     });
   };
 
-  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean }) => {
+  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings; minimumPages?: number }) => {
     const library = libraryRef.current;
     if (!library) return;
     try {
@@ -596,9 +737,9 @@ export default function DocumentStudioEditor() {
       const record = await library.createDocument({
         title: input?.title ?? defaultDocumentTitle(isUrRef.current),
         content: input?.content ?? emptyDocumentContent(dir),
-        documentSettings: defaultDocumentSettings(),
+        documentSettings: withStudioUrduFont(input?.documentSettings ?? defaultDocumentSettings()),
       });
-      applyRecordToEditor(record, { skipContent: input?.skipContent });
+      applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
       await refreshLibraryList(library);
     } catch (err) {
       console.error("Failed to create document:", err);
@@ -811,15 +952,45 @@ export default function DocumentStudioEditor() {
   };
 
 
-  // Mode change: never present a preview generated under a different language
+  // Mode change: never present a preview generated under a different language.
+  // Direction is not tied to this mode; the ruler follows the document.
   useEffect(() => {
     setPreview(null);
     setAlreadyClean(false);
     setLastResolved(null);
-    if (processingLanguage === "en") setDir("ltr");
-    else if (processingLanguage === "ur" || processingLanguage === "ar") setDir("rtl");
-    // Auto: display dir stays user-controlled until process runs
   }, [processingLanguage]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const sync = () => {
+      const { $from } = editor.state.selection;
+      const nodes = [];
+      for (let depth = 1; depth <= $from.depth; depth += 1) {
+        const node = $from.node(depth);
+        nodes.push({ typeName: node.type.name, directionMode: node.attrs.directionMode, dir: node.attrs.dir });
+      }
+      setDir(rulerDirectionAtSelection(nodes));
+    };
+    sync();
+    editor.on("selectionUpdate", sync);
+    editor.on("transaction", sync);
+    return () => {
+      editor.off("selectionUpdate", sync);
+      editor.off("transaction", sync);
+    };
+  }, [editor]);
+
+  const languageWas = useRef<string | null>(null);
+  const urduDirPending = useRef(false);
+  useEffect(() => {
+    const previous = languageWas.current;
+    languageWas.current = uiLanguage;
+    if (previous !== null && previous !== uiLanguage && uiLanguage === "ur") urduDirPending.current = true;
+    if (!urduDirPending.current || !editor) return;
+    urduDirPending.current = false;
+    setDir("rtl");
+    applyParagraphDirection(editor, "rtl");
+  }, [uiLanguage, editor]);
 
   /** Write normalized TipTap JSON into the live editor (with undo history). */
   const applyNormalizedDocument = (normalized: DocNode): boolean => {
@@ -1246,7 +1417,40 @@ export default function DocumentStudioEditor() {
   };
 
   useEffect(() => {
+    const onContext = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest("img.qalam-document-image")) {
+        setImageMenu(null);
+        return;
+      }
+      event.preventDefault();
+      const img = target.closest("img");
+      if (editor && img) {
+        try {
+          const pos = editor.view.posAtDOM(img, 0);
+          editor.chain().setNodeSelection(pos).run();
+        } catch {
+          /* image not in the document view */
+        }
+      }
+      setImageMenu({ x: event.clientX, y: event.clientY });
+    };
+    const onPointer = () => setImageMenu(null);
+    window.addEventListener("contextmenu", onContext);
+    window.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("contextmenu", onContext);
+      window.removeEventListener("pointerdown", onPointer);
+    };
+  }, [editor]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F1") {
+        e.preventDefault();
+        setHelpOpen("about");
+        return;
+      }
       if (!isFindOpenShortcut(e)) return;
       e.preventDefault();
       setFindOpen(true);
@@ -1275,9 +1479,34 @@ export default function DocumentStudioEditor() {
   };
 
   const setZoom = (next: DocumentZoom) => {
+    zoomTouchedRef.current = true;
     setZoomState(next);
     saveDocumentZoom(next);
   };
+
+  useEffect(() => {
+    if (zoomTouchedRef.current || typeof window === "undefined") return;
+    const next = openingDocumentZoom(window.innerWidth);
+    if (next !== 100) setZoomState(next);
+  }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        try {
+          editor.commands.focus("start");
+        } catch {
+          /* view not mounted yet */
+        }
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [editor]);
 
   const toggleRuler = () => {
     setRulerVisibleState((visible) => {
@@ -1351,6 +1580,23 @@ export default function DocumentStudioEditor() {
     }
   };
 
+  const onCanvasTool = (id: StudioToolId) => {
+    setCanvasTool(id);
+    if (id === "image") {
+      imageInputRef.current?.click();
+      return;
+    }
+    if (id === "select" && editor) {
+      editor.commands.focus(editor.isEmpty ? "start" : "end");
+    }
+  };
+
+  const changeFrames = (next: StudioFrame[]) => {
+    setFrames(next);
+    const id = activeDocumentIdRef.current;
+    if (id) writeStoredFrames(id, next);
+  };
+
   const insertTable = () => {
     if (!editor) return;
     editor.chain().focus().insertTable({
@@ -1401,13 +1647,17 @@ export default function DocumentStudioEditor() {
       openImageInsert: () => imageInputRef.current?.click(),
       insertPageBreak,
       insertSectionBreak,
-      setDir: (direction) => { if (editor) applyParagraphDirection(editor, direction); },
+      setDir: (direction) => {
+        setDir(direction);
+        if (editor) applyParagraphDirection(editor, direction);
+      },
       standardize: handleStandardizeClick,
       audit: handleRunAudit,
       showStats: () => setRightPanel("quality"),
       startDictation: focusExistingDictationControl,
       openQalamAi: () => setQalamAiOpen(true),
       openHelp: setHelpOpen,
+      setCanvasTool,
     });
   };
 
@@ -1524,6 +1774,9 @@ export default function DocumentStudioEditor() {
     };
   }, [editor]);
 
+  const onZoomPercentChange = useCallback((percent: number) => {
+    setZoomPercent((prev) => (prev === percent ? prev : percent));
+  }, []);
   const [onDemandFaces, setOnDemandFaces] = useState("");
   useEffect(() => {
     if (!editor) return;
@@ -1547,8 +1800,9 @@ export default function DocumentStudioEditor() {
     };
   }, [editor]);
 
+
   return (
-    <div className="mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4">
+    <div className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       <input
@@ -1577,6 +1831,59 @@ export default function DocumentStudioEditor() {
         }}
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
+      {imageMenu && editor ? (
+        <div
+          role="menu"
+          data-studio-image-menu="true"
+          className="fixed z-[90] border border-[#808080] bg-[#f0f0f0] py-1 text-[11px] text-black shadow-md"
+          style={{ left: imageMenu.x, top: imageMenu.y, fontFamily: "Tahoma, 'Segoe UI', sans-serif" }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {([
+            ["Left", { alignment: "left" }],
+            ["Center", { alignment: "center", wrapMode: "break" }],
+            ["Right", { alignment: "right" }],
+            ["Wrap text", { wrapMode: "wrap", alignment: "left" }],
+            ["Break text", { wrapMode: "break" }],
+          ] as const).map(([label, attrs]) => (
+            <button
+              key={label}
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-1 text-left hover:bg-[#d6dff2]"
+              onClick={() => {
+                editor.chain().focus().updateAttributes("image", attrs).run();
+                setImageMenu(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-1 text-left hover:bg-[#d6dff2]"
+            onClick={() => {
+              const alt = window.prompt("Alternative text", String(editor.getAttributes("image").alt ?? ""));
+              if (alt !== null) editor.chain().focus().updateAttributes("image", { alt }).run();
+              setImageMenu(null);
+            }}
+          >
+            Alt text
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-1 text-left hover:bg-[#d6dff2]"
+            onClick={() => {
+              editor.chain().focus().deleteSelection().run();
+              setImageMenu(null);
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ) : null}
 
       {libraryOpen ? (
         <DocumentLibraryDialog
@@ -1588,7 +1895,7 @@ export default function DocumentStudioEditor() {
           }}
           onNew={() => {
             setLibraryOpen(false);
-            void createAndOpenDocument();
+            setNewDocOpen(true);
           }}
           onRename={(id) => {
             void renameLibraryDocument(id);
@@ -1629,37 +1936,39 @@ export default function DocumentStudioEditor() {
 
       <DocumentStudioShell
         isUr={isUr}
-        topBar={
-          <DocumentTopBar
-            isUr={isUr}
-            title={documentTitle}
-            onTitleChange={setDocumentTitle}
-            onTitleCommit={commitDocumentTitle}
-            saveStatus={saveStatus}
-            storageDurability={storageDurability}
-            online={online}
-            isImporting={isImporting}
-            onNewDocument={handleNewDocument}
-            onUploadClick={() => fileInputRef.current?.click()}
-            onStandardize={handleStandardizeClick}
-            onAudit={handleRunAudit}
-            onOpenLibrary={() => setLibraryOpen(true)}
-            onDownloadDocx={() => {
-              void handleDownloadDocx();
-            }}
-            onDownloadPdf={() => {
-              void handleDownloadPdf();
-            }}
-            onPrint={printDocumentStudio}
-            pdfBusy={isExportingPdf}
-          />
-        }
+        fillWindow={fillWindow}
+        topBar={null}
         menuBar={
           <DocumentMenuBar
             isUr={isUr}
+            showHome={fillWindow}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
+            endSlot={
+              <div className="flex h-[20px] min-w-0 items-center gap-1" data-studio-title-slot="true">
+                {storageDurability === "memory" ? (
+                  <span className="sr-only" role="status">
+                    {isUr
+                      ? "براؤزر اسٹوریج دستیاب نہیں۔ اس سیشن کی تبدیلیاں عارضی ہیں۔ یہ ٹیب کھلا رکھیں اور اپنی دستاویز ڈاؤن لوڈ یا ایکسپورٹ کر لیں۔"
+                      : "Browser storage is unavailable. Changes are temporary in this session. Keep this tab open and download/export your document."}
+                  </span>
+                ) : null}
+                {editingTitle ? <input autoFocus
+                  type="text"
+                  value={documentTitle}
+                  onChange={(e) => setDocumentTitle(e.target.value)}
+                  onBlur={() => { commitDocumentTitle(); setEditingTitle(false); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
+                  aria-label={isUr ? "دستاویز کا عنوان" : "Document title"}
+                  data-studio-document-title="true"
+                  className="h-[20px] w-36 min-w-0 rounded-none border border-transparent bg-transparent px-1 text-[12px] leading-none text-[#1c1c1c] hover:border-[#c8c8c8] focus:border-[#1A3A2A] focus:outline-none"
+                /> : <button type="button" data-studio-document-title="true" aria-label={isUr ? "دستاویز کا عنوان" : "Document title"} onClick={() => setEditingTitle(true)} style={{ height: 18, padding: 0, border: "none", background: "transparent", color: "#000", fontSize: 12, whiteSpace: "nowrap" }}>[{documentTitle}]</button>}
+
+              </div>
+            }
           />
         }
         toolbar={
@@ -1673,6 +1982,8 @@ export default function DocumentStudioEditor() {
             zoom={zoom}
             onZoomChange={setZoom}
             documentSettings={documentSettings}
+            englishFont={englishFont}
+            onEnglishFontChange={setEnglishFont}
           />
         }
         findBar={
@@ -1732,12 +2043,29 @@ export default function DocumentStudioEditor() {
             auditScore={auditReport?.score ?? null}
             auditStale={isAuditStale}
             pageCount={pageCount}
+            visiblePage={visiblePage}
+            zoom={zoom}
+            zoomPercent={zoomPercent}
+            onPageStep={(delta) => {
+              const root = document.querySelector("[data-studio-print-root]") as HTMLElement | null;
+              const stride = Number(root?.getAttribute("data-page-stride-px") || 0);
+              const total = pageCount ?? 1;
+              const next = Math.min(total, Math.max(1, visiblePage + delta));
+              if (root && stride > 0) root.scrollTo({ top: (next - 1) * stride });
+              setVisiblePage(next);
+            }}
           />
         }
         onDismissLeft={() => setLeftPanel("none")}
         onDismissRight={() => setRightPanel("none")}
       >
-        <div className="p-3 sm:p-4 md:p-6">
+        <div className="flex min-h-0 flex-1 flex-col">
+          {newDocOpen ? (
+            <NewDocumentDialog
+              onCancel={() => setNewDocOpen(false)}
+              onConfirm={confirmNewDocument}
+            />
+          ) : null}
           {uploadError && (
             <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
               {uploadError}
@@ -1764,6 +2092,8 @@ export default function DocumentStudioEditor() {
             </div>
           )}
 
+          <div className="relative min-h-0 flex-1">
+            <div className="absolute inset-0">
           <DocumentCanvas
             editor={editor}
             dir={dir}
@@ -1779,9 +2109,21 @@ export default function DocumentStudioEditor() {
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}
             onPageCountChange={setPageCount}
+            onVisiblePageChange={setVisiblePage}
+            onZoomPercentChange={onZoomPercentChange}
+            columnCount={columnCount}
+            columnGutterMm={columnGutterMm}
+            minimumPages={minimumPages}
+            frames={frames}
+            onFramesChange={changeFrames}
+            englishFont={englishFont}
+            tool={canvasTool}
+            onToolAction={onCanvasTool}
           />
+            </div>
+          </div>
 
-          <div className="mt-3 space-y-3" dir={dir} ref={standardizeButtonRef}>
+          <div className="max-h-48 shrink-0 overflow-auto" dir={dir} ref={standardizeButtonRef}>
             {exampleJustLoaded && (
               <p
                 className={`rounded-lg border border-[#1A3A2A]/15 bg-[#F3F7F2] px-3 py-2.5 text-sm font-medium text-[#1A3A2A] ${isUr ? "font-naskh" : ""}`}

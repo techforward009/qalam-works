@@ -16,7 +16,10 @@ interface WordRulerProps {
   onPhysicalMarginChange?: (edge: PhysicalMarginEdge, mm: number) => void;
 }
 
-const TICK_SIZE = { major: 12, minor: 8, micro: 4 };
+const TICK_SIZE = { major: 8, minor: 4, micro: 2 };
+
+/** Compact InPage-style bar. DocumentCanvas uses the same thickness for the corner box. */
+export const RULER_BAR_PX = 18;
 
 export const WordRuler: React.FC<WordRulerProps> = ({
   dir,
@@ -126,14 +129,18 @@ export const WordRuler: React.FC<WordRulerProps> = ({
 
   const handles: PhysicalMarginEdge[] = vertical ? ["top", "bottom"] : ["left", "right"];
 
+  const fromRight = !vertical && dir === "rtl";
+
   return (
     <div
       ref={containerRef}
-      className={`relative select-none bg-[#e8ece6] ${vertical ? "w-6 h-full border-r border-slate-300" : "h-6 w-full border-b border-slate-300"}`}
+      className={`relative select-none bg-white ${vertical ? "h-full w-[18px] border-r border-[#c8c8c8]" : "h-[18px] w-full border-b border-[#c8c8c8]"}`}
       data-studio-ruler={vertical ? undefined : "true"}
       data-studio-vertical-ruler={vertical ? "true" : undefined}
       data-ruler-axis={axis}
       data-ruler-unit={unit}
+      data-ruler-origin={fromRight ? "right" : vertical ? "top" : "left"}
+      data-ruler-bar-px={String(RULER_BAR_PX)}
       data-ruler-page-width-mm={layout.widthMm}
       data-ruler-page-height-mm={layout.heightMm}
       data-ruler-orientation={layout.orientation}
@@ -145,11 +152,10 @@ export const WordRuler: React.FC<WordRulerProps> = ({
       data-ruler-minor-ticks={String(ticks.filter((tick) => tick.kind === "minor").length)}
       title="Page ruler — drag margin boundaries"
     >
-      <div className="absolute inset-0 bg-[#dfe4dc]" />
       {ready ? (
         <>
       <div
-        className="absolute bg-[#c5cdc2]"
+        className="absolute bg-[#f7f7f7]"
         data-ruler-margin="start"
         style={
           vertical
@@ -158,7 +164,7 @@ export const WordRuler: React.FC<WordRulerProps> = ({
         }
       />
       <div
-        className="absolute bg-white/80"
+        className="absolute bg-white"
         data-ruler-writing-area="true"
         style={
           vertical
@@ -167,7 +173,7 @@ export const WordRuler: React.FC<WordRulerProps> = ({
         }
       />
       <div
-        className="absolute bg-[#c5cdc2]"
+        className="absolute bg-[#f7f7f7]"
         data-ruler-margin="end"
         style={
           vertical
@@ -179,17 +185,31 @@ export const WordRuler: React.FC<WordRulerProps> = ({
         <div
           key={`${tick.kind}-${i}`}
           data-ruler-tick={tick.kind}
-          className="absolute bg-slate-600 pointer-events-none"
+          className="absolute bg-[#1c1c1c] pointer-events-none"
           style={
             vertical
               ? { top: `${tick.offsetPx}px`, right: 0, width: TICK_SIZE[tick.kind], height: 1 }
-              : { left: `${tick.offsetPx}px`, bottom: 0, height: TICK_SIZE[tick.kind], width: 1 }
+              : fromRight
+                ? { right: `${tick.offsetPx}px`, bottom: 0, height: TICK_SIZE[tick.kind], width: 1 }
+                : { left: `${tick.offsetPx}px`, bottom: 0, height: TICK_SIZE[tick.kind], width: 1 }
           }
         >
           {tick.label ? (
             <span
-              className="absolute text-[8px] leading-none text-slate-600"
-              style={vertical ? { right: 13, top: 1 } : { left: 2, top: 1 }}
+              className="absolute whitespace-nowrap text-[8px] leading-[8px] text-[#1c1c1c]"
+              data-ruler-label={tick.label}
+              style={
+                vertical
+                  ? { right: 10, top: tick.label === "0" ? -6 : -8 }
+                  : {
+                      bottom: TICK_SIZE.major + 3,
+                      lineHeight: "8px",
+                      ...(fromRight ? { right: 0 } : { left: 0 }),
+                      transform: tick.label === "0"
+                        ? (fromRight ? "translateX(calc(50% - 2px))" : "translateX(calc(-50% + 2px))")
+                        : (fromRight ? "translateX(50%)" : "translateX(-50%)"),
+                    }
+              }
             >
               {tick.label}
             </span>
@@ -209,7 +229,7 @@ export const WordRuler: React.FC<WordRulerProps> = ({
               onPointerDown={onHandlePointerDown(edge)}
             >
               <span
-                className="pointer-events-none absolute bg-[#1A3A2A]"
+                className="pointer-events-none absolute bg-[#1c1c1c]"
                 style={
                   vertical
                     ? { left: 2, right: 2, top: 8, height: 2 }
