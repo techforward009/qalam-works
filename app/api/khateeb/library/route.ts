@@ -9,6 +9,7 @@ import { loadBookCatalog, MAX_BOOK_UPLOAD_BYTES, parseBookArchive, saveBookArchi
 import { resolvePatienceMaterials } from "../../../tools/khateeb-studio/engine/patienceBookGuide";
 import { readBookSource } from "./sourceCache";
 import { activateBookImport, saveBookImportSource, validateBookImportPlan, MAX_BOOK_PART_BYTES } from "../../../lib/knowledge/store";
+import { bookLibraryR2IsSelected, loadBookLibraryR2Catalog, readBookRecordFromR2, readBookSourceFromR2 } from "../../research/bookLibraryR2Reader";
 
 function json(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -26,6 +27,31 @@ export async function GET(req: NextRequest) {
   const number = params.get("number") ?? "";
   if (!["catalog", "search", "record", "topic"].includes(op) || query.length > 300 || sourceId && !ALL_BOOK_SOURCE_IDS.includes(sourceId as typeof ALL_BOOK_SOURCE_IDS[number]) || number.length > 5) return json({ code: "invalid" }, 400);
   try {
+    if (await bookLibraryR2IsSelected()) {
+      const catalog = await loadBookLibraryR2Catalog();
+      if (op === "catalog") return json(catalog);
+      if (op === "topic") {
+        const locale = params.get("language") ?? "ur";
+        if (params.get("topicId") !== "patience" || !["ur", "en"].includes(locale)) return json({ code: "invalid" }, 400);
+        const sources = catalog.sources.filter(s => s.language === "ar" || s.language === locale);
+        const records = (await Promise.all(sources.map(s => readBookSourceFromR2(s.id)))).flatMap(result => result.records);
+        return json(resolvePatienceMaterials(records, sources, locale as "ur" | "en"));
+      }
+      if (op === "record") {
+        const id = params.get("id");
+        if (!sourceId || !id || id.length > 300) return json({ code: "invalid" }, 400);
+        const result = await readBookRecordFromR2(sourceId, id);
+        return result ? json(result) : json({ code: "not-found" }, 404);
+      }
+      const language = params.get("language") ?? "";
+      const book = params.get("book") ?? "";
+      const kind = params.get("kind") ?? "";
+      const page = Number(params.get("page") ?? 1);
+      if (language && !["ar", "ur", "en"].includes(language) || book && !["nahj", "sahifa", "kafi"].includes(book) || kind.length > 40 || !Number.isInteger(page) || page < 1 || page > 1000) return json({ code: "invalid" }, 400);
+      const sources = catalog.sources.filter(s => (!sourceId || s.id === sourceId) && (!book || s.book === book) && (!language || s.language === language));
+      const records = (await Promise.all(sources.map(s => readBookSourceFromR2(s.id)))).flatMap(result => result.records);
+      return json(searchBookRecords(records, { query, sourceId, language, book, kind, number, page }));
+    }
     const client = await researchBlobClientFromEnv();
     const catalog = await loadBookCatalog(client);
     if (!catalog) return json({ ready: false, sources: [], recordCount: 0 });
@@ -59,6 +85,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const denied = deny(req);
   if (denied) return denied;
+  if (await bookLibraryR2IsSelected()) return json({ code: "r2-write-path-not-configured" }, 409);
   const origin = req.headers.get("origin");
   if (origin && origin !== req.nextUrl.origin) return json({ code: "invalid" }, 400);
   const operation = req.nextUrl.searchParams.get("op");
