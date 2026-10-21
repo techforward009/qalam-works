@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { knowledgeResultText, type KnowledgeResult, type KnowledgeScope, type KnowledgePassage } from "../../lib/knowledge/retrieval";
+import { groupKnowledgeSources } from "../../lib/knowledge/knowledgeSourceGroups";
 import type { BookRecord, BookSource } from "../../lib/knowledge/bookCorpus";
 import BookPassageText from "../../tools/khateeb-studio/BookPassageText";
 import { createKnowledgeDraft } from "../../tools/khateeb-studio/engine/knowledgeDraft";
@@ -27,6 +28,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
   const questionInput = useRef<HTMLTextAreaElement>(null);
   const sourceAbort = useRef<AbortController | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const sourceGroups = result ? groupKnowledgeSources(result.passages) : [];
   useEffect(() => () => { abort.current?.abort(); sourceAbort.current?.abort(); }, []);
   useEffect(() => {
     if (!opened || !dialog.current) return;
@@ -103,7 +105,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
     {error ? <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {notice ? <p role="status" className="mt-3 text-sm">{notice}</p> : null}
     {result ? <div className="mt-5 space-y-4" aria-live="polite">
-      <p className="text-sm leading-7">{result.status === "unsupported-fatwa" ? ur ? "مراجع کے مستند فتاویٰ کا ذخیرہ ابھی شامل نہیں۔ اس معاون سے کسی مرجع کی طرف فتویٰ منسوب نہیں کیا جائے گا۔" : "An authoritative corpus of marja rulings is not included yet. This assistant cannot attribute a fatwa to a marja." : result.status === "not-found" ? ur ? "اس سوال کے لیے متعلقہ عبارت نہیں ملی۔ مختصر موضوع، عین عبارت کو اقتباسی نشانات میں، یا حکمت/دعا کا نمبر لکھیں۔" : "No matching passage was found. Try a shorter topic, a phrase in quotation marks, or a saying/supplication number." : ur ? `متعلقہ ماخذی عبارتیں: ${result.passages.length}۔ یہ نتائج موضوعاتی تلاش سے منتخب ہوئے ہیں؛ مطابقت اور سیاق اصل ماخذ میں دیکھیں۔` : `${result.passages.length} related passages. These are topic-search results; check relevance and context in the original source.`}</p>
+      <p className="text-sm leading-7">{result.status === "unsupported-fatwa" ? ur ? "مراجع کے مستند فتاویٰ کا ذخیرہ ابھی شامل نہیں۔ اس معاون سے کسی مرجع کی طرف فتویٰ منسوب نہیں کیا جائے گا۔" : "An authoritative corpus of marja rulings is not included yet. This assistant cannot attribute a fatwa to a marja." : result.status === "not-found" ? ur ? "اس سوال کے لیے متعلقہ عبارت نہیں ملی۔ مختصر موضوع، عین عبارت کو اقتباسی نشانات میں، یا حکمت/دعا کا نمبر لکھیں۔" : "No matching passage was found. Try a shorter topic, a phrase in quotation marks, or a saying/supplication number." : ur ? `متعلقہ ماخذ: ${sourceGroups.length}، منتخب عبارتیں: ${result.passages.length}۔ عربی اور اردو نسخوں کی عبارتیں ایک حوالے کے تحت الگ دکھائی گئی ہیں، لیکن باہمی لفظی ترجمہ ہونا فرض نہیں کیا گیا۔` : `${sourceGroups.length} source references, ${result.passages.length} excerpts. Edition excerpts share reference cards but are not assumed to be line-by-line translations.`}</p>
       {result.research?.status === "answered" ? <div data-testid="knowledge-research-summary" className="space-y-4 rounded-lg border border-emerald-800/30 bg-emerald-50 p-4 dark:bg-emerald-950/40">
         <h3 className={ur ? "font-nastaliq leading-loose" : "font-semibold"}>{result.research.claims.every(c => c.kind === "source-extract") ? ur ? "ماخذی جواب — منتخب عبارتیں" : "Source answer — selected extracts" : ur ? "حوالہ دار جواب — تحقیقی خلاصہ" : "Cited answer — research summary"}</h3>
         {result.research.omittedClaimCount ? <p className="text-sm leading-7">{ur ? "یہ جزوی خلاصہ ہے؛ جو مجوزہ نکات ماخذ سے ثابت نہیں ہوئے، انہیں شامل نہیں کیا گیا۔" : "This is a partial summary; proposed points not established by the sources were omitted."}</p> : null}
@@ -126,12 +128,14 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       {result.questionUnderstanding === "model" ? <p className="text-sm leading-7">{ur ? "سوال کا مفہوم سمجھ کر متعلقہ موضوعات میں تلاش کی گئی ہے۔" : "The question was interpreted to search related topics."}</p> : null}
       {result.passageRanking === "model" ? <p className="text-sm leading-7">{ur ? "عبارتیں سوال سے مطابقت کے مطابق منتخب اور مرتب کی گئی ہیں۔" : "Passages were selected and ordered by relevance to your question."}</p> : null}
       {result.searchTopics?.length ? <p className="text-sm leading-7">{ur ? "تلاش کی جہتیں: " : "Search topics: "}{result.searchTopics.map(t => ur ? t.labelUr : t.labelEn).join(ur ? "، " : ", ")}</p> : null}
-      {result.passages.map(p => <article key={p.id} className="rounded-lg border border-emerald-900/20 bg-white p-4 dark:bg-[#162a1e]">
-        <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span className="qalam-source-reference">{ur ? p.referenceUr : p.referenceEn}</span></label>
-        <p className="my-2 text-xs text-gray-600 dark:text-gray-300">{p.language === "ar" ? ur ? "اصل عربی عبارت" : "Arabic source text" : ur ? "فراہم کردہ ترجمہ / حواشی" : "Supplied translation / commentary"}{p.translator ? ` — ${p.translator}` : ""}</p>
-        <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} />
-        {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {p.suppliedTranslation.translator}{p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
-        <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
+      {sourceGroups.map(group => <article key={group.id} className="rounded-lg border border-emerald-900/20 bg-white p-4 dark:bg-[#162a1e]">
+        <h3 className="qalam-source-reference text-sm font-semibold">{ur ? group.referenceUr : group.referenceEn}</h3>
+        {group.passages.map(p => <div key={p.id} className="mt-3 border-t border-emerald-900/15 pt-3">
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span>{p.language === "ar" ? ur ? "اصل عربی عبارت" : "Arabic source text" : ur ? "فراہم کردہ اردو نسخے کی عبارت" : "Supplied-language source excerpt"}{p.translator ? ` — ${p.translator}` : ""}</span></label>
+          <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} />
+          {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "تصدیق شدہ فراہم کردہ ترجمہ" : "Verified supplied translation"} — {p.suppliedTranslation.translator}{p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
+          <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
+        </div>)}
       </article>)}
       {result.passages.length ? <div className="flex flex-wrap items-end gap-3">
         <button className={button} disabled={!selected.length} onClick={() => void copy()}>{ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources"}</button>

@@ -10,6 +10,15 @@ export function bookSearchUnits(record: BookRecord): BookSearchUnit[] {
   const body = record.paragraphs.filter((p, index) => !isBookLocator(record, { paragraph: p, paragraphs: [p], text: p.text }, index));
   return body.length ? [{ paragraph: body[0], paragraphs: body, text: body.map(p => p.text).join("\n") }] : [];
  }
+ if (record.book === "sahifa" && record.language === "ur") {
+  // The supplied Urdu edition of prayer 24 appends the translator's
+  // editorial explanation and an embedded Quran quotation AFTER the prayer.
+  // Detect the verified boundary without modifying or shortening prayer text.
+  const boundary = record.paragraphs.findIndex((p, index) =>
+    index > 1 && normalizeBookSearch(p.text).startsWith(normalizeBookSearch("خداوند عالم کے عظیم احسانات کے بعد")));
+  const prayerBody = boundary >= 0 ? record.paragraphs.slice(0, boundary) : record.paragraphs;
+  return prayerBody.map(p => ({ paragraph: p, paragraphs: [p], text: p.text }));
+ }
  if(record.book!=='kafi')return record.paragraphs.map(p=>({paragraph:p,paragraphs:[p],text:p.text}));
  const headings=new Set([record.reference.kafi?.bookTitle,record.reference.kafi?.chapterTitle,record.reference.kafi?.sectionTitle]);
  const result:BookSearchUnit[]=[];let current:BookSearchUnit|null=null;
@@ -42,6 +51,10 @@ export function isBookLocator(record: BookRecord, unit: BookSearchUnit, index: n
        /(?:ابويه|عليهما السلام|لربه|لدعائه)/u.test(normalized) &&
        !/(?:اللهم|ربي|يا رب)/u.test(normalized)) return true;
    if (record.language === "ar" && index < 2 && /^(?:في |اذا |و كان |وكان )/u.test(normalized)) return true;
+   // A quoted Quranic passage inside an editor's explanation must never
+   // be presented as though it were the translator's rendering of this dua.
+   if (record.language === "ur" && /^[﴿«]/u.test(text) &&
+       /[﴾۝]/u.test(text)) return true;
    // Clearly labelled editorial interpretation in a translated prayer is not
    // a supplication; display it only in the book reader in its own context.
    if (record.language === "ur" && /^(?:اس آیت میں|اس دعا میں|خداوند عالم کے عظیم احسانات|مترجم کا حاشیہ|شرح|تشریح)/u.test(normalized)) return true;

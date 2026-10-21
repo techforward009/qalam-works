@@ -21,7 +21,10 @@ function hasEthicalConduct(value: string): boolean {
 }
 /** Bare 'حق' is ambiguous in legal and inheritance records. */
 function teachesParentRights(body: string): boolean {
-  return /(?:والد|باپ|پدر|فرزند|الولد).{0,100}(?:حق|حقوق)|(?:حق|حقوق).{0,100}(?:والد|باپ|پدر|فرزند|الولد)/u.test(body);
+  // A generic statement such as "Allah's promise is true" (Quran 31:33)
+  // near the word "father" is NOT a parent's right. Demand an actual
+  // parent/child right noun phrase, not proximity across clauses.
+  return /(?:حق(?:وق)? (?:الوالد|الوالدين|الاب|الام|الولد|باپ|ماں|فرزند|والد|اولاد)|(?:والدين|والد|باپ|ماں|فرزند) (?:پر |کا |کے )?حق(?:وق)?|حقوق (?:والدين|والد|ماں|باپ))/u.test(body);
 }
 function explicitlyAboutParents(title: string): boolean {
   return hasDirectParentReference(title) &&
