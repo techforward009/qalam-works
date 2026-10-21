@@ -37,6 +37,11 @@ function Icon({ children }: { children: ReactNode }) {
   );
 }
 
+// Button-sized artwork keeps the 13px outline box on integer device pixels.
+function OutlineIcon({ children }: { children: ReactNode }) {
+  return <svg width="27" height="22" viewBox="0 0 27 22" aria-hidden="true" fill="none" stroke="#000" strokeWidth="1" strokeLinecap="butt" strokeLinejoin="miter" shapeRendering="crispEdges">{children}</svg>;
+}
+
 const TOOLS: ToolSpec[] = [
   {
     id: "select",
@@ -53,10 +58,11 @@ const TOOLS: ToolSpec[] = [
     label: "Text",
     enabled: true,
     icon: (
-      <Icon>
-        <path d="M3 14L2 9L3 8L5 10V5H7V8H9V6H11V8H13V12L11 15H5Z" fill="#fff" strokeWidth="1.5" />
-        <path d="M9 1H15M12 1V6M9 6H15" strokeWidth="2" />
-      </Icon>
+      <OutlineIcon>
+        <path d="M3.5 4.5H9.5M6.5 4.5V18.5M3.5 18.5H9.5" />
+        <path d="M14.5 11.5V3.5H16.5V8.5H18.5V7.5H20.5V9.5H22.5V15.5L19.5 19.5H13.5L10.5 15.5L9.5 12.5L11.5 11.5L14.5 14.5" />
+        <path d="M17.5 11.5V14.5M20.5 11.5V14.5" />
+      </OutlineIcon>
     ),
   },
   {
@@ -83,10 +89,11 @@ const TOOLS: ToolSpec[] = [
     label: "Unlink text",
     enabled: false,
     icon: (
-      <Icon>
-        <path d="M6 5H4C0 5 0 11 4 11H6M10 5H12C16 5 16 11 12 11H10" strokeWidth="2" />
-        <path d="M7 1V4M10 1L9 4M7 12V15M9 12L10 15M5 2L6 4M10 12L12 14" strokeWidth="1.5" />
-      </Icon>
+      <OutlineIcon>
+        <path d="M10.5 6.5H7.5L4.5 9.5V12.5L7.5 15.5H10.5M16.5 6.5H19.5L22.5 9.5V12.5L19.5 15.5H16.5" />
+        <path d="M9.5 9.5H7.5V12.5H9.5M17.5 9.5H19.5V12.5H17.5" />
+        <path d="M13.5 2.5V5.5M10.5 3.5L11.5 5.5M16.5 3.5L15.5 5.5M12.5 9.5L14.5 11.5L12.5 13.5M11.5 16.5L10.5 18.5M13.5 16.5V19.5M15.5 16.5L16.5 18.5" />
+      </OutlineIcon>
     ),
   },
   {
@@ -115,82 +122,49 @@ const TOOLS: ToolSpec[] = [
     id: "cross-square",
     label: "Crossed square",
     enabled: false,
-    icon: (
-      <Icon>
-        <rect x="3" y="3" width="10" height="10" />
-        <path d="M4 4 L12 12 M12 4 L4 12" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><rect x="7.5" y="6.5" width="12" height="12" /><path d="M8.5 7.5L18.5 17.5M18.5 7.5L8.5 17.5" /></OutlineIcon>),
   },
   {
     id: "cross-circle",
     label: "Crossed circle",
     enabled: false,
-    icon: (
-      <Icon>
-        <circle cx="8" cy="8" r="5" />
-        <path d="M4.5 4.5 L11.5 11.5 M11.5 4.5 L4.5 11.5" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><circle cx="13.5" cy="12.5" r="6" /><path d="M9.5 8.5L17.5 16.5M17.5 8.5L9.5 16.5" /></OutlineIcon>),
   },
   {
     id: "cross-round",
     label: "Crossed rounded square",
     enabled: false,
-    icon: (
-      <Icon>
-        <rect x="3" y="3" width="10" height="10" rx="2.5" />
-        <path d="M4.5 4.5 L11.5 11.5 M11.5 4.5 L4.5 11.5" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><rect x="7.5" y="6.5" width="12" height="12" rx="3" /><path d="M9.5 8.5L17.5 16.5M17.5 8.5L9.5 16.5" /></OutlineIcon>),
   },
   {
     id: "rect",
     label: "Rectangle",
     enabled: true,
-    icon: (
-      <Icon>
-        <rect x="3" y="3.5" width="10" height="9" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><rect x="7.5" y="6.5" width="12" height="12" /></OutlineIcon>),
   },
   {
     id: "ellipse",
     label: "Ellipse",
     enabled: true,
-    icon: (
-      <Icon>
-        <ellipse cx="8" cy="8" rx="5" ry="4.2" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><ellipse cx="13.5" cy="12.5" rx="6" ry="6" /></OutlineIcon>),
   },
   {
     id: "round-rect",
     label: "Rounded rectangle",
     enabled: true,
-    icon: (
-      <Icon>
-        <rect x="3" y="3.5" width="10" height="9" rx="2.4" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><rect x="7.5" y="6.5" width="12" height="12" rx="3" /></OutlineIcon>),
   },
   {
     id: "line",
     label: "Line",
     enabled: true,
-    icon: (
-      <Icon>
-        <path d="M3 13 L13 3" />
-      </Icon>
-    ),
+    icon: (<OutlineIcon><path d="M7 19L20 6" /></OutlineIcon>),
   },
   {
     id: "polygon",
     label: "Polygon",
     enabled: false,
-    icon: (
-      <Icon><path d="M2 2H14M3 3L13 13M13 3L3 13M2 14H14" strokeWidth="2" /></Icon>
-    ),
+    icon: (<OutlineIcon><path d="M7.5 6.5H19.5M7.5 6.5L19.5 18.5M19.5 6.5L7.5 18.5M7.5 18.5H19.5" /></OutlineIcon>),
   },
 ];
 
