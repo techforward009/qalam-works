@@ -11,6 +11,7 @@ export type KnowledgePassage = {
   referenceUr: string; referenceEn: string; text: string; sourceSha256: string;
   recordId?: string; sourceId?: string; paragraphId?: string; excerpt?: BookExcerpt;
   quranLocation?: { surah: number; ayah: number };
+  quranEdition?: "digital-khatt";
   translator: string | null;
   suppliedTranslation?: { text: string; language: "ur" | "en"; translator: string; source?: string; sourceId?: string; sourceSha256?: string; recordId?: string; paragraphIds?: string[] };
 };
@@ -19,7 +20,7 @@ export type KnowledgeResult = {
   method: "lexical-topic-expansion" | "lexical-bm25-topic-expansion"; passages: KnowledgePassage[];
   expandedTerms: string[]; availableCollections: string[]; searchTopics?: SearchTopic[]; questionUnderstanding?: "model" | "lexical"; passageRanking?: "model" | "lexical";
 };
-export type QuranInput = { surah: number; ayah: number; text: string; suppliedTranslation?: KnowledgePassage["suppliedTranslation"] };
+export type QuranInput = { surah: number; ayah: number; text: string; edition?: "digital-khatt"; suppliedTranslation?: KnowledgePassage["suppliedTranslation"] };
 export function queryTerms(question: string): { direct: string[]; groups: string[][] } {
   const { direct, groups } = planKnowledgeQuery(question);
   return { direct, groups };
@@ -96,7 +97,7 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
     const value = quranRef ? ayah.surah === Number(normalizeBookSearch(quranRef[1])) && ayah.ayah >= Number(normalizeBookSearch(quranRef[2])) && ayah.ayah <= Math.min(Number(normalizeBookSearch(quranRef[3] ?? quranRef[2])), Number(normalizeBookSearch(quranRef[2])) + 7) ? 100 : 0 : reference ? 0 : score(ayah.text);
-    if (value && (!parentRespect || isRespectForParentsEvidence(ayah.text))) candidates.push({ score: value, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
+    if (value && (!parentRespect || isRespectForParentsEvidence(ayah.text))) candidates.push({ score: value, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, ...(ayah.edition ? { quranEdition: ayah.edition } : {}), translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
   }
   candidates.sort((a, b) => b.score - a.score || (quranRef && a.passage.quranLocation && b.passage.quranLocation ? a.passage.quranLocation.ayah - b.passage.quranLocation.ayah : a.passage.id.localeCompare(b.passage.id, undefined, { numeric: true })));
   // Rerank for source coverage without letting unrelated low-scoring passages in.

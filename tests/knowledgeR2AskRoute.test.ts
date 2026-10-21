@@ -22,12 +22,9 @@ vi.mock("../app/lib/knowledge/questionUnderstanding", () => ({ understandKnowled
 vi.mock("../app/lib/knowledge/passageRanking", () => ({ rankKnowledgePassages: mocks.rank }));
 vi.mock("../app/lib/knowledge/cloudflareAnswerProvider", () => ({ createCloudflareKnowledgeProvider: mocks.provider }));
 vi.mock("../app/lib/knowledge/answerService", () => ({ answerKnowledgeQuestion: mocks.answer }));
-vi.mock("../app/lib/knowledge/completeQuranTranslations", () => ({ completeQuranTranslationFor: () => null }));
-vi.mock("../app/tools/arabic-diacritics/quran/ahmedgrafProvider", () => ({
-  ahmedgrafQuranReference: {
-    listAyahs: () => [],
-    getMetadata: () => ({ sourceSha256: "f".repeat(64) }),
-  },
+vi.mock("../app/lib/knowledge/digitalKhattKnowledge", () => ({
+  DIGITAL_KHATT_KNOWLEDGE_SHA256: "f".repeat(64),
+  digitalKhattKnowledgeAyahs: () => [],
 }));
 import { POST } from "../app/api/knowledge/ask/route";
 

@@ -89,6 +89,12 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       .knowledge-assistant .khateeb-book-ur { font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important; font-size: 1.16rem; line-height: 2.25; }
       .knowledge-assistant .khateeb-muhammadi-quranic { font-family: "Muhammadi Quranic", var(--font-amiri), serif !important; font-size: 1.15em; line-height: 1.85; }
       .knowledge-assistant .khateeb-book-text { unicode-bidi: isolate; }
+      @font-face { font-family: "Qalam Knowledge Digital Khatt"; src: url("/fonts/DigitalKhattIndoPak.woff2") format("woff2"); font-display: swap; }
+      .knowledge-assistant .khateeb-book-digital-khatt, .knowledge-assistant .qalam-knowledge-digital-khatt-quran {
+        font-family: "Qalam Knowledge Digital Khatt", "Noto Naskh Arabic", serif !important;
+        font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+        font-size: 1.6rem; line-height: 2.3; direction: rtl; text-rendering: optimizeLegibility;
+      }
       .knowledge-assistant .khateeb-book-en { font-family: var(--font-inter), Arial, sans-serif; }
       .knowledge-assistant .khateeb-salawat { display: inline-block; font-size: .7em; line-height: 1; }
     `}</style>
@@ -132,9 +138,11 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
         <h3 className="qalam-source-reference text-sm font-semibold">{ur ? group.referenceUr : group.referenceEn}</h3>
         {group.passages.map(p => <div key={p.id} className="mt-3 border-t border-emerald-900/15 pt-3">
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span>{p.language === "ar" ? ur ? "اصل عربی عبارت" : "Arabic source text" : ur ? "فراہم کردہ اردو نسخے کی عبارت" : "Supplied-language source excerpt"}{p.translator ? ` — ${p.translator}` : ""}</span></label>
-          <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} />
+          {p.quranEdition === "digital-khatt" ? <p className="my-2 text-xs text-gray-600 dark:text-gray-300">{ur ? "قرآنی نسخہ: ڈیجیٹل خط (انڈو پاک)" : "Quran edition: Digital Khatt IndoPak"}</p> : null}
+          <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} digitalKhatt={p.quranEdition === "digital-khatt"} />
           {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "تصدیق شدہ فراہم کردہ ترجمہ" : "Verified supplied translation"} — {p.suppliedTranslation.translator}{p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
           <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
+          {p.quranEdition === "digital-khatt" && p.quranLocation ? <a className="ms-3 mt-3 inline-block text-sm text-emerald-800 underline dark:text-emerald-200" href={`/quran/indopak-digital-khatt/${p.quranLocation.surah}/${p.quranLocation.ayah}`}>{ur ? "ڈیجیٹل خط میں آیت کھولیں" : "Open verse in Digital Khatt reader"}</a> : null}
         </div>)}
       </article>)}
       {result.passages.length ? <div className="flex flex-wrap items-end gap-3">
@@ -145,7 +153,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       </div> : null}
     </div> : null}
     <dialog ref={dialog} onCancel={() => setOpened(null)} onClose={() => setOpened(null)} className="w-[min(92vw,850px)] max-h-[85vh] overflow-y-auto rounded-xl bg-white p-5 text-gray-900 backdrop:bg-black/40 dark:bg-[#162a1e] dark:text-white" aria-label={ur ? "اصل کتابی ماخذ" : "Original source"}>
-      {opened ? <><div className="mb-4 flex justify-between gap-3"><h3 className="qalam-source-reference">{ur ? opened.passage.referenceUr : opened.passage.referenceEn}</h3><button className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button></div>{(opened.record?.paragraphs ?? [{ id: opened.passage.id, text: opened.passage.text }]).map(p => <div key={p.id} data-source-match={p.id === opened.passage.paragraphId || !opened.record} className={`mb-4 rounded-lg p-3 ${p.id === opened.passage.paragraphId || !opened.record ? "border-2 border-emerald-700 bg-emerald-50 dark:bg-emerald-950" : ""}`}><BookPassageText text={p.text} language={opened.passage.language} quran={opened.passage.collection === "quran"} highlight={p.id === opened.passage.paragraphId || !opened.record ? opened.quote : undefined} /></div>)}</> : null}
+      {opened ? <><div className="mb-4 flex justify-between gap-3"><h3 className="qalam-source-reference">{ur ? opened.passage.referenceUr : opened.passage.referenceEn}</h3><button className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button></div>{(opened.record?.paragraphs ?? [{ id: opened.passage.id, text: opened.passage.text }]).map(p => <div key={p.id} data-source-match={p.id === opened.passage.paragraphId || !opened.record} className={`mb-4 rounded-lg p-3 ${p.id === opened.passage.paragraphId || !opened.record ? "border-2 border-emerald-700 bg-emerald-50 dark:bg-emerald-950" : ""}`}><BookPassageText text={p.text} language={opened.passage.language} quran={opened.passage.collection === "quran"} digitalKhatt={opened.passage.quranEdition === "digital-khatt"} highlight={p.id === opened.passage.paragraphId || !opened.record ? opened.quote : undefined} /></div>)}</> : null}
     </dialog>
   </section>;
 }
