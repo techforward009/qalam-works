@@ -243,6 +243,14 @@ textarea {
   line-height: 2.1;
 }
 
+/* Tailwind's text-lg is a fixed 1.125rem on KhateebPrimaryArabic.
+   Preserve a true 25% increase from that fixed size (1.125 × 1.25)
+   instead of replacing it with 1.25 × the smaller inherited body size.
+   This remains limited to the non-Quran book-Arabic class. */
+.qalam-book-arabic.text-lg {
+  font-size: 1.40625em;
+}
+
 /* BookPassageText nests an Arabic span inside an Arabic block.
    Inherit the scaled size/spacing rather than multiplying 1.25 twice. */
 .qalam-book-arabic .qalam-book-arabic {
