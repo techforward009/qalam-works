@@ -148,15 +148,15 @@
   display: flex;
   flex-direction: column;
   overflow: visible;
-  border: 1px solid #c4b48a;
-  border-radius: 3px;
-  background: #fffdf8;
-  box-shadow: inset 0 0 0 5px #fffdf8, inset 0 0 0 6px #e1d8c4, 0 12px 32px rgb(65 55 37 / 11%);
+  border: 1px solid #e5dece;
+  border-radius: 1px;
+  background: #fffdf9;
+  box-shadow: 0 7px 24px rgb(44 38 29 / 8%);
 }
 :global(.dark) .readingPage {
-  border-color: #77715c;
+  border-color: #465345;
   background: #17231a;
-  box-shadow: inset 0 0 0 5px #17231a, inset 0 0 0 6px #475344, 0 12px 32px rgb(0 0 0 / 25%);
+  box-shadow: 0 7px 24px rgb(0 0 0 / 18%);
 }
 .pageMeta {
   display: grid;
@@ -199,17 +199,17 @@
   width: 1.8rem;
   height: 1.8rem;
   padding: 0;
-  border: 1.5px solid #b08a47;
-  border-radius: 50%;
-  background: #fffdf8;
-  color: #6d5428;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #645b4b;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .8) inset;
+  box-shadow: none;
 }
-.pageArrow:hover:not(:disabled) { color: #2f8f68; border-color: #2f8f68; background: #f3faf6; }
+.pageArrow:hover:not(:disabled) { color: #31513a; background: transparent; }
 .pageArrow:disabled { opacity: .35; cursor: not-allowed; }
 .pageArrow:focus-visible { outline: 2px solid #31513a; outline-offset: 2px; }
-.pageArrowIcon { width: 1rem; height: 1rem; display: block; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.pageArrowIcon { width: 1.15rem; height: 1.15rem; display: block; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
 .pageNumber {
   display: flex;
   min-width: max-content;
@@ -228,7 +228,7 @@
   white-space: nowrap;
 }
 :global(.dark) .bookIdentity, :global(.dark) .chapterTitle, :global(.dark) .pageNumber { color: #eee9dd; }
-:global(.dark) .pageArrow { background: #263529; border-color: #b3955f; color: #e7d5ae; }
+:global(.dark) .pageArrow { background: transparent; border: 0; color: #e7d5ae; }
 /* Reader Arabic uses the owner's chosen Digital Khatt IndoPak Book face.
    Keep this scoped to the book page, preserving Quran edition font settings. */
 .readingPage :global(.qalam-book-arabic),
@@ -242,7 +242,9 @@
 .paragraphs :global(.khateeb-book-text) { line-height: 2.05; }
 .paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif; font-size: 1em; line-height: 2.35; }
 .paragraphs :global(.khateeb-book-ar) { font-family: "Digital Khatt IndoPak Book", "DigitalKhattIndoPak", var(--font-amiri), serif; font-size: 1em; line-height: 2.05; }
-.paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: 1em; }
+.paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: .84em; line-height: 1.62; font-weight: 400; letter-spacing: 0; }
+.readingPage[data-book-language="en"] .paragraphs { gap: .55rem; }
+.readingPage[data-book-language="en"] .paragraphs :global(.khateeb-book-en) { text-align: left; overflow-wrap: normal; word-break: normal; }
 .paragraphs :global(.qalam-book-arabic) { font-family: "Digital Khatt IndoPak Book", "DigitalKhattIndoPak", var(--font-amiri), serif !important; }
 .targetParagraph { border-radius: .65rem; background: #fff2cf; padding: .5rem; }
 :global(.dark) .targetParagraph { background: rgb(120 53 15 / 25%); }
