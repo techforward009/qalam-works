@@ -76,9 +76,33 @@ test("Noorehuda loads for non-Quran book Arabic while Quran ayat keep Digital Kh
     const newPrimaryPx = parseFloat(getComputedStyle(primary).fontSize);
     const primaryWordSpacing = parseFloat(getComputedStyle(primary).wordSpacing);
     primary.remove();
+    const parents = [];
+    for (let e: Element | null = book; e && parents.length < 6; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      parents.push({classes: e.className, fontSize: cs.fontSize, wordSpacing: cs.wordSpacing,
+        inline: (e as HTMLElement).getAttribute("style")});
+    }
+    const otherRules: string[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        const scanFonts = (rules: CSSRuleList) => {
+          for (const rule of Array.from(rules)) {
+            if (rule instanceof CSSStyleRule) {
+              if (rule.style.fontSize) {
+                try {
+                  if (book.matches(rule.selectorText)) otherRules.push(rule.selectorText + ": " + rule.style.fontSize + (rule.style.getPropertyPriority("font-size") ? " !important" : ""));
+                } catch {}
+              }
+            } else if ("cssRules" in rule) scanFonts((rule as CSSGroupingRule).cssRules);
+          }
+        };
+        scanFonts(sheet.cssRules);
+      } catch {}
+    }
     return {oldSize, newSize, wordSpacing, nestedSize,
-      originalPrimaryPx, newPrimaryPx, primaryWordSpacing};
+      originalPrimaryPx, newPrimaryPx, primaryWordSpacing, parents, otherRules};
   });
+  console.log("NOOREHUDA_BROWSER_METRICS", JSON.stringify(metrics));
   expect(metrics.newSize / metrics.oldSize).toBeGreaterThan(1.20);
   expect(metrics.newSize / metrics.oldSize).toBeLessThan(1.30);
   expect(metrics.wordSpacing).toBeGreaterThan(0);
