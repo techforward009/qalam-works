@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { parseFeedback } from "../../lib/feedback";
 import { notifyFeedback } from "../../lib/feedbackNotification";
-import { researchBlobClientFromEnv } from "../research/vercelResearchBlob";
+import { feedbackStoreFromEnv } from "./feedbackR2Store";
 
 export const runtime = "nodejs";
 const limits = new Map<string,{at:number;count:number}>();
@@ -27,7 +27,7 @@ export async function POST(req:NextRequest) {
   if(b.email.trim()&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email.trim()))return json({error:"invalid"},400);
   const record={type:"contact",name:b.name.trim(),email:b.email.trim(),topic:b.topic,message:b.message.trim(),createdAt:new Date().toISOString()};
   try{
-   const client=await researchBlobClientFromEnv();
+   const client=await feedbackStoreFromEnv();
    await client.putObject(`contact-inquiries/v1/${Date.now()}-${randomUUID()}.json`,JSON.stringify(record));
    let delivery:"sent"|"not-configured"|"failed"="not-configured";
    if(process.env.RESEND_API_KEY&&process.env.QALAM_FEEDBACK_FROM_EMAIL){
@@ -50,7 +50,7 @@ export async function POST(req:NextRequest) {
  if(!entry)return json({error:"invalid"},400);
  const record={...entry,createdAt:new Date().toISOString()};
  try {
-   const client=await researchBlobClientFromEnv();
+   const client=await feedbackStoreFromEnv();
    // A separate private namespace: never overwrite or enumerate the research corpus.
    await client.putObject(`user-feedback/v1/${record.tool}/${Date.now()}-${randomUUID()}.json`,JSON.stringify(record));
    const delivery=await notifyFeedback(record);

@@ -1,0 +1,7 @@
+name = "qalam-feedback-private-mirror"
+main = "src/index.ts"
+compatibility_date = "2026-10-22"
+
+[[r2_buckets]]
+binding = "FEEDBACK_BUCKET"
+bucket_name = "qalam-user-feedback-private"
