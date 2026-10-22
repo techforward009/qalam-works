@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { blockAutoLineHeight } from "../utils/autoLeading";
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
@@ -226,6 +229,29 @@ export default function DocumentCanvas({
     if (!(zoomFactor > 0)) return;
     onZoomPercentChange?.(Math.round(zoomFactor * 100));
   }, [zoomFactor, onZoomPercentChange]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const key = new PluginKey("qalam-auto-leading");
+    const typography = documentSettings.typography;
+    editor.registerPlugin(new Plugin({
+      key,
+      props: {
+        decorations(state) {
+          const decorations: Decoration[] = [];
+          state.doc.descendants((node, pos) => {
+            if (node.type.name !== "paragraph") return;
+            if (typeof node.attrs.lineHeight === "number") return false;
+            const leading = blockAutoLineHeight(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography.lineHeight, node.attrs.dir ?? dir);
+            decorations.push(Decoration.node(pos, pos + node.nodeSize, { style: `line-height:${leading}` }));
+            return false;
+          });
+          return DecorationSet.create(state.doc, decorations);
+        },
+      },
+    }));
+    return () => { if (!editor.isDestroyed) editor.unregisterPlugin(key); };
+  }, [editor, documentSettings.typography, dir]);
 
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,

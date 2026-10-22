@@ -91,6 +91,36 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  for (const pt of [12, 36]) {
+    test(`Mehr ${pt}pt Auto leading keeps ink below the top margin and lines apart`, async ({ page }) => {
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await openStudio(page, "ur");
+      const story = await replaceEditorContent(page, "السلام علیکم اللہ وبرکاتہ");
+      await page.keyboard.press("Shift+Enter");
+      await page.keyboard.type("السلام علیکم اللہ وبرکاتہ");
+      await page.keyboard.press("Control+A");
+      await page.locator('[data-studio-font-family]').selectOption({ label: "Mehr Nastaliq Web" });
+      await page.locator('[data-studio-font-size]').selectOption(String(pt));
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      await expect.poll(() => story.locator("p").first().evaluate((p) => {
+        const prose = p.closest(".ProseMirror") as HTMLElement;
+        const scale = prose.getBoundingClientRect().width / prose.offsetWidth;
+        const margin = prose.getBoundingClientRect().top + parseFloat(getComputedStyle(prose).paddingTop) * scale;
+        const lines = [...p.childNodes].flatMap((node) => {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
+        });
+        const unique = lines.filter((r, i) => !lines.slice(0, i).some((prior) => Math.abs(prior.top - r.top) < 1)).sort((a, b) => a.top - b.top);
+        if (unique.length < 2) return false;
+        return unique[0].top >= margin - 1 && unique[1].top >= unique[0].bottom - 1;
+      })).toBe(true);
+      await expect(story.locator("p").first()).toHaveAttribute("style", /line-height:\s*2.2/);
+      await page.locator('[data-studio-leading]').selectOption("1.5");
+      await expect(story.locator("p").first()).toHaveAttribute("style", /line-height:\s*1.5/);
+    });
+  }
+
   test("RTL caret follows the DOM selection at styled line ends and grows at 36pt", async ({ page }) => {
     await openStudio(page, "ur");
     const story = await replaceEditorContent(page, "السلام علیکم اللہ وبرکاتہ");

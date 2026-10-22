@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { autoLineHeight } from "../utils/autoLeading";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
 
@@ -422,7 +423,7 @@ function FrameShape({
           fontVariantLigatures: "normal",
           fontFeatureSettings: "normal",
           fontSize: 16,
-          lineHeight: 1.6,
+          lineHeight: autoLineHeight("Jameel Noori Nastaleeq"),
           padding: 2,
           outline: "none",
         }}
