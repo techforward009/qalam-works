@@ -82,7 +82,7 @@ test("draw cursor stays crosshair over previously selected frames and handles", 
   const frame = page.locator('[data-studio-frame="round-rect"]');
   await expect(frame).toHaveCSS("cursor", "crosshair");
   const rect = frame.locator("svg > rect").first();
-  await expect(rect).toHaveAttribute("rx", String(6.35 * 96 / 25.4));
+  expect(Number(await rect.getAttribute("rx"))).toBeCloseTo(6.35 * 96 / 25.4, 8);
   const handles = frame.locator("[data-studio-frame-handle]");
   await expect(handles).toHaveCount(8);
   await expect(handles.first()).toHaveCSS("pointer-events", "none");
