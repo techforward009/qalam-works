@@ -11,7 +11,7 @@ function mockEnv() {
     FEEDBACK_BUCKET:{
       get:vi.fn(async (name:string)=>{
         const v=values.get(name);
-        return v?{size:v.byteLength,body:new Response(v).body!}:null;
+        return v?{size:v.byteLength,body:new Response(v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength) as ArrayBuffer).body!}:null;
       }),
       put:vi.fn(async (name:string,bytes:Uint8Array)=>{values.set(name,bytes);}),
       list:vi.fn(async ({prefix}:{prefix:string})=>({
