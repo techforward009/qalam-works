@@ -69,11 +69,6 @@ export async function paginateMeasuredFlow(
         current.push(whole);
         break;
       }
-      if (current.length) {
-        pushPage();
-        continue;
-      }
-
       let low = boundaries.findIndex(n => n > start);
       if (low < 0) low = boundaries.length - 1;
       let high = boundaries.length - 1;
@@ -85,8 +80,13 @@ export async function paginateMeasuredFlow(
         const candidate: ReaderTextFragment = { ...unit, startOffset: start, endOffset: end,
           offsetsInto: unit.kind === "original" ? "source-paragraph" : "reviewed-translation",
           text: unit.text.slice(start, end), unitStart: start === 0, unitEnd: end === unit.text.length };
-        if (fits([candidate], pages.length)) { best = end; low = mid + 1; }
+        if (fits([...current, candidate], pages.length)) { best = end; low = mid + 1; }
         else high = mid - 1;
+      }
+      if (best === start && current.length) {
+        // No grapheme fits the remaining space. Retry on an empty page.
+        pushPage();
+        continue;
       }
       if (best === start) {
         // A single grapheme can only overflow when the available page itself is

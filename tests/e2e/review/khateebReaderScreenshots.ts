@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { mockVisualReader } from "../fixtures/khateebReaderVisual";
+import { mockVisualReader, visualRecords } from "../fixtures/khateebReaderVisual";
+import { readerLineMetrics } from "./readerLineMetrics";
+import { KHATEEB_READER_PROGRESS_KEY } from "../../../app/lib/knowledge/bookReaderProgress";
 
 // Run with a review-specific Playwright config (not part of the normal spec
 // glob). Captures the real app UI; fixtures intercept only the reader API.
@@ -26,8 +28,6 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
   const counter = article.getByRole("navigation", { name: "مطالعے کا صفحہ بدلیں" }).locator("strong");
   await expect(article.locator(".khateeb-book-ar").first()).toBeVisible();
   await page.evaluate(async () => {
-    await document.fonts.load('23px "Noorehuda"');
-    await document.fonts.load('22px "Nafees Nastaleeq"');
     await document.fonts.ready;
   });
   const metrics: Record<string, unknown> = { viewport, screenshots: [], observations: {} };
@@ -77,6 +77,7 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
     }
     (metrics.observations as Record<string, unknown>)[name] = {
       overflow, menuBounds, themeButton, textArea, overlapsText, darkContrast,
+      lineMetrics: await readerLineMetrics(article.getByTestId("reader-page-text-area")),
       pageNumber: await article.locator("nav strong").innerText(),
       textDirection: await article.getByTestId("reader-page-text-area").locator("[lang]").first().getAttribute("dir"),
     };
@@ -165,6 +166,26 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
   await expect(reader.getByRole("combobox", { name: "Choose book", exact: true })).toBeVisible();
   await reader.getByRole("combobox", { name: "Choose book", exact: true }).selectOption("nahj-ar");
   await expect(article.locator(".khateeb-book-ar").first()).toBeVisible();
+  if (mobile) {
+    for (const side of await article.locator("header > div").all()) {
+      await expect(side).toHaveAttribute("title", /.+/);
+      await expect(side.locator("strong")).toHaveCSS("white-space", "nowrap");
+      await expect(side.locator("strong")).toHaveCSS("text-overflow", "ellipsis");
+    }
+  }
+  const headerGeometry = await article.locator("header").evaluate(header => {
+    const nav = header.querySelector("nav")!, buttons = [...nav.querySelectorAll("button")].map(el => el.getBoundingClientRect());
+    const number = nav.querySelector("span")!.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect(), headerRect = header.getBoundingClientRect();
+    return { leftGap: number.left - buttons[0].right, rightGap: buttons[1].left - number.right,
+      centeringError: Math.abs((navRect.left + navRect.right - headerRect.left - headerRect.right) / 2) };
+  });
+  expect(headerGeometry.leftGap).toBeGreaterThanOrEqual(8);
+  expect(headerGeometry.leftGap).toBeLessThanOrEqual(12);
+  expect(headerGeometry.rightGap).toBeGreaterThanOrEqual(8);
+  expect(headerGeometry.rightGap).toBeLessThanOrEqual(12);
+  expect(headerGeometry.centeringError).toBeLessThanOrEqual(1);
+  metrics.headerGeometry = headerGeometry;
   await capture("10-english-ui-arabic");
   const fontMenu = reader.locator("details").filter({ has: page.locator('option[value="balagh-layout"]') });
   await fontMenu.locator("summary").click();
@@ -176,5 +197,48 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
   metrics.fonts = await page.evaluate(() => [...document.fonts]
     .filter(face => ["Noorehuda", "Nafees Nastaleeq"].includes(face.family.replaceAll('"', "")))
     .map(face => ({ family: face.family, status: face.status })));
+  // Walk every visual page of the unchanged first section, not just the
+  // screenshots. The last page is allowed to be shorter than ten lines.
+  await page.evaluate(key => localStorage.removeItem(key), KHATEEB_READER_PROGRESS_KEY);
+  await page.reload();
+  const allPages: Record<string, Awaited<ReturnType<typeof readerLineMetrics>>[]> = {};
+  for (const language of ["ar", "ur"] as const) {
+    await book.selectOption(`nahj-${language}`);
+    const prefix = `nahj-${language}:sermon:1`;
+    await expect(article.locator("[data-paragraph-id]").first()).toHaveAttribute("data-paragraph-id", new RegExp(`^${prefix}:`));
+    const pages: Awaited<ReturnType<typeof readerLineMetrics>>[] = [];
+    for (let i = 0; i < 40; i++) {
+      await expect(article.locator("[data-paragraph-id]").first()).toBeVisible();
+      await expect(next).toBeEnabled();
+      const id = await article.locator("[data-paragraph-id]").first().getAttribute("data-paragraph-id");
+      if (!id?.startsWith(prefix + ":")) break;
+      const stats = await readerLineMetrics(article.getByTestId("reader-page-text-area"));
+      await writeFile(testInfo.outputPath(`page-${language}-${i + 1}.json`), JSON.stringify(stats, null, 2));
+      expect(stats.scrollHeight).toBeLessThanOrEqual(stats.availableHeight + 1);
+      if (stats.minimumInkClearance !== null) expect(stats.minimumInkClearance).toBeGreaterThanOrEqual(0);
+      expect(stats.inkTopInset).toBeGreaterThanOrEqual(0);
+      expect(stats.inkBottomInset).toBeGreaterThanOrEqual(0);
+      pages.push(stats);
+      const signature = await article.getByTestId("reader-page-text-area").innerText();
+      await next.click();
+      await expect(article.getByTestId("reader-page-text-area")).not.toHaveText(signature);
+    }
+    await writeFile(testInfo.outputPath(`line-counts-${language}.json`), JSON.stringify(pages, null, 2));
+    expect(pages.length).toBeGreaterThan(1);
+    for (const stats of pages.slice(0, -1)) {
+      expect(stats.lines).toBeGreaterThanOrEqual(10);
+      // At most one line plus the next paragraph's gap may remain unused.
+      expect(stats.inkBottomInset).toBeLessThanOrEqual(stats.lineHeight + stats.paragraphGap + 1);
+    }
+    const record = visualRecords.find(record => record.id === prefix)!;
+    for (const paragraph of record.paragraphs) {
+      const fragments = pages.flatMap(page => page.fragments).filter(f => f.paragraphId === paragraph.id);
+      expect(fragments[0].start).toBe(0);
+      expect(fragments.at(-1)!.end).toBe(paragraph.text.length);
+      for (let i = 1; i < fragments.length; i++) expect(fragments[i].start).toBe(fragments[i - 1].end);
+    }
+    allPages[language] = pages;
+  }
+  metrics.allPages = allPages;
   await writeFile(path.join(folder, "metrics.json"), JSON.stringify(metrics, null, 2) + "\n");
 });

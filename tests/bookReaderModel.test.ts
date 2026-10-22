@@ -35,6 +35,11 @@ describe("source-faithful book reader model", () => {
     expect(bookReaderRunningHeading({ sourceId: "kafi-v8-ar", kind: "section", reference: "الکافی، جلد 8، ایک طویل عنوان" }, "ur")).toBe("الکافی، جلد 8");
   });
 
+  it("can omit the duplicated book name from the English page header", () => {
+    expect(bookReaderRunningHeading({ sourceId: "nahj-ar", kind: "sermon", reference: "Nahj al-Balagha, Sermon 1" }, "en", false)).toBe("Sermon No. 1");
+    expect(bookReaderRunningHeading({ sourceId: "nahj-ur", kind: "letter", reference: "Nahj al-Balagha, Letter 31" }, "en", false)).toBe("Letter No. 31");
+  });
+
   it("highlights exactly the original grapheme and full Arabic diacritics", () => {
     expect(originalBookQuerySpan("وَقَالَ: صَبْرٌ جَمِيلٌ", "صبر")).toBe("صَبْرٌ");
     expect(originalBookQuerySpan("دعا: الصَّبْرُ والإيمان", "الصبر")).toBe("الصَّبْرُ");

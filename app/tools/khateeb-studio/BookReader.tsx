@@ -110,7 +110,11 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       const probe = pageArticleRef.current.cloneNode(true) as HTMLElement;
       probe.removeAttribute("data-testid");
       probe.setAttribute("aria-hidden", "true");
-      Object.assign(probe.style, { position: "fixed", insetInlineStart: "-200vw", top: "0", visibility: "hidden", pointerEvents: "none", zIndex: "-1" });
+      // A fixed-position clone otherwise measures against the viewport,
+      // making mobile pages wider than the real reader. Freeze both axes so
+      // candidate paragraphs cannot grow the probe and change its capacity.
+      const pageBox = pageArticleRef.current.getBoundingClientRect();
+      Object.assign(probe.style, { width: `${pageBox.width}px`, height: `${pageBox.height}px`, position: "fixed", insetInlineStart: "-200vw", top: "0", visibility: "hidden", pointerEvents: "none", zIndex: "-1" });
       const body = probe.querySelector<HTMLElement>(`.${styles.paragraphs}`);
       if (!body) { setIsPaginating(false); paginating.current = false; return; }
       body.replaceChildren();
@@ -132,8 +136,13 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         text.dir = fragment.language === "en" ? "ltr" : "rtl";
         if (fragment.language === "ar") text.classList.add("qalam-book-arabic");
         if (fragment.language === "ar") {
-          // Keep the measurement probe visually identical to BookPassageText.
-          // Isolating just parenthetical Arabic changes bidi layout, not source offsets.
+          // Match BookPassageText's nested inline formatting as well as its
+          // font: plain block text can yield different Arabic line boxes.
+          const script = document.createElement("span");
+          script.className = "qalam-book-arabic";
+          script.lang = "ar";
+          script.dir = "rtl";
+          text.append(script);
           for (const piece of splitArabicBookParentheses(displayArabicBookText(fragment.text))) {
             if (piece.isolateRtl) {
               const isolated = document.createElement("bdi");
@@ -141,8 +150,12 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
               isolated.dir = "rtl";
               isolated.className = "khateeb-book-bracket-isolate";
               isolated.textContent = piece.text;
-              text.append(isolated);
-            } else text.append(document.createTextNode(piece.text));
+              script.append(isolated);
+            } else {
+              const span = document.createElement("span");
+              span.textContent = piece.text;
+              script.append(span);
+            }
           }
         } else text.textContent = fragment.text;
         if (fragment.kind === "translation") {
@@ -161,7 +174,25 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         } else wrapper.append(text);
         return wrapper;
       };
-      const pages = await paginateMeasuredFlow(readingFlowUnits(reading, activeReadingMode), (fragments) => {
+      const units = readingFlowUnits(reading, activeReadingMode);
+      // fonts.ready alone can resolve before an empty reader has requested
+      // its book face. Explicitly load each rendered script before measuring.
+      const scripts = new Map(units.map(unit => [unit.language, unit]));
+      for (const unit of scripts.values()) {
+        const sample = addFragment({ ...unit, offsetsInto: unit.kind === "original" ? "source-paragraph" : "reviewed-translation",
+          startOffset: 0, endOffset: unit.text.length, unitStart: true, unitEnd: true });
+        body.replaceChildren(sample);
+        const text = sample.querySelector<HTMLElement>(".khateeb-book-text")!;
+        const style = getComputedStyle(text);
+        if (document.fonts?.load) {
+          // If a face is unavailable, wait for font resolution and measure
+          // the same fallback the visible text will use; never drop text.
+          await Promise.allSettled([document.fonts.load(`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`, unit.text)]);
+        }
+      }
+      if (document.fonts?.ready) await document.fonts.ready;
+      if (cancelled) { probe.remove(); return; }
+      const pages = await paginateMeasuredFlow(units, (fragments) => {
         body.replaceChildren(...fragments.map(addFragment));
         return body.scrollHeight <= body.clientHeight + 1;
       });
@@ -576,8 +607,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       </dialog>
       {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader data-book-language={reading.language} data-arabic-page-style={reading.language === "ar" ? arabicPageStyle : undefined} aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="ltr">
-          <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={reading.title}>
-            <strong>{bookReaderRunningHeading(reading, locale)}</strong>
+          <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={`${bookReaderRunningHeading(reading, locale)} — ${reading.title}`}>
+            <strong>{bookReaderRunningHeading(reading, locale, ur)}</strong>
           </div>
           <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کا صفحہ بدلیں" : "Turn reader page"} dir="ltr">
             <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (ur
@@ -596,7 +627,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
               <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}><path d="M9.2 5.2 16 12l-6.8 6.8" /></svg>
             </button>
           </nav>
-          <div className={styles.bookIdentity} dir="rtl">
+          <div className={styles.bookIdentity} dir={ur ? "rtl" : "ltr"} title={selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}>
             <strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
           </div>
         </header>

@@ -52,4 +52,21 @@ describe("measured reader flow pagination", () => {
     expect(longArabic).toContain("لْ");
     expect(longUrdu).toContain(" ");
   });
+  it("fills remaining page space with part of the next paragraph", async () => {
+    const units: ReaderFlowUnit[] = ["abcdef", "ghijkl"].map((text, i) => ({
+      key: `p${i}`, paragraphId: `p${i}`, kind: "original", language: "ar", text,
+    }));
+    const pages = await paginateMeasuredFlow(units, fragments => fragments.reduce((n, f) => n + f.text.length, 0) <= 10);
+    expect(pages.map(page => page.map(f => f.text))).toEqual([["abcdef", "ghij"], ["kl"]]);
+    for (const unit of units) expect(reconstructUnit(pages.flat(), unit.key)).toBe(unit.text);
+  });
+
+  it("moves to a fresh page if no whole grapheme fits the remainder", async () => {
+    const units: ReaderFlowUnit[] = ["abcd", "سَسَ"].map((text, i) => ({
+      key: `p${i}`, paragraphId: `p${i}`, kind: "original", language: "ar", text,
+    }));
+    const pages = await paginateMeasuredFlow(units, fragments => fragments.reduce((n, f) => n + f.text.length, 0) <= 5);
+    expect(pages.map(page => page.map(f => f.text))).toEqual([["abcd"], ["سَسَ"]]);
+  });
+
 });

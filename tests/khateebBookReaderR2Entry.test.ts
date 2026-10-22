@@ -54,7 +54,7 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(css).toContain(".chapterTitle { grid-area: chapter; min-width: 0; text-align: left;");
     expect(css).toContain(".bookIdentity { grid-area: book; min-width: 0; text-align: right;");
     expect(css).toContain("min-width: max-content;");
-    expect(css).toContain("gap: .18rem;");
+    expect(css).toContain("gap: .5rem;");
     expect(client).toContain("max-w-[58rem]");
   });
   it("keeps bookmarks, page controls and source paragraphs separate from translation", () => {

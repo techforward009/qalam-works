@@ -1,6 +1,6 @@
 # PR #109 — Khateeb reader visual review
 
-Before-fix head: `3d53181ec594648318e54078601e02e65ec7b23c`. These are regenerated **after** captures from the local production build on 2026-10-22, following only the four requested visual fixes. Reader features, production source text, font files and workflows remain unchanged.
+Before-fix head: `883e4832ee3c89ce21486b6ac6c098ce37d34eac`. These are regenerated **after** captures from the local production build on 2026-10-22, following the requested typography, pagination and mobile header changes. Production source text, font files and workflows remain unchanged.
 
 The book-reader API is mocked because previews cannot reach R2. These images demonstrate the real reader UI and its browser-measured pagination, **not live R2 availability or printed-book pagination**.
 
@@ -12,25 +12,38 @@ Desktop viewport: **1280 × 1000**. Mobile viewport: **390 × 844**. PNGs are ex
 
 The longer opening sermon produces real visual pages in both viewports. The capture checks click Next and assert that the counter changes from 1 to 2 and the Arabic content changes. No text is repeated merely to pad the fixture.
 
-## Four visual fixes
+## Typography and mobile header update
 
-- **More menu:** on mobile, the panel is centered under the full toolbar instead of the narrow More button. At 390px it occupies **x=27…363** in English and Urdu, and its scrollable height stays within the viewport. See images 11 and 12.
-- **Theme control:** on the mobile library route it sits in the toolbar, with an inline fallback while the catalog loads or is unavailable. It no longer floats over reading text. Other pages and the desktop floating control retain their existing placement. Every capture checks that the visible theme button does not intersect the reading text area.
-- **Font name:** the book-Arabic option now says **Noorehuda (نور الہدیٰ)** in both UI languages. The comparison note describes the existing layout-only change without claiming a different font. No font data or Quran font styling was changed.
-- **Dark selector:** explicit dark-mode colors give the selected book text **15.38:1** contrast and its caption **13.38:1**, exceeding WCAG AA's 4.5:1 minimum. The capture checks these ratios in both languages and widths.
+- Arabic uses **1.85** leading inside the reader (23px type / 42.55px lines). Font files, family, scale and source text are unchanged. Actual neighboring-line ink bounds are checked for overlap and clipping.
+- The paginator fills remaining page space with a grapheme-safe part of the next paragraph instead of moving that entire paragraph to a fresh page. The probe has the real sheet's width and height, matches its Arabic markup, and explicitly loads the text fonts before measuring. This avoids using stale fallback-font measurements.
+- Mobile Urdu is **18% smaller**: 18.04px versus 22px on desktop. Mobile Nastaliq uses 45.1px lines to retain ink clearance. Desktop Urdu sizing and leading remain 22px / 51.7px. The mobile sheet has a 40rem minimum height, providing room for at least ten readable lines after header/padding.
+- English headers use a concise section label (for example “Sermon No. 1”). Mobile sides stay on one line, with ellipsis if necessary and complete text in title attributes. English book labels use LTR direction.
+- Arrow buttons are **8px** from the page-number box on both sides; the navigation group is exactly centered. Existing previous/next directions are retained.
 
-The header still fits at both widths, counters advance 1→2, Urdu Next points left, and English Next points right. Arabic and Urdu reading text remains RTL. No page-level horizontal scrolling was measured. No other visual or feature fixes were included.
+The previous More-menu, inline-theme-control, Noorehuda label and dark-contrast fixes remain in place and their capture checks still pass.
+
+## Lines per page
+
+These are DOM-measured visual line counts for every page of the **unchanged mocked Nahj sermon 1 review section at default settings**, not a claim about unavailable live R2 books or printed pagination. The last entry in each row is the final page of that section and is exempt from the minimum.
+
+| Viewport | Arabic pages | Urdu pages |
+|---|---|---|
+| 390px mobile | **11, 11**, 8 (last) | **11, 11, 11, 11**, 1 (last) |
+| 1280px desktop | **16**, 3 (last) | **14, 14**, 2 (last) |
+
+Every non-final page has at least ten lines and less than one line plus the next paragraph gap of unused space. Captures also check continuous, complete source offsets; no source characters are dropped or duplicated. Minimum measured adjacent-ink clearance was 7.55px Arabic / 1.11px Urdu on mobile and 5.55px Arabic / 0.69px Urdu on desktop. The text remains within the reader area.
 
 ## Before / after
 
-The before links use the immutable original review commit; after links use this directory's regenerated captures.
+Before images are pinned to `883e4832`; after images are regenerated below.
 
-| Issue | Before | After |
+| View | Before | After |
 |---|---|---|
-| Mobile English More menu | [![Before: Mobile English More menu](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/11-more-menu-font-label.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/11-more-menu-font-label.png) | [![After: Mobile English More menu](mobile-390/11-more-menu-font-label.png)](mobile-390/11-more-menu-font-label.png) |
-| Mobile theme control / Urdu reading | [![Before: Mobile theme control / Urdu reading](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/07-urdu-page-1.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/07-urdu-page-1.png) | [![After: Mobile theme control / Urdu reading](mobile-390/07-urdu-page-1.png)](mobile-390/07-urdu-page-1.png) |
-| Book Arabic font label | [![Before: Book Arabic font label](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/desktop-1280/11-more-menu-font-label.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/desktop-1280/11-more-menu-font-label.png) | [![After: Book Arabic font label](desktop-1280/11-more-menu-font-label.png)](desktop-1280/11-more-menu-font-label.png) |
-| Dark-mode book selector | [![Before: Dark-mode book selector](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/06-arabic-dark.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/06-arabic-dark.png) | [![After: Dark-mode book selector](mobile-390/06-arabic-dark.png)](mobile-390/06-arabic-dark.png) |
+| Mobile Arabic — leading and page fill | [![Before: Mobile Arabic — leading and page fill](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/mobile-390/03-arabic-page-1.png?raw=true)](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/mobile-390/03-arabic-page-1.png) | [![After: Mobile Arabic — leading and page fill](mobile-390/03-arabic-page-1.png)](mobile-390/03-arabic-page-1.png) |
+| Mobile Urdu — size and page fill | [![Before: Mobile Urdu — size and page fill](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/mobile-390/07-urdu-page-1.png?raw=true)](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/mobile-390/07-urdu-page-1.png) | [![After: Mobile Urdu — size and page fill](mobile-390/07-urdu-page-1.png)](mobile-390/07-urdu-page-1.png) |
+| Mobile English header and arrows | [![Before: Mobile English header and arrows](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/mobile-390/10-english-ui-arabic.png?raw=true)](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/mobile-390/10-english-ui-arabic.png) | [![After: Mobile English header and arrows](mobile-390/10-english-ui-arabic.png)](mobile-390/10-english-ui-arabic.png) |
+| Desktop Arabic pagination | [![Before: Desktop Arabic pagination](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/desktop-1280/03-arabic-page-1.png?raw=true)](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/desktop-1280/03-arabic-page-1.png) | [![After: Desktop Arabic pagination](desktop-1280/03-arabic-page-1.png)](desktop-1280/03-arabic-page-1.png) |
+| Desktop Urdu pagination | [![Before: Desktop Urdu pagination](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/desktop-1280/07-urdu-page-1.png?raw=true)](https://github.com/techforward009/qalam-works/blob/883e4832ee3c89ce21486b6ac6c098ce37d34eac/docs/review/khateeb-reader/desktop-1280/07-urdu-page-1.png) | [![After: Desktop Urdu pagination](desktop-1280/07-urdu-page-1.png)](desktop-1280/07-urdu-page-1.png) |
 
 ## Screenshots
 
@@ -54,7 +67,8 @@ The before links use the immutable original review commit; after links use this 
 
 ## Validation and reproduction
 
-- Screenshot capture: **2 passed** (desktop and mobile), including menu bounds in LTR/RTL, theme/text separation, contrast ≥4.5:1, font labels, loaded fonts, pagination and search checks.
+- Screenshot capture: **2 passed** (desktop and mobile), including every-page line counts, adjacent-ink clearance, no clipping, source-offset coverage, single-line headers, 8px arrow gaps, centering, and the earlier menu/theme/contrast regressions.
+- Reader Vitest checks: **31 passed** across eight files.
 - TypeScript (`npx tsc --noEmit`): passed.
 - Production build: passed.
 - Existing Noorehuda/Quran Playwright regression: **2 passed**, confirming book Arabic and Quran retain their respective fonts.
