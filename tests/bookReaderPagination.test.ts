@@ -1,7 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { graphemeBoundaries, paginateMeasuredFlow, reconstructUnit, type ReaderFlowUnit } from "../app/lib/knowledge/bookReaderPagination";
+import { graphemeBoundaries, paginateMeasuredFlow, reconstructUnit, readingFlowUnits, shouldDisplayBookParagraph, type ReaderFlowUnit } from "../app/lib/knowledge/bookReaderPagination";
 
 describe("measured reader flow pagination", () => {
+  it("shows the English translation without separate parallel Arabic paragraphs", () => {
+    const paragraphs = [
+      { id: "sahifa-en:supplication:1:p1", text: "( 1 ) وَ كَانَ مِنْ دُعَائِهِ عَلَيْهِ السَّلَامُ" },
+      { id: "sahifa-en:supplication:1:p2", text: "When he began to supplicate, he would begin with praise of God." },
+      { id: "sahifa-en:supplication:1:p3", text: "1. الْحَمْدُ لِلَّهِ" },
+      { id: "sahifa-en:supplication:1:p4", text: "1- Praise belongs to God, the First, without a first before Him." },
+      { id: "sahifa-en:supplication:1:p5", text: "." },
+      { id: "sahifa-en:supplication:1:p6", text: "English notes that mention الله can remain." },
+    ];
+    const english = { language: "en" as const, paragraphs, translations: [] };
+    const source = readingFlowUnits(english as Parameters<typeof readingFlowUnits>[0], "original");
+    expect(source.map(unit => unit.paragraphId)).toEqual([paragraphs[1].id, paragraphs[3].id, paragraphs[5].id]);
+    expect(source.every(unit => /[A-Za-z]/u.test(unit.text))).toBe(true);
+    expect(paragraphs).toHaveLength(6); // no mutation of imported R2 source
+    expect(paragraphs[0].text).toContain("وَ كَانَ");
+    expect(shouldDisplayBookParagraph("ar", paragraphs[0].text)).toBe(true);
+    expect(shouldDisplayBookParagraph("ur", "اردو ترجمہ")).toBe(true);
+    expect(shouldDisplayBookParagraph("en", paragraphs[2].text)).toBe(false);
+    const arabic = { ...english, language: "ar" as const };
+    expect(readingFlowUnits(arabic as Parameters<typeof readingFlowUnits>[0], "original")).toHaveLength(6);
+  });
   it("keeps Arabic combining marks in graphemes and reconstructs exact source text", async () => {
     const longArabic = ("وَقَالَ أَمِيرُ الْمُؤْمِنِينَ عَلَيْهِ السَّلَامُ: إِنَّ الصَّبْرَ مِفْتَاحُ الْفَرَجِ۔ ").repeat(34);
     const longUrdu = ("یہ ایک مصنوعی طویل اردو آزمائشی عبارت ہے، جس میں اصل متن کے الفاظ، وقفے، اور سطری تسلسل برقرار رہتے ہیں۔ ").repeat(42);
