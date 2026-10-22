@@ -1,0 +1,10 @@
+/* Loaded with the Khateeb Studio route only. No font Worker dependency.
+ * Browsers fetch the same-origin WOFF2 only when an Arabic book passage uses it.
+ * Original font: Noorehuda v1.002, by Abu Saad / NooreHidayat. */
+@font-face {
+  font-family: "Noorehuda";
+  src: url("/fonts/Noorehuda.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
