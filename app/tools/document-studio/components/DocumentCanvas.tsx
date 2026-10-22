@@ -580,6 +580,10 @@ export default function DocumentCanvas({
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
       <style jsx global>{`
+        .qalam-editor-content .ProseMirror {
+          font-variant-ligatures: normal;
+          font-feature-settings: normal;
+        }
         .qalam-editor-content.qalam-doc-page .ProseMirror,
         .qalam-editor-content.qalam-view-pageless .ProseMirror {
           min-height: var(--qalam-page-min-height, 60vh);

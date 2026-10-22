@@ -91,6 +91,20 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("Arrow is inactive for typing on load and story ligatures stay enabled", async ({ page }) => {
+    await openStudio(page);
+    const story = page.locator(".ProseMirror");
+    const before = await story.textContent();
+    await expect(page.locator('[data-studio-tool-button="select"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(story).not.toBeFocused();
+    await expect(page.locator('[data-studio-caret]')).toHaveCount(0);
+    await page.keyboard.type("abc");
+    await expect(story).toHaveText(before ?? "");
+    await expect(story).not.toBeFocused();
+    await expect(story).toHaveCSS("font-variant-ligatures", "normal");
+    await expect(story).toHaveCSS("font-feature-settings", "normal");
+  });
+
   test("Textbox drag creates a frame and switches to IBEAM for immediate typing", async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await openStudio(page);
@@ -108,6 +122,13 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(frame.locator("textarea")).toBeFocused();
     await page.keyboard.type("abc");
     await expect(frame.locator("textarea")).toHaveValue("abc");
+    await expect(frame.locator("textarea")).toHaveCSS("font-variant-ligatures", "normal");
+    await expect(frame.locator("textarea")).toHaveCSS("font-feature-settings", "normal");
+    await expect(frame.locator("textarea")).toHaveCSS("border", "1px solid rgb(0, 0, 0)");
+    await page.locator('[data-studio-tool-button="select"]').click();
+    await page.keyboard.press("Escape");
+    await expect(frame.locator('[data-studio-frame-handle]')).toHaveCount(0);
+    await expect(frame.locator("textarea")).toHaveCSS("border", "1px solid rgb(0, 0, 0)");
     await expect(page.locator(".ProseMirror")).not.toContainText("abc");
   });
 
@@ -194,7 +215,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     const handles = frame.locator('[data-studio-frame-handle]');
     await expect(handles).toHaveCount(8);
     for (const handle of await handles.all()) await expect(handle).toHaveCSS("background-color", "rgb(0, 0, 0)");
-    await expect(textarea).toHaveCSS("border-top-color", "rgb(128, 128, 128)");
+    await expect(textarea).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
     await page.keyboard.type("x");
     await expect(textarea).toHaveValue("Keep this text");
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

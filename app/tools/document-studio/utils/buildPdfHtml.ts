@@ -456,6 +456,8 @@ export function buildPdfHtml(
 ${fontFaceCss(faces)}
 ${classRulesCss()}
   body {
+    font-variant-ligatures: normal;
+    font-feature-settings: normal;
     font-family: ${defaultFamily};
     font-size: ${bodyFontSize};
     line-height: ${bodyLineHeight};

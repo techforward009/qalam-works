@@ -259,6 +259,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const minimumPagesRef = useRef(1);
   const [frames, setFrames] = useState<StudioFrame[]>([]);
   const [canvasTool, setCanvasTool] = useState<StudioToolId>("select");
+  const canvasToolRef = useRef(canvasTool);
+  canvasToolRef.current = canvasTool;
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
@@ -708,7 +710,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (editor) {
       const place = () => {
         try {
-          editor.commands.focus("start");
+          if (canvasToolRef.current === "text") editor.commands.focus("start");
+          else editor.commands.blur();
         } catch {
           /* view not mounted yet */
         }
@@ -1498,7 +1501,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
         try {
-          editor.commands.focus("start");
+          if (canvasToolRef.current === "text") editor.commands.focus("start");
+          else editor.commands.blur();
         } catch {
           /* view not mounted yet */
         }
