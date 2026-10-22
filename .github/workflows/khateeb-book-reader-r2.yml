@@ -8,9 +8,11 @@ on:
     paths:
       - "app/api/khateeb/book-reader/**"
       - "app/lib/knowledge/bookReader*"
+      - "app/lib/knowledge/bookArabicDisplay.ts"
       - "app/tools/khateeb-studio/BookReader*"
       - "app/tools/khateeb-studio/library/**"
       - "tests/bookReader*"
+      - "tests/bookArabicDisplay.test.ts"
       - "tests/khateebBookReaderR2Entry.test.ts"
 
 permissions:
@@ -27,6 +29,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Verified source and measured pagination tests
-        run: npx vitest run tests/bookReaderR2Route.test.ts tests/bookReaderModel.test.ts tests/bookReaderPagination.test.ts tests/bookReaderProgress.test.ts tests/bookReaderTranslationCopy.test.ts tests/khateebBookReaderR2Entry.test.ts
+        run: npx vitest run tests/bookReaderR2Route.test.ts tests/bookReaderModel.test.ts tests/bookReaderPagination.test.ts tests/bookReaderProgress.test.ts tests/bookReaderTranslationCopy.test.ts tests/bookArabicDisplay.test.ts tests/khateebBookReaderR2Entry.test.ts
       - name: Full TypeScript integrity
         run: npx tsc --noEmit
