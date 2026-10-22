@@ -217,7 +217,7 @@
    shared Quran decoration, including its !important font declaration. */
 .readingPage :global(.qalam-book-arabic),
 .readingPage :global(.qalam-book-arabic *) {
-  font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif !important;
+  font-family: var(--font-amiri), "Scheherazade New", "Amiri", "Noto Naskh Arabic", serif !important;
   font-size: 1em;
   font-weight: 400;
 }
@@ -225,9 +225,9 @@
 .paragraph { min-width: 0; overflow-wrap: anywhere; }
 .paragraphs :global(.khateeb-book-text) { line-height: 2.05; }
 .paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif; font-size: 1em; line-height: 2.35; }
-.paragraphs :global(.khateeb-book-ar) { font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif; font-size: 1em; line-height: 2.05; }
+.paragraphs :global(.khateeb-book-ar) { font-family: var(--font-amiri), "Scheherazade New", "Amiri", "Noto Naskh Arabic", serif; font-size: 1em; line-height: 2.05; }
 .paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: 1em; }
-.paragraphs :global(.qalam-book-arabic) { font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif !important; }
+.paragraphs :global(.qalam-book-arabic) { font-family: var(--font-amiri), "Scheherazade New", "Amiri", "Noto Naskh Arabic", serif !important; }
 .targetParagraph { border-radius: .65rem; background: #fff2cf; padding: .5rem; }
 :global(.dark) .targetParagraph { background: rgb(120 53 15 / 25%); }
  .paragraphSelect { display: flex; align-items: center; width: max-content; min-height: 2rem; margin-block: .1rem .15rem; }

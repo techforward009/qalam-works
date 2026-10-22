@@ -34,7 +34,7 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain('className={styles.pageNumberMain}');
     expect(reader).toContain('"کتاب کا حصہ " + reading.recordOrdinal');
     expect(reader).not.toContain('" از " + visualPages.length');
-    expect(css).toContain('font-family: "Amiri", "Scheherazade New"');
+    expect(css).toContain('font-family: var(--font-amiri), "Scheherazade New"');
     expect(css).toContain('font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web"');
     expect(css).not.toContain("Digital Khatt IndoPak Book");
     expect(reader).not.toContain("<footer className={styles.pageFooter}>");
