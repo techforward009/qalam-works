@@ -197,9 +197,15 @@ export function StudioObjectLayer({
       ref={rootRef}
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
-      style={{ pointerEvents: drawing ? "auto" : "none", cursor: drawing ? "crosshair" : undefined }}
+      style={{ pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => {
+        if (tool === "select") {
+          event.preventDefault();
+          event.stopPropagation();
+          setSelected(null);
+          return;
+        }
         if (!drawing) return;
         event.preventDefault();
         event.stopPropagation();

@@ -246,8 +246,9 @@ function getInitialDraftContent(): DocNode | string {
 }
 
 export default function DocumentStudioEditor({ fillWindow = false }: { fillWindow?: boolean } = {}) {
+  // InPage-style window chrome stays English independently of the site language.
   const { language: uiLanguage } = useLanguage();
-  const isUr = uiLanguage === "ur";
+  const isUr = false;
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [visiblePage, setVisiblePage] = useState(1);
@@ -629,7 +630,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [processingLanguage, editor]);
 
   const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!editor) return;
+    if (!editor || canvasTool === "select") return;
     const target = e.target as HTMLElement;
     if (target.closest("button, a, input, select, textarea")) return;
     if (!editor.isFocused) {
@@ -1587,7 +1588,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       return;
     }
     if (id === "select" && editor) {
-      editor.commands.focus(editor.isEmpty ? "start" : "end");
+      editor.commands.blur();
     }
   };
 

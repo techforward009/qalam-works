@@ -10,7 +10,7 @@ async function openStudio(page: Page, language: "en" | "ur" = "en") {
     localStorage.setItem("qalam-site-language", value);
   }, language);
   await page.goto(URL);
-  await expect(page.getByRole("textbox", { name: language === "ur" ? "دستاویز ایڈیٹر" : "Document editor" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Document editor" })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toBeEditable();
 }
 
@@ -87,6 +87,38 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("Select intercepts page clicks without focusing or typing into the story", async ({ page }) => {
+    await openStudio(page, "ur");
+    const editor = page.locator(".ProseMirror");
+    // Set up existing story text without relying on a Select-tool page click.
+    await editor.focus();
+    await page.keyboard.insertText("The story must stay unchanged.");
+    const before = await editor.innerText();
+    await page.locator('[data-studio-tool-button="select"]').click();
+    const expectNoStoryCaret = async () => {
+      await expect.poll(() => page.evaluate(() => document.activeElement?.matches(".ProseMirror"))).toBe(false);
+      await expect(page.locator("[data-studio-caret]")).toHaveCount(0);
+    };
+    await expectNoStoryCaret();
+    const layer = page.locator("[data-studio-objects]");
+    await expect(layer).toHaveCSS("pointer-events", "auto");
+    await expect(layer).toHaveCSS("cursor", "default");
+    const box = (await layer.boundingBox())!;
+    const x = Math.max(60, box.x + 50);
+    const y = box.y + 100;
+    await page.mouse.click(x, y);
+    await expectNoStoryCaret();
+    await page.keyboard.type("x");
+    await expect(editor).toHaveText(before);
+    // A page drag must not select story text either.
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 80, y + 25, { steps: 4 });
+    await page.mouse.up();
+    await expectNoStoryCaret();
+    await expect(editor).toHaveText(before);
+  });
+
   test("loads an editable English workspace, formats it, and persists after reload", async ({ page }) => {
     const errors: Error[] = [];
     page.on("pageerror", (error) => errors.push(error));
