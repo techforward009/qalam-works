@@ -543,7 +543,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           <button className={btn} type="button" disabled={busy || toc.page * toc.pageSize >= toc.total} onClick={() => void contents(sourceId, toc.page + 1)}>{ur ? "اگلے حصے" : "Next"}</button>
         </nav>}
       </dialog>
-      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
+      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader data-book-language={reading.language} aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="ltr">
           <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={reading.title}>
             <strong>{bookReaderRunningHeading(reading, locale)}</strong>
