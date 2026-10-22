@@ -470,31 +470,33 @@ function StudioCaret({
         setBox(null);
         return;
       }
-      if (editor.isEmpty) {
-        setBox({
-          left: pageWidthPx - marginRightPx - 3,
-          top: marginTopPx,
-          height: 27,
-        });
-        return;
-      }
       const host = hostRef.current;
       if (!host) return;
-      const coords = editor.view.coordsAtPos(editor.state.selection.head);
+      const domSelection = window.getSelection();
+      let selectionRect: DOMRect | null = null;
+      if (domSelection?.rangeCount && domSelection.isCollapsed && editor.view.dom.contains(domSelection.anchorNode)) {
+        const rects = domSelection.getRangeAt(0).getClientRects();
+        selectionRect = rects.length ? rects[rects.length - 1] : null;
+      }
+      const coords = selectionRect ?? editor.view.coordsAtPos(editor.state.selection.head);
       const rect = host.getBoundingClientRect();
       const scale = rect.width > 0 ? rect.width / pageWidthPx : 1;
       setBox({
-        left: (coords.left - rect.left) / scale,
-        top: (Math.min(coords.top, coords.bottom) - rect.top) / scale,
-        height: 27,
+        left: editor.isEmpty ? pageWidthPx - marginRightPx - 3 : (coords.left - rect.left) / scale,
+        top: editor.isEmpty ? marginTopPx : (Math.min(coords.top, coords.bottom) - rect.top) / scale,
+        height: Math.max(12, coords.bottom - coords.top) / scale,
       });
     };
     place();
+    // Native selection changes can follow the ProseMirror transaction, especially
+    // at bidi boundaries. Read the final DOM range after those changes too.
+    document.addEventListener("selectionchange", place);
     editor.on("selectionUpdate", place);
     editor.on("transaction", place);
     editor.on("focus", place);
     editor.on("blur", place);
     return () => {
+      document.removeEventListener("selectionchange", place);
       editor.off("selectionUpdate", place);
       editor.off("transaction", place);
       editor.off("focus", place);

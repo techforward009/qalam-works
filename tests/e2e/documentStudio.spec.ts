@@ -91,6 +91,38 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("RTL caret follows the DOM selection at styled line ends and grows at 36pt", async ({ page }) => {
+    await openStudio(page, "ur");
+    const story = await replaceEditorContent(page, "السلام علیکم اللہ وبرکاتہ");
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    const size = page.locator('[data-studio-font-size]');
+    await page.keyboard.press("Control+A");
+    await size.selectOption("18");
+    await page.keyboard.press("End");
+    const caret = page.locator('[data-studio-caret]');
+    await expect(caret).toBeVisible();
+    const expectPosition = async () => {
+      await expect.poll(() => page.evaluate(() => {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount || !selection.isCollapsed) return 999;
+        const rects = selection.getRangeAt(0).getClientRects();
+        const real = rects.length ? rects[rects.length - 1] : null;
+        const drawn = document.querySelector('[data-studio-caret]')?.getBoundingClientRect();
+        return real && drawn ? Math.abs(drawn.left - real.left) : 999;
+      })).toBeLessThanOrEqual(3);
+    };
+    await expectPosition();
+    const smallHeight = (await caret.boundingBox())!.height;
+    await page.keyboard.press("Control+A");
+    await size.selectOption("36");
+    await page.keyboard.press("End");
+    await expectPosition();
+    await expect.poll(async () => (await caret.boundingBox())?.height ?? 0).toBeGreaterThan(smallHeight * 1.5);
+    await page.keyboard.press("Control+End");
+    await expectPosition();
+    await expect(story).toContainText("السلام علیکم اللہ وبرکاتہ");
+  });
+
   test("Arrow is inactive for typing on load and story ligatures stay enabled", async ({ page }) => {
     await openStudio(page);
     const story = page.locator(".ProseMirror");
