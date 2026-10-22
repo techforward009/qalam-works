@@ -57,7 +57,7 @@ jobs:
           const branch = JSON.parse(fs.readFileSync(branchPath, 'utf8'));
           function failures(r) {
             return new Set((r.testResults || []).flatMap(s =>
-              (s.assertionResults || []).filter(a => a.status === 'failed').map(a => s.name + ' :: ' + a.fullName)));
+              (s.assertionResults || []).filter(a => a.status === 'failed').map(a => s.name.replace(/^.*[\\/]tests[\\/]/, 'tests/') + ' :: ' + a.fullName)));
           }
           const before = failures(main), after = failures(branch);
           const newFailures = [...after].filter(x => !before.has(x));
@@ -70,6 +70,7 @@ jobs:
           console.log('PASS: no new failed test compared with clean main.');
           NODE
       - name: Related Chromium Playwright specs
+        if: always()
         run: |
           CHROMIUM_PATH="$(node -e "require('@sparticuz/chromium').executablePath().then(process.stdout.write)")"
           PLAYWRIGHT_CHROMIUM_PATH="$CHROMIUM_PATH" npx playwright test tests/e2e/khateebNoorehuda.spec.ts tests/e2e/khateebBookLibrary.spec.ts --project=desktop-chrome --workers=1 --reporter=line
