@@ -23,7 +23,7 @@ export default {
     if (!authorized(request.headers.get("authorization"), env.AUTH_TOKEN)) return empty(401);
     const url = new URL(request.url);
     if (url.pathname === "/v1/objects" && request.method === "GET") {
-      if (url.searchParams.get("prefix") !== PREFIX ||
+      if (url.searchParams.get("prefix") !== PREFIX || url.searchParams.size > 2 ||
           [...url.searchParams.keys()].some(k => !["prefix", "cursor"].includes(k))) return empty(400);
       const cursor = url.searchParams.get("cursor") || undefined;
       if (cursor && cursor.length > 300) return empty(400);
@@ -40,7 +40,7 @@ export default {
       try {
         const item = await env.RESEARCH_BUCKET.get(key);
         if (!item) return empty(404);
-        if (item.size > MAX_BYTES) return empty(502);
+        if (!Number.isInteger(item.size) || item.size < 2 || item.size > MAX_BYTES) return empty(502);
         return new Response(item.body, { headers: { ...headers, "Content-Type": "application/json", "Content-Length": String(item.size) } });
       } catch { return empty(503); }
     }
@@ -48,10 +48,26 @@ export default {
       if (!request.headers.get("content-type")?.startsWith("application/json")) return empty(415);
       const length = Number(request.headers.get("content-length"));
       if (!Number.isInteger(length) || length < 2 || length > MAX_BYTES) return empty(413);
+      let bytes: Uint8Array;
       try {
-        const bytes = new Uint8Array(await request.arrayBuffer());
-        if (bytes.byteLength !== length || bytes.byteLength > MAX_BYTES) return empty(413);
+        if (!request.body) return empty(400);
+        const reader = request.body.getReader();
+        const parts: Uint8Array[] = [];
+        let total = 0;
+        while (true) {
+          const next = await reader.read();
+          if (next.done) break;
+          total += next.value.byteLength;
+          if (total > MAX_BYTES) { await reader.cancel(); return empty(413); }
+          parts.push(next.value);
+        }
+        if (total !== length) return empty(400);
+        bytes = new Uint8Array(total);
+        let offset = 0;
+        for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
         JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+      } catch { return empty(400); }
+      try {
         await env.RESEARCH_BUCKET.put(key, bytes, { httpMetadata: { contentType: "application/json" } });
         return empty(201);
       } catch { return empty(503); }
