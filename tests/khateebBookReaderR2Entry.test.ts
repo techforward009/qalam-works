@@ -54,6 +54,7 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(client).toContain("max-w-[58rem]");
   });
   it("keeps bookmarks, page controls and source paragraphs separate from translation", () => {
+    const css = readFileSync("app/tools/khateeb-studio/BookReader.module.css", "utf8");
     expect(reader).toContain("KHATEEB_READER_PROGRESS_KEY");
     expect(reader).toContain("qalam-book-reader-print");
     expect(reader).toContain("readingFlowUnits");
