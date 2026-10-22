@@ -37,6 +37,11 @@ jobs:
         run: npx vitest run tests/noorehudaFontScope.test.ts tests/bookPassageFont.test.tsx
       - name: Build, no Vercel deployment
         run: npm run build
+      - name: Noorehuda and Quran Chromium acceptance
+        if: always()
+        run: |
+          CHROMIUM_PATH="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
+          PLAYWRIGHT_CHROMIUM_PATH="$CHROMIUM_PATH" npx playwright test tests/e2e/khateebNoorehuda.spec.ts --project=desktop-chrome --workers=1 --reporter=line
       - name: Full Vitest, compared with clean main
         shell: bash
         run: |
@@ -69,11 +74,6 @@ jobs:
           }
           console.log('PASS: no new failed test compared with clean main.');
           NODE
-      - name: Noorehuda and Quran Chromium acceptance
-        if: always()
-        run: |
-          CHROMIUM_PATH="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
-          PLAYWRIGHT_CHROMIUM_PATH="$CHROMIUM_PATH" npx playwright test tests/e2e/khateebNoorehuda.spec.ts --project=desktop-chrome --workers=1 --reporter=line
       - name: Existing book workflow legacy selector diagnostics
         if: always()
         continue-on-error: true
