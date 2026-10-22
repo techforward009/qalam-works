@@ -1,0 +1,136 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "screenshots": [
+    "01-library-book-list.png",
+    "02-nahj-contents.png",
+    "03-arabic-page-1.png",
+    "04-arabic-page-2.png",
+    "05-in-book-search.png",
+    "06-arabic-dark.png",
+    "07-urdu-page-1.png",
+    "08-urdu-page-2.png",
+    "09-urdu-dark.png",
+    "10-english-ui-arabic.png",
+    "11-more-menu-font-label.png"
+  ],
+  "observations": {
+    "01-library-book-list": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "02-nahj-contents": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "03-arabic-page-1": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "04-arabic-page-2": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "2",
+      "textDirection": "rtl"
+    },
+    "05-in-book-search": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "06-arabic-dark": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "07-urdu-page-1": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "08-urdu-page-2": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "2",
+      "textDirection": "rtl"
+    },
+    "09-urdu-dark": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "10-english-ui-arabic": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "11-more-menu-font-label": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [
+        {
+          "left": 622.671875,
+          "right": 862.671875,
+          "width": 240
+        }
+      ],
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    }
+  },
+  "fonts": [
+    {
+      "family": "Nafees Nastaleeq",
+      "status": "loaded"
+    },
+    {
+      "family": "Noorehuda",
+      "status": "loaded"
+    }
+  ]
+}
