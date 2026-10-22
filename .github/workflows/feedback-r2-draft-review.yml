@@ -1,0 +1,33 @@
+name: Feedback R2 — Draft Verification Only
+
+on:
+  push:
+    branches:
+      - feature/feedback-cloudflare-r2-20261022
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Feedback and private Worker regression tests
+        run: npx vitest run tests/feedbackR2Store.test.ts tests/cloudflareFeedbackWorker.test.ts
+      - name: Production build check (no deployment)
+        run: npm run build
+      - name: Patch whitespace validation
+        run: git diff --check origin/main...HEAD
