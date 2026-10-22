@@ -1,0 +1,7 @@
+name = "qalam-research-private-mirror"
+main = "src/index.ts"
+compatibility_date = "2026-10-22"
+
+[[r2_buckets]]
+binding = "RESEARCH_BUCKET"
+bucket_name = "qalam-research-private"
