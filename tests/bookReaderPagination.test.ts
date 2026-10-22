@@ -11,7 +11,14 @@ describe("measured reader flow pagination", () => {
       { id: "sahifa-en:supplication:1:p5", text: "." },
       { id: "sahifa-en:supplication:1:p6", text: "English notes that mention الله can remain." },
     ];
-    const english = { language: "en" as const, paragraphs, translations: [] };
+    const english = {
+      language: "en" as const, paragraphs, translations: [],
+      recordId: "sahifa-en:supplication:1", sourceId: "sahifa-en", recordOrdinal: 1,
+      kind: "supplication", title: "The First Supplication", reference: "Sahifa, Supplication 1",
+      translator: null, paragraphCount: paragraphs.length,
+      page: 1, pageCount: 1, previousRecordId: null, nextRecordId: null,
+      recordSha256: "a".repeat(64), sourceSha256: "b".repeat(64), screenPartOnly: true as const,
+    };
     const source = readingFlowUnits(english as Parameters<typeof readingFlowUnits>[0], "original");
     expect(source.map(unit => unit.paragraphId)).toEqual([paragraphs[1].id, paragraphs[3].id, paragraphs[5].id]);
     expect(source.every(unit => /[A-Za-z]/u.test(unit.text))).toBe(true);
