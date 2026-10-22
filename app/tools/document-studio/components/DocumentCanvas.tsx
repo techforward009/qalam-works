@@ -539,6 +539,7 @@ export default function DocumentCanvas({
                             tool={tool}
                             frames={frames}
                             onFramesChange={onFramesChange ?? (() => undefined)}
+                            onToolAction={chooseTool}
                             pageCount={pageCount}
                             pageWidthPx={natural.widthPx}
                             pageHeightPx={natural.heightPx}

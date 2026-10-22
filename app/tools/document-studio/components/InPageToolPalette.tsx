@@ -9,7 +9,7 @@ export type StudioToolId =
   | "rotate"
   | "link"
   | "unlink"
-  | "image"
+  | "textbox"
   | "image-frame"
   | "cross-square"
   | "cross-circle"
@@ -43,7 +43,7 @@ function OutlineIcon({ children }: { children: ReactNode }) {
 }
 
 const URDU_TOOL_LABELS: Partial<Record<StudioToolId, string>> = {
-  select: "انتخاب", text: "متن", image: "تصویر", rect: "مستطیل",
+  select: "انتخاب", text: "متن", textbox: "متن کا خانہ", rect: "مستطیل",
   ellipse: "بیضوی", "round-rect": "گول کونوں والا مستطیل", line: "لکیر",
 };
 
@@ -102,8 +102,8 @@ const TOOLS: ToolSpec[] = [
     ),
   },
   {
-    id: "image",
-    label: "Picture",
+    id: "textbox",
+    label: "Textbox Tool",
     enabled: true,
     icon: (
       <Icon>

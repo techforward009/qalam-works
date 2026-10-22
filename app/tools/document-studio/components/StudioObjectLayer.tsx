@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
 
@@ -19,7 +19,7 @@ export type StudioFrame = {
   text: string;
 };
 
-const DRAW_TOOLS = new Set<StudioToolId>(["rect", "ellipse", "round-rect", "line"]);
+const DRAW_TOOLS = new Set<StudioToolId>(["textbox", "rect", "ellipse", "round-rect", "line"]);
 const FRAME_KEY = "qalam-studio-frames-v1";
 
 export function readStoredFrames(id: string): StudioFrame[] {
@@ -62,6 +62,7 @@ export function StudioObjectLayer({
   tool,
   frames,
   onFramesChange,
+  onToolAction,
   pageCount,
   pageWidthPx,
   pageHeightPx,
@@ -73,6 +74,7 @@ export function StudioObjectLayer({
   tool: StudioToolId;
   frames: StudioFrame[];
   onFramesChange: (frames: StudioFrame[]) => void;
+  onToolAction: (tool: StudioToolId) => void;
   pageCount: number;
   pageWidthPx: number;
   pageHeightPx: number;
@@ -90,6 +92,16 @@ export function StudioObjectLayer({
     | null
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
+  const pendingTextFocus = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    if (tool !== "text" || !pendingTextFocus.current) return;
+    const frame = rootRef.current?.querySelector<HTMLElement>(`[data-studio-frame-id="${pendingTextFocus.current}"]`);
+    const textarea = frame?.querySelector("textarea");
+    if (!textarea) return;
+    pendingTextFocus.current = null;
+    textarea.focus({ preventScroll: true });
+  }, [frames, tool]);
 
   useEffect(() => {
     const clearOnEmpty = (event: PointerEvent) => {
@@ -145,7 +157,7 @@ export function StudioObjectLayer({
   };
 
   const commitBox = (box: { x: number; y: number; w: number; h: number; flip: boolean }) => {
-    const kind = tool === "line" || tool === "ellipse" || tool === "round-rect" || tool === "rect" ? tool : null;
+    const kind = tool === "textbox" ? "text" : tool === "line" || tool === "ellipse" || tool === "round-rect" || tool === "rect" ? tool : null;
     if (!kind) return;
     let { x, y, w, h } = box;
     const flip = (w < 0) !== (h < 0);
@@ -157,6 +169,7 @@ export function StudioObjectLayer({
       y += h;
       h = -h;
     }
+    if (tool === "textbox" && (w < 4 || h < 4)) return;
     if (w < 4 && h < 4) {
       w = 120;
       h = kind === "line" ? 40 : 72;
@@ -175,8 +188,10 @@ export function StudioObjectLayer({
       flip,
       text: "",
     };
+    if (tool === "textbox") pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
     setSelected(frame.id);
+    if (tool === "textbox") onToolAction("text");
   };
 
   return (
@@ -398,7 +413,7 @@ function FrameShape({
           resize: "none",
           pointerEvents: editable ? "auto" : "none",
           cursor: editable ? "text" : "inherit",
-          border: active ? "1px solid #808080" : "1px dotted #404040",
+          border: active ? "1px solid #808080" : "1px solid #000",
           background: "transparent",
           color: "#000",
           fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',

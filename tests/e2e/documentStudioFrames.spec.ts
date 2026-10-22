@@ -144,7 +144,7 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
   await expect.poll(geometry).toEqual(englishGeometry);
   expect(englishGeometry[0].x).toBe(0);
   expect(englishGeometry[1].x).toBe(1903);
-  const labels = { select: "Select", text: "Text", image: "Picture", rect: "Rectangle",
+  const labels = { select: "Select", text: "Text", textbox: "Textbox Tool", rect: "Rectangle",
     ellipse: "Ellipse", "round-rect": "Rounded rectangle", line: "Line" };
   for (const [id, label] of Object.entries(labels)) {
     const button = page.locator(`[data-studio-tool-button="${id}"]`);

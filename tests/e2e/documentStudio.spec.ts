@@ -91,6 +91,34 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("Textbox drag creates a frame and switches to IBEAM for immediate typing", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await openStudio(page);
+    await page.locator('[data-studio-tool-button="textbox"]').click();
+    const layer = page.locator('[data-studio-objects]');
+    await expect(layer).toHaveCSS("cursor", "crosshair");
+    const box = (await layer.boundingBox())!;
+    await page.mouse.move(box.x + 100, box.y + 150);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 300, box.y + 250, { steps: 8 });
+    await page.mouse.up();
+    const frame = page.locator('[data-studio-frame="text"]');
+    await expect(frame).toHaveCount(1);
+    await expect(page.locator('[data-studio-tool-button="text"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(frame.locator("textarea")).toBeFocused();
+    await page.keyboard.type("abc");
+    await expect(frame.locator("textarea")).toHaveValue("abc");
+    await expect(page.locator(".ProseMirror")).not.toContainText("abc");
+  });
+
+  test("Textbox click without dragging creates nothing", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-studio-tool-button="textbox"]').click();
+    await page.locator('[data-studio-objects]').click({ position: { x: 100, y: 150 } });
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(0);
+    await expect(page.locator('[data-studio-tool-button="textbox"]')).toHaveAttribute("aria-pressed", "true");
+  });
+
   test("IBEAM edits the story without drawing a text frame", async ({ page }) => {
     await openStudio(page, "ur");
     const tool = page.locator('[data-studio-tool-button="text"]');

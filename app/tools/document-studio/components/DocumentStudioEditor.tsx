@@ -1584,10 +1584,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const onCanvasTool = (id: StudioToolId) => {
     setCanvasTool(id);
-    if (id === "image") {
-      imageInputRef.current?.click();
-      return;
-    }
     if (id === "select" && editor) {
       editor.commands.blur();
     }
