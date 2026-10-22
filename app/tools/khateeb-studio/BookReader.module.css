@@ -28,6 +28,29 @@
 }
 :global(.dark) .toolbar > button, :global(.dark) .toolbar > .menu > summary { color: #d4dfd6; }
 .bookSelect, .languageSelect { display: grid; gap: .15rem; min-width: 8rem; font-size: .68rem; color: #67766a; }
+/* Explicit Urdu calligraphic font for every visible toolbar control. */
+.readerShell:lang(ur) .toolbar,
+.readerShell:lang(ur) .toolbar button,
+.readerShell:lang(ur) .toolbar label,
+.readerShell:lang(ur) .toolbar select,
+.readerShell:lang(ur) .toolbar option,
+.readerShell:lang(ur) .toolbar summary,
+.readerShell:lang(ur) .toolbar a,
+.readerShell:lang(ur) .toolbar span,
+.readerShell:lang(ur) .toolbar strong {
+  font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important;
+  font-weight: 400;
+  line-height: 2;
+}
+.readerShell:lang(ur) .toolbar > button,
+.readerShell:lang(ur) .toolbar > .menu > summary,
+.readerShell:lang(ur) .bookSelect select,
+.readerShell:lang(ur) .languageSelect select {
+  font-size: .9rem;
+}
+.readerShell:lang(ur) .bookSelect > span,
+.readerShell:lang(ur) .languageSelect > span { font-size: .78rem; }
+
 .bookSelect { flex: 0 1 15rem; max-width: 17rem; }
 .languageSelect { min-width: 7.5rem; }
 .bookSelect select, .languageSelect select { padding: .43rem .55rem; border-radius: .55rem; font-size: .78rem; }
@@ -204,14 +227,7 @@
   font-size: .95rem;
   white-space: nowrap;
 }
-.pageNumber small {
-  font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
-  font-size: .67rem;
-  white-space: nowrap;
-  color: #6d6658;
-}
 :global(.dark) .bookIdentity, :global(.dark) .chapterTitle, :global(.dark) .pageNumber { color: #eee9dd; }
-:global(.dark) .pageNumber small { color: #bbb4a3; }
 :global(.dark) .pageArrow { background: #263529; border-color: #b3955f; color: #e7d5ae; }
 /* Book-source Arabic is not Quranic Digital Khatt. Override the generic
    shared Quran decoration, including its !important font declaration. */
@@ -279,7 +295,6 @@
   .pageArrowIcon { width: .83rem; height: .83rem; }
   .pageNumber { min-width: 6.2rem; }
   .pageNumberMain { font-size: .77rem; }
-  .pageNumber small { font-size: .55rem; }
   .paragraphs { gap: .85rem; }
   .searchForm { align-items: stretch; flex-direction: column; }
   .searchField { min-width: 0; }

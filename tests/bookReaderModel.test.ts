@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import {
-  bookContents, bookReadingPage, bookFind, copyReadingPage, originalBookQuerySpan, BOOK_TOC_PAGE_SIZE,
+  bookContents, bookReadingPage, bookFind, copyReadingPage, originalBookQuerySpan, bookReaderRunningHeading, BOOK_TOC_PAGE_SIZE,
 } from "../app/lib/knowledge/bookReaderModel";
 import type { BookRecord, BookSource } from "../app/lib/knowledge/bookCorpus";
 
@@ -28,6 +28,13 @@ const records: BookRecord[] = Array.from({length: 29}, (_, i) => {
 });
 
 describe("source-faithful book reader model", () => {
+  it("runs a concise source-number heading instead of a long editorial chapter title", () => {
+    expect(bookReaderRunningHeading({ sourceId: "nahj-ar", kind: "sermon", reference: "نہج البلاغہ، خطبہ 2" }, "ur")).toBe("نہج البلاغہ خطبہ نمبر 2");
+    expect(bookReaderRunningHeading({ sourceId: "nahj-ur", kind: "letter", reference: "نہج البلاغہ، مکتوب 31" }, "ur")).toBe("نہج البلاغہ مکتوب نمبر 31");
+    expect(bookReaderRunningHeading({ sourceId: "sahifa-ar", kind: "supplication", reference: "صحیفہ کاملہ سجادیہ، دعا 3" }, "ur")).toBe("صحیفہ کاملہ سجادیہ دعا نمبر 3");
+    expect(bookReaderRunningHeading({ sourceId: "kafi-v8-ar", kind: "section", reference: "الکافی، جلد 8، ایک طویل عنوان" }, "ur")).toBe("الکافی، جلد 8");
+  });
+
   it("highlights exactly the original grapheme and full Arabic diacritics", () => {
     expect(originalBookQuerySpan("وَقَالَ: صَبْرٌ جَمِيلٌ", "صبر")).toBe("صَبْرٌ");
     expect(originalBookQuerySpan("دعا: الصَّبْرُ والإيمان", "الصبر")).toBe("الصَّبْرُ");

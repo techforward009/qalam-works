@@ -83,6 +83,30 @@ function safeTitle(record: BookRecord, index: number, locale: "ur" | "en"): { te
     status: "source-title" };
 }
 
+
+/** Compact source-cited running title: never substitute an editorial
+ * summary or mistake a source division for a printed book page. */
+export function bookReaderRunningHeading(
+  page: Pick<BookReadingPage, "reference" | "sourceId" | "kind">, locale: "ur" | "en",
+): string {
+  const segments = page.reference.split(/[،,]/u).map(part => part.trim()).filter(Boolean);
+  const book = segments[0] ?? (locale === "ur" ? "کتاب" : "Book");
+  const designation = segments[1] ?? "";
+  if (page.sourceId.startsWith("kafi-")) {
+    return [book, designation].filter(Boolean).join(locale === "ur" ? "، " : ", ");
+  }
+  const match = designation.match(/^([^\\d۰-۹٠-٩]+?)\\s+([0-9۰-۹٠-٩]+)$/u);
+  if (match) {
+    const kind = match[1].trim(), number = match[2];
+    return locale === "ur" ? `${book} ${kind} نمبر ${number}` : `${book} ${kind} No. ${number}`;
+  }
+  const kindName = page.kind === "front-matter" ? (locale === "ur" ? "مقدمہ" : "Introduction")
+    : page.kind === "chapter" ? (locale === "ur" ? "باب" : "Chapter")
+    : page.kind === "section" ? (locale === "ur" ? "حصہ" : "Section")
+    : designation.split(/\\s+[—–]\\s+/u)[0] || (locale === "ur" ? "متن" : "Text");
+  return [book, kindName].filter(Boolean).join(locale === "ur" ? "، " : ", ");
+}
+
 export function bookContents(records: readonly BookRecord[], sourceId: string, locale: "ur" | "en", page = 1): BookContents {
   const ordered = sourceRecordsInOrder(records, sourceId);
   const entries = ordered.slice((page - 1) * BOOK_TOC_PAGE_SIZE, page * BOOK_TOC_PAGE_SIZE).map((record, index) => {

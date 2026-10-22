@@ -11,7 +11,7 @@ import {
   rememberReaderPosition, readerSavedForSource, sameReaderAnchor,
   toggleReaderBookmark, type ReaderAnchor, type ReaderProgress,
 } from "../../lib/knowledge/bookReaderProgress";
-import { originalBookQuerySpan, type BookCopyMode, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
+import { bookReaderRunningHeading, originalBookQuerySpan, type BookCopyMode, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
 import { paginateMeasuredFlow, readingFlowUnits, type ReaderTextFragment, type ReaderVisualPage } from "../../lib/knowledge/bookReaderPagination";
 import styles from "./BookReader.module.css";
 
@@ -30,6 +30,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [toc, setToc] = useState<BookContents | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const tocDialog = useRef<HTMLDialogElement>(null);
+  const moreMenuRef = useRef<HTMLDetailsElement>(null);
+  const savedPlacesRef = useRef<HTMLDetailsElement>(null);
   const [reading, setReading] = useState<BookReadingPage | null>(null);
   const [visualPages, setVisualPages] = useState<ReaderVisualPage[]>([]);
   const [visualPageIndex, setVisualPageIndex] = useState(0);
@@ -55,6 +57,28 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [error, setError] = useState("");
   const abort = useRef<AbortController | null>(null);
   const feedback = useCopyFeedback();
+
+  useEffect(() => {
+    const closeOutsideMenu = (event: PointerEvent) => {
+      for (const menu of [moreMenuRef.current, savedPlacesRef.current]) {
+        if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+      }
+    };
+    const closeMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      for (const menu of [moreMenuRef.current, savedPlacesRef.current]) {
+        if (!menu?.open) continue;
+        menu.open = false;
+        menu.querySelector("summary")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutsideMenu);
+    document.addEventListener("keydown", closeMenuOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutsideMenu);
+      document.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, []);
 
   useEffect(() => {
     const article = pageArticleRef.current;
@@ -413,7 +437,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const missingTranslation = !!reading && reading.language === "ar" && readingMode !== "original" && untranslatedParagraphs === reading.paragraphs.length;
   const partialTranslation = !!reading && reading.language === "ar" && readingMode !== "original"
     && untranslatedParagraphs > 0 && untranslatedParagraphs < reading.paragraphs.length;
-  return <section dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className={styles.readerShell}>
+  return <section lang={ur ? "ur" : "en"} dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className={styles.readerShell}>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss}/>
     {error ? <p role="alert" className={styles.noticeError}>{error}</p> : null}
     {busy ? <p role="status" className={styles.notice}>{ur ? "کتاب کھولی جا رہی ہے…" : "Opening book…"}</p> : null}
@@ -433,7 +457,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             <option value="original">{ur ? "عربی" : "Arabic"}</option><option value="translation">{ur ? "اردو" : "Urdu"}</option><option value="combined">{ur ? "عربی + اردو" : "Arabic + Urdu"}</option>
           </select>
         </label> : null}
-        <details className={styles.menu}>
+        <details ref={moreMenuRef} className={styles.menu}>
           <summary className={btn}>{ur ? "مزید" : "More"}</summary>
           <div className={styles.menuPanel}>
             <div className={styles.editionInformation}>
@@ -465,7 +489,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           </div>
         </details>
       </nav>
-      {visibleBookmarks.length > 0 ? <details className={styles.savedPlaces}><summary>{ur ? "محفوظ نشان (" + visibleBookmarks.length.toLocaleString("ur-PK") + ")" : "Saved places (" + visibleBookmarks.length + ")"}</summary>
+      {visibleBookmarks.length > 0 ? <details ref={savedPlacesRef} className={styles.savedPlaces}><summary>{ur ? "محفوظ نشان (" + visibleBookmarks.length.toLocaleString("ur-PK") + ")" : "Saved places (" + visibleBookmarks.length + ")"}</summary>
         <div className={styles.bookmarkList}>
           {visibleBookmarks.map((anchor, index) => <button type="button" className={btn} key={index} disabled={busy} onClick={() => void read(anchor.sourceId, anchor.recordId, anchor.part, anchor.paragraphId, anchor)}>
             {ur ? "محفوظ حصہ " + (index + 1) + " · " + anchor.part : "Saved place " + (index + 1) + " · " + anchor.part}
@@ -505,20 +529,23 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       </dialog>
       {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="ltr">
-          <div className={styles.chapterTitle} dir={reading.language === "en" ? "ltr" : "rtl"} title={reading.title}>
-            <strong>{reading.title}</strong>
+          <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={reading.title}>
+            <strong>{bookReaderRunningHeading(reading, locale)}</strong>
           </div>
           <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کا صفحہ بدلیں" : "Turn reader page"} dir="ltr">
-            <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (visualPageIndex === 0 && !reading.previousRecordId)} aria-label={ur ? "پچھلا صفحہ" : "Previous page"} onClick={previousPart}>
+            <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (ur
+              ? (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)
+              : (visualPageIndex === 0 && !reading.previousRecordId))}
+              aria-label={ur ? "اگلا صفحہ" : "Previous page"} onClick={ur ? nextPart : previousPart}>
               <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}><path d="M14.8 5.2 8 12l6.8 6.8" /></svg>
             </button>
             <span className={styles.pageNumber} aria-live="polite">
               <strong className={styles.pageNumberMain}>{ur ? "صفحہ " : "Page "}{(visualPageIndex + 1).toLocaleString(ur ? "ur-PK" : "en-US")}</strong>
-              <small>{ur
-                ? "کتاب کا حصہ " + reading.recordOrdinal.toLocaleString("ur-PK") + (toc?.total ? " از " + toc.total.toLocaleString("ur-PK") : "")
-                : "Section " + reading.recordOrdinal + (toc?.total ? " of " + toc.total : "")}</small>
             </span>
-            <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)} aria-label={ur ? "اگلا صفحہ" : "Next page"} onClick={nextPart}>
+            <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (ur
+              ? (visualPageIndex === 0 && !reading.previousRecordId)
+              : (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId))}
+              aria-label={ur ? "پچھلا صفحہ" : "Next page"} onClick={ur ? previousPart : nextPart}>
               <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}><path d="M9.2 5.2 16 12l-6.8 6.8" /></svg>
             </button>
           </nav>

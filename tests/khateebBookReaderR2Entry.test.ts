@@ -32,7 +32,13 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain('<nav className={styles.pageNavigation}');
     expect(reader).toContain('className={styles.pageArrowIcon}');
     expect(reader).toContain('className={styles.pageNumberMain}');
-    expect(reader).toContain('"کتاب کا حصہ " + reading.recordOrdinal');
+    expect(reader).toContain("bookReaderRunningHeading(reading, locale)");
+    expect(reader).not.toContain("کتاب کا حصہ ");
+    expect(reader).toContain("onClick={ur ? nextPart : previousPart}");
+    expect(reader).toContain("onClick={ur ? previousPart : nextPart}");
+    expect(reader).toContain("ref={moreMenuRef}");
+    expect(reader).toContain('document.addEventListener("pointerdown", closeOutsideMenu)');
+    expect(css).toContain('.readerShell:lang(ur) .toolbar option');
     expect(reader).not.toContain('" از " + visualPages.length');
     expect(css).toContain('font-family: var(--font-amiri), "Scheherazade New"');
     expect(css).toContain('font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web"');
