@@ -12,15 +12,19 @@ async function openStudio(page: Page, language: "en" | "ur" = "en") {
   await page.goto(URL);
   await expect(page.getByRole("textbox", { name: "Document editor" })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toBeEditable();
+  // Wait for the initial saved-document load before any test inserts text.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
 }
 
 async function imageAction(page: Page, label: string) {
+  await page.locator('[data-studio-tool-button="text"]').click();
   await page.locator(".ProseMirror img.qalam-document-image").click({ button: "right" });
   await page.locator('[data-studio-image-menu="true"]').getByRole("menuitem", { name: label, exact: true }).click();
 }
 
 async function replaceEditorContent(page: Page, text: string) {
   const editor = page.locator(".ProseMirror");
+  await page.locator('[data-studio-tool-button="text"]').click();
   await editor.click();
   await page.keyboard.press("Control+A");
   await page.keyboard.type(text);
@@ -87,6 +91,52 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("IBEAM edits the story without drawing a text frame", async ({ page }) => {
+    await openStudio(page, "ur");
+    const tool = page.locator('[data-studio-tool-button="text"]');
+    await tool.click();
+    const editor = page.locator(".ProseMirror");
+    const pageArea = page.locator('[data-studio-page-paper]').first();
+    const box = (await pageArea.boundingBox())!;
+    const x = Math.min(300, box.x + 100);
+    const y = box.y + 100;
+    await expect(page.locator('[data-studio-objects]')).toHaveCSS("pointer-events", "none");
+    await expect.poll(() => page.evaluate(({ x, y }) => getComputedStyle(document.elementFromPoint(x, y)!).cursor, { x, y })).toBe("text");
+    await page.mouse.click(x, y);
+    await expect(editor).toBeFocused();
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(0);
+    await page.keyboard.type("abc");
+    await expect(editor).toContainText("abc");
+    await expect(tool).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(0);
+  });
+
+  test("IBEAM edits an existing text box without creating another", async ({ page }) => {
+    await openStudio(page);
+    await page.evaluate(() => {
+      const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+      localStorage.setItem("qalam-studio-frames-v1", JSON.stringify({ [id]: [{
+        id: "existing-text-box", kind: "text", page: 1, xMm: 20, yMm: 35,
+        wMm: 60, hMm: 30, flip: false, text: "Existing box",
+      }] }));
+    });
+    await page.reload();
+    const input = page.getByRole("textbox", { name: "Text box", exact: true });
+    await expect(input).toHaveValue("Existing box");
+    const story = await page.locator(".ProseMirror").innerText();
+    const tool = page.locator('[data-studio-tool-button="text"]');
+    await tool.click();
+    await expect(input).toHaveCSS("cursor", "text");
+    await input.click();
+    await expect(input).toBeFocused();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" edited");
+    await expect(input).toHaveValue("Existing box edited");
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(1);
+    await expect(page.locator(".ProseMirror")).toHaveText(story);
+    await expect(tool).toHaveAttribute("aria-pressed", "true");
+  });
+
   test("Select intercepts page clicks without focusing or typing into the story", async ({ page }) => {
     await openStudio(page, "ur");
     const editor = page.locator(".ProseMirror");
@@ -128,7 +178,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await page.keyboard.press("Control+A");
     await page.getByRole("button", { name: "Bold" }).click();
     await expect(editor.locator("strong")).toContainText(ENGLISH);
-    expect(await editor.getAttribute("dir")).toBe("ltr");
+    await expect(editor.locator("p").first()).toHaveAttribute("dir", "ltr");
 
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
     await page.reload();
@@ -138,6 +188,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("keeps Urdu and English paragraphs intact with their paragraph directions", async ({ page }) => {
     await openStudio(page, "ur");
+    await page.locator('[data-studio-tool-button="text"]').click();
     const editor = page.locator(".ProseMirror");
     await editor.click();
     await page.keyboard.type(URDU);
@@ -149,7 +200,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
 
     await editor.locator("p").nth(1).click();
-    await page.getByRole("button", { name: "Left-to-right (English)" }).click();
+    await page.getByRole("button", { name: "Left to right", exact: true }).click();
     await expect(editor.locator("p").nth(1)).toContainText(ENGLISH);
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
     await expect(editor.locator("p").nth(0)).toHaveAttribute("dir", "rtl");
@@ -168,6 +219,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("creates, edits, persists, and exports a multilingual table", async ({ page }) => {
     await openStudio(page);
+    await page.locator('[data-studio-tool-button="text"]').click();
     await page.locator('[data-menu-root="insert"]').click();
     await page.locator('[data-menu-action="insert.table"]').click();
     await page.getByRole("dialog", { name: "Insert table" }).getByLabel("Rows").fill("2");
@@ -271,6 +323,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("wraps paragraph text beside left and right images and persists wrap mode", async ({ page }) => {
     await openStudio(page);
+    await page.locator('[data-studio-tool-button="text"]').click();
     await page.locator('[data-menu-root="insert"]').click();
     await page.locator('[data-menu-action="insert.image"]').click();
     await page.locator('[data-studio-image-input="true"]').setInputFiles({

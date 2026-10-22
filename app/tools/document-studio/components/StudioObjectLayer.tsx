@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
 
@@ -19,7 +19,7 @@ export type StudioFrame = {
   text: string;
 };
 
-const DRAW_TOOLS = new Set<StudioToolId>(["rect", "ellipse", "round-rect", "line", "text"]);
+const DRAW_TOOLS = new Set<StudioToolId>(["rect", "ellipse", "round-rect", "line"]);
 const FRAME_KEY = "qalam-studio-frames-v1";
 
 export function readStoredFrames(id: string): StudioFrame[] {
@@ -81,7 +81,6 @@ export function StudioObjectLayer({
   marginRightPx: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const pendingTextFocus = useRef<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
   const dragRef = useRef<
@@ -108,17 +107,6 @@ export function StudioObjectLayer({
       document.removeEventListener("keydown", clearOnEscape, true);
     };
   }, [tool]);
-
-  // Focus after React mounts the new textarea, before the next keystroke.
-  useLayoutEffect(() => {
-    const id = pendingTextFocus.current;
-    if (!id) return;
-    const input = rootRef.current?.querySelector<HTMLTextAreaElement>(`[data-studio-frame-id="${id}"] textarea`);
-    if (input) {
-      input.focus({ preventScroll: true });
-      pendingTextFocus.current = null;
-    }
-  }, [frames]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -157,7 +145,7 @@ export function StudioObjectLayer({
   };
 
   const commitBox = (box: { x: number; y: number; w: number; h: number; flip: boolean }) => {
-    const kind = tool === "text" || tool === "line" || tool === "ellipse" || tool === "round-rect" || tool === "rect" ? tool : null;
+    const kind = tool === "line" || tool === "ellipse" || tool === "round-rect" || tool === "rect" ? tool : null;
     if (!kind) return;
     let { x, y, w, h } = box;
     const flip = (w < 0) !== (h < 0);
@@ -187,7 +175,6 @@ export function StudioObjectLayer({
       flip,
       text: "",
     };
-    if (kind === "text") pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
     setSelected(frame.id);
   };
@@ -197,7 +184,7 @@ export function StudioObjectLayer({
       ref={rootRef}
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
-      style={{ pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : drawing ? "crosshair" : undefined }}
+      style={{ pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => {
         if (tool === "select") {
@@ -294,8 +281,8 @@ export function StudioObjectLayer({
               top,
               width,
               height,
-              pointerEvents: "auto",
-              cursor: tool === "select" || active ? "move" : "crosshair",
+              pointerEvents: tool === "text" && frame.kind !== "text" ? "none" : "auto",
+              cursor: tool === "text" ? "text" : tool === "select" || active ? "move" : "crosshair",
             }}
             onPointerDown={(event) => {
               if (frame.kind === "text" && (tool === "text" || tool === "select")) {

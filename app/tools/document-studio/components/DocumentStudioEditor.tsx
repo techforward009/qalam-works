@@ -630,11 +630,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [processingLanguage, editor]);
 
   const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!editor || canvasTool === "select") return;
+    if (!editor || canvasTool !== "text") return;
     const target = e.target as HTMLElement;
-    if (target.closest("button, a, input, select, textarea")) return;
-    if (!editor.isFocused) {
-      editor.commands.focus(editor.isEmpty ? "start" : "end");
+    if (target.closest("button, a, input, select, textarea, img, [data-resize-container]")) return;
+    if (!editor.isFocused || !target.closest(".ProseMirror")) {
+      const hit = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+      editor.commands.focus(editor.isEmpty ? "start" : hit?.pos ?? "end");
     }
   };
 

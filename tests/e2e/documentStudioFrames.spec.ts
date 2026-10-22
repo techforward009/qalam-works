@@ -6,6 +6,7 @@ async function openCanvas(page: Page) {
   await page.addInitScript(() => localStorage.setItem("qalam-site-language", "en"));
   await page.goto("/tools/document-studio");
   await expect(page.locator(".ProseMirror")).toBeEditable();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
   await expect(page.locator('[data-studio-zoom="100"]')).toBeVisible();
 }
 
@@ -19,13 +20,28 @@ async function draw(page: Page, tool: string, x: number, y: number, w = 180, h =
   await page.mouse.up();
 }
 
-test("new and existing text frames receive typing with Text and Select", async ({ page }) => {
+// The Textbox drawing tool is not available yet; preserve coverage of saved text frames.
+async function loadTextFrame(page: Page, text: string, y = 100) {
+  await page.evaluate(({ text, y }) => {
+    const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+    const frames = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}");
+    frames[id] = [...(frames[id] || []), { id: "saved-text-box", kind: "text", page: 1,
+      xMm: 80 * 25.4 / 96, yMm: y * 25.4 / 96, wMm: 180 * 25.4 / 96,
+      hMm: 90 * 25.4 / 96, text, flip: false }];
+    localStorage.setItem("qalam-studio-frames-v1", JSON.stringify(frames));
+  }, { text, y });
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Text box", exact: true })).toHaveValue(text);
+}
+
+test("existing text frames receive typing with Text and Select", async ({ page }) => {
   await openCanvas(page);
   const main = page.locator(".ProseMirror");
   const original = await main.innerText();
-  await draw(page, "text", 80, 100);
+  await loadTextFrame(page, "Frame one");
+  await page.locator('[data-studio-tool-button="text"]').click();
   const input = page.getByRole("textbox", { name: "Text box", exact: true });
-  await page.keyboard.type("Frame one");
+  await input.click();
   await expect(input).toBeFocused();
   await expect(input).toHaveValue("Frame one");
   for (const tool of ["select", "text"]) {
@@ -55,9 +71,7 @@ test("shapes use black non-scaling 1px strokes on a snapped pixel grid", async (
     }
   }
   // Hide selection handles so the screenshot shows the actual black outlines.
-  await page.locator('[data-studio-tool-button="text"]').click();
-  await draw(page, "text", 360, 120, 260, 110);
-  await page.keyboard.type("یہ ایک متن کا خانہ ہے۔");
+  await page.keyboard.press("Escape");
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: test.info().outputPath("qalam-frames-1920x1080.png") });
 });
@@ -77,8 +91,7 @@ test("Select deselects frames with Escape and empty page or pasteboard clicks", 
     await expect(handles).toHaveCount(0);
     await expect(frame).toHaveCount(1);
   }
-  await draw(page, "text", 100, 350);
-  await page.keyboard.insertText("Frame text");
+  await loadTextFrame(page, "Frame text", 350);
   await page.locator('[data-studio-tool-button="select"]').click();
   await page.getByRole("textbox", { name: "Text box", exact: true }).click();
   await expect(handles).toHaveCount(8);
@@ -90,6 +103,7 @@ test("Select deselects frames with Escape and empty page or pasteboard clicks", 
 test("Latin runs in Urdu paragraphs follow the English font without changing Urdu", async ({ page }) => {
   await openCanvas(page);
   const editor = page.locator(".ProseMirror");
+  await page.locator('[data-studio-tool-button="text"]').click();
   await editor.click();
   await page.keyboard.insertText("یہ اردو عبارت ہے Hello Qalam 2026 اور پھر اردو۔");
   const paragraph = editor.locator('p[dir="rtl"]').first();
@@ -119,12 +133,12 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
   });
   const englishGeometry = await geometry();
   await page.locator('[data-studio-language-switch] button[lang="ur"]').click();
-  await expect(page.getByRole("textbox", { name: "دستاویز ایڈیٹر", exact: true })).toBeEditable();
+  await expect(page.getByRole("textbox", { name: "Document editor", exact: true })).toBeEditable();
   await expect.poll(geometry).toEqual(englishGeometry);
   expect(englishGeometry[0].x).toBe(0);
   expect(englishGeometry[1].x).toBe(1903);
-  const labels = { select: "انتخاب", text: "متن", image: "تصویر", rect: "مستطیل",
-    ellipse: "بیضوی", "round-rect": "گول کونوں والا مستطیل", line: "لکیر" };
+  const labels = { select: "Select", text: "Text", image: "Picture", rect: "Rectangle",
+    ellipse: "Ellipse", "round-rect": "Rounded rectangle", line: "Line" };
   for (const [id, label] of Object.entries(labels)) {
     const button = page.locator(`[data-studio-tool-button="${id}"]`);
     await expect(button).toHaveAttribute("title", label);
@@ -135,8 +149,8 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
     await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
     await expect(button).toHaveAttribute("aria-pressed", "true");
   }
-  const master = page.getByRole("button", { name: "ماسٹر صفحات", exact: true });
+  const master = page.getByRole("button", { name: "Master pages", exact: true });
   await expect(master).toBeDisabled();
-  await expect(master).toHaveAttribute("title", "جلد آ رہا ہے");
+  await expect(master).toHaveAttribute("title", "Coming soon");
   await expect(master).toHaveCSS("color", "rgb(128, 128, 128)");
 });

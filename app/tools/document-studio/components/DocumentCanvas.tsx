@@ -519,7 +519,7 @@ export default function DocumentCanvas({
                       }
                       dir={dir}
                       onClick={(event) => {
-                        if (tool === "hand" || tool === "select") return;
+                        if (tool !== "text") return;
                         onWrapperClick(event);
                       }}
                       role="textbox"
