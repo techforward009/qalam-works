@@ -251,6 +251,13 @@ textarea {
   font-size: 1.40625em;
 }
 
+/* The book-passage class fixes its previous size at 1.15rem (18.4px).
+   Its specific selector must scale that existing size instead of reverting
+   to 1.25 times the smaller parent font size. 1.15 * 1.25 = 1.4375rem. */
+.qalam-book-arabic.khateeb-book-ar {
+  font-size: 1.4375rem;
+}
+
 /* BookPassageText nests an Arabic span inside an Arabic block.
    Inherit the scaled size/spacing rather than multiplying 1.25 twice. */
 .qalam-book-arabic .qalam-book-arabic {

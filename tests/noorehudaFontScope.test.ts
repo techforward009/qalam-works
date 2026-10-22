@@ -17,6 +17,8 @@ describe("Noorehuda font scope and Quran isolation", () => {
     expect(globals).toContain("word-spacing: 0.12em;");
     expect(globals).toContain(".qalam-book-arabic .qalam-book-arabic {");
     expect(globals).toContain("font-size: inherit;");
+    expect(globals).toContain(".qalam-book-arabic.khateeb-book-ar {");
+    expect(globals).toContain("font-size: 1.4375rem;");
     expect(globals).toContain("word-spacing: inherit;");
     expect(globals).toContain('.qalam-book-arabic .khateeb-digital-khatt-quranic');
     expect(globals).not.toContain('@font-face {\n  font-family: "Noorehuda"');
