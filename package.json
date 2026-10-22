@@ -36,6 +36,7 @@
     "@vercel/oidc": "^3.8.9",
     "@vercel/speed-insights": "^2.0.0",
     "astronomy-engine": "^2.1.19",
+    "cfb": "^1.2.2",
     "docx": "^9.7.1",
     "lucide-react": "^1.28.0",
     "mammoth": "^1.8.0",

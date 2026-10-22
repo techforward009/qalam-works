@@ -73,7 +73,7 @@ export default function DocumentSettingsPanel({
             value={documentSettings.page.size}
             onChange={(e) => {
               const size = e.target.value as "a4" | "a5" | "letter";
-              setDocumentSettings((s) => ({ ...s, page: { ...s.page, size } }));
+              setDocumentSettings((s) => ({ ...s, page: { ...s.page, size, customSizeMm: undefined } }));
               onPageChange();
             }}
           >

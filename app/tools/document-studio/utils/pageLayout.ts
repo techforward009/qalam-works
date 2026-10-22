@@ -71,11 +71,22 @@ export function resolveMargins(
   };
 }
 
+export type CustomPageSizeMm = { widthMm: number; heightMm: number };
+
+/** Optional imported paper size, stored in portrait order like the presets. */
+export function parseCustomPageSizeMm(value: unknown): CustomPageSizeMm | null {
+  if (!value || typeof value !== "object") return null;
+  const { widthMm, heightMm } = value as Partial<CustomPageSizeMm>;
+  return typeof widthMm === "number" && Number.isFinite(widthMm) && widthMm >= 1 && widthMm <= 2000 &&
+    typeof heightMm === "number" && Number.isFinite(heightMm) && heightMm >= 1 && heightMm <= 2000 ? { widthMm, heightMm } : null;
+}
+
 export function resolvePageDimensions(
   size: PageSizeId,
-  orientation: PageOrientation
+  orientation: PageOrientation,
+  customSizeMm?: CustomPageSizeMm
 ): { widthMm: number; heightMm: number } {
-  const base = PAGE_SIZE_MM[size] ?? PAGE_SIZE_MM.a4;
+  const base = parseCustomPageSizeMm(customSizeMm) ?? PAGE_SIZE_MM[size] ?? PAGE_SIZE_MM.a4;
   if (orientation === "landscape") {
     return { widthMm: base.heightMm, heightMm: base.widthMm };
   }
@@ -87,9 +98,16 @@ export function resolvePageLayout(input: {
   orientation: PageOrientation;
   marginPreset: MarginPresetId;
   customMargins?: Partial<PageMarginsMm>;
+  customSizeMm?: CustomPageSizeMm;
 }): ResolvedPageLayout {
-  const dims = resolvePageDimensions(input.size, input.orientation);
-  const margins = resolveMargins(input.marginPreset, input.customMargins);
+  const dims = resolvePageDimensions(input.size, input.orientation, input.customSizeMm);
+  let margins = resolveMargins(input.marginPreset, input.customMargins);
+  const raw = input.customMargins;
+  if (parseCustomPageSizeMm(input.customSizeMm) && input.marginPreset === "custom" && raw &&
+      [raw.topMm, raw.bottomMm, raw.startMm, raw.endMm].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) &&
+      raw.topMm! < dims.heightMm / 2 && raw.bottomMm! < dims.heightMm / 2 && raw.startMm! < dims.widthMm / 2 && raw.endMm! < dims.widthMm / 2) {
+    margins = { topMm: raw.topMm!, bottomMm: raw.bottomMm!, startMm: raw.startMm!, endMm: raw.endMm! };
+  }
   return {
     size: input.size,
     orientation: input.orientation,

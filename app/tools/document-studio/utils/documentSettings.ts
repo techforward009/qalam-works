@@ -5,7 +5,7 @@
 
 import { STUDIO_FONTS, isRemovedQuranFont, isRemovedUnlicensedFont, isRetiredAlviFont, type FontId } from "./fontRegistry";
 import type { MarginPresetId, PageOrientation, PageSizeId, PageMarginsMm } from "./pageLayout";
-import { clampMarginMm, resolveMargins } from "./pageLayout";
+import { clampMarginMm, resolveMargins, parseCustomPageSizeMm, resolvePageLayout, type CustomPageSizeMm } from "./pageLayout";
 import type { PresetId } from "./publishingPresets";
 import { isValidPresetId } from "./publishingPresets";
 
@@ -18,6 +18,8 @@ export interface DocumentStudioSettings {
   page: {
     size: PageSizeId;
     orientation: PageOrientation;
+    customSizeMm?: CustomPageSizeMm;
+    firstPageNumber?: number;
     margins: {
       preset: MarginPresetId;
       topMm: number;
@@ -257,13 +259,15 @@ export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
     marginsIn.preset === "normal"
       ? marginsIn.preset
       : "normal";
+  const customSizeMm = parseCustomPageSizeMm(pageIn.customSizeMm);
+  const firstPageNumber = typeof pageIn.firstPageNumber === "number" && Number.isInteger(pageIn.firstPageNumber) && pageIn.firstPageNumber >= 1 && pageIn.firstPageNumber <= 0xffffffff ? pageIn.firstPageNumber : undefined;
   const custom: PageMarginsMm = {
-    topMm: clampMarginMm(Number(marginsIn.topMm)),
-    bottomMm: clampMarginMm(Number(marginsIn.bottomMm)),
-    startMm: clampMarginMm(Number(marginsIn.startMm)),
-    endMm: clampMarginMm(Number(marginsIn.endMm)),
+    topMm: Number(marginsIn.topMm),
+    bottomMm: Number(marginsIn.bottomMm),
+    startMm: Number(marginsIn.startMm),
+    endMm: Number(marginsIn.endMm),
   };
-  const marginsResolved = resolveMargins(marginPreset, custom);
+  const marginsResolved = resolvePageLayout({ size, orientation, marginPreset, customMargins: custom, customSizeMm: customSizeMm ?? undefined }).margins;
 
   const typoIn =
     o.typography && typeof o.typography === "object"
@@ -291,6 +295,8 @@ export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
     page: {
       size,
       orientation,
+      ...(customSizeMm ? { customSizeMm } : {}),
+      ...(firstPageNumber !== undefined ? { firstPageNumber } : {}),
       margins: {
         preset: marginPreset,
         ...marginsResolved,

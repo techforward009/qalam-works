@@ -129,6 +129,7 @@ export function applyPresetToSettings(
     page: {
       ...current.page,
       size: p.pageSize,
+      ...(current.page.customSizeMm ? { customSizeMm: undefined } : {}),
       margins: {
         ...current.page.margins,
         preset: p.marginPreset,
