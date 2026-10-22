@@ -31,6 +31,8 @@ export type DocumentMenuHandlers = {
   newDocument: () => void;
   openLibrary: () => void;
   upload: () => void;
+  saveQalam: () => void;
+  openQalam: () => void;
   downloadTxt: () => void;
   downloadDocx: () => void;
   downloadPdf: () => void;
@@ -117,6 +119,12 @@ export function dispatchDocumentMenuAction(
       return;
     case "file.upload":
       handlers.upload();
+      return;
+    case "file.saveQalam":
+      handlers.saveQalam();
+      return;
+    case "file.openQalam":
+      handlers.openQalam();
       return;
     case "file.downloadTxt":
       handlers.downloadTxt();

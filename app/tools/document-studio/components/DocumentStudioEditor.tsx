@@ -49,6 +49,13 @@ import {
   type SuggestionReviewState,
 } from "../utils/suggestionReview";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
+import {
+  buildQalamDocumentFile,
+  parseQalamDocument,
+  qalamDocumentFilename,
+  qalamReplaceConfirmMessage,
+  serializeQalamDocument,
+} from "../utils/qalamDocumentFile";
 import { plainTextToDocNodeWithDir, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
@@ -279,9 +286,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (!libraryReadyRef.current || !library || !id) return;
-    void library.updateDocument(id, { documentSettings }).catch((err) => {
-      console.error("Failed to save document settings:", err);
-      setSaveStatus("error");
+    saveChainRef.current = saveChainRef.current.then(async () => {
+      try {
+        await library.updateDocument(id, { documentSettings: documentSettingsRef.current });
+      } catch (err) {
+        console.error("Failed to save document settings:", err);
+        setSaveStatus("error");
+      }
     });
   }, [documentSettings]);
 
@@ -342,6 +353,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [documentTitle]);
   const saveChainRef = useRef(Promise.resolve());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qalamFileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -1617,11 +1629,99 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     insertDocumentBreak(editor, { type: "sectionBreak", attrs: { type } });
   };
 
+  const handleSaveQalam = () => {
+    if (!editor) return;
+    const file = buildQalamDocumentFile({
+      title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+      content: editor.getJSON() as DocNode,
+      documentSettings: documentSettingsRef.current,
+    });
+    trackEvent("tool_download", { tool: "document_studio", export_format: "qalam", mode: processingLanguage, success: true });
+    const blob = new Blob([serializeQalamDocument(file)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = qalamDocumentFilename(file.title);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const handleOpenQalamFile = async (file: File) => {
+    setUploadError(null);
+    let raw = "";
+    try {
+      raw = await file.text();
+    } catch {
+      setUploadError("فائل پڑھی نہیں جا سکی / This file could not be read.");
+      return;
+    }
+    const parsed = parseQalamDocument(raw);
+    if (!parsed.ok) {
+      setUploadError(parsed.error);
+      return;
+    }
+    if (!editor) return;
+    const confirmed = window.confirm(qalamReplaceConfirmMessage(parsed.document.title));
+    if (!confirmed) return;
+
+    const { title, content, documentSettings } = parsed.document;
+    documentTitleRef.current = title;
+    documentSettingsRef.current = documentSettings;
+    setDocumentTitle(title);
+    setDocumentSettings(documentSettings);
+    setEditorContent(editor, content, "load");
+    setPreview(null);
+    setAlreadyClean(false);
+    setDocxImportNotice(false);
+    setAuditReport(null);
+    hasAuditReportRef.current = false;
+    setIsAuditStale(false);
+    setPdfSummary(null);
+    setSaveStatus("saving");
+
+    saveChainRef.current = saveChainRef.current.then(async () => {
+      const library = libraryRef.current;
+      if (!library) {
+        setSaveStatus("saved");
+        return;
+      }
+      try {
+        const storedContent = editor.getJSON() as DocNode;
+        const id = activeDocumentIdRef.current;
+        if (!id) {
+          const record = await library.createDocument({
+            title,
+            content: storedContent,
+            documentSettings,
+          });
+          activeDocumentIdRef.current = record.id;
+          setActiveDocumentId(record.id);
+          saveActiveDocumentId(record.id);
+        } else {
+          await library.updateDocument(id, {
+            title,
+            content: storedContent,
+            documentSettings,
+          });
+        }
+        setLibraryItems(await library.listDocuments());
+        setSaveStatus("saved");
+      } catch (err) {
+        console.error("Failed to open Qalam document:", err);
+        setSaveStatus("error");
+      }
+    });
+  };
+
   const handleMenuAction = (id: MenuActionId) => {
     dispatchDocumentMenuAction(id, editor, {
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
       upload: () => fileInputRef.current?.click(),
+      saveQalam: handleSaveQalam,
+      openQalam: () => qalamFileInputRef.current?.click(),
       downloadTxt: handleDownload,
       downloadDocx: () => {
         void handleDownloadDocx();
@@ -1817,6 +1917,18 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         className="hidden"
         id="document-studio-upload-input"
         disabled={isImporting}
+      />
+      <input
+        ref={qalamFileInputRef}
+        type="file"
+        accept=".qalam,application/json"
+        className="hidden"
+        data-studio-qalam-input="true"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleOpenQalamFile(file);
+          event.target.value = "";
+        }}
       />
       <input
         ref={imageInputRef}
