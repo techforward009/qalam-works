@@ -282,16 +282,17 @@ export function StudioObjectLayer({
               width,
               height,
               pointerEvents: tool === "text" && frame.kind !== "text" ? "none" : "auto",
-              cursor: tool === "text" ? "text" : tool === "select" || active ? "move" : "crosshair",
+              cursor: tool === "text" ? "text" : tool === "select" ? "move" : drawing ? "crosshair" : "default",
             }}
             onPointerDown={(event) => {
-              if (frame.kind === "text" && (tool === "text" || tool === "select")) {
+              if (frame.kind === "text" && tool === "text") {
                 event.stopPropagation();
                 setSelected(frame.id);
                 event.currentTarget.querySelector("textarea")?.focus({ preventScroll: true });
                 return;
               }
               if (DRAW_TOOLS.has(tool)) return;
+              if (tool === "select") event.preventDefault();
               event.stopPropagation();
               setSelected(frame.id);
               if (tool !== "select" && !DRAW_TOOLS.has(tool)) return;
@@ -307,7 +308,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} onTextFocus={() => setSelected(frame.id)} onText={(text) => updateFrame(frame.id, { text })} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected(frame.id)} onText={(text) => updateFrame(frame.id, { text })} />
             {active
               ? (["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
                   <div
@@ -317,7 +318,7 @@ export function StudioObjectLayer({
                       position: "absolute",
                       width: 6,
                       height: 6,
-                      background: "#fff",
+                      background: "#000",
                       border: "1px solid #000",
                       ...handlePos(edge),
                       cursor: edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
@@ -366,6 +367,7 @@ function handlePos(edge: string): CSSProperties {
 function FrameShape({
   frame,
   active,
+  editable,
   width,
   height,
   onTextFocus,
@@ -373,6 +375,7 @@ function FrameShape({
 }: {
   frame: StudioFrame;
   active: boolean;
+  editable: boolean;
   width: number;
   height: number;
   onTextFocus: () => void;
@@ -382,6 +385,8 @@ function FrameShape({
     return (
       <textarea
         value={frame.text}
+        readOnly={!editable}
+        tabIndex={editable ? 0 : -1}
         dir="rtl"
         aria-label="Text box"
         onChange={(event) => onText(event.target.value)}
@@ -391,7 +396,9 @@ function FrameShape({
           width: "100%",
           height: "100%",
           resize: "none",
-          border: active ? "1px solid #000" : "1px dotted #404040",
+          pointerEvents: editable ? "auto" : "none",
+          cursor: editable ? "text" : "inherit",
+          border: active ? "1px solid #808080" : "1px dotted #404040",
           background: "transparent",
           color: "#000",
           fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',
@@ -417,7 +424,7 @@ function FrameShape({
       {frame.kind === "line" ? (
         <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
       ) : null}
-      {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#1a4fbf" strokeWidth={0.3} vectorEffect="non-scaling-stroke" /> : null}
+      {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#808080" strokeWidth={1} vectorEffect="non-scaling-stroke" /> : null}
     </svg>
   );
 }

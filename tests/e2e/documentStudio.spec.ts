@@ -137,6 +137,48 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(tool).toHaveAttribute("aria-pressed", "true");
   });
 
+  test("Arrow selects and moves a text box without entering text-edit mode", async ({ page }) => {
+    await openStudio(page, "ur");
+    // Textbox drawing is deferred; load the same saved frame that tool will create.
+    await page.evaluate(() => {
+      const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+      localStorage.setItem("qalam-studio-frames-v1", JSON.stringify({ [id]: [{
+        id: "movable-text-box", kind: "text", page: 1, xMm: 20, yMm: 35,
+        wMm: 60, hMm: 30, flip: false, text: "Keep this text",
+      }] }));
+    });
+    await page.reload();
+    const frame = page.locator('[data-studio-frame="text"]');
+    const textarea = frame.locator("textarea");
+    await expect(textarea).toHaveValue("Keep this text");
+    // Enter text mode first so choosing Arrow must also blur the focused textarea.
+    await page.locator('[data-studio-tool-button="text"]').click();
+    await textarea.click();
+    await expect(textarea).toBeFocused();
+    await page.locator('[data-studio-tool-button="select"]').click();
+    await expect(frame).toHaveCSS("cursor", "move");
+    await expect(textarea).toHaveAttribute("readonly", "");
+    await expect(textarea).toHaveCSS("pointer-events", "none");
+    const box = (await frame.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(textarea).not.toBeFocused();
+    await expect(page.locator('[data-studio-caret]')).toHaveCount(0);
+    const handles = frame.locator('[data-studio-frame-handle]');
+    await expect(handles).toHaveCount(8);
+    for (const handle of await handles.all()) await expect(handle).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(textarea).toHaveCSS("border-top-color", "rgb(128, 128, 128)");
+    await page.keyboard.type("x");
+    await expect(textarea).toHaveValue("Keep this text");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await frame.boundingBox())!.x - box.x)).toBe(40);
+    await expect(textarea).not.toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(handles).toHaveCount(0);
+  });
+
   test("Select intercepts page clicks without focusing or typing into the story", async ({ page }) => {
     await openStudio(page, "ur");
     const editor = page.locator(".ProseMirror");

@@ -34,7 +34,7 @@ async function loadTextFrame(page: Page, text: string, y = 100) {
   await expect(page.getByRole("textbox", { name: "Text box", exact: true })).toHaveValue(text);
 }
 
-test("existing text frames receive typing with Text and Select", async ({ page }) => {
+test("existing text frames are edited only with IBEAM", async ({ page }) => {
   await openCanvas(page);
   const main = page.locator(".ProseMirror");
   const original = await main.innerText();
@@ -44,15 +44,20 @@ test("existing text frames receive typing with Text and Select", async ({ page }
   await input.click();
   await expect(input).toBeFocused();
   await expect(input).toHaveValue("Frame one");
-  for (const tool of ["select", "text"]) {
-    await page.locator(`[data-studio-tool-button="${tool}"]`).click();
-    await input.click();
-    await expect(input).toBeFocused();
-    await page.keyboard.press("End");
-    await page.keyboard.type(` ${tool}`);
-    await expect(input).toHaveValue(new RegExp(tool + "$"));
-    await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
-  }
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const box = (await input.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(input).not.toBeFocused();
+  await expect(input).toHaveAttribute("readonly", "");
+  await page.keyboard.type("x");
+  await expect(input).toHaveValue("Frame one");
+  await page.locator('[data-studio-tool-button="text"]').click();
+  await input.click();
+  await expect(input).toBeFocused();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" edited");
+  await expect(input).toHaveValue("Frame one edited");
+  await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
   expect(await main.innerText()).toBe(original);
 });
 
@@ -60,6 +65,7 @@ test("shapes use black non-scaling 1px strokes on a snapped pixel grid", async (
   await openCanvas(page);
   for (const [index, tool] of ["rect", "ellipse", "round-rect", "line"].entries()) {
     await draw(page, tool, 100.3, 90.2 + index * 125, 200.4, 75.3);
+    await expect(page.locator(`[data-studio-frame="${tool}"]`)).toHaveCSS("cursor", "crosshair");
     const frame = page.locator(`[data-studio-frame="${tool}"]`);
     const shape = frame.locator("svg > :first-child");
     await expect(shape).toHaveAttribute("stroke", "#000");
@@ -93,7 +99,8 @@ test("Select deselects frames with Escape and empty page or pasteboard clicks", 
   }
   await loadTextFrame(page, "Frame text", 350);
   await page.locator('[data-studio-tool-button="select"]').click();
-  await page.getByRole("textbox", { name: "Text box", exact: true }).click();
+  const textBox = (await page.locator('[data-studio-frame="text"]').boundingBox())!;
+  await page.mouse.click(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
   await expect(handles).toHaveCount(8);
   await page.keyboard.press("Escape");
   await expect(handles).toHaveCount(0);
