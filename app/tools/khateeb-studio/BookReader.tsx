@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ClipboardEvent } from "react";
 import BookPassageText from "./BookPassageText";
-import { displayArabicBookText } from "../../lib/knowledge/bookArabicDisplay";
+import { displayArabicBookText, splitArabicBookParentheses } from "../../lib/knowledge/bookArabicDisplay";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookSourceLabel, isBookExcerpt, type BookExcerpt } from "../../lib/knowledge/bookCorpus";
@@ -128,7 +128,20 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         text.lang = fragment.language;
         text.dir = fragment.language === "en" ? "ltr" : "rtl";
         if (fragment.language === "ar") text.classList.add("qalam-book-arabic");
-        text.textContent = fragment.language === "ar" ? displayArabicBookText(fragment.text) : fragment.text;
+        if (fragment.language === "ar") {
+          // Keep the measurement probe visually identical to BookPassageText.
+          // Isolating just parenthetical Arabic changes bidi layout, not source offsets.
+          for (const piece of splitArabicBookParentheses(displayArabicBookText(fragment.text))) {
+            if (piece.isolateRtl) {
+              const isolated = document.createElement("bdi");
+              isolated.lang = "ar";
+              isolated.dir = "rtl";
+              isolated.className = "khateeb-book-bracket-isolate";
+              isolated.textContent = piece.text;
+              text.append(isolated);
+            } else text.append(document.createTextNode(piece.text));
+          }
+        } else text.textContent = fragment.text;
         if (fragment.kind === "translation") {
           const block = document.createElement("section");
           block.className = styles.translationBlock;
