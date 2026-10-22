@@ -135,4 +135,3 @@ export const CHAR_MAP_URDU: ReadonlyMap<number, string> = new Map([
   [0xE6, '\u0613'],  // ؓ Sign Radi Allahu Anhu
   [0xE7, '\u0612'],  // ؒ Sign Alayhe Assallam
 ]);
-
