@@ -234,7 +234,14 @@ textarea {
   font-display: swap;
 }
 
-.qalam-book-arabic,
+.qalam-book-arabic {
+  font-family: "Noorehuda", "Digital Khatt IndoPak Book", serif !important;
+  font-variant-ligatures: normal;
+  font-feature-settings: normal;
+  line-height: 2.1;
+}
+
+/* Keep a Quranic descendant on its original font, even if placed in a book card. */
 .qalam-book-arabic .khateeb-digital-khatt-quranic {
   font-family: "Digital Khatt IndoPak Book", serif !important;
 }
