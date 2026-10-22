@@ -61,6 +61,11 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain('onCopyCapture={copySourceSelection}');
     expect(reader).toContain("bookArabicDisplay={fragment.language === \"ar\"}");
     expect(reader).not.toContain('{ur ? "صفحہ " : "Page "}');
+    expect(reader).toContain("data-book-language={reading.language}");
+    expect(css).toContain('.readingPage[data-book-language="en"] .paragraphs { gap: .55rem; }');
+    expect(css).toContain("font-size: .84em; line-height: 1.62;");
+    expect(css).toContain("border: 0;");
+    expect(css).not.toContain("border-radius: 50%;");
 
     expect(reader).toContain("اصل");
   });
