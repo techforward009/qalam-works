@@ -113,6 +113,12 @@ export function reconstructUnit(fragments: readonly ReaderTextFragment[], key: s
     .map(fragment => fragment.text).join("");
 }
 
+/** Show the translated English prose only in English editions that contain
+ * parallel Arabic source paragraphs. The verified source stays unchanged. */
+export function shouldDisplayBookParagraph(language: "ar" | "ur" | "en", text: string): boolean {
+  return language !== "en" || /[A-Za-z]/u.test(text);
+}
+
 export function readingFlowUnits(reading: BookReadingPage, mode: BookCopyMode): ReaderFlowUnit[] {
   const translationsByLastParagraph = new Map<string, typeof reading.translations>();
   for (const translation of reading.translations ?? []) {
@@ -122,7 +128,7 @@ export function readingFlowUnits(reading: BookReadingPage, mode: BookCopyMode): 
   }
   const units: ReaderFlowUnit[] = [];
   for (const paragraph of reading.paragraphs) {
-    if (mode !== "translation") units.push({ key: `original:${paragraph.id}`, kind: "original",
+    if (mode !== "translation" && shouldDisplayBookParagraph(reading.language, paragraph.text)) units.push({ key: `original:${paragraph.id}`, kind: "original",
       paragraphId: paragraph.id, text: paragraph.text, language: reading.language });
     if (mode !== "original") {
       for (const [index, translation] of (translationsByLastParagraph.get(paragraph.id) ?? []).entries()) {
