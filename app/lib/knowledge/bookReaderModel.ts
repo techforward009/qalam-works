@@ -95,7 +95,7 @@ export function bookReaderRunningHeading(
   if (page.sourceId.startsWith("kafi-")) {
     return [book, designation].filter(Boolean).join(locale === "ur" ? "، " : ", ");
   }
-  const match = designation.match(/^([^\\d۰-۹٠-٩]+?)\\s+([0-9۰-۹٠-٩]+)$/u);
+  const match = designation.match(/^([^\d۰-۹٠-٩]+?)\s+([0-9۰-۹٠-٩]+)$/u);
   if (match) {
     const kind = match[1].trim(), number = match[2];
     return locale === "ur" ? `${book} ${kind} نمبر ${number}` : `${book} ${kind} No. ${number}`;
