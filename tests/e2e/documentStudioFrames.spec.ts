@@ -34,6 +34,44 @@ async function loadTextFrame(page: Page, text: string, y = 100) {
   await expect(page.getByRole("textbox", { name: "Text box", exact: true })).toHaveValue(text);
 }
 
+test("Arrow marquee selects fully enclosed frames, Shift toggles, and groups move and delete", async ({ page }) => {
+  await openCanvas(page);
+  for (const x of [100, 260, 420]) await draw(page, "rect", x, 120, 100, 60);
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const layer = (await page.locator('[data-studio-objects]').boundingBox())!;
+  const frames = page.locator('[data-studio-frame="rect"]');
+  const handles = page.locator('[data-studio-frame-handle]');
+  await page.mouse.move(layer.x + 80, layer.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(layer.x + 460, layer.y + 210, { steps: 6 });
+  await expect(page.locator('[data-studio-marquee]')).toHaveCSS("border", "1px dashed rgb(0, 0, 0)");
+  await page.mouse.up();
+  await expect(handles).toHaveCount(16);
+  await expect(frames.nth(2).locator('[data-studio-frame-handle]')).toHaveCount(0);
+  await frames.nth(2).click({ modifiers: ["Shift"], position: { x: 30, y: 30 } });
+  await expect(handles).toHaveCount(24);
+  await frames.nth(2).click({ modifiers: ["Shift"], position: { x: 30, y: 30 } });
+  await expect(handles).toHaveCount(16);
+  const before = await Promise.all([0, 1, 2].map((i) => frames.nth(i).boundingBox()));
+  await page.mouse.move(before[0]!.x + 30, before[0]!.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(before[0]!.x + 70, before[0]!.y + 55, { steps: 5 });
+  await page.mouse.up();
+  for (const i of [0, 1]) {
+    const after = (await frames.nth(i).boundingBox())!;
+    expect(after.x - before[i]!.x).toBeCloseTo(40, 0);
+    expect(after.y - before[i]!.y).toBeCloseTo(25, 0);
+  }
+  expect((await frames.nth(2).boundingBox())!.x).toBeCloseTo(before[2]!.x, 0);
+  await page.keyboard.press("Delete");
+  await expect(frames).toHaveCount(1);
+  await expect(handles).toHaveCount(0);
+  await frames.first().click({ position: { x: 30, y: 30 } });
+  await expect(handles).toHaveCount(8);
+  await page.keyboard.press("Escape");
+  await expect(handles).toHaveCount(0);
+});
+
 test("existing text frames are edited only with IBEAM", async ({ page }) => {
   await openCanvas(page);
   const main = page.locator(".ProseMirror");

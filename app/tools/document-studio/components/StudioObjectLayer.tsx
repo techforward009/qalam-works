@@ -88,11 +88,12 @@ export function StudioObjectLayer({
   marginRightPx: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
-    | { mode: "move"; id: string; dx: number; dy: number; pointer: number }
+    | { mode: "marquee"; x: number; y: number; pointer: number }
+    | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number }
     | { mode: "resize"; id: string; edge: string; pointer: number }
     | null
   >(null);
@@ -112,10 +113,14 @@ export function StudioObjectLayer({
     const clearOnEmpty = (event: PointerEvent) => {
       if (tool !== "select") return;
       const target = event.target as HTMLElement | null;
-      if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-frame]")) setSelected(null);
+      if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-objects]")) setSelected([]);
     };
     const clearOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelected(null);
+      if (event.key === "Escape") {
+        setSelected([]);
+        setDraft(null);
+        dragRef.current = null;
+      }
     };
     document.addEventListener("pointerdown", clearOnEmpty, true);
     document.addEventListener("keydown", clearOnEscape, true);
@@ -130,10 +135,10 @@ export function StudioObjectLayer({
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       const target = event.target as HTMLElement | null;
       if (target?.closest("textarea, input, [contenteditable='true']")) return;
-      if (!selected) return;
+      if (!selected.length) return;
       event.preventDefault();
-      onFramesChange(frames.filter((frame) => frame.id !== selected));
-      setSelected(null);
+      onFramesChange(frames.filter((frame) => !selected.includes(frame.id)));
+      setSelected([]);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -192,7 +197,7 @@ export function StudioObjectLayer({
     };
     if (tool === "textbox") pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
-    setSelected(frame.id);
+    setSelected([frame.id]);
     if (tool === "textbox") onToolAction("text");
   };
 
@@ -207,7 +212,11 @@ export function StudioObjectLayer({
         if (tool === "select") {
           event.preventDefault();
           event.stopPropagation();
-          setSelected(null);
+          setSelected([]);
+          const point = localPoint(event);
+          dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId };
+          setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
+          event.currentTarget.setPointerCapture(event.pointerId);
           return;
         }
         if (!drawing) return;
@@ -216,26 +225,25 @@ export function StudioObjectLayer({
         const point = localPoint(event);
         dragRef.current = { mode: "draw", x: point.x, y: point.y, pointer: event.pointerId };
         setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
-        setSelected(null);
+        setSelected([]);
         event.currentTarget.setPointerCapture(event.pointerId);
       }}
       onPointerMove={(event) => {
         const drag = dragRef.current;
         if (!drag || drag.pointer !== event.pointerId) return;
         const point = localPoint(event);
-        if (drag.mode === "draw") {
+        if (drag.mode === "draw" || drag.mode === "marquee") {
           setDraft({ x: drag.x, y: drag.y, w: point.x - drag.x, h: point.y - drag.y, flip: false });
           return;
         }
         if (drag.mode === "move") {
-          const frame = frames.find((item) => item.id === drag.id);
-          if (!frame) return;
-          const stride = pageHeightPx + gapPx;
-          const origin = (frame.page - 1) * stride;
-          updateFrame(frame.id, {
-            xMm: (point.x - drag.dx) / PX_PER_MM,
-            yMm: (point.y - origin - drag.dy) / PX_PER_MM,
-          });
+          const dx = (point.x - drag.x) / PX_PER_MM;
+          const dy = (point.y - drag.y) / PX_PER_MM;
+          const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
+          onChangeRef.current(framesRef.current.map((frame) => {
+            const original = moved.get(frame.id);
+            return original ? { ...frame, xMm: original.xMm + dx, yMm: original.yMm + dy } : frame;
+          }));
           return;
         }
         const frame = frames.find((item) => item.id === drag.id);
@@ -263,12 +271,24 @@ export function StudioObjectLayer({
           hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
         });
       }}
+      onPointerCancel={() => { dragRef.current = null; setDraft(null); }}
       onPointerUp={(event) => {
         const drag = dragRef.current;
         dragRef.current = null;
         if (drag?.mode === "draw") {
           const point = localPoint(event);
           commitBox({ x: drag.x, y: drag.y, w: point.x - drag.x, h: point.y - drag.y, flip: false });
+        }
+        if (drag?.mode === "marquee") {
+          const point = localPoint(event);
+          const left = Math.min(drag.x, point.x), right = Math.max(drag.x, point.x);
+          const top = Math.min(drag.y, point.y), bottom = Math.max(drag.y, point.y);
+          const stride = pageHeightPx + gapPx;
+          setSelected(isUndraggedShape(point.x - drag.x, point.y - drag.y) ? [] : framesRef.current.filter((frame) => {
+            const x = frame.xMm * PX_PER_MM;
+            const y = (frame.page - 1) * stride + frame.yMm * PX_PER_MM;
+            return x >= left && y >= top && x + frame.wMm * PX_PER_MM <= right && y + frame.hMm * PX_PER_MM <= bottom;
+          }).map((frame) => frame.id));
         }
         setDraft(null);
         if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
@@ -286,7 +306,7 @@ export function StudioObjectLayer({
         const top = snap((frame.page - 1) * stride + frame.yMm * PX_PER_MM, rootBox?.top);
         const width = Math.max(1, snap(frame.wMm * PX_PER_MM));
         const height = Math.max(1, snap(frame.hMm * PX_PER_MM));
-        const active = selected === frame.id;
+        const active = selected.includes(frame.id);
         return (
           <div
             key={frame.id}
@@ -304,28 +324,30 @@ export function StudioObjectLayer({
             onPointerDown={(event) => {
               if (frame.kind === "text" && tool === "text") {
                 event.stopPropagation();
-                setSelected(frame.id);
+                setSelected([frame.id]);
                 event.currentTarget.querySelector("textarea")?.focus({ preventScroll: true });
                 return;
               }
               if (DRAW_TOOLS.has(tool)) return;
               if (tool === "select") event.preventDefault();
               event.stopPropagation();
-              setSelected(frame.id);
-              if (tool !== "select" && !DRAW_TOOLS.has(tool)) return;
-              if (DRAW_TOOLS.has(tool)) return;
+              const next = event.shiftKey
+                ? selected.includes(frame.id) ? selected.filter((id) => id !== frame.id) : [...selected, frame.id]
+                : selected.includes(frame.id) ? selected : [frame.id];
+              setSelected(next);
+              if (tool !== "select" || !next.includes(frame.id)) return;
               const point = localPoint(event);
               dragRef.current = {
                 mode: "move",
-                id: frame.id,
-                dx: point.x - left,
-                dy: point.y - top,
+                frames: framesRef.current.filter((item) => next.includes(item.id)),
+                x: point.x,
+                y: point.y,
                 pointer: event.pointerId,
               };
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected(frame.id)} onText={(text) => updateFrame(frame.id, { text })} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected([frame.id])} onText={(text) => updateFrame(frame.id, { text })} />
             {active
               ? (["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
                   <div
@@ -354,6 +376,7 @@ export function StudioObjectLayer({
       })}
       {draft ? (
         <div
+          data-studio-marquee={dragRef.current?.mode === "marquee" ? "true" : undefined}
           style={{
             position: "absolute",
             left: Math.min(draft.x, draft.x + draft.w),
