@@ -58,7 +58,7 @@ describe("visual color palettes", () => {
     expect(textBtn.tagName).toBe("BUTTON");
     expect(hiBtn.tagName).toBe("BUTTON");
     expect(textBtn.getAttribute("aria-label")).toBe("Text color");
-    expect(hiBtn.getAttribute("aria-label")).toBe("Highlight");
+    expect(hiBtn.getAttribute("aria-label")).toBe("Shade");
   });
 
   it("applies text color from a swatch using existing commands", () => {

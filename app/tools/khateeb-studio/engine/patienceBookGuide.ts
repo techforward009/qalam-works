@@ -1,4 +1,4 @@
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import bindings from "../../../lib/knowledge/patienceBookBindings.json";
 import { createBookExcerpt, bookExcerptText, type BookExcerpt, type BookRecord, type BookSource } from "./bookLibrary";
 import { createCustomSermonProject } from "./customSermonProject";
@@ -8,7 +8,7 @@ export const PATIENCE_QURAN = [
   { reference: "البقرہ 2:153", surah: 2, ayahs: [153] },
   { reference: "العصر 103:1–3", surah: 103, ayahs: [1, 2, 3] },
 ].map(group => ({ ...group, text: group.ayahs.map(ayah => {
-  const verse = ahmedgrafQuranReference.getAyah(group.surah, ayah);
+  const verse = publicDigitalKhattQuranReference.getAyah(group.surah, ayah);
   if (!verse) throw new Error("missing-patience-quran-verse");
   return verse.text;
 }).join(" ") }));

@@ -5,12 +5,10 @@ const MIRROR = "https://qalam-fonts-private-mirror.techforward009.workers.dev/fo
 const OLD = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/";
 const sources = {
   "app/globals.css": [
-    "muhammadi-quranic-400.woff2",
     "Gulzar-Regular.woff2",
     "Sahel.woff2",
     "ScheherazadeNew-Medium.woff2",
   ],
-  "app/quran/editions.ts": ["muhammadi-quranic-400.woff2"],
 };
 const localUntilUploaded = {
   "app/globals.css": ["MehrNastaliqWeb.woff2", "NafeesNastaleeq-v1.02.woff2"],

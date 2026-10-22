@@ -18,6 +18,7 @@ export default function DocumentStudioShell({
   statusBar,
   onDismissLeft,
   onDismissRight,
+  fillWindow = false,
   children,
 }: {
   isUr: boolean;
@@ -30,6 +31,7 @@ export default function DocumentStudioShell({
   statusBar: React.ReactNode;
   onDismissLeft?: () => void;
   onDismissRight?: () => void;
+  fillWindow?: boolean;
   children: React.ReactNode;
 }) {
   const leftOpen = Boolean(leftSidebar);
@@ -37,33 +39,39 @@ export default function DocumentStudioShell({
   const shellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (fillWindow) return;
     const el = shellRef.current;
     if (!el) return;
     const fit = () => {
       const top = el.getBoundingClientRect().top;
-      const next = Math.max(320, window.innerHeight - Math.max(0, top) - 16);
+      const next = Math.max(320, window.innerHeight - Math.max(0, top));
       el.style.height = `${Math.round(next)}px`;
     };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, []);
+  }, [fillWindow]);
 
   return (
     <div
       ref={shellRef}
-      className="flex min-h-80 max-w-full flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)]"
+      className={
+        fillWindow
+          ? "flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
+          : "flex min-h-80 max-w-full flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)]"
+      }
       data-studio-shell="true"
       data-studio-ui-language={isUr ? "ur" : "en"}
-      dir={isUr ? "rtl" : "ltr"}
+      dir="ltr"
     >
       <div
         className="studio-no-print sticky top-0 z-30 shrink-0 bg-white shadow-[0_1px_0_rgba(26,58,42,0.12)]"
+        style={fillWindow ? { boxShadow: "none" } : undefined}
         data-studio-sticky-chrome="true"
       >
-        <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div>
-        <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="menu">{menuBar}</div>
-        <div className="border-b border-[#1A3A2A]/10 bg-[#FAF8F3]" data-studio-chrome="toolbar">{toolbar}</div>
+        {topBar ? <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div> : null}
+        <div data-studio-chrome="menu">{menuBar}</div>
+        <div data-studio-chrome="toolbar" style={{ background: "#f0f0f0", boxShadow: "inset 0 -1px 0 #696969, inset 0 -2px 0 #a0a0a0" }}>{toolbar}</div>
         {findBar ? <div className="border-b border-[#1A3A2A]/10 bg-white px-3 py-2">{findBar}</div> : null}
       </div>
 
@@ -90,7 +98,7 @@ export default function DocumentStudioShell({
           </div>
         )}
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#E8E4DB]" data-studio-canvas-slot="true">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white" data-studio-canvas-slot="true">{children}</div>
 
         {rightOpen && (
           <div
@@ -103,7 +111,7 @@ export default function DocumentStudioShell({
         )}
       </div>
 
-      <div className="studio-no-print shrink-0 border-t border-[#1A3A2A]/10 bg-white" data-studio-chrome="status">{statusBar}</div>
+      <div className="studio-no-print shrink-0" data-studio-chrome="status" style={{ background: "#f0f0f0" }}>{statusBar}</div>
       <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style>
       <style jsx global>{`
         @media print {
@@ -114,7 +122,10 @@ export default function DocumentStudioShell({
           [data-studio-chrome],
           [data-studio-ruler-frame],
           [data-studio-ruler],
-          [data-studio-vertical-ruler] { display: none !important; }
+          [data-studio-vertical-ruler],
+          [data-studio-margin-guides],
+          [data-studio-page-frames],
+          [data-studio-pasteboard-guide] { display: none !important; }
         }
         [data-studio-shell] button:focus-visible,
         [data-studio-shell] select:focus-visible,
@@ -161,6 +172,13 @@ export default function DocumentStudioShell({
           font-family: "Nafees Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
           line-height: 1.85;
         }
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="menu"] button,
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] button,
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] select,
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-language-switch] button {
+          line-height: 1.15 !important;
+          max-height: 22px;
+        }
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome] p,
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-statusbar],
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-right-sidebar] p,
@@ -181,6 +199,16 @@ export default function DocumentStudioShell({
         [data-studio-dialog="ur"] [dir="ltr"] {
           font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
           line-height: 1.35;
+        }
+        @media (max-width: 720px) {
+          [data-studio-menubar],
+          [data-studio-toolbar-row] {
+            height: auto !important;
+            max-height: none !important;
+            flex-wrap: wrap !important;
+            overflow: visible !important;
+            white-space: normal !important;
+          }
         }
       `}</style>
     </div>

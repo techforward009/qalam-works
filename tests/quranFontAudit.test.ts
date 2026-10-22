@@ -10,7 +10,7 @@ import { QURAN_LAYOUT_PROFILE } from "../app/quran/reader/profile";
 describe("Quran font audit", () => {
   test("production font and the 604-page map stay in place", () => {
     expect(QURAN_LAYOUT_PROFILE.id).toBe("qalam-indopak-v1");
-    expect(QURAN_LAYOUT_PROFILE.productionFont).toBe("Muhammadi Quranic");
+    expect(QURAN_LAYOUT_PROFILE.productionFont).toBe("DigitalKhattIndoPak");
     expect(QURAN_LAYOUT_PROFILE.pdmsBundled).toBe(false);
     expect(pageCount()).toBe(604);
     expect(ahmedgrafQuranReference.getMetadata().sourceSha256).toBe("ab31a2a8672b45571367f9884bd0a43f820f9699544289dd1b8d0efe1bdece0e");

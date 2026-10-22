@@ -6,12 +6,13 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
 import { useLanguage } from "../../lib/language-context";
 import EditionTopBar from "../reader/EditionTopBar";
+import {QuranSidebarSection,QuranPageMeta,QuranPageButtons,QuranCorner,SurahBand} from "../reader/SharedReaderControls";
 import { initialQuranDisplayScale } from "../reader/readerPresentation";
 import { QURAN_READER_COPY } from "../reader/copy";
 import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { adjacentAyah } from "../reader/model";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
-import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import {
   cachedQpcHafsPage,
   loadQpcHafsPage,
@@ -29,6 +30,7 @@ import {
   type MadinahPage,
 } from "./data";
 import styles from "./reader.module.css";
+import {HAFS_AYAH_COUNTS} from "../../tools/arabic-diacritics/quran/hafsCounts";
 
 type Hit = { surah: number; ayah: number; page: number };
 
@@ -253,7 +255,7 @@ export default function MadinahReader({
     }
 
     const result: Hit[] = [];
-    for (const item of ahmedgrafQuranReference.listAyahs()) {
+    for (const item of publicDigitalKhattQuranReference.listAyahs()) {
       const words = item.text.split(/\s+/).map(quranMatchKey).filter(Boolean);
       const matched = needles.length <= words.length && Array.from({ length: words.length - needles.length + 1 }, (_, i) => i)
         .some((i) => needles.every((needle, offset) => words[i + offset] === needle));
@@ -332,6 +334,16 @@ export default function MadinahReader({
     }
   };
 
+  const copySelectedVerse = async () => {
+    try {
+      const qpc = await loadQpcHafsPage(resolveMadinahPageForAyah(surah, ayah));
+      const text = qpcHafsTextForVerseKeys(qpc, new Set([surah + ":" + ayah]));
+      if (!text) throw new Error("Madinah verse text unavailable");
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch { setCopied(false); }
+  };
+
   useEffect(() => {
     if (!page) return;
     loadQpcHafsPage(page.page).catch(() => undefined);
@@ -379,103 +391,44 @@ export default function MadinahReader({
   }
 
   return (
-    <main className={styles.reader} dir="ltr">
-      <div className={styles.container}>
-        <EditionTopBar editionId="madinah-v2" />
+    <main className={`${styles.reader} quran-reader`} dir="ltr">
+      <div className={`${styles.container} quran-reader-container`}>
+        <EditionTopBar editionId="madinah-v2" surah={surah} ayah={ayah} />
 
-        <div className={styles.grid}>
-          <aside className={styles.sidebar}>
-            <form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
-              <label className={styles.label}>
-                {copy.search}
-                <input value={query} onChange={(event) => setQuery(event.target.value)} className={styles.input} dir="rtl" lang="ar" />
-              </label>
-              <button type="submit" className={styles.primary}>{copy.search}</button>
-            </form>
-
-            {searched && (
-              <div className={styles.results}>
-                {hits.length ? hits.map((hit) => (
-                  <button key={`${hit.surah}:${hit.ayah}`} type="button" className={styles.result} onClick={() => navigate(hit.surah, hit.ayah)}>
-                    {SURAH_NAMES[hit.surah - 1] ?? hit.surah} — {easternDigits(hit.ayah)}
-                  </button>
-                )) : <div className={styles.subtle}>{copy.noResults}</div>}
-              </div>
-            )}
-
-            <label className={styles.labelBlock}>
-              {copy.surah}
-              <select value={surah} onChange={(event) => navigate(Number(event.target.value), 1)} className={styles.input}>
-                {SURAH_NAMES.map((name, index) => <option key={name} value={index + 1}>{index + 1}. {name}</option>)}
-              </select>
-            </label>
-
-            <label className={styles.labelBlock}>
-              {copy.ayah}
-              <input type="number" min={1} max={6236} value={ayah} onChange={(event) => navigate(surah, Number(event.target.value) || 1)} className={styles.input} />
-            </label>
-
-            <form className={styles.labelBlock} onSubmit={submitPage}>
-              <label className={styles.label}>
-                {copy.page}
-                <div className={styles.pageInputRow}>
-                  <input type="number" min={1} max={604} value={pageInput} onChange={(event) => setPageInput(event.target.value)} className={styles.input} />
-                  <span className={styles.subtle}>/ 604</span>
-                </div>
-              </label>
-              <button type="submit" className={styles.secondary}>{copy.goToPage}</button>
-            </form>
-
-            <div className={styles.metaBlock}>
-              {copy.surah} <strong>{SURAH_NAMES[pageSurah - 1] ?? pageSurah}</strong><br />
-              {copy.juz} <strong>{pageJuz}</strong>
+        <div className={`${styles.grid} quran-reader-layout`}>
+          <aside className={`${styles.sidebar} tanzil-sidebar quran-reader-sidebar order-2 w-full min-w-0 lg:order-1 lg:w-[200px] lg:self-start`} lang={language} dir={language === "ur" ? "rtl" : "ltr"}>
+            <QuranSidebarSection title={copy.search} defaultOpen><form onSubmit={event => {event.preventDefault();runSearch();}}><div className="flex gap-1"><input className="min-w-0 flex-1 border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#33372f] outline-none focus:border-[#718067]" aria-label={copy.search} value={query} onChange={event => setQuery(event.target.value)} /><button type="submit" className="border border-[#9aa394] bg-white px-2 py-1 text-xs text-[#3d4439] hover:bg-[#f3f5f1]">{copy.search}</button></div>{searched && <div className={styles.results}>{hits.length ? hits.map(hit => <button key={`${hit.surah}:${hit.ayah}`} type="button" className={styles.result} onClick={() => navigate(hit.surah,hit.ayah)}>{SURAH_NAMES[hit.surah-1]} — {easternDigits(hit.ayah)}</button>) : copy.noResults}</div>}</form></QuranSidebarSection>
+            <QuranSidebarSection title={copy.browse} defaultOpen><div className="space-y-2">
+              <label className={`block text-xs text-[#687066] ${language === "ur" ? "font-naskh" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{copy.surah}<select dir={language === "ur" ? "rtl" : "ltr"} aria-label={copy.surah} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" value={surah} onChange={e => navigate(Number(e.target.value),1)}>{SURAH_NAMES.map((name,i)=><option key={i} value={i+1}>{i+1}. {name}</option>)}</select></label>
+              <label className={`block text-xs text-[#687066] ${language === "ur" ? "font-naskh" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{copy.ayah}<select dir={language === "ur" ? "rtl" : "ltr"} aria-label={copy.ayah} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" value={ayah} onChange={e => navigate(surah,Number(e.target.value))}>{Array.from({length:HAFS_AYAH_COUNTS[surah-1] ?? 7},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
+              <label className={`block text-xs text-[#687066] ${language === "ur" ? "font-naskh" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{copy.juz}<select dir={language === "ur" ? "rtl" : "ltr"} aria-label={copy.juz} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" value={pageJuz} onChange={e => {const ref=JUZ_STARTS[Number(e.target.value)-1];if(ref)navigate(ref.surah,ref.ayah);}}>{Array.from({length:30},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
+              <label className={`block text-xs text-[#687066] ${language === "ur" ? "font-naskh" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{copy.page}<select dir={language === "ur" ? "rtl" : "ltr"} aria-label={copy.page} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" value={pageNumber} onChange={e => navigatePage(Number(e.target.value))}>{Array.from({length:604},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
+            </div></QuranSidebarSection>
+            <QuranSidebarSection title={copy.copy} titleStyle={language === "ur" ? {fontFamily: '"Mehr Nastaliq Web", serif'} : undefined}><button type="button" className="w-full border border-[#b5bbb1] bg-white px-2 py-1.5 text-xs text-[#465046] hover:bg-[#f3f5f1]" style={language === "ur" ? {fontFamily: '"Mehr Nastaliq Web", serif'} : undefined} onClick={() => void copyCurrentPage()}>{copied ? copy.copyDone : copy.copy}</button></QuranSidebarSection>
+            <QuranSidebarSection title={copy.display}><label className={`block text-xs text-[#687066] ${language === "ur" ? "font-naskh" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{copy.size}<select dir={language === "ur" ? "rtl" : "ltr"} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" aria-label={copy.size} value={scale} onChange={e => chooseScale(Number(e.target.value))}><option value={0.85}>{copy.small}</option><option value={1}>{copy.medium}</option><option value={1.12}>{copy.large}</option></select></label></QuranSidebarSection>
+            <div className="border-t border-[#d0d4cc] bg-white px-2 py-2" dir={language === "ur" ? "rtl" : "ltr"} lang={language}>
+              <p className="text-[10px] leading-5">{language === "ur" ? "↑ ↓ آیات" : "↑ ↓ Ayahs"}</p>
+              <p className="text-[10px] leading-5">{language === "ur" ? "← → صفحات" : "← → Pages"}</p>
+              <p className="text-[10px] leading-5">{language === "ur" ? "Ctrl + ← → سورت" : "Ctrl + ← → Surah"}</p>
             </div>
-
-            <label className={styles.labelBlock} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
-              {copy.display}
-              <select
-                value={scale}
-                aria-label={copy.size}
-                onChange={(event) => chooseScale(Number(event.target.value))}
-                className={styles.input}
-              >
-                <option value={0.85}>{copy.small}</option>
-                <option value={1}>{copy.medium}</option>
-                <option value={1.12}>{copy.large}</option>
-              </select>
-            </label>
-
-            <button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11, ...(language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : {}) }} onClick={() => void copyCurrentPage()}>
-              {copied ? copy.copyDone : copy.copy}
-            </button>
           </aside>
 
-          <section>
-            <article className={styles.page} onCopyCapture={handlePageCopy}>
-              <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
-                <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
-                <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
-                  <button type="button" className={styles.pageArrow} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
-                      <path d="M14.8 5.2 8 12l6.8 6.8" />
-                    </svg>
-                  </button>
-                  <span className={styles.mushafHeaderNumber}>{easternDigits(pageNumber)}</span>
-                  <button type="button" className={styles.pageArrow} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
-                      <path d="M9.2 5.2 16 12l-6.8 6.8" />
-                    </svg>
-                  </button>
-                </div>
-                <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderRight}`} dir="rtl">{displayJuzTitle}</div>
-              </div>
-
+          <section className="quran-reader-main order-1 min-w-0 lg:order-2">
+            <div className="quran-page-shell">
+              <QuranPageMeta surah={pageSurah} juz={pageJuz} pageNumber={pageNumber}
+                previousDisabled={pageNumber <= 1} nextDisabled={pageNumber >= 604}
+                onPreviousPage={() => navigatePage(pageNumber - 1)}
+                onNextPage={() => navigatePage(pageNumber + 1)} />
+              <article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
+                <QuranCorner position="top-left" />
+                <QuranCorner position="top-right" />
+                <QuranCorner position="bottom-left" />
+                <QuranCorner position="bottom-right" />
               <div className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
                 {page ? page.lines.map((line) => {
-                  if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
+                  if (line.type === "blank") return null;
                   if (line.type === "surah_name") {
-                    const name = line.decor?.surah ? surahTitle(line.decor.surah) : "";
-                    return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl">{name}</div>;
+                    return line.decor?.surah ? <SurahBand key={line.line} surah={line.decor.surah} /> : null;
                   }
                   if (line.type === "basmallah") {
                     return <div key={line.line} className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{MADINAH_BASMALA_GLYPH}</span></div>;
@@ -497,12 +450,9 @@ export default function MadinahReader({
                 }) : <div className={styles.loading}>Loading page…</div>}
               </div>
 
-              <div className={styles.navRow}>
-                <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>{copy.previousPage}</button>
-                <button type="button" className={styles.secondary} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)}>{copy.nextPage}</button>
-              </div>
             </article>
-
+            </div>
+              <QuranPageButtons previous={copy.previousPage} next={copy.nextPage} disablePrevious={pageNumber <= 1} disableNext={pageNumber >= 604} onPrevious={() => navigatePage(pageNumber - 1)} onNext={() => navigatePage(pageNumber + 1)} />
             <div className={styles.credit}>
               {copy.madinahCredit}
             </div>

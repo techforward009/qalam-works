@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import DeathSpeakingGuide from "../app/tools/khateeb-studio/DeathSpeakingGuide";
 import { DEATH_SPEAKING_GUIDE, buildDeathSpeakingGuideText, deathGuideMinutes, type SpeakingGuideMode } from "../app/tools/khateeb-studio/engine/deathSpeakingGuide";
-import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import { quranTranslationFor } from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
 import { evidenceForTopic } from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 const state = vi.hoisted(() => ({ language: "ur" }));
@@ -52,7 +52,7 @@ describe("Death / Hereafter speaking guide", () => {
       expect(detailed).toContain(section.transition[locale]);
       expect(brief).not.toContain(section.example[locale]);
       for (const location of section.verses) {
-        const arabic = ahmedgrafQuranReference.getAyah(location.surah, location.ayah)!.text;
+        const arabic = publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)!.text;
         const translation = quranTranslationFor(location.surah, location.ayah, locale)!;
         expect(translation).toBeTruthy();
         expect(detailed).toContain(arabic);

@@ -76,7 +76,7 @@ describe("Phase 3A editor parity", () => {
     expect(calls).toEqual(["print", "pageSetup", "zoom:75", "ruler", "standardize", "audit", "stats", "dictation", "glossary", "qalamAi"]);
     expect(allMenuActionIds()).toContain("insert.link");
     expect(allMenuActionIds()).not.toContain("toolbar.more");
-    expect(DOCUMENT_TOOLBAR_LEADING).toEqual(["undo", "redo", "zoom", "style"]);
+    expect(DOCUMENT_TOOLBAR_LEADING).toEqual(["style", "spacing", "latin-font", "bold"]);
     const tools = DOCUMENT_MENU_BAR.find((menu) => menu.id === "tools");
     expect(tools?.items.filter((item) => item.type === "action").map((item) => item.id)).toEqual([
       "tools.standardize",

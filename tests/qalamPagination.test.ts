@@ -17,6 +17,7 @@ import {
   contentAreaHeightPx,
   extraPagesFromOverflow,
   getQalamPaginationState,
+  measureUnscaledPageCount,
   pageStackHeightPx,
   paginationCss,
   paginationGeometryFromLayout,
@@ -77,6 +78,43 @@ describe("Qalam pagination foundation", () => {
     expect(JSON.stringify(editor.getJSON())).toBe(before);
     expect(JSON.stringify(editor.getJSON())).not.toMatch(/pageBreak|qalamPagination|hardBreak/);
     editor.destroy();
+  });
+
+  it("keeps a requested minimum page count when the document is empty", () => {
+    const { editor } = makeEditor();
+    const { layout } = a4Geometry("rtl");
+    const geometry = paginationGeometryFromLayout(layout, "rtl", true, 2);
+    expect(geometry.minimumPages).toBe(2);
+    const host = document.createElement("div");
+    expect(measureUnscaledPageCount(host, geometry, 1)).toBe(2);
+    applyQalamPagination(editor, geometry);
+    expect(JSON.stringify(editor.getJSON())).not.toMatch(/pageBreak/);
+    expect(editor.getText()).toBe("");
+    editor.destroy();
+  });
+
+  it("drops a trailing empty sheet when the text ends on the previous page", () => {
+    const host = document.createElement("div");
+    const paragraph = document.createElement("p");
+    const pagination = document.createElement("div");
+    pagination.setAttribute("data-qalam-pagination", "true");
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    first.className = "qalam-pagination-breaker";
+    second.className = "qalam-pagination-breaker";
+    pagination.append(first, second);
+    host.append(paragraph, pagination);
+    const stub = (el: HTMLElement, top: number, height: number) => {
+      Object.defineProperty(el, "offsetTop", { configurable: true, get: () => top });
+      Object.defineProperty(el, "offsetHeight", { configurable: true, get: () => height });
+      Object.defineProperty(el, "offsetParent", { configurable: true, get: () => host });
+    };
+    stub(paragraph, 20, 30);
+    stub(first, 800, 12);
+    stub(second, 1700, 12);
+    const { layout } = a4Geometry("rtl");
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, 1), 2)).toBe(1);
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, 2), 2)).toBe(2);
   });
 
   it("B. one-page Urdu stays a single sheet", () => {

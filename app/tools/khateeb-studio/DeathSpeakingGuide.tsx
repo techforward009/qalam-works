@@ -1,6 +1,6 @@
 "use client";
 import { useLanguage } from "../../lib/language-context";
-import { ahmedgrafQuranReference } from "../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../arabic-diacritics/quran/publicDigitalKhattProvider";
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebQuranTranslation from "./KhateebQuranTranslation";
 import { DEATH_SPEAKING_GUIDE, deathGuideMinutes, type SpeakingGuideMode } from "./engine/deathSpeakingGuide";
@@ -39,7 +39,7 @@ export default function DeathSpeakingGuide({ duration, mode, onModeChange }: {
           {section.verses.map(location => (
             <div key={`${location.surah}:${location.ayah}`} className="mt-3 rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
               <h5 className="text-xs font-bold">{ur ? "اصل قرآنی آیت" : "Qur'anic source verse"} — {location.surah}:{location.ayah}</h5>
-              <div dir="rtl" className="mt-2 text-lg leading-9"><KhateebScriptText text={ahmedgrafQuranReference.getAyah(location.surah, location.ayah)?.text ?? ""} forceArabic /></div>
+              <div dir="rtl" className="mt-2 text-lg leading-9"><KhateebScriptText text={publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)?.text ?? ""} forceArabic /></div>
               <KhateebQuranTranslation location={location} />
             </div>
           ))}

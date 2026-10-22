@@ -16,9 +16,9 @@ describe("Quran common reader parity", () => {
 
   it("keeps the three page models explicit", () => {
     expect(QURAN_EDITIONS.map((edition) => edition.layoutModel)).toEqual([
-      "flowing-text-with-page-boundaries",
-      "flowing-text-with-page-boundaries",
       "native-15-line-page-layout",
+      "flowing-text-with-page-boundaries",
+      "flowing-text-with-page-boundaries",
     ]);
   });
 

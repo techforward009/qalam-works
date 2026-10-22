@@ -27,7 +27,7 @@ describe("ruler initial paint does not use millimetres as pixels", () => {
     const { container } = render(<WordRuler dir="ltr" layout={a4} axis="horizontal" unit="cm" onPhysicalMarginChange={vi.fn()} />);
     const ruler = container.querySelector("[data-studio-ruler]") as HTMLElement;
     expect(ruler).toBeTruthy();
-    expect(ruler.className).toContain("h-6");
+    expect(ruler.className).toContain("h-[18px]");
     expect(ruler.getAttribute("data-ruler-ready")).toBe("false");
     expect(ruler.getAttribute("data-ruler-measured-px")).toBe("0");
     expect(ruler.querySelectorAll("[data-ruler-tick]").length).toBe(0);
@@ -73,5 +73,21 @@ describe("ruler initial paint does not use millimetres as pixels", () => {
     expect(denseFallback.length).toBeGreaterThan(0);
     expect(container.querySelectorAll("[data-ruler-tick]").length).toBe(0);
     expect(container.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-measured-px")).toBe("0");
+  });
+
+  it("RTL horizontal numbers start at the right edge and increase to the left", () => {
+    stubClientBox(794, 18);
+    const { container } = render(<WordRuler dir="rtl" layout={a4} axis="horizontal" unit="cm" />);
+    const ruler = container.querySelector("[data-studio-ruler]") as HTMLElement;
+    expect(ruler.getAttribute("data-ruler-origin")).toBe("right");
+    const labeled = [...ruler.querySelectorAll("[data-ruler-tick='major']")] as HTMLElement[];
+    const at = (label: string) => labeled.find((tick) => tick.textContent?.trim() === label);
+    expect(at("0")?.style.right).toBe("0px");
+    expect(Number.parseFloat(at("1")?.style.right ?? "0")).toBeGreaterThan(0);
+    const ltr = render(<WordRuler dir="ltr" layout={a4} axis="horizontal" unit="cm" />);
+    const left = ltr.container.querySelector("[data-studio-ruler]") as HTMLElement;
+    expect(left.getAttribute("data-ruler-origin")).toBe("left");
+    const zero = [...left.querySelectorAll("[data-ruler-tick='major']")].find((tick) => tick.textContent?.trim() === "0") as HTMLElement;
+    expect(zero.style.left).toBe("0px");
   });
 });

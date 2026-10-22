@@ -40,9 +40,13 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain('document.addEventListener("pointerdown", closeOutsideMenu)');
     expect(css).toContain('.readerShell:lang(ur) .toolbar option');
     expect(reader).not.toContain('" از " + visualPages.length');
-    expect(css).toContain('font-family: "Digital Khatt IndoPak Book"');
+    const sharedCss = readFileSync("app/globals.css", "utf8");
+    expect(sharedCss).toContain('font-family: "Noorehuda", "Digital Khatt IndoPak Book", serif !important');
+    expect(reader).toContain('text.classList.add("qalam-book-arabic")');
+    expect(css).not.toMatch(/font-family:.*(?:Digital Khatt|Traditional Arabic)/);
     expect(css).toContain('font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web"');
-    expect(css).toContain("Digital Khatt IndoPak Book");
+    expect(sharedCss).toContain("font-size: 1.25em");
+    expect(sharedCss).toContain(".qalam-book-arabic .qalam-book-arabic");
     expect(reader).not.toContain("<footer className={styles.pageFooter}>");
     expect(reader).not.toContain("نسخے کی معلومات");
     expect(reader).not.toContain('aria-label={ur ? "مطالعے کی صورت" : "Reading mode"}');
@@ -78,9 +82,9 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain("fontSize, arabicPageStyle, layoutSize");
     expect(reader).toContain('selectedSource?.language === "ar"');
     expect(css).toContain('width: min(100%, 546px)');
-    expect(css).toContain('font-size: 30px !important;');
+    expect(css).not.toContain('font-size: 30px !important;');
     expect(css).toContain('line-height: 56px !important;');
-    expect(css).toContain('font-family: "Traditional Arabic", var(--font-amiri)');
+    expect(css).not.toContain('font-family: "Traditional Arabic", var(--font-amiri)');
     expect(css).not.toContain("font-family: noor1");
 
     expect(reader).toContain("اصل");

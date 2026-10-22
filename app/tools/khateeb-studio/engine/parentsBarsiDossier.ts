@@ -20,9 +20,9 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 17:23",
       quranLocation: { surah: 17, ayah: 23 },
       sourceRefUr:
-        "سورۂ اسراء 17:23 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
+        "سورۂ اسراء 17:23 — ڈیجیٹل خط کا برصغیری قرآنی متن، ماخذ github.com/risan/quran-json",
       sourceRefEn:
-        "Qur'an 17:23 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
+        "Qur'an 17:23 — DigitalKhatt IndoPak Quran text, source github.com/risan/quran-json",
       explanationUr:
         "یہ مجلس کی بنیادی آیت ہے۔ توحید کے فوراً بعد والدین کے ساتھ احسان، پھر بڑھاپے میں لہجے کی حفاظت آتی ہے۔",
       explanationEn:
@@ -35,9 +35,9 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 17:24",
       quranLocation: { surah: 17, ayah: 24 },
       sourceRefUr:
-        "سورۂ اسراء 17:24 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
+        "سورۂ اسراء 17:24 — ڈیجیٹل خط کا برصغیری قرآنی متن، ماخذ github.com/risan/quran-json",
       sourceRefEn:
-        "Qur'an 17:24 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
+        "Qur'an 17:24 — DigitalKhatt IndoPak Quran text, source github.com/risan/quran-json",
       explanationUr:
         "رحمت کے ساتھ جھکنے اور والدین کے لیے دعا کا اصل قرآنی متن۔ برسی کے موضوع میں یہ دعا خاص طور پر مرکزی حیثیت رکھتی ہے۔",
       explanationEn:
@@ -50,9 +50,9 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 31:14",
       quranLocation: { surah: 31, ayah: 14 },
       sourceRefUr:
-        "سورۂ لقمان 31:14 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
+        "سورۂ لقمان 31:14 — ڈیجیٹل خط کا برصغیری قرآنی متن، ماخذ github.com/risan/quran-json",
       sourceRefEn:
-        "Qur'an 31:14 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
+        "Qur'an 31:14 — DigitalKhatt IndoPak Quran text, source github.com/risan/quran-json",
       explanationUr:
         "یہ آیت ماں کی مسلسل جسمانی مشقت کو یاد دلاتی ہے اور پھر شکرِ خدا کے ساتھ شکرِ والدین کو جوڑتی ہے۔ یہاں سے یہ نکتہ کھلتا ہے کہ بالغ انسان اپنی کامیابی کو صرف اپنی محنت کا نتیجہ نہ سمجھے بلکہ اپنی تشکیل میں والدین کے حصے کو بھی پہچانے۔",
       explanationEn:
@@ -65,9 +65,9 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 46:15",
       quranLocation: { surah: 46, ayah: 15 },
       sourceRefUr:
-        "سورۂ احقاف 46:15 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
+        "سورۂ احقاف 46:15 — ڈیجیٹل خط کا برصغیری قرآنی متن، ماخذ github.com/risan/quran-json",
       sourceRefEn:
-        "Qur'an 46:15 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
+        "Qur'an 46:15 — DigitalKhatt IndoPak Quran text, source github.com/risan/quran-json",
       explanationUr:
         "یہاں پختگی کی عمر میں انسان کی دعا والدین کی طرف لوٹتی ہے۔ مجلس میں اسے اس بات کے لیے استعمال کریں کہ عمر بڑھنے کے ساتھ انسان کو اپنی زندگی میں والدین کی نعمت اور ان کی قربانی کا شعور زیادہ گہرا ہونا چاہیے۔",
       explanationEn:

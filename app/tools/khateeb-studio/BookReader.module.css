@@ -229,19 +229,13 @@
 }
 :global(.dark) .bookIdentity, :global(.dark) .chapterTitle, :global(.dark) .pageNumber { color: #eee9dd; }
 :global(.dark) .pageArrow { background: transparent; border: 0; color: #e7d5ae; }
-/* Reader Arabic uses the owner's chosen Digital Khatt IndoPak Book face.
-   Keep this scoped to the book page, preserving Quran edition font settings. */
-.readingPage :global(.qalam-book-arabic),
-.readingPage :global(.qalam-book-arabic *) {
-  font-family: "Digital Khatt IndoPak Book", "DigitalKhattIndoPak", var(--font-amiri), serif !important;
-  font-size: 1em;
-  font-weight: 400;
-}
+/* Book Arabic inherits main's Noorehuda font, sizing and nested rules from
+   .qalam-book-arabic. Reader layout must not override the shared font policy. */
 .paragraphs { display: grid; align-content: start; gap: clamp(.8rem, 1.6vw, 1.15rem); flex: 1 1 auto; min-height: 0; width: min(100%, 47rem); margin-inline: auto; }
 .paragraph { min-width: 0; overflow-wrap: anywhere; }
 .paragraphs :global(.khateeb-book-text) { line-height: 2.05; }
 .paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif; font-size: 1em; line-height: 2.35; }
-.paragraphs :global(.khateeb-book-ar) { font-family: "Digital Khatt IndoPak Book", "DigitalKhattIndoPak", var(--font-amiri), serif; font-size: 1em; line-height: 2.05; }
+.paragraphs :global(.khateeb-book-ar) { line-height: 2.05; }
 /* Parenthesized Arabic honorifics need a single RTL bidi island even when
    preceded by Latin digits, western parentheses or punctuation. */
 .readingPage :global(.khateeb-book-bracket-isolate) {
@@ -251,7 +245,7 @@
 }
 
 /* Preview comparison of Balagh-like metrics. Original noor1 is not bundled.
-   Digital Khatt remains the default; only Arabic book pages are affected. */
+   Shared Noorehuda rules remain in force; only page layout is affected. */
 .typeComparisonNote { margin: 0; font-size: .73rem; line-height: 1.8; color: #66766b; }
 .readingPage[data-arabic-page-style="balagh-layout"] .paragraphs {
   width: min(100%, 546px);
@@ -260,8 +254,6 @@
 .readingPage[data-arabic-page-style="balagh-layout"] .paragraphs :global(.khateeb-book-ar),
 .readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic),
 .readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic *) {
-  font-family: "Traditional Arabic", var(--font-amiri), "Noto Naskh Arabic", serif !important;
-  font-size: 30px !important;
   line-height: 56px !important;
   font-weight: 500 !important;
   direction: rtl;
@@ -270,7 +262,6 @@
 .paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: .84em; line-height: 1.62; font-weight: 400; letter-spacing: 0; }
 .readingPage[data-book-language="en"] .paragraphs { gap: .55rem; }
 .readingPage[data-book-language="en"] .paragraphs :global(.khateeb-book-en) { text-align: left; overflow-wrap: normal; word-break: normal; }
-.paragraphs :global(.qalam-book-arabic) { font-family: "Digital Khatt IndoPak Book", "DigitalKhattIndoPak", var(--font-amiri), serif !important; }
 .targetParagraph { border-radius: .65rem; background: #fff2cf; padding: .5rem; }
 :global(.dark) .targetParagraph { background: rgb(120 53 15 / 25%); }
  .paragraphSelect { display: flex; align-items: center; width: max-content; min-height: 2rem; margin-block: .1rem .15rem; }
@@ -325,7 +316,6 @@
   .readingPage[data-arabic-page-style="balagh-layout"] .paragraphs :global(.khateeb-book-ar),
   .readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic),
   .readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic *) {
-    font-size: 24px !important;
     line-height: 45px !important;
   }
   .paragraphs { gap: .85rem; }

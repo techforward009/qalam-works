@@ -20,12 +20,33 @@ export type DigitalKhattPage = {
   endVerse: number;
 };
 
+/** Only public display boundaries change; upstream Quran JSON stays immutable.
+ * Approved: existing Qalam Urdu translation numbers Bismillah as Fatiha 1:1.
+ * Keep every DigitalKhatt source character and waqf sign in the aligned verses.
+ */
+export const DIGITAL_KHATT_BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
+export function alignDigitalKhattToTranslation(corpus: DigitalKhattCorpus): DigitalKhattCorpus {
+  const fatiha = corpus["1"];
+  if (!fatiha || fatiha.length !== 7 ||
+      fatiha.some((v, i) => v.chapter !== 1 || v.verse !== i + 1) ||
+      !fatiha[0].text.startsWith("اَلْحَمْدُ") ||
+      !fatiha[5].text.startsWith("صِرَاطَ") ||
+      !fatiha[6].text.startsWith("غَيْرِ")) {
+    throw new Error("DigitalKhatt Fatiha source changed; require renewed verse-boundary review");
+  }
+  return {...corpus, "1": [
+    {chapter:1,verse:1,text:DIGITAL_KHATT_BASMILLAH},
+    ...fatiha.slice(0,5).map(v=>({...v,verse:v.verse+1})),
+    {chapter:1,verse:7,text:fatiha[5].text+" "+fatiha[6].text},
+  ]};
+}
+
 export const DIGITAL_KHATT_EDITION = {
   id: "qalam-indopak-digitalkhatt-v1",
   name: "IndoPak — Digital Khatt",
   source: "DigitalKhatt / risan/quran-json",
   sourceUrl: "https://github.com/risan/quran-json",
-  license: "MIT",
+  license: "MIT (upstream) / CC BY-SA 4.0 (quran-json distribution)",
   corpusPath: "/quran/indopak-digital-khatt.json",
   fontFamily: "DigitalKhattIndoPak",
   fontSource: "DigitalKhatt / indopakfont v1.0.0-beta.1",

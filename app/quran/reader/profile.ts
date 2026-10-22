@@ -12,7 +12,7 @@
  * It does not alter Quran text, normalization, search keys, or the source
  * Quran corpus.
  *
- * CURRENT FONT SELECTION: Muhammadi Quranic
+ * CURRENT FONT SELECTION: DigitalKhattIndoPak
  * Asif Quranic and Al Qalam Quran Majeed are not loaded.
  */
 
@@ -23,10 +23,10 @@ export const QURAN_LAYOUT_PROFILE = {
   id: "qalam-indopak-v1",
 
   /**
-   * Production Quran font: Muhammadi Quranic.
+   * Production Quran font: DigitalKhattIndoPak.
    * Asif Quranic and Al Qalam Quran Majeed are not used.
    */
-  productionFont: "Muhammadi Quranic",
+  productionFont: "DigitalKhattIndoPak",
 
   /**
    * Reference-only font placeholder.
@@ -59,7 +59,7 @@ export const QURAN_LAYOUT_PROFILE = {
 
   /**
    * Quran line rhythm.
-   * Optimized for Muhammadi Quranic.
+   * Optimized for DigitalKhattIndoPak.
    */
   lineHeight: 2.2,
 
@@ -79,7 +79,7 @@ export const QURAN_LAYOUT_PROFILE = {
 /**
  * Quran Font Stack
  *
- * Quran text uses Muhammadi Quranic, then the bundled Naskh and Amiri faces.
+ * Quran text uses DigitalKhattIndoPak, then the bundled Naskh and Amiri faces.
  */
 export const QURAN_FONT_STACK =
-  '"Muhammadi Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
+  '"DigitalKhattIndoPak", "Digital Khatt IndoPak Book", "Noto Naskh Arabic", serif';

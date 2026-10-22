@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import FeedbackInvitation from "./components/FeedbackInvitation";
-import { LanguageProvider } from "./lib/language-context";
 import AnalyticsProviders from "./components/AnalyticsProviders";
+import SiteFrame from "./components/SiteFrame";
+import { LanguageProvider } from "./lib/language-context";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { ThemeToggle } from "./components/ThemeToggle";
 
 // Fonts are served from public/fonts/ (copied from @fontsource at build time).
 // next/font/local resolves paths relative to the source file (app/layout.tsx),
@@ -85,7 +82,6 @@ export default function RootLayout({
     <html lang="ur" dir="rtl" suppressHydrationWarning>
       <body className={`${inter.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
         <LanguageProvider>
-          <Header />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -93,13 +89,8 @@ export default function RootLayout({
             storageKey="qalam-theme"
             disableTransitionOnChange
           >
-            <div className="flex-grow">
-              {children}
-            </div>
-            <ThemeToggle />
+            <SiteFrame>{children}</SiteFrame>
           </ThemeProvider>
-          <FeedbackInvitation />
-          <Footer />
           <AnalyticsProviders />
         </LanguageProvider>
       </body>

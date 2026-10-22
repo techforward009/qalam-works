@@ -5,6 +5,7 @@ import { displaySurahBannerName, initialQuranDisplayScale } from "../app/quran/r
 
 const read = (name: string) => readFileSync(name, "utf8");
 const conventional = read("app/quran/QuranReader.tsx");
+const shared = read("app/quran/reader/SharedReaderControls.tsx");
 const digital = read("app/quran/indopak-digital-khatt/DigitalKhattReader.tsx");
 const styles = read("app/globals.css");
 const digitalCss = read("app/quran/indopak-digital-khatt/reader.module.css");
@@ -22,12 +23,12 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
       expect(banner.surahNumber.length).toBeGreaterThan(0);
       expect(banner.revealed.length).toBeGreaterThan(0);
     }
-    expect(conventional).toContain('<bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>');
-    expect(conventional).toContain('<bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>');
+    expect(shared).toContain('<bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>');
+    expect(shared).toContain('<bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>');
     expect(digital).toContain('<bdi dir="ltr" className={styles.bannerNumber}>({banner?.surahNumber})</bdi>');
     expect(digital).toContain('<bdi dir="ltr" className={styles.bannerNumber}>({banner?.revealed})</bdi>');
     expect(digital).toContain("{banner?.ayatCount}");
-    expect(conventional).toContain("{banner.ayatCount}");
+    expect(shared).toContain("{banner.ayatCount}");
   });
 
   it("centers all Surah header items without baseline positioning", () => {
@@ -174,7 +175,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
       expect(surahBanner(number).name).toBe(original);
     }
     expect(displaySurahBannerName("سُوْرَةُ الْفَاتِحَةِ")).toBe("سورة الفاتحة");
-    expect(conventional).toContain("displaySurahBannerName(banner.name)");
+    expect(shared).toContain("displaySurahBannerName(banner.name)");
     expect(digital).toContain('displaySurahBannerName(banner?.name ?? "")');
   });
 
@@ -212,7 +213,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(styles).not.toMatch(/\.quran-page-meta-item\s*>\s*\*\s*\{\s*transform:/s);
     expect(styles).toMatch(/\.quran-page-meta-page-number\s*\{[^}]*display:\s*inline-flex;[^}]*align-items:\s*center;[^}]*justify-content:\s*center/s);
     expect(styles).toMatch(/\.quran-page-arrow\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*center/s);
-    expect(conventional).toContain('className="quran-page-meta-page-number"');
+    expect(shared).toContain('className="quran-page-meta-page-number"');
     expect(digital).toContain('className="quran-page-meta-page-number"');
   });
 

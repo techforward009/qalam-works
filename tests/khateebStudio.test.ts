@@ -61,7 +61,7 @@ import {
 } from "../app/tools/khateeb-studio/engine/studioView";
 import { looksLikeArabicReligiousText } from "../app/tools/khateeb-studio/KhateebScriptText";
 import { toQalamArabicPresentation } from "../app/tools/khateeb-studio/qalamArabicPresentation";
-import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import {
   quranLocationsFromReference,
   quranTranslationCoverageCount,
@@ -389,9 +389,9 @@ describe("Khateeb Studio typography", () => {
     expect(studio).not.toContain("max-h-[560px]");
   });
 
-  test("uses Muhammadi Quranic for Arabic ayat and hadith inside Urdu content", () => {
+  test("uses Digital Khatt for Arabic ayat and hadith inside Urdu content", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
-    expect(studio).toContain('"Muhammadi Quranic"');
+    expect(studio).toContain('"Digital Khatt IndoPak Book"');
     expect(studio).toContain("<KhateebScriptText");
     expect(studio).toContain("forceArabic");
     expect(looksLikeArabicReligiousText("«رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا»")).toBe(true);
@@ -772,8 +772,8 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
       expect(row.quranLocation).toBeTruthy();
       expect(row.arabic).toBeUndefined();
       const location = row.quranLocation!;
-      expect(ahmedgrafQuranReference.getAyah(location.surah, location.ayah)?.text).toBeTruthy();
-      expect(row.sourceRefUr).toContain("ahmedgraf.com");
+      expect(publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)?.text).toBeTruthy();
+      expect(row.sourceRefUr).toContain("github.com/risan/quran-json");
     }
   });
 
@@ -819,7 +819,7 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const primary = readFileSync("app/tools/khateeb-studio/KhateebPrimaryArabic.tsx", "utf8");
     expect(studio).toContain("<KhateebPrimaryArabic");
-    expect(primary).toContain("ahmedgrafQuranReference.getAyah");
+    expect(primary).toContain("publicDigitalKhattQuranReference.getAyah");
     expect(primary).toContain("toQalamArabicPresentation");
     expect(primary).not.toContain("diacritizeArabicWithModel");
   });

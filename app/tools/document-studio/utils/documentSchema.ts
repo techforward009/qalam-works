@@ -458,6 +458,7 @@ export function createDocumentStudioExtensions() {
     StarterKit.configure({
       paragraph: false,
       heading: false,
+      link: false,
     }),
     ParagraphWithDir,
     HeadingWithDir,
