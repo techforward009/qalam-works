@@ -859,6 +859,7 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
               orientation: settings.page.orientation,
               marginPreset: settings.page.margins.preset,
               customMargins: settings.page.margins,
+              customSizeMm: settings.page.customSizeMm,
             });
             return {
               size: {

@@ -273,6 +273,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     orientation: documentSettings.page.orientation,
     marginPreset: documentSettings.page.margins.preset,
     customMargins: documentSettings.page.margins,
+    customSizeMm: documentSettings.page.customSizeMm,
   });
 
   useEffect(() => {
@@ -894,13 +895,18 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     try {
       const { parseInPage, MAX_INPAGE_BYTES } = await import("../utils/inpage/parseInPage");
       if (file.size > MAX_INPAGE_BYTES) throw new Error("InPage files must be 32 MB or smaller.");
-      const parsed = parseInPage(await file.arrayBuffer());
+      const buffer = await file.arrayBuffer();
+      const parsed = parseInPage(buffer);
+      const { parseInPageSetup } = await import("../utils/inpage/parseInPageSetup");
+      const { settingsFromInPageSetup } = await import("../utils/inpage/inpageSetupSettings");
+      const setup = parseInPageSetup(buffer);
       const stories = parsed.stories.map((paragraphs, index) => ({ number: index + 1, text: paragraphs.join("\n") }));
       const longest = stories.reduce((best, story) => story.text.length > best.text.length ? story : best, stories[0]);
       if (!longest) throw new Error("No stories were found in this InPage file.");
       const created = await createAndOpenDocument({
         title: file.name.replace(/\.inp$/i, "") || "InPage import",
         content: plainTextToDocNodeWithDir(longest.text, "rtl"),
+        ...(setup ? { documentSettings: settingsFromInPageSetup(setup) } : {}),
       });
       if (!created) throw new Error("The imported document could not be saved in this browser.");
       setLibraryOpen(false);

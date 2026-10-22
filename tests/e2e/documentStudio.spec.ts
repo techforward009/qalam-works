@@ -1,3 +1,4 @@
+import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { unicodeInpage } from "../fixtures/inpage";
 import { TINY_PNG_BASE64 } from "./fixtures/tinyPng";
@@ -89,6 +90,28 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("imports InPage fixture page setup as A5 starting at page 77", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.open"]').click();
+    const [picker] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Open InPage file…" }).click()]);
+    await picker.setFiles(path.resolve("tests/fixtures/inpage/hadiyat.inp"));
+    const imported = page.getByRole("dialog", { name: "InPage text imported" });
+    await expect(imported).toBeVisible();
+    await imported.getByRole("button", { name: "Close", exact: true }).click();
+    const paper = page.locator('[data-studio-page-paper]').first();
+    await expect(paper).toBeAttached();
+    const box = (await paper.boundingBox())!;
+    expect(box.width / box.height).toBeCloseTo(839054 / 1190550, 2);
+    await expect(page.locator('[data-studio-page-label]')).toHaveText(/^77\//);
+    const root = page.locator('[data-studio-print-root]');
+    await expect.poll(() => root.getAttribute("data-print-margin-top-mm")).not.toBeNull();
+    expect(Number(await root.getAttribute("data-print-margin-top-mm")) * 72 / 25.4).toBeCloseTo(50.976, 3);
+    await page.reload();
+    await expect(page.locator('[data-studio-page-label]')).toHaveText(/^77\//);
+    expect(Number(await page.locator('[data-studio-print-root]').getAttribute("data-page-width-mm")) * 72 / 25.4).toBeCloseTo(419.527, 3);
+  });
+
   test("opens generated InPage text as a new document and offers other stories for copying", async ({ page }) => {
     await openStudio(page, "ur");
     await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
@@ -115,6 +138,8 @@ test.describe("Document Studio v1 browser smoke", () => {
     const importedId = await page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"));
     expect(importedId).not.toBe(previousId);
     await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page.locator('[data-studio-print-root]')).toHaveAttribute("data-page-width-mm", "210");
+    await expect(page.locator('[data-studio-page-label]')).toHaveText(/^1\//);
     await page.locator('[data-menu-root="file"]').click();
     await page.locator('[data-menu-action="file.open"]').click();
     await expect(page.getByRole("dialog").getByText("Untitled document", { exact: true })).toBeVisible();
