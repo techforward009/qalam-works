@@ -250,6 +250,23 @@
   white-space: inherit;
 }
 
+/* Preview comparison of Balagh-like metrics. Original noor1 is not bundled.
+   Digital Khatt remains the default; only Arabic book pages are affected. */
+.typeComparisonNote { margin: 0; font-size: .73rem; line-height: 1.8; color: #66766b; }
+.readingPage[data-arabic-page-style="balagh-layout"] .paragraphs {
+  width: min(100%, 546px);
+  gap: .65rem;
+}
+.readingPage[data-arabic-page-style="balagh-layout"] .paragraphs :global(.khateeb-book-ar),
+.readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic),
+.readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic *) {
+  font-family: "Traditional Arabic", var(--font-amiri), "Noto Naskh Arabic", serif !important;
+  font-size: 30px !important;
+  line-height: 56px !important;
+  font-weight: 500 !important;
+  direction: rtl;
+  text-align: justify;
+}
 .paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: .84em; line-height: 1.62; font-weight: 400; letter-spacing: 0; }
 .readingPage[data-book-language="en"] .paragraphs { gap: .55rem; }
 .readingPage[data-book-language="en"] .paragraphs :global(.khateeb-book-en) { text-align: left; overflow-wrap: normal; word-break: normal; }
@@ -305,6 +322,12 @@
   .pageArrowIcon { width: .83rem; height: .83rem; }
   .pageNumber { min-width: 6.2rem; }
   .pageNumberMain { font-size: .77rem; }
+  .readingPage[data-arabic-page-style="balagh-layout"] .paragraphs :global(.khateeb-book-ar),
+  .readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic),
+  .readingPage[data-arabic-page-style="balagh-layout"] :global(.qalam-book-arabic *) {
+    font-size: 24px !important;
+    line-height: 45px !important;
+  }
   .paragraphs { gap: .85rem; }
   .searchForm { align-items: stretch; flex-direction: column; }
   .searchField { min-width: 0; }

@@ -73,6 +73,15 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(css).toContain("font-size: .84em; line-height: 1.62;");
     expect(css).toContain("border: 0;");
     expect(css).not.toContain("border-radius: 50%;");
+    expect(reader).toContain('useState<"digital" | "balagh-layout">("digital")');
+    expect(reader).toContain('data-arabic-page-style={reading.language === "ar" ? arabicPageStyle : undefined}');
+    expect(reader).toContain("fontSize, arabicPageStyle, layoutSize");
+    expect(reader).toContain('selectedSource?.language === "ar"');
+    expect(css).toContain('width: min(100%, 546px)');
+    expect(css).toContain('font-size: 30px !important;');
+    expect(css).toContain('line-height: 56px !important;');
+    expect(css).toContain('font-family: "Traditional Arabic", var(--font-amiri)');
+    expect(css).not.toContain("font-family: noor1");
 
     expect(reader).toContain("اصل");
   });

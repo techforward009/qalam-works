@@ -46,6 +46,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [findText, setFindText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [fontSize, setFontSize] = useState(22);
+  // Preview-only comparison; no third-party font file is downloaded.
+  const [arabicPageStyle, setArabicPageStyle] = useState<"digital" | "balagh-layout">("digital");
   const [readingMode, setReadingMode] = useState<BookCopyMode>("original");
   const [copyMode, setCopyMode] = useState<BookCopyMode>("original");
   const [targetParagraph, setTargetParagraph] = useState("");
@@ -193,7 +195,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       setError(ur ? "صفحہ بندی نہیں ہوسکی؛ عبارت کا اصل متن محفوظ ہے۔" : "The page layout could not be measured. Source text remains unchanged.");
     });
     return () => { cancelled = true; paginating.current = false; setIsPaginating(false); };
-  }, [reading, readingMode, fontSize, layoutSize, selectionMode, selectedIds.length, targetParagraph]);
+  }, [reading, readingMode, fontSize, arabicPageStyle, layoutSize, selectionMode, selectedIds.length, targetParagraph]);
 
   useEffect(() => {
     const dialog = tocDialog.current;
@@ -504,6 +506,19 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
               <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => void feedback.copy(copyVisiblePage(true, copyMode))}>{ur ? "حوالے سمیت" : "Copy with reference"}</button>
             </div>
             <div className={styles.menuDivider}/>
+            {selectedSource?.language === "ar" ? <>
+              <label className={styles.menuLabel}>{ur ? "عربی خط کا تقابل" : "Arabic font comparison"}
+                <select className={field} value={arabicPageStyle} onChange={event => setArabicPageStyle(event.target.value as "digital" | "balagh-layout")}>
+                  <option value="digital">{ur ? "ڈیجیٹل خط (موجودہ)" : "Digital Khatt (current)"}</option>
+                  <option value="balagh-layout">{ur ? "بلاغ جیسی ترتیب (آزمائشی)" : "Balagh-inspired layout (trial)"}</option>
+                </select>
+              </label>
+              {arabicPageStyle === "balagh-layout" ? <p className={styles.typeComparisonNote}>
+                {ur ? "یہ اصل نور الہدیٰ یا noor1 فونٹ نہیں؛ روایتی عربی خط کے ساتھ سائز، سطروں اور چوڑائی کا تقابلی نمونہ ہے۔"
+                  : "This trial compares the layout using Traditional Arabic; it is not the original Noor al-Huda / noor1 font."}
+              </p> : null}
+              <div className={styles.menuDivider}/>
+            </> : null}
             <span className={styles.menuLabel}>{ur ? "متن کا حجم" : "Text size"}</span>
             <div className="flex items-center gap-2"><button type="button" className={btn} aria-label={ur ? "متن چھوٹا کریں" : "Smaller text"} disabled={fontSize <= 18} onClick={() => setFontSize(size => Math.max(18, size - 2))}>−</button><span>{fontSize}</span><button type="button" className={btn} aria-label={ur ? "متن بڑا کریں" : "Larger text"} disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button></div>
             <div className={styles.menuDivider}/>
@@ -556,7 +571,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           <button className={btn} type="button" disabled={busy || toc.page * toc.pageSize >= toc.total} onClick={() => void contents(sourceId, toc.page + 1)}>{ur ? "اگلے حصے" : "Next"}</button>
         </nav>}
       </dialog>
-      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader data-book-language={reading.language} aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
+      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader data-book-language={reading.language} data-arabic-page-style={reading.language === "ar" ? arabicPageStyle : undefined} aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="ltr">
           <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={reading.title}>
             <strong>{bookReaderRunningHeading(reading, locale)}</strong>
