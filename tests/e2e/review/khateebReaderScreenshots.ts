@@ -4,7 +4,7 @@ import path from "node:path";
 import { mockVisualReader } from "../fixtures/khateebReaderVisual";
 
 // Run with a review-specific Playwright config (not part of the normal spec
-// glob). Captures the unchanged app; fixtures intercept only the reader API.
+// glob). Captures the real app UI; fixtures intercept only the reader API.
 test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
   const mobile = testInfo.project.name.includes("mobile");
@@ -36,10 +36,47 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
     const overflow = await page.evaluate(() => ({ viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
     const menuBounds = await reader.locator("details[open] > div").evaluateAll(elements => elements.map(el => {
       const rect = el.getBoundingClientRect();
-      return { left: rect.left, right: rect.right, width: rect.width };
+      return { left: rect.left, right: rect.right, width: rect.width, top: rect.top, bottom: rect.bottom };
     }));
+    for (const bounds of menuBounds) {
+      expect(bounds.left).toBeGreaterThanOrEqual(0);
+      expect(bounds.right).toBeLessThanOrEqual(viewport.width);
+      if (mobile) {
+        expect(bounds.top).toBeGreaterThanOrEqual(0);
+        expect(bounds.bottom).toBeLessThanOrEqual(viewport.height);
+      }
+    }
+    const themeButton = await page.getByRole("button", { name: /^Switch to .*theme/ }).boundingBox();
+    const textArea = await article.getByTestId("reader-page-text-area").boundingBox();
+    expect(themeButton).not.toBeNull();
+    expect(textArea).not.toBeNull();
+    const overlapsText = themeButton!.x < textArea!.x + textArea!.width && themeButton!.x + themeButton!.width > textArea!.x
+      && themeButton!.y < textArea!.y + textArea!.height && themeButton!.y + themeButton!.height > textArea!.y;
+    expect(overlapsText).toBe(false);
+    const darkContrast = await reader.locator("select").first().evaluate(select => {
+      if (!document.documentElement.classList.contains("dark")) return null;
+      function rgb(color: string) { return color.match(/[\d.]+/g)!.slice(0, 3).map(Number); }
+      function luminance(color: string) {
+        const c = rgb(color).map(n => { const v = n / 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+        return c[0] * .2126 + c[1] * .7152 + c[2] * .0722;
+      }
+      function background(element: Element): string {
+        const bg = getComputedStyle(element).backgroundColor;
+        return bg === "rgba(0, 0, 0, 0)" && element.parentElement ? background(element.parentElement) : bg;
+      }
+      function contrast(element: Element) {
+        const foreground = getComputedStyle(element).color, bg = background(element);
+        const a = luminance(foreground), b = luminance(bg);
+        return { foreground, background: bg, ratio: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
+      }
+      return { selector: contrast(select), caption: contrast(select.parentElement!.querySelector("span")!) };
+    });
+    if (darkContrast) {
+      expect(darkContrast.selector.ratio).toBeGreaterThanOrEqual(4.5);
+      expect(darkContrast.caption.ratio).toBeGreaterThanOrEqual(4.5);
+    }
     (metrics.observations as Record<string, unknown>)[name] = {
-      overflow, menuBounds,
+      overflow, menuBounds, themeButton, textArea, overlapsText, darkContrast,
       pageNumber: await article.locator("nav strong").innerText(),
       textDirection: await article.getByTestId("reader-page-text-area").locator("[lang]").first().getAttribute("dir"),
     };
@@ -100,6 +137,12 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
   await page.getByRole("button", { name: "Switch to system theme", exact: true }).click();
   await page.getByRole("button", { name: "Switch to light theme", exact: true }).click();
 
+  const urduFontMenu = reader.locator("details").filter({ has: page.locator('option[value="balagh-layout"]') });
+  await urduFontMenu.locator("summary").click();
+  await expect(urduFontMenu.locator('option[value="digital"]')).toHaveText("Noorehuda (نور الہدیٰ)");
+  await capture("12-urdu-more-menu");
+  await urduFontMenu.locator("summary").click();
+
   await book.selectOption("nahj-ur");
   const urdu = article.locator(".khateeb-book-ur").first();
   await expect(urdu).toBeVisible();
@@ -125,7 +168,11 @@ test("capture mocked Nahj al-Balagha reader review", async ({ page }, testInfo) 
   await capture("10-english-ui-arabic");
   const fontMenu = reader.locator("details").filter({ has: page.locator('option[value="balagh-layout"]') });
   await fontMenu.locator("summary").click();
+  await expect(fontMenu.locator('option[value="digital"]')).toHaveText("Noorehuda (نور الہدیٰ)");
   await capture("11-more-menu-font-label");
+  await fontMenu.locator("summary").click();
+  await page.getByRole("button", { name: "Switch to dark theme", exact: true }).click();
+  await capture("13-english-dark-selector");
   metrics.fonts = await page.evaluate(() => [...document.fonts]
     .filter(face => ["Noorehuda", "Nafees Nastaleeq"].includes(face.family.replaceAll('"', "")))
     .map(face => ({ family: face.family, status: face.status })));

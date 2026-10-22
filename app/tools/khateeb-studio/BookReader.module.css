@@ -54,6 +54,14 @@
 .bookSelect { flex: 0 1 15rem; max-width: 17rem; }
 .languageSelect { min-width: 7.5rem; }
 .bookSelect select, .languageSelect select { padding: .43rem .55rem; border-radius: .55rem; font-size: .78rem; }
+/* Explicit foregrounds keep both the caption and native select readable. */
+:global(.dark) .bookSelect, :global(.dark) .languageSelect { color: #d4dfd6; }
+:global(.dark) .bookSelect select, :global(.dark) .bookSelect option,
+:global(.dark) .languageSelect select, :global(.dark) .languageSelect option {
+  color: #f1f5f2;
+  background-color: #102017;
+  border-color: #82967f;
+}
 .menu { position: relative; }
 .menu summary { list-style: none; cursor: pointer; }
 .menu summary::-webkit-details-marker { display: none; }
@@ -305,6 +313,19 @@
   .toolbar { justify-content: flex-start; }
 }
 @media (max-width: 639px) {
+  /* Anchor to the full toolbar rather than its narrow More button. Logical
+     insets keep the panel inside the reader in either writing direction. */
+  .toolbar { position: relative; }
+  .menu { position: static; }
+  .menuPanel {
+    inset-inline: 0;
+    margin-inline: auto;
+    width: min(21rem, calc(100vw - 2rem));
+    min-width: 0;
+    max-height: calc(100dvh - 20rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   .readingPage { width: 100%; min-height: 35rem; max-height: none; padding: 1.2rem .85rem 1.3rem; margin-top: .25rem; }
   .pageMeta { gap: .3rem; min-height: 2.7rem; margin-bottom: 1.35rem; padding-bottom: .55rem; }
   .bookIdentity strong, .chapterTitle strong { font-size: .65rem; max-height: 3.8em; }

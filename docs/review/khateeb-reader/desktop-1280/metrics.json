@@ -10,11 +10,13 @@
     "04-arabic-page-2.png",
     "05-in-book-search.png",
     "06-arabic-dark.png",
+    "12-urdu-more-menu.png",
     "07-urdu-page-1.png",
     "08-urdu-page-2.png",
     "09-urdu-dark.png",
     "10-english-ui-arabic.png",
-    "11-more-menu-font-label.png"
+    "11-more-menu-font-label.png",
+    "13-english-dark-selector.png"
   ],
   "observations": {
     "01-library-book-list": {
@@ -23,6 +25,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -32,6 +48,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -41,6 +71,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -50,6 +94,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "2",
       "textDirection": "rtl"
     },
@@ -59,6 +117,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 690,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -68,6 +140,62 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": {
+        "selector": {
+          "foreground": "rgb(241, 245, 242)",
+          "background": "rgb(16, 32, 23)",
+          "ratio": 15.37722912615757
+        },
+        "caption": {
+          "foreground": "rgb(212, 223, 214)",
+          "background": "rgb(12, 23, 16)",
+          "ratio": 13.376842214394994
+        }
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "12-urdu-more-menu": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [
+        {
+          "left": 442.75,
+          "right": 682.75,
+          "width": 240,
+          "top": 260.09375,
+          "bottom": 1038.625
+        }
+      ],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -77,6 +205,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -86,6 +228,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "2",
       "textDirection": "rtl"
     },
@@ -95,6 +251,31 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": {
+        "selector": {
+          "foreground": "rgb(241, 245, 242)",
+          "background": "rgb(16, 32, 23)",
+          "ratio": 15.37722912615757
+        },
+        "caption": {
+          "foreground": "rgb(212, 223, 214)",
+          "background": "rgb(12, 23, 16)",
+          "ratio": 13.376842214394994
+        }
+      },
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -104,6 +285,20 @@
         "scrollWidth": 1280
       },
       "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 381.421875,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
       "pageNumber": "1",
       "textDirection": "rtl"
     },
@@ -116,9 +311,59 @@
         {
           "left": 622.671875,
           "right": 862.671875,
-          "width": 240
+          "width": 240,
+          "top": 231.4375,
+          "bottom": 943.46875
         }
       ],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 381.421875,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "13-english-dark-selector": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 381.421875,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": {
+        "selector": {
+          "foreground": "rgb(241, 245, 242)",
+          "background": "rgb(16, 32, 23)",
+          "ratio": 15.37722912615757
+        },
+        "caption": {
+          "foreground": "rgb(212, 223, 214)",
+          "background": "rgb(12, 23, 16)",
+          "ratio": 13.376842214394994
+        }
+      },
       "pageNumber": "1",
       "textDirection": "rtl"
     }

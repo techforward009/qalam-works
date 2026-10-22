@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ClipboardEvent } from "react";
 import BookPassageText from "./BookPassageText";
+import { ThemeToggle } from "../../components/ThemeToggle";
 import { displayArabicBookText, splitArabicBookParentheses } from "../../lib/knowledge/bookArabicDisplay";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
@@ -475,6 +476,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     && untranslatedParagraphs > 0 && untranslatedParagraphs < reading.paragraphs.length;
   return <section lang={ur ? "ur" : "en"} dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className={styles.readerShell}>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss}/>
+    {!shelf?.ready ? <div className="flex justify-end sm:hidden"><ThemeToggle inline /></div> : null}
     {error ? <p role="alert" className={styles.noticeError}>{error}</p> : null}
     {busy ? <p role="status" className={styles.notice}>{ur ? "کتاب کھولی جا رہی ہے…" : "Opening book…"}</p> : null}
     {message ? <p role="status" className={styles.notice}>{message}</p> : null}
@@ -509,13 +511,13 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             {selectedSource?.language === "ar" ? <>
               <label className={styles.menuLabel}>{ur ? "عربی خط کا تقابل" : "Arabic font comparison"}
                 <select className={field} value={arabicPageStyle} onChange={event => setArabicPageStyle(event.target.value as "digital" | "balagh-layout")}>
-                  <option value="digital">{ur ? "ڈیجیٹل خط (موجودہ)" : "Digital Khatt (current)"}</option>
+                  <option value="digital">Noorehuda (نور الہدیٰ)</option>
                   <option value="balagh-layout">{ur ? "بلاغ جیسی ترتیب (آزمائشی)" : "Balagh-inspired layout (trial)"}</option>
                 </select>
               </label>
               {arabicPageStyle === "balagh-layout" ? <p className={styles.typeComparisonNote}>
-                {ur ? "یہ اصل نور الہدیٰ یا noor1 فونٹ نہیں؛ روایتی عربی خط کے ساتھ سائز، سطروں اور چوڑائی کا تقابلی نمونہ ہے۔"
-                  : "This trial compares the layout using Traditional Arabic; it is not the original Noor al-Huda / noor1 font."}
+                {ur ? "یہ Noorehuda (نور الہدیٰ) کے ساتھ سطروں اور صفحے کی چوڑائی کا تقابلی نمونہ ہے؛ فونٹ تبدیل نہیں ہوتا۔"
+                  : "This trial compares line spacing and page width while keeping Noorehuda (نور الہدیٰ)."}
               </p> : null}
               <div className={styles.menuDivider}/>
             </> : null}
@@ -532,6 +534,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             <a href="/tools/khateeb-studio/library/admin">{ur ? "کتابوں کا انتظام" : "Book administration"}</a>
           </div>
         </details>
+        <div className="sm:hidden"><ThemeToggle inline /></div>
       </nav>
       {visibleBookmarks.length > 0 ? <details ref={savedPlacesRef} className={styles.savedPlaces}><summary>{ur ? "محفوظ نشان (" + visibleBookmarks.length.toLocaleString("ur-PK") + ")" : "Saved places (" + visibleBookmarks.length + ")"}</summary>
         <div className={styles.bookmarkList}>

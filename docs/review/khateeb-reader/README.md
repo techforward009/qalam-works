@@ -1,6 +1,6 @@
 # PR #109 — Khateeb reader visual review
 
-Application head reviewed: `282b7624f6cbee0c4dd73b79991015eb0a41497e`. Captured locally on 2026-10-22 from the existing production build. No reader features, production source text, fonts or workflows were changed.
+Before-fix head: `3d53181ec594648318e54078601e02e65ec7b23c`. These are regenerated **after** captures from the local production build on 2026-10-22, following only the four requested visual fixes. Reader features, production source text, font files and workflows remain unchanged.
 
 The book-reader API is mocked because previews cannot reach R2. These images demonstrate the real reader UI and its browser-measured pagination, **not live R2 availability or printed-book pagination**.
 
@@ -12,21 +12,29 @@ Desktop viewport: **1280 × 1000**. Mobile viewport: **390 × 844**. PNGs are ex
 
 The longer opening sermon produces real visual pages in both viewports. The capture checks click Next and assert that the counter changes from 1 to 2 and the Arabic content changes. No text is repeated merely to pad the fixture.
 
-## Findings
+## Four visual fixes
 
-- **Mobile English More menu clips at the left edge:** its 240px panel starts at **x = −25.84px**. Labels and links lose their first characters. See image 11 and the corresponding `metrics.json`.
-- **Floating theme button overlaps reading text on mobile:** visible near the lower-right lines in Arabic page 2 and Urdu page 1 (images 04 and 07).
-- **Stale font label:** More → Arabic font comparison says “Digital Khatt (current)” although the rendered Arabic is Noorehuda. Noorehuda and Nafees Nastaleeq both report `loaded` in the recorded font metrics.
-- **Dark selector contrast:** the book selector and its caption look dim against the dark background. The main Arabic and Urdu reading text remains legible.
-- The header fits at both widths without logo/language-switch overlap. Book headers fit; English metadata wraps onto two lines on mobile. English UI labels read left-to-right while the book text remains right-to-left.
-- Page numbers advance to 2. In Urdu UI, Next is the left arrow and Previous is the right arrow; English UI uses the opposite direction. Page counters represent visual excerpt pages, not source print-page numbers.
-- No page-level horizontal scrolling was measured (`scrollWidth === innerWidth` in all captures). This does not hide the negative-left More-menu clipping noted above.
+- **More menu:** on mobile, the panel is centered under the full toolbar instead of the narrow More button. At 390px it occupies **x=27…363** in English and Urdu, and its scrollable height stays within the viewport. See images 11 and 12.
+- **Theme control:** on the mobile library route it sits in the toolbar, with an inline fallback while the catalog loads or is unavailable. It no longer floats over reading text. Other pages and the desktop floating control retain their existing placement. Every capture checks that the visible theme button does not intersect the reading text area.
+- **Font name:** the book-Arabic option now says **Noorehuda (نور الہدیٰ)** in both UI languages. The comparison note describes the existing layout-only change without claiming a different font. No font data or Quran font styling was changed.
+- **Dark selector:** explicit dark-mode colors give the selected book text **15.38:1** contrast and its caption **13.38:1**, exceeding WCAG AA's 4.5:1 minimum. The capture checks these ratios in both languages and widths.
 
-These are review findings only; none were fixed in this screenshot task.
+The header still fits at both widths, counters advance 1→2, Urdu Next points left, and English Next points right. Arabic and Urdu reading text remains RTL. No page-level horizontal scrolling was measured. No other visual or feature fixes were included.
+
+## Before / after
+
+The before links use the immutable original review commit; after links use this directory's regenerated captures.
+
+| Issue | Before | After |
+|---|---|---|
+| Mobile English More menu | [![Before: Mobile English More menu](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/11-more-menu-font-label.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/11-more-menu-font-label.png) | [![After: Mobile English More menu](mobile-390/11-more-menu-font-label.png)](mobile-390/11-more-menu-font-label.png) |
+| Mobile theme control / Urdu reading | [![Before: Mobile theme control / Urdu reading](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/07-urdu-page-1.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/07-urdu-page-1.png) | [![After: Mobile theme control / Urdu reading](mobile-390/07-urdu-page-1.png)](mobile-390/07-urdu-page-1.png) |
+| Book Arabic font label | [![Before: Book Arabic font label](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/desktop-1280/11-more-menu-font-label.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/desktop-1280/11-more-menu-font-label.png) | [![After: Book Arabic font label](desktop-1280/11-more-menu-font-label.png)](desktop-1280/11-more-menu-font-label.png) |
+| Dark-mode book selector | [![Before: Dark-mode book selector](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/06-arabic-dark.png?raw=true)](https://github.com/techforward009/qalam-works/blob/3d53181ec594648318e54078601e02e65ec7b23c/docs/review/khateeb-reader/mobile-390/06-arabic-dark.png) | [![After: Dark-mode book selector](mobile-390/06-arabic-dark.png)](mobile-390/06-arabic-dark.png) |
 
 ## Screenshots
 
-Click an image for full resolution.
+26 after screenshots (13 per width). Click an image for full resolution.
 
 | View | Desktop — 1280px | Mobile — 390px |
 |---|---|---|
@@ -40,12 +48,16 @@ Click an image for full resolution.
 | Urdu / Nastaliq — page 2 after Next | [![Desktop: Urdu / Nastaliq — page 2 after Next](desktop-1280/08-urdu-page-2.png)](desktop-1280/08-urdu-page-2.png) | [![Mobile: Urdu / Nastaliq — page 2 after Next](mobile-390/08-urdu-page-2.png)](mobile-390/08-urdu-page-2.png) |
 | Urdu reader — dark mode | [![Desktop: Urdu reader — dark mode](desktop-1280/09-urdu-dark.png)](desktop-1280/09-urdu-dark.png) | [![Mobile: Urdu reader — dark mode](mobile-390/09-urdu-dark.png)](mobile-390/09-urdu-dark.png) |
 | English UI with RTL Arabic text | [![Desktop: English UI with RTL Arabic text](desktop-1280/10-english-ui-arabic.png)](desktop-1280/10-english-ui-arabic.png) | [![Mobile: English UI with RTL Arabic text](mobile-390/10-english-ui-arabic.png)](mobile-390/10-english-ui-arabic.png) |
-| More menu — existing label/clipping issues | [![Desktop: More menu — existing label/clipping issues](desktop-1280/11-more-menu-font-label.png)](desktop-1280/11-more-menu-font-label.png) | [![Mobile: More menu — existing label/clipping issues](mobile-390/11-more-menu-font-label.png)](mobile-390/11-more-menu-font-label.png) |
+| English More menu — corrected label and placement | [![Desktop: English More menu — corrected label and placement](desktop-1280/11-more-menu-font-label.png)](desktop-1280/11-more-menu-font-label.png) | [![Mobile: English More menu — corrected label and placement](mobile-390/11-more-menu-font-label.png)](mobile-390/11-more-menu-font-label.png) |
+| Urdu More menu — viewport bounds | [![Desktop Urdu More menu](desktop-1280/12-urdu-more-menu.png)](desktop-1280/12-urdu-more-menu.png) | [![Mobile Urdu More menu](mobile-390/12-urdu-more-menu.png)](mobile-390/12-urdu-more-menu.png) |
+| English dark-mode selector | [![Desktop English dark selector](desktop-1280/13-english-dark-selector.png)](desktop-1280/13-english-dark-selector.png) | [![Mobile English dark selector](mobile-390/13-english-dark-selector.png)](mobile-390/13-english-dark-selector.png) |
 
 ## Validation and reproduction
 
-- Screenshot capture: **2 passed** (desktop and mobile), including loaded-font, pagination, search-result and direction checks.
+- Screenshot capture: **2 passed** (desktop and mobile), including menu bounds in LTR/RTL, theme/text separation, contrast ≥4.5:1, font labels, loaded fonts, pagination and search checks.
 - TypeScript (`npx tsc --noEmit`): passed.
+- Production build: passed.
+- Existing Noorehuda/Quran Playwright regression: **2 passed**, confirming book Arabic and Quran retain their respective fonts.
 - Per-view measurements: [desktop metrics](desktop-1280/metrics.json), [mobile metrics](mobile-390/metrics.json).
 
 From the repository root, with dependencies and a Playwright Chromium browser installed:
