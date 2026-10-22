@@ -138,6 +138,7 @@ import DocumentHelpDialog from "./DocumentHelpDialog";
 import QalamAiPanel from "./QalamAiPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import DocumentLibraryDialog from "./DocumentLibraryDialog";
+import InPageStoriesDialog, { type ImportedStory } from "./InPageStoriesDialog";
 import {
   getDocumentLibrary,
   migrateLegacyDraftIfNeeded,
@@ -247,7 +248,8 @@ function getInitialDraftContent(): DocNode | string {
 
 export default function DocumentStudioEditor({ fillWindow = false }: { fillWindow?: boolean } = {}) {
   const { language: uiLanguage } = useLanguage();
-  const isUr = uiLanguage === "ur";
+  // InPage-style editor chrome stays English; document direction is independent.
+  const isUr = false;
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [visiblePage, setVisiblePage] = useState(1);
@@ -342,6 +344,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [documentTitle]);
   const saveChainRef = useRef(Promise.resolve());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inpageInputRef = useRef<HTMLInputElement>(null);
+  const [inpageStories, setInpageStories] = useState<ImportedStory[] | null>(null);
+  const [inpageError, setInpageError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -729,7 +734,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings; minimumPages?: number }) => {
     const library = libraryRef.current;
-    if (!library) return;
+    if (!library) return false;
     try {
       if (activeDocumentIdRef.current && editor) {
         await persistActiveNow();
@@ -741,9 +746,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       });
       applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
       await refreshLibraryList(library);
+      return true;
     } catch (err) {
       console.error("Failed to create document:", err);
       setSaveStatus("error");
+      return false;
     }
   };
 
@@ -879,6 +886,29 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setPdfError(null);
     setPdfSummary(null);
     setCopied(false);
+  };
+
+  const handleInPageFile = async (file: File) => {
+    setInpageError(null);
+    setIsImporting(true);
+    try {
+      const { parseInPage, MAX_INPAGE_BYTES } = await import("../utils/inpage/parseInPage");
+      if (file.size > MAX_INPAGE_BYTES) throw new Error("InPage files must be 32 MB or smaller.");
+      const parsed = parseInPage(await file.arrayBuffer());
+      const stories = parsed.stories.map((paragraphs, index) => ({ number: index + 1, text: paragraphs.join("\n") }));
+      const longest = stories.reduce((best, story) => story.text.length > best.text.length ? story : best, stories[0]);
+      if (!longest) throw new Error("No stories were found in this InPage file.");
+      const created = await createAndOpenDocument({
+        title: file.name.replace(/\.inp$/i, "") || "InPage import",
+        content: plainTextToDocNodeWithDir(longest.text, "rtl"),
+      });
+      if (!created) throw new Error("The imported document could not be saved in this browser.");
+      setLibraryOpen(false);
+      setInpageStories(stories.filter((story) => story !== longest && story.text.trim().length > 0));
+    } catch (error) {
+      setLibraryOpen(false);
+      setInpageError(error instanceof Error ? error.message : "Failed to import InPage text.");
+    } finally { setIsImporting(false); }
   };
 
   // v1 file import (Option A, per Sajjad's 2026-08-08 decision): both .txt
@@ -1805,6 +1835,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     <div className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
+      {inpageError ? <p role="alert" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
+      <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
+        const file = event.target.files?.[0];
+        if (file) void handleInPageFile(file);
+        event.target.value = "";
+      }} />
+      {inpageStories !== null ? <InPageStoriesDialog stories={inpageStories} onClose={() => setInpageStories(null)} /> : null}
       <input
         ref={fileInputRef}
         type="file"
@@ -1890,6 +1927,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           isUr={isUr}
           documents={libraryItems}
           activeId={activeDocumentId}
+          onOpenInPage={() => inpageInputRef.current?.click()}
           onOpen={(id) => {
             void openLibraryDocument(id);
           }}

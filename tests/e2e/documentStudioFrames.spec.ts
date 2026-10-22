@@ -119,12 +119,12 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
   });
   const englishGeometry = await geometry();
   await page.locator('[data-studio-language-switch] button[lang="ur"]').click();
-  await expect(page.getByRole("textbox", { name: "دستاویز ایڈیٹر", exact: true })).toBeEditable();
+  await expect(page.getByRole("textbox", { name: "Document editor", exact: true })).toBeEditable();
   await expect.poll(geometry).toEqual(englishGeometry);
   expect(englishGeometry[0].x).toBe(0);
   expect(englishGeometry[1].x).toBe(1903);
-  const labels = { select: "انتخاب", text: "متن", image: "تصویر", rect: "مستطیل",
-    ellipse: "بیضوی", "round-rect": "گول کونوں والا مستطیل", line: "لکیر" };
+  const labels = { select: "Select", text: "Text", image: "Picture", rect: "Rectangle",
+    ellipse: "Ellipse", "round-rect": "Rounded rectangle", line: "Line" };
   for (const [id, label] of Object.entries(labels)) {
     const button = page.locator(`[data-studio-tool-button="${id}"]`);
     await expect(button).toHaveAttribute("title", label);
@@ -135,8 +135,8 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
     await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
     await expect(button).toHaveAttribute("aria-pressed", "true");
   }
-  const master = page.getByRole("button", { name: "ماسٹر صفحات", exact: true });
+  const master = page.getByRole("button", { name: "Master pages", exact: true });
   await expect(master).toBeDisabled();
-  await expect(master).toHaveAttribute("title", "جلد آ رہا ہے");
+  await expect(master).toHaveAttribute("title", "Coming soon");
   await expect(master).toHaveCSS("color", "rgb(128, 128, 128)");
 });

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { unicodeInpage } from "../fixtures/inpage";
 import { TINY_PNG_BASE64 } from "./fixtures/tinyPng";
 
 const URL = "/tools/document-studio";
@@ -10,8 +11,9 @@ async function openStudio(page: Page, language: "en" | "ur" = "en") {
     localStorage.setItem("qalam-site-language", value);
   }, language);
   await page.goto(URL);
-  await expect(page.getByRole("textbox", { name: language === "ur" ? "دستاویز ایڈیٹر" : "Document editor" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Document editor" })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toBeEditable();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
 }
 
 async function imageAction(page: Page, label: string) {
@@ -87,6 +89,38 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("opens generated InPage text as a new document and offers other stories for copying", async ({ page }) => {
+    await openStudio(page, "ur");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
+    await replaceEditorContent(page, "Existing document stays saved");
+    const previousId = await page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"));
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.open"]').click();
+    const [picker] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.getByRole("button", { name: "Open InPage file…" }).click(),
+    ]);
+    await picker.setFiles({ name: "sample.inp", mimeType: "application/octet-stream", buffer: unicodeInpage([["سرخی"], [], ["یہ مرکزی کہانی ہے۔", "یہ دوسرا پیراگراف ہے۔"]], "پرانی عبارت جو درآمد نہیں ہونی چاہیے\r") });
+    const dialog = page.getByRole("dialog", { name: "InPage text imported" });
+    await expect(dialog).toBeVisible();
+    const story = page.locator(".ProseMirror");
+    await expect(story.locator("p")).toHaveCount(2);
+    await expect(story).toContainText("یہ مرکزی کہانی ہے۔");
+    await expect(story).toContainText("یہ دوسرا پیراگراف ہے۔");
+    await expect(story).not.toContainText("پرانی عبارت");
+    await expect(dialog.getByRole("button", { name: "Copy story 1" })).toBeVisible();
+    await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { (window as unknown as { copiedInpage: string }).copiedInpage = text; } } }); });
+    await dialog.getByRole("button", { name: "Copy story 1" }).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { copiedInpage: string }).copiedInpage)).toBe("سرخی");
+    const importedId = await page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"));
+    expect(importedId).not.toBe(previousId);
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.open"]').click();
+    await expect(page.getByRole("dialog").getByText("Untitled document", { exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("sample", { exact: true })).toBeVisible();
+  });
+
   test("loads an editable English workspace, formats it, and persists after reload", async ({ page }) => {
     const errors: Error[] = [];
     page.on("pageerror", (error) => errors.push(error));
@@ -96,7 +130,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await page.keyboard.press("Control+A");
     await page.getByRole("button", { name: "Bold" }).click();
     await expect(editor.locator("strong")).toContainText(ENGLISH);
-    expect(await editor.getAttribute("dir")).toBe("ltr");
+    await expect(editor.locator("p").first()).toHaveAttribute("dir", "ltr");
 
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
     await page.reload();
@@ -117,7 +151,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
 
     await editor.locator("p").nth(1).click();
-    await page.getByRole("button", { name: "Left-to-right (English)" }).click();
+    await page.getByRole("button", { name: "Left to right", exact: true }).click();
     await expect(editor.locator("p").nth(1)).toContainText(ENGLISH);
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
     await expect(editor.locator("p").nth(0)).toHaveAttribute("dir", "rtl");
