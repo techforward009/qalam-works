@@ -15,6 +15,23 @@ describe("InPage OLE2 text parser", () => {
     const paragraph = [4, 0xd8, 4, 0xd5, 4, 0x20, 4, 0x81, 4, 0xb3, 9, 4, 0x81, 4, 0x82, 4, 0x20, 4, 0xa4, 4, 0xf3];
     expect(parseInPage(legacyInpage([paragraph], name))).toEqual({ version: 2, stories: [["۵۸ آ\tاب ی۔"]] });
   });
+  test.each([
+    { label: "CR-only", decoy: [] },
+    { label: "short non-empty", decoy: [4, 0x81] },
+  ])("legacy skips an early $label decoy and chooses the real two-paragraph table", ({ decoy }) => {
+    const prefix = Buffer.alloc(32, 0xee);
+    prefix.set([0, 0, 2, 0], 0);
+    prefix.writeUInt32LE(decoy.length + 1, 4);
+    prefix.set([...decoy, 13], 8);
+    prefix.writeUInt32LE(0, 9 + decoy.length);
+    const records = [[4, 0x81, 4, 0x8e, 4, 0x8b, 4, 0xa2], [4, 0x81, 4, 0x9f, 4, 0x81, 4, 0xa0, 4, 0x84]].flatMap((p) => {
+      const length = Buffer.alloc(4);
+      length.writeUInt32LE(p.length + 1);
+      return [length, Buffer.from([...p, 13])];
+    });
+    expect(parseInPage(inpageContainer(Buffer.concat([prefix, ...records, Buffer.alloc(4)]), "InPage100")))
+      .toEqual({ version: 2, stories: [["اردو", "امانت"]] });
+  });
   test("book-length story tables do not repeatedly decode every suffix", () => {
     const paragraphs = Array.from({ length: 2000 }, (_, i) => `پیراگراف ${i}`);
     expect(parseInPage(unicodeInpage([paragraphs])).stories[0]).toEqual(paragraphs);

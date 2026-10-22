@@ -77,31 +77,45 @@ function unicodeStories(data: Uint8Array, view: DataView): string[][] {
 
 function legacyStories(data: Uint8Array, view: DataView): string[][] {
   let budget = 1_000_000;
+  let best: { stories: string[][]; bytes: number } | null = null;
+  // Record-boundary suffixes of a complete candidate cannot beat that candidate.
+  // Skip only those known suffixes so long books stay within the work budget.
+  const dominatedStarts = new Set<number>();
   for (let start = 4; start + 5 <= data.length; start++) {
+    if (dominatedStarts.has(start)) continue;
     const first = view.getUint32(start, true);
     if (!first || first > data.length - start - 4 || data[start + 3 + first] !== 13) continue;
     let p = start, bytes = 0;
+    let hasContent = false;
+    const recordStarts: number[] = [];
     const stories: string[][] = [];
     let paragraphs: string[] = [];
     while (p + 4 <= data.length) {
       if (--budget <= 0) throw new InPageImportError("InPage paragraph table is too complex.");
+      recordStarts.push(p);
       const length = view.getUint32(p, true);
       if (length === 0) { stories.push(paragraphs); paragraphs = []; p += 4; continue; }
       if (length > data.length - p - 4 || data[p + 3 + length] !== 13) break;
-      try { paragraphs.push(decodeLegacyParagraph(data.subarray(p + 4, p + 3 + length))); }
+      const payload = data.subarray(p + 4, p + 3 + length);
+      try { paragraphs.push(decodeLegacyParagraph(payload)); }
       catch (error) {
         // Once text framing is established, never silently drop an unsupported
         // paragraph and import only the remaining stories.
         if (paragraphs.length || stories.length || data[p + 4] === 4 || (error instanceof Error && /glyph/.test(error.message))) throw error;
         break;
       }
-      bytes += length;
+      hasContent ||= payload.some((byte, i) => (byte === 4 && i + 1 < payload.length) || (byte >= 0x20 && byte <= 0x7e));
+      bytes += payload.length;
       p += 4 + length;
     }
     // Unterminated paragraphs are never silently imported as a complete story.
-    if (!paragraphs.length && stories.length && bytes) return stories;
+    if (!paragraphs.length && stories.length && hasContent) {
+      if (!best || bytes > best.bytes) best = { stories, bytes };
+      for (const offset of recordStarts) dominatedStarts.add(offset);
+    }
   }
-  throw new InPageImportError("Invalid or unsupported legacy InPage paragraph data.");
+  if (!best) throw new InPageImportError("Invalid or unsupported legacy InPage paragraph data.");
+  return best.stories;
 }
 
 /** Pure, browser-compatible, text-only parser. No file access or font changes. */
