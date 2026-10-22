@@ -41,7 +41,7 @@ export default {
         const item = await env.RESEARCH_BUCKET.get(key);
         if (!item) return empty(404);
         if (item.size > MAX_BYTES) return empty(502);
-        return new Response(item.body, { headers: { ...headers, "Content-Type": "application/json" } });
+        return new Response(item.body, { headers: { ...headers, "Content-Type": "application/json", "Content-Length": String(item.size) } });
       } catch { return empty(503); }
     }
     if (request.method === "PUT") {
