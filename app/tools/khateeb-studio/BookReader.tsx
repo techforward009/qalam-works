@@ -39,6 +39,11 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [visualPageIndex, setVisualPageIndex] = useState(0);
   const [isPaginating, setIsPaginating] = useState(false);
   const [layoutSize, setLayoutSize] = useState("");
+  const [layoutRevision, setLayoutRevision] = useState(0);
+  // Reserve only the measured difference between the probe and the actual
+  // rendered page (nested script spans, late font swaps, rounding).
+  const overflowAllowance = useRef(0);
+  const fontLoads = useRef(new Map<string, Promise<unknown>>());
   const pageArticleRef = useRef<HTMLElement>(null);
   const requestedPosition = useRef<{ recordId: string; paragraphId: string; offsetUtf16: number; last: boolean } | null>(null);
   const visiblePosition = useRef<ReaderAnchor | null>(null);
@@ -85,6 +90,65 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    let frame = 0;
+    const remeasure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (!cancelled) setLayoutRevision(value => value + 1);
+      });
+    };
+    const fontsLoaded = (event: FontFaceSetLoadEvent) => {
+      if (event.fontfaces.some(face => face.status === "loaded")) remeasure();
+    };
+    void document.fonts?.ready.then(() => { if (!cancelled) remeasure(); });
+    document.fonts?.addEventListener("loadingdone", fontsLoaded);
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("orientationchange", remeasure);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      document.fonts?.removeEventListener("loadingdone", fontsLoaded);
+      window.removeEventListener("resize", remeasure);
+      window.removeEventListener("orientationchange", remeasure);
+    };
+  }, []);
+
+  useEffect(() => {
+    overflowAllowance.current = 0;
+  }, [reading?.recordId, layoutSize, fontSize, readingMode]);
+
+  // Inspect the real page as well as the measurement clone. Do not merely
+  // clip overflowing lines: repaginate the full source with the smaller
+  // measured capacity so the continuation appears on the following page.
+  useEffect(() => {
+    const article = pageArticleRef.current;
+    const body = article?.querySelector<HTMLElement>(`[data-testid="reader-page-text-area"]`);
+    if (!article || !body || isPaginating) return;
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (paginating.current) return;
+        const box = body.getBoundingClientRect();
+        const bottom = Math.min(box.bottom, article.getBoundingClientRect().bottom - parseFloat(getComputedStyle(article).paddingBottom));
+        const children = Array.from(body.children);
+        const excess = Math.max(body.scrollHeight - body.clientHeight,
+          ...children.map(child => child.getBoundingClientRect().bottom - bottom));
+        if (excess > 1) {
+          overflowAllowance.current += Math.ceil(excess) + 1;
+          setLayoutRevision(value => value + 1);
+        }
+      });
+    };
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    observer?.observe(body);
+    for (const child of Array.from(body.children)) observer?.observe(child);
+    check();
+    return () => { cancelAnimationFrame(frame); observer?.disconnect(); };
+  }, [visualPages, visualPageIndex, isPaginating]);
+
+  useEffect(() => {
     const article = pageArticleRef.current;
     if (!article) return;
     if (typeof ResizeObserver === "undefined") { setLayoutSize("test-dom"); return; }
@@ -102,12 +166,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     const article = pageArticleRef.current;
     if (!reading || !article || !layoutSize) return;
     let cancelled = false;
+    let measurementProbe: HTMLElement | null = null;
     paginating.current = true;
     setIsPaginating(true);
     const run = async () => {
       if (document.fonts?.ready) await document.fonts.ready;
       if (cancelled || !pageArticleRef.current) return;
       const probe = pageArticleRef.current.cloneNode(true) as HTMLElement;
+      measurementProbe = probe;
       probe.removeAttribute("data-testid");
       probe.setAttribute("aria-hidden", "true");
       // A fixed-position clone otherwise measures against the viewport,
@@ -179,6 +245,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       // its book face. Explicitly load each rendered script before measuring.
       const scripts = new Map(units.map(unit => [unit.language, unit]));
       for (const unit of scripts.values()) {
+        if (cancelled) { probe.remove(); return; }
         const sample = addFragment({ ...unit, offsetsInto: unit.kind === "original" ? "source-paragraph" : "reviewed-translation",
           startOffset: 0, endOffset: unit.text.length, unitStart: true, unitEnd: true });
         body.replaceChildren(sample);
@@ -187,14 +254,24 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         if (document.fonts?.load) {
           // If a face is unavailable, wait for font resolution and measure
           // the same fallback the visible text will use; never drop text.
-          await Promise.allSettled([document.fonts.load(`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`, unit.text)]);
+          const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          // A failed face must not start another network attempt on every
+          // layout pass. A later successful load still triggers fontsLoaded.
+          let loaded = fontLoads.current.get(font);
+          if (!loaded) {
+            loaded = Promise.allSettled([document.fonts.load(font, unit.text)]);
+            fontLoads.current.set(font, loaded);
+          }
+          await loaded;
         }
       }
       if (document.fonts?.ready) await document.fonts.ready;
       if (cancelled) { probe.remove(); return; }
       const pages = await paginateMeasuredFlow(units, (fragments) => {
         body.replaceChildren(...fragments.map(addFragment));
-        return body.scrollHeight <= body.clientHeight + 1;
+        const limit = body.getBoundingClientRect().bottom - overflowAllowance.current;
+        return body.scrollHeight <= body.clientHeight + 1
+          && Array.from(body.children).every(child => child.getBoundingClientRect().bottom <= limit + 1);
       });
       probe.remove();
       if (cancelled) return;
@@ -202,18 +279,20 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       const requested = requestedPosition.current;
       const saved = visiblePosition.current ?? requested;
       let index = requested?.last ? pages.length - 1 : 0;
+      let retainedPosition = false;
       if (saved?.paragraphId) {
         const found = pages.findIndex(page => page.some(fragment => fragment.kind === "original"
           ? fragment.paragraphId === saved.paragraphId
             && (saved.offsetUtf16 ?? requested?.offsetUtf16 ?? 0) >= fragment.startOffset
             && (saved.offsetUtf16 ?? requested?.offsetUtf16 ?? 0) < fragment.endOffset
           : fragment.paragraphId === saved.paragraphId && fragment.unitStart));
-        if (found >= 0) index = found;
+        if (found >= 0) { index = found; retainedPosition = true; }
       }
       setVisualPageIndex(Math.max(0, index));
       const fragment = firstSourceFragment(pages[index]);
       if (fragment) {
-        const anchor = anchorForPage(reading, fragment.paragraphId, fragment.kind === "original" ? fragment.startOffset : 0);
+        const anchor = retainedPosition && visiblePosition.current ? visiblePosition.current
+          : anchorForPage(reading, fragment.paragraphId, fragment.kind === "original" ? fragment.startOffset : 0);
         visiblePosition.current = anchor;
         saveProgress(rememberReaderPosition(progressRef.current, anchor));
       }
@@ -222,12 +301,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       setIsPaginating(false);
     };
     void run().catch(() => {
+      measurementProbe?.remove();
+      if (cancelled) return;
       paginating.current = false;
       setIsPaginating(false);
       setError(ur ? "صفحہ بندی نہیں ہوسکی؛ عبارت کا اصل متن محفوظ ہے۔" : "The page layout could not be measured. Source text remains unchanged.");
     });
-    return () => { cancelled = true; paginating.current = false; setIsPaginating(false); };
-  }, [reading, readingMode, fontSize, arabicPageStyle, layoutSize, selectionMode, selectedIds.length, targetParagraph]);
+    return () => { cancelled = true; measurementProbe?.remove(); paginating.current = false; setIsPaginating(false); };
+  }, [reading, readingMode, fontSize, arabicPageStyle, layoutSize, layoutRevision, selectionMode, selectedIds.length, targetParagraph]);
 
   useEffect(() => {
     const dialog = tocDialog.current;
@@ -605,7 +686,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           <button className={btn} type="button" disabled={busy || toc.page * toc.pageSize >= toc.total} onClick={() => void contents(sourceId, toc.page + 1)}>{ur ? "اگلے حصے" : "Next"}</button>
         </nav>}
       </dialog>
-      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader data-book-language={reading.language} data-arabic-page-style={reading.language === "ar" ? arabicPageStyle : undefined} aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
+      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" aria-busy={isPaginating} data-print-book-reader data-book-language={reading.language} data-arabic-page-style={reading.language === "ar" ? arabicPageStyle : undefined} aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="ltr">
           <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={`${bookReaderRunningHeading(reading, locale)} — ${reading.title}`}>
             <strong>{bookReaderRunningHeading(reading, locale, ur)}</strong>
