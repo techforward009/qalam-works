@@ -67,7 +67,13 @@ export function planKnowledgeQuery(question: string, inferredTopicIds: readonly 
  // user's subject. Model-inferred adjacent topics must not replace it.
  const literal=concepts.filter(c=>c.terms.some(term=>(' '+normalized+' ').includes(' '+term+' ')));
  const precise=literal.filter(c=>c.terms.some(term=>term.includes(' ')&&(' '+normalized+' ').includes(' '+term+' ')));
- const found=precise.length ? precise : inferred.length ? inferred : literal;
+ // Keep other subjects explicitly requested outside the precise phrase. A
+ // phrase such as ماں باپ must not swallow the separate request خدمت.
+ const preciseTerms=precise.flatMap(c=>c.terms.filter(term=>term.includes(' ')&&(' '+normalized+' ').includes(' '+term+' '))).sort((a,b)=>b.length-a.length);
+ let remaining=' '+normalized+' ';
+ for(const term of preciseTerms) remaining=remaining.split(' '+term+' ').join(' ');
+ const additional=literal.filter(c=>!precise.includes(c)&&c.terms.some(term=>remaining.includes(' '+term+' ')));
+ const found=precise.length ? [...precise,...additional] : inferred.length ? inferred : literal;
  const consumed=new Set(found.flatMap(c=>c.terms.filter(term=>(' '+normalized+' ').includes(' '+term+' ')).flatMap(t=>t.split(' '))));
  const direct=[...new Set(words.filter(t=>t.length>1&&!stop.has(t)&&!/^\d+$/.test(t)))].slice(0,24);
  const groups=[...found.map(c=>c.terms),...(inferred.length ? [] : direct.filter(t=>!consumed.has(t)).map(t=>[t]))];

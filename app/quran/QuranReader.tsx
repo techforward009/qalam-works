@@ -12,6 +12,7 @@ import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import EditionTopBar from "./reader/EditionTopBar";
+import QuranThemeControl from "./QuranThemeControl";
 import {QuranSidebarSection as SidebarSection,QuranPageMeta,QuranPageArrow,QuranPageButtons,QuranCorner,SurahBand} from "./reader/SharedReaderControls";
 import QuranTranslationPage from "./QuranTranslationPage";
 import QuranTransliterationPage from "./QuranTransliterationPage";
@@ -509,6 +510,7 @@ export default function QuranReader({
       dir="ltr"
     >
       <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4" style={{scrollMarginTop:"var(--site-header-height, 128px)"}}>
+        <QuranThemeControl />
         <EditionTopBar editionId={editionId} surah={surah} ayah={ayah} />
         {editionId === "qalam-indopak" && <div className="my-2 text-center text-sm text-[#416448]"><p>{language === "ur" ? "قرآنی متن: احمد گرافکس" : "Quran text: Ahmed Grafics"} · <a href="https://ahmedgraf.com" rel="noopener noreferrer" target="_blank" className="underline">ahmedgraf.com</a></p><details className="mx-auto max-w-2xl text-xs"><summary className="cursor-pointer underline">{language === "ur" ? "ماخذ اور اجازت نامہ" : "Source licence notice"}</summary><span>{ahmedgrafQuranReference.getMetadata().referenceLicense}</span></details></div>}
         <div
