@@ -116,89 +116,118 @@
 .frontMatterLabel { border-inline-start: 1px solid rgb(49 81 58 / 18%); padding-inline-start: .45rem; }
 .readingPage {
   box-sizing: border-box;
-  width: min(100%, 47rem);
+  width: min(100%, 43rem);
   aspect-ratio: 148 / 210;
-  min-height: 31rem;
+  min-height: 34rem;
   min-width: 0;
-  margin: .4rem auto 2.5rem;
-  padding: clamp(1.2rem, 5vw, 3rem);
+  margin: .5rem auto 2.5rem;
+  padding: clamp(1.15rem, 4.5vw, 2.8rem);
   display: flex;
   flex-direction: column;
   overflow: visible;
-  border: 1px solid #e5dfd1;
-  border-radius: 2px;
-  background: #fffdf7;
-  box-shadow: 0 3px 19px rgb(37 46 37 / 9%);
+  border: 1px solid #c4b48a;
+  border-radius: 3px;
+  background: #fffdf8;
+  box-shadow: inset 0 0 0 5px #fffdf8, inset 0 0 0 6px #e1d8c4, 0 12px 32px rgb(65 55 37 / 11%);
 }
 :global(.dark) .readingPage {
-  border-color: rgb(194 207 195 / 16%);
-  background: #12251a;
-  box-shadow: 0 6px 24px rgb(0 0 0 / 22%);
+  border-color: #77715c;
+  background: #17231a;
+  box-shadow: inset 0 0 0 5px #17231a, inset 0 0 0 6px #475344, 0 12px 32px rgb(0 0 0 / 25%);
 }
 .pageMeta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "chapter navigation book";
   align-items: center;
-  gap: 1.5rem;
-  min-height: 2.75rem;
-  margin-bottom: clamp(1.25rem, 3.4vw, 2.25rem);
-  padding-bottom: .75rem;
-  border-bottom: 1px solid rgb(49 81 58 / 18%);
-  direction: rtl;
+  gap: .5rem;
+  min-height: 3.25rem;
+  margin-bottom: clamp(1.4rem, 3vw, 2.1rem);
+  padding-bottom: .65rem;
+  border-bottom: 1px solid #d4c8b0;
+  direction: ltr;
 }
-.bookIdentity, .chapterTitle { min-width: 0; color: #667062; }
-.bookIdentity { text-align: start; }
-.chapterTitle { text-align: end; }
+.bookIdentity { grid-area: book; min-width: 0; text-align: start; color: #484333; }
+.chapterTitle { grid-area: chapter; min-width: 0; text-align: start; color: #484333; }
 .bookIdentity strong, .chapterTitle strong {
   display: block;
-  width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: .81rem;
-  font-weight: 500;
-  line-height: 2;
-}
-.pageFooter {
-  flex: 0 0 auto;
-  width: 100%;
-  margin-top: 1.6rem;
-  padding-top: .7rem;
-  border-top: 1px solid rgb(49 81 58 / 16%);
+  max-height: 3.8em;
+  overflow-wrap: anywhere;
+  font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
+  font-size: .86rem;
+  font-weight: 400;
+  line-height: 1.9;
 }
 .pageNavigation {
-  display: grid;
-  grid-template-columns: 2.4rem minmax(0, 1fr) 2.4rem;
+  grid-area: navigation;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: .75rem;
-  max-width: 18rem;
-  margin-inline: auto;
-  direction: rtl;
+  justify-content: center;
+  gap: .3rem;
+  min-width: 11.7rem;
+  direction: ltr;
 }
-.pageNavigation button {
-  display: grid;
+.pageArrow {
+  display: inline-grid;
+  flex: 0 0 auto;
   place-items: center;
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  border: 0;
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 1.5px solid #b08a47;
   border-radius: 50%;
-  background: transparent;
-  color: #566a58;
-  font: 400 1.6rem/1 Georgia, serif;
+  background: #fffdf8;
+  color: #6d5428;
   cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .8) inset;
 }
-.pageNavigation button:hover:not(:disabled) { background: rgb(49 81 58 / 9%); }
-.pageNavigation button:focus-visible { outline: 2px solid #31513a; outline-offset: 2px; }
-.pageNavigation button:disabled { opacity: .3; cursor: not-allowed; }
-.pageNumber { color: #57695b; text-align: center; font-size: .84rem; line-height: 1.9; font-variant-numeric: tabular-nums; }
-:global(.dark) .bookIdentity, :global(.dark) .chapterTitle, :global(.dark) .pageNavigation button, :global(.dark) .pageNumber { color: #c2cec1; }
+.pageArrow:hover:not(:disabled) { color: #2f8f68; border-color: #2f8f68; background: #f3faf6; }
+.pageArrow:disabled { opacity: .35; cursor: not-allowed; }
+.pageArrow:focus-visible { outline: 2px solid #31513a; outline-offset: 2px; }
+.pageArrowIcon { width: 1rem; height: 1rem; display: block; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.pageNumber {
+  display: flex;
+  min-width: 7.15rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #332e24;
+  text-align: center;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+.pageNumberMain {
+  font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
+  font-weight: 400;
+  font-size: .95rem;
+  white-space: nowrap;
+}
+.pageNumber small {
+  font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
+  font-size: .67rem;
+  white-space: nowrap;
+  color: #6d6658;
+}
+:global(.dark) .bookIdentity, :global(.dark) .chapterTitle, :global(.dark) .pageNumber { color: #eee9dd; }
+:global(.dark) .pageNumber small { color: #bbb4a3; }
+:global(.dark) .pageArrow { background: #263529; border-color: #b3955f; color: #e7d5ae; }
+/* Book-source Arabic is not Quranic Digital Khatt. Override the generic
+   shared Quran decoration, including its !important font declaration. */
+.readingPage :global(.qalam-book-arabic),
+.readingPage :global(.qalam-book-arabic *) {
+  font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif !important;
+  font-size: 1em;
+  font-weight: 400;
+}
 .paragraphs { display: grid; align-content: start; gap: clamp(.8rem, 1.6vw, 1.15rem); flex: 1 1 auto; min-height: 0; width: min(100%, 47rem); margin-inline: auto; }
 .paragraph { min-width: 0; overflow-wrap: anywhere; }
 .paragraphs :global(.khateeb-book-text) { line-height: 2.05; }
-.paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif; font-size: 1em; line-height: 2.25; }
-.paragraphs :global(.khateeb-book-ar) { font-family: var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif; font-size: 1em; line-height: 2.05; }
+.paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif; font-size: 1em; line-height: 2.35; }
+.paragraphs :global(.khateeb-book-ar) { font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif; font-size: 1em; line-height: 2.05; }
 .paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: 1em; }
-.paragraphs :global(.qalam-book-arabic) { font-family: "Digital Khatt IndoPak Book", "Muhammadi Quranic", var(--font-amiri), var(--font-naskh), serif; }
+.paragraphs :global(.qalam-book-arabic) { font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif !important; }
 .targetParagraph { border-radius: .65rem; background: #fff2cf; padding: .5rem; }
 :global(.dark) .targetParagraph { background: rgb(120 53 15 / 25%); }
  .paragraphSelect { display: flex; align-items: center; width: max-content; min-height: 2rem; margin-block: .1rem .15rem; }
@@ -236,16 +265,21 @@
   .readerShell .selectionActions,
   .readerShell .paragraphSelect { display: none !important; }
   .readerShell .pageMeta { min-height: 0; margin-bottom: 8mm; }
-  .readerShell .pageFooter { margin-top: .5rem; padding-top: .25rem; }
+
 }
 @media (max-width: 760px) {
   .toolbar { justify-content: flex-start; }
 }
 @media (max-width: 639px) {
-  .readingPage { width: 100%; min-height: 33rem; max-height: none; padding: 1.35rem 1rem 1.25rem; margin-top: .25rem; }
-  .pageMeta { gap: .7rem; min-height: 2rem; margin-bottom: 1.45rem; padding-bottom: .5rem; }
-  .bookIdentity strong, .chapterTitle strong { font-size: .75rem; }
-  .pageFooter { margin-top: 1.25rem; }
+  .readingPage { width: 100%; min-height: 35rem; max-height: none; padding: 1.2rem .85rem 1.3rem; margin-top: .25rem; }
+  .pageMeta { gap: .3rem; min-height: 2.7rem; margin-bottom: 1.35rem; padding-bottom: .55rem; }
+  .bookIdentity strong, .chapterTitle strong { font-size: .65rem; max-height: 3.8em; }
+  .pageNavigation { gap: .1rem; min-width: 9.25rem; }
+  .pageArrow { width: 1.5rem; height: 1.5rem; }
+  .pageArrowIcon { width: .83rem; height: .83rem; }
+  .pageNumber { min-width: 6.2rem; }
+  .pageNumberMain { font-size: .77rem; }
+  .pageNumber small { font-size: .55rem; }
   .paragraphs { gap: .85rem; }
   .searchForm { align-items: stretch; flex-direction: column; }
   .searchField { min-width: 0; }

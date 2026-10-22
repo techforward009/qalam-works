@@ -504,12 +504,26 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         </nav>}
       </dialog>
       {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
-        <header className={styles.pageMeta} dir="rtl">
-          <div className={styles.bookIdentity}>
-            <strong title={selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
+        <header className={styles.pageMeta} dir="ltr">
+          <div className={styles.chapterTitle} dir={reading.language === "en" ? "ltr" : "rtl"} title={reading.title}>
+            <strong>{reading.title}</strong>
           </div>
-          <div className={styles.chapterTitle}>
-            <strong title={reading.title}>{reading.title}</strong>
+          <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کا صفحہ بدلیں" : "Turn reader page"} dir="ltr">
+            <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (visualPageIndex === 0 && !reading.previousRecordId)} aria-label={ur ? "پچھلا صفحہ" : "Previous page"} onClick={previousPart}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}><path d="M14.8 5.2 8 12l6.8 6.8" /></svg>
+            </button>
+            <span className={styles.pageNumber} aria-live="polite">
+              <strong className={styles.pageNumberMain}>{ur ? "صفحہ " : "Page "}{(visualPageIndex + 1).toLocaleString(ur ? "ur-PK" : "en-US")}</strong>
+              <small>{ur
+                ? "کتاب کا حصہ " + reading.recordOrdinal.toLocaleString("ur-PK") + (toc?.total ? " از " + toc.total.toLocaleString("ur-PK") : "")
+                : "Section " + reading.recordOrdinal + (toc?.total ? " of " + toc.total : "")}</small>
+            </span>
+            <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)} aria-label={ur ? "اگلا صفحہ" : "Next page"} onClick={nextPart}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}><path d="M9.2 5.2 16 12l-6.8 6.8" /></svg>
+            </button>
+          </nav>
+          <div className={styles.bookIdentity} dir="rtl">
+            <strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
           </div>
         </header>
         {missingTranslation || partialTranslation ? <p className={styles.translationStatus} role="status">
@@ -528,15 +542,6 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           </div>)}
         </div>
         {onAdd && selectedIds.length ? <div className={styles.selectionActions}><button type="button" className={btn} disabled={busy} onClick={() => void addToSermon()}>{ur ? "میری مجلس میں شامل کریں" : "Add to My Sermon"}</button></div> : null}
-        <footer className={styles.pageFooter}>
-          <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کے صفحے" : "Reader page navigation"} dir="rtl">
-            <button type="button" disabled={busy || isPaginating || (visualPageIndex === 0 && !reading.previousRecordId)} aria-label={ur ? "پچھلا مطالعہ صفحہ" : "Previous reader page"} onClick={previousPart}>‹</button>
-            <span className={styles.pageNumber} aria-live="polite">{ur
-              ? "صفحہ " + (visualPageIndex + 1).toLocaleString("ur-PK") + " از " + visualPages.length.toLocaleString("ur-PK")
-              : "Page " + (visualPageIndex + 1) + " of " + visualPages.length}</span>
-            <button type="button" disabled={busy || isPaginating || (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)} aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
-          </nav>
-        </footer>
       </article> : null}
     </> : null}
   </section>;

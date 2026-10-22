@@ -23,14 +23,21 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain("document.fonts.ready");
     expect(reader).toContain("readingMode");
   });
-  it("keeps a book-shaped sheet, quiet heading and bottom page turner", () => {
+  it("keeps a book-shaped sheet, Quran-style top-center page turner, and source-correct book fonts", () => {
     const css = readFileSync("app/tools/khateeb-studio/BookReader.module.css", "utf8");
     const client = readFileSync("app/tools/khateeb-studio/library/BookLibraryPageClient.tsx", "utf8");
     expect(css).toContain("aspect-ratio: 148 / 210");
-    expect(css).toContain("width: min(100%, 47rem)");
-    expect(css).toContain("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)");
-    expect(reader).toContain("<footer className={styles.pageFooter}>");
-    expect(reader).toContain("صفحہ ");
+    expect(css).toContain("width: min(100%, 43rem)");
+    expect(css).toContain('grid-template-areas: "chapter navigation book"');
+    expect(reader).toContain('<nav className={styles.pageNavigation}');
+    expect(reader).toContain('className={styles.pageArrowIcon}');
+    expect(reader).toContain('className={styles.pageNumberMain}');
+    expect(reader).toContain('"کتاب کا حصہ " + reading.recordOrdinal');
+    expect(reader).not.toContain('" از " + visualPages.length');
+    expect(css).toContain('font-family: "Amiri", "Scheherazade New"');
+    expect(css).toContain('font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web"');
+    expect(css).not.toContain("Digital Khatt IndoPak Book");
+    expect(reader).not.toContain("<footer className={styles.pageFooter}>");
     expect(reader).not.toContain("نسخے کی معلومات");
     expect(client).toContain("max-w-[58rem]");
   });
