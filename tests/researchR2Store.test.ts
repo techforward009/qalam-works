@@ -1,0 +1,35 @@
+import { describe, expect, it, vi } from "vitest";
+import { createResearchR2Client } from "../app/api/research/researchR2Store";
+
+const env = {
+  QALAM_RESEARCH_R2_WORKER_URL: "https://example.workers.dev",
+  QALAM_RESEARCH_R2_BEARER_TOKEN: "a".repeat(40),
+};
+const key = "research/v1/documents/doc_1.json";
+
+describe("research private R2 client", () => {
+  it("fails closed without credentials", () => {
+    expect(() => createResearchR2Client({})).toThrow();
+  });
+  it("sends authorized write and reads exact JSON", async () => {
+    const fetcher = vi.fn(async (_url: string, init?: RequestInit) =>
+      init?.method === "PUT"
+        ? new Response(null, { status: 201 })
+        : new Response('{"id":1}', { status: 200, headers: { "content-length": "8" } }),
+    );
+    const client = createResearchR2Client(env, fetcher as unknown as typeof fetch);
+    await client.putObject(key, '{"id":1}');
+    expect(await client.getObject(key)).toBe('{"id":1}');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[0][1]?.headers).toMatchObject({ Authorization: `Bearer ${env.QALAM_RESEARCH_R2_BEARER_TOKEN}` });
+  });
+  it("rejects unexpected keys and oversized payloads", async () => {
+    const client = createResearchR2Client(env, vi.fn() as unknown as typeof fetch);
+    await expect(client.putObject("user-feedback/v1/x.json", "{}")).rejects.toThrow();
+    await expect(client.putObject(key, "x".repeat(25 * 1024 * 1024 + 1))).rejects.toThrow();
+  });
+  it("never falls back when R2 fails", async () => {
+    const client = createResearchR2Client(env, vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch);
+    await expect(client.getObject(key)).rejects.toThrow();
+  });
+});
