@@ -19,9 +19,10 @@ const NEXT_LABEL: Record<string, string> = {
   dark: "Switch to system theme",
 };
 
-export function ThemeToggle() {
+export function ThemeToggle({ inline = false }: { inline?: boolean }) {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname() ?? "";
+  const bookReaderPage = pathname === "/tools/khateeb-studio/library";
   const quranPage = pathname === "/quran" || pathname.startsWith("/quran/");
   const [mounted, setMounted] = useState(false);
 
@@ -41,7 +42,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className={`fixed bottom-5 right-5 z-40 items-center justify-center w-10 h-10 rounded-full ${quranPage ? "hidden sm:flex" : "flex"}` + " bg-[#1A3A2A]/90 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm hover:bg-[#1A3A2A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"}
+      className={`${inline ? "inline-flex shrink-0" : `fixed bottom-5 right-5 z-40 ${quranPage || bookReaderPage ? "hidden sm:flex" : "flex"}`} items-center justify-center w-10 h-10 rounded-full` + " bg-[#1A3A2A]/90 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm hover:bg-[#1A3A2A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"}
       aria-label={NEXT_LABEL[current]}
       title={LABELS[current]}
     >

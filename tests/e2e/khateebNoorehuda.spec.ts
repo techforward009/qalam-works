@@ -1,44 +1,25 @@
 import { test, expect } from "@playwright/test";
+import { mockKhateebBookReader } from "./fixtures/khateebBookReader";
 
 test("Noorehuda loads for non-Quran book Arabic while Quran ayat keep Digital Khatt", async ({ page }) => {
-  const source = {
-    id: "sahifa-ar", book: "sahifa", language: "ar",
-    filename: "sahifa-ar.docx", translator: null, sha256: "a".repeat(64),
-  };
-  const id = "sahifa-ar:supplication:1";
-  const paragraph = { id: `${id}:p1`, text: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ وَقَالَ عَلَيْهِ السَّلَامُ" };
-  const record = {
-    id, sourceId: source.id, book: "sahifa", language: "ar",
-    kind: "supplication", number: 1, title: "دعاء ١",
-    reference: { sourceId: source.id, section: "supplication", number: 1, locator: "fixture", printPage: null },
-    paragraphs: [paragraph], textSha256: "b".repeat(64),
-  };
   const fontRequests: string[] = [];
   page.on("request", request => {
     if (request.url().includes("Noorehuda.woff2")) fontRequests.push(request.url());
   });
-  await page.route("**/api/khateeb/library**", route => {
-    const op = new URL(route.request().url()).searchParams.get("op");
-    const data = op === "search"
-      ? { total: 1, page: 1, pageSize: 20, hits: [{ id, sourceId: source.id, title: record.title, kind: "supplication", number: 1, language: "ar", snippet: paragraph.text }] }
-      : op === "record" ? { record, source }
-      : { ready: true, sources: [source], recordCount: 1 };
-    return route.fulfill({ json: data });
-  });
-
+  await mockKhateebBookReader(page);
+  await page.addInitScript(() => localStorage.setItem("qalam-site-language", "ur"));
   await page.goto("/tools/khateeb-studio");
-  await page.getByRole("button", { name: "کتابی ذخیرہ", exact: true }).click();
-  const library = page.getByTestId("book-library");
+  await page.getByRole("link", { name: "کتاب خانہ — مکمل کتابیں پڑھیں", exact: true }).click();
+  await expect(page).toHaveURL(/\/tools\/khateeb-studio\/library$/);
+  const library = page.getByTestId("book-reading-page");
   await expect(library).toBeVisible();
-  await library.getByRole("combobox", { name: "زبان", exact: true }).selectOption("ar");
-  await library.getByRole("button", { name: "کتاب میں تلاش کریں", exact: true }).click();
 
   const arabic = library.locator(".khateeb-book-ar.qalam-book-arabic").first();
   await expect(arabic).toBeVisible();
   await expect(arabic).toHaveCSS("font-family", /^"?Noorehuda"?/);
-  // Measure the actual element before/after temporarily disabling only
-  // the new font-size CSS declarations. Cloning and removing the class is
-  // insufficient: its nested Arabic parent may already inherit that scale.
+  // Check book sizing against the original library baseline, and measure
+  // primary Arabic before/after disabling only the new font-size rules.
+  // Also verify that nested book Arabic inherits rather than scaling twice.
   const metrics = await arabic.evaluate(book => {
     const primary = document.createElement("div");
     primary.className = "text-lg qalam-book-arabic";
@@ -65,7 +46,10 @@ test("Noorehuda loads for non-Quran book Arabic while Quran ayat keep Digital Kh
     let oldSize = 0, originalPrimaryPx = 0;
     try {
       for (const {rule} of old) rule.style.removeProperty("font-size");
-      oldSize = parseFloat(getComputedStyle(book).fontSize);
+      // Shared book-Arabic sizing scales the original library's 1.15rem
+      // to 1.4375rem. The reader itself inherits 22px when this rule is off,
+      // so that inherited value is not the old library's sizing baseline.
+      oldSize = 1.15 * parseFloat(getComputedStyle(document.documentElement).fontSize);
       originalPrimaryPx = parseFloat(getComputedStyle(primary).fontSize);
     } finally {
       for (const {rule, value, priority} of old) rule.style.setProperty("font-size", value, priority);
@@ -83,7 +67,8 @@ test("Noorehuda loads for non-Quran book Arabic while Quran ayat keep Digital Kh
   expect(metrics.newSize / metrics.oldSize).toBeLessThan(1.30);
   expect(metrics.wordSpacing).toBeGreaterThan(0);
   // BookPassageText has a nested qalam-book-arabic span; don't scale twice.
-  if (metrics.nestedSize !== null) expect(metrics.nestedSize).toBeCloseTo(metrics.newSize, 1);
+  expect(metrics.nestedSize).not.toBeNull();
+  expect(metrics.nestedSize!).toBeCloseTo(metrics.newSize, 1);
   // KhateebPrimaryArabic has a fixed text-lg size; confirm true 25%, not 11%.
   expect(metrics.newPrimaryPx / metrics.originalPrimaryPx).toBeGreaterThan(1.20);
   expect(metrics.newPrimaryPx / metrics.originalPrimaryPx).toBeLessThan(1.30);

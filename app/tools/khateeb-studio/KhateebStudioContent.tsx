@@ -66,7 +66,8 @@ import SessionDeliveryHistory from "./SessionDeliveryHistory";
 import type { CustomSermonProject } from "./engine/customSermonProject";
 import CustomSermonWorkspace from "./CustomSermonWorkspace";
 import dynamic from "next/dynamic";
-const PublicBookLibrary = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
+import Link from "next/link";
+const AskBooks = dynamic(() => import("../../components/knowledge/KnowledgeAssistant"), { ssr: false });
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
 import KhateebQuranTranslation from "./KhateebQuranTranslation";
@@ -192,7 +193,7 @@ export default function KhateebStudioContent({
   const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
   const [customWorkspaceOpen, setCustomWorkspaceOpen] = useState(false);
   const [bookDraft, setBookDraft] = useState<CustomSermonProject>();
-  const [publicLibraryOpen, setPublicLibraryOpen] = useState(false);
+  const [askBooksOpen, setAskBooksOpen] = useState(false);
   const topicResultRef = useRef<HTMLElement | null>(null);
 
   const filteredSpeakers = useMemo(() => {
@@ -814,6 +815,13 @@ export default function KhateebStudioContent({
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
 
+          <div className="mx-auto mt-5 flex justify-center">
+            <Link href="/tools/khateeb-studio/library" className="inline-flex items-center gap-2 rounded-xl border border-[#31513a]/40 bg-[#f5f2e9] px-5 py-3 font-semibold text-[#1A3A2A] shadow-sm hover:bg-[#e9e8d9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-[#1b3323] dark:text-white">
+              <BookOpen className="h-5 w-5" />
+              {ur ? "کتاب خانہ — مکمل کتابیں پڑھیں" : "Book library — read full books"}
+            </Link>
+          </div>
+
           <div className="mx-auto mt-6 max-w-3xl text-start">
             <div className="mb-2 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
               {ur ? "مجلس کا موضوع تلاش کریں" : "Search your sermon topic"}
@@ -1254,7 +1262,7 @@ export default function KhateebStudioContent({
               aria-controls="khateeb-custom-workspace"
               onClick={() => {
                 setCustomWorkspaceOpen((value) => !value);
-                setPublicLibraryOpen(false);
+                setAskBooksOpen(false);
                 setNotesLibraryOpen(false);
               }}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${customWorkspaceOpen ? "border-[#31513a] bg-[#31513a] text-white shadow-sm" : "border-[#31513a]/30 bg-white text-[#31513a] dark:bg-[#162a1e] dark:text-[#b9d4bf]"}`}
@@ -1262,14 +1270,14 @@ export default function KhateebStudioContent({
               <PenLine className="h-4 w-4" />
               {ur ? "میری مجلس / میرا موضوع" : "My sermon / my topic"}
             </button>
-            <button type="button" aria-pressed={publicLibraryOpen} aria-controls="khateeb-public-book-library" aria-expanded={publicLibraryOpen} onClick={() => { setPublicLibraryOpen(value => !value); setCustomWorkspaceOpen(false); setNotesLibraryOpen(false); }} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${publicLibraryOpen ? "border-[#31513a] bg-[#31513a] text-white shadow-sm" : "border-[#31513a]/30 bg-white text-[#31513a] dark:bg-[#162a1e] dark:text-[#b9d4bf]"}`}>
-              <BookOpen className="h-4 w-4" />{ur ? "کتابی ذخیرہ" : "Book library"}
+            <button type="button" aria-pressed={askBooksOpen} aria-controls="khateeb-ask-books" aria-expanded={askBooksOpen} onClick={() => { setAskBooksOpen(value => !value); setCustomWorkspaceOpen(false); setNotesLibraryOpen(false); }} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${askBooksOpen ? "border-[#31513a] bg-[#31513a] text-white shadow-sm" : "border-[#31513a]/30 bg-white text-[#31513a] dark:bg-[#162a1e] dark:text-[#b9d4bf]"}`}>
+              <Search className="h-4 w-4" />{ur ? "کتاب سے سوال کریں" : "Ask the books"}
             </button>
             <button
               type="button"
               onClick={() => {
                 setNotesLibraryOpen((value) => !value);
-                setPublicLibraryOpen(false);
+                setAskBooksOpen(false);
                 setCustomWorkspaceOpen(false);
               }}
               className="inline-flex items-center rounded-xl border border-[#B8935A]/35 bg-white px-4 py-2 text-sm font-semibold text-[#6f5730] shadow-sm hover:bg-[#fbf7ee] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#e2c895]"
@@ -1286,9 +1294,8 @@ export default function KhateebStudioContent({
           />
         ) : null}
 
-        {publicLibraryOpen ? <section id="khateeb-public-book-library" className="mb-8 rounded-2xl border border-[#31513a]/20 bg-white p-5 dark:bg-[#102017]">
-          <h2 className="mb-4 text-xl font-bold">{ur ? "کتابی ذخیرہ — تلاش، حوالہ اور موضوعاتی تیاری" : "Book library — search, sources and topic preparation"}</h2>
-          <PublicBookLibrary locale={ur ? "ur" : "en"} onCreateDraft={project => { setBookDraft(project); setPublicLibraryOpen(false); setCustomWorkspaceOpen(true); }} />
+        {askBooksOpen ? <section id="khateeb-ask-books" className="mb-8 rounded-2xl border border-[#31513a]/20 bg-white p-3 dark:bg-[#102017]">
+          <AskBooks locale={ur ? "ur" : "en"} onCreateDraft={project => { setBookDraft(project); setAskBooksOpen(false); setCustomWorkspaceOpen(true); }} />
         </section> : null}
 
         {customWorkspaceOpen ? (

@@ -10,9 +10,11 @@ describe("Quran safe single-surah navigation and mobile theme", () => {
   });
   it("keeps the global floating theme switch off mobile Quran pages", () => {
     const source = readFileSync("app/components/ThemeToggle.tsx", "utf8");
-    expect(source).toContain('quranPage ? "hidden sm:flex" : "flex"');
+    expect(source).toContain('quranPage || bookReaderPage ? "hidden sm:flex" : "flex"');
     const layout = readFileSync("app/quran/layout.tsx", "utf8");
     expect(layout).not.toContain("<QuranThemeControl />");
+    const reader = readFileSync("app/quran/QuranReader.tsx", "utf8");
+    expect(reader).toContain("<QuranThemeControl />");
     const control = readFileSync("app/quran/QuranThemeControl.tsx", "utf8");
     expect(control).toContain('data-quran-mobile-theme="inline"');
     expect(control).not.toContain("fixed ");

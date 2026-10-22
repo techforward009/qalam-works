@@ -3,6 +3,7 @@ import { rejectUnauthenticatedResearch } from "../../research/auth/requireSessio
 import { researchBlobClientFromEnv } from "../../research/vercelResearchBlob";
 import { loadBookCatalog } from "../../../lib/knowledge/store";
 import { readBookSource } from "../../../lib/knowledge/sourceCache";
+import { bookLibraryR2IsSelected } from "../../research/bookLibraryR2Reader";
 import { prepareBookTranslation, saveBookTranslation } from "../../../lib/knowledge/bookTranslations";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -18,6 +19,8 @@ export async function POST(req: NextRequest) {
     input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch { return json({ code: "invalid" }, 400); }
   try {
+    // No Blob writes against an R2-backed source: the sidecar must be migrated first.
+    if (await bookLibraryR2IsSelected()) return json({ code: "r2-translation-write-not-configured" }, 409);
     const client = await researchBlobClientFromEnv(); const catalog = await loadBookCatalog(client);
     if (!catalog) return json({ code: "not-ready" }, 409);
     const v = input as { sourceId?: unknown; recordId?: unknown };
