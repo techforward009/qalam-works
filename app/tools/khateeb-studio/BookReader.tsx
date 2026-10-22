@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent } from "react";
 import BookPassageText from "./BookPassageText";
+import { displayArabicBookText } from "../../lib/knowledge/bookArabicDisplay";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookSourceLabel, isBookExcerpt, type BookExcerpt } from "../../lib/knowledge/bookCorpus";
@@ -127,7 +128,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         text.lang = fragment.language;
         text.dir = fragment.language === "en" ? "ltr" : "rtl";
         if (fragment.language === "ar") text.classList.add("qalam-book-arabic");
-        text.textContent = fragment.text;
+        text.textContent = fragment.language === "ar" ? displayArabicBookText(fragment.text) : fragment.text;
         if (fragment.kind === "translation") {
           const block = document.createElement("section");
           block.className = styles.translationBlock;
@@ -251,6 +252,37 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   function firstSourceFragment(page: ReaderVisualPage | undefined) {
     return page?.find(item => item.kind === "original") ?? page?.[0];
   }
+  // A normal text selection must copy the original source, not the
+  // one-to-one Unicode aliases used only for displaying Arabic glyphs.
+  function copySourceSelection(event: ClipboardEvent<HTMLElement>) {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount !== 1) return;
+    const range = selection.getRangeAt(0);
+    const area = event.currentTarget.querySelector<HTMLElement>('[data-testid="reader-page-text-area"]');
+    if (!area || !range.intersectsNode(area)) return;
+    const pieces: string[] = [];
+    const fragments = visualPages[visualPageIndex] ?? [];
+    for (const row of area.querySelectorAll<HTMLElement>("[data-passage-index]")) {
+      if (!range.intersectsNode(row)) continue;
+      const fragment = fragments[Number(row.dataset.passageIndex)];
+      const painted = row.querySelector<HTMLElement>(".khateeb-book-text");
+      if (!fragment || !painted || !range.intersectsNode(painted)) continue;
+      const offsetWithin = (node: Node, offset: number) => {
+        const before = document.createRange();
+        before.selectNodeContents(painted);
+        before.setEnd(node, offset);
+        return before.toString().length;
+      };
+      const start = painted.contains(range.startContainer) ? offsetWithin(range.startContainer, range.startOffset) : 0;
+      const end = painted.contains(range.endContainer) ? offsetWithin(range.endContainer, range.endOffset) : fragment.text.length;
+      if (end > start) pieces.push(fragment.text.slice(start, end));
+    }
+    if (pieces.length) {
+      event.clipboardData.setData("text/plain", pieces.join("\n\n"));
+      event.preventDefault();
+    }
+  }
+
   function copyVisiblePage(withReference: boolean, mode: BookCopyMode) {
     if (!reading) return "";
     const visible = visualPages[visualPageIndex] ?? [];
@@ -511,7 +543,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           <button className={btn} type="button" disabled={busy || toc.page * toc.pageSize >= toc.total} onClick={() => void contents(sourceId, toc.page + 1)}>{ur ? "اگلے حصے" : "Next"}</button>
         </nav>}
       </dialog>
-      {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
+      {reading ? <article ref={pageArticleRef} onCopyCapture={copySourceSelection} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="ltr">
           <div className={styles.chapterTitle} dir={ur ? "rtl" : "ltr"} title={reading.title}>
             <strong>{bookReaderRunningHeading(reading, locale)}</strong>
@@ -524,7 +556,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
               <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}><path d="M14.8 5.2 8 12l6.8 6.8" /></svg>
             </button>
             <span className={styles.pageNumber} aria-live="polite">
-              <strong className={styles.pageNumberMain}>{ur ? "صفحہ " : "Page "}{(visualPageIndex + 1).toLocaleString(ur ? "ur-PK" : "en-US")}</strong>
+              <strong className={styles.pageNumberMain}>{(visualPageIndex + 1).toLocaleString(ur ? "ur-PK" : "en-US")}</strong>
             </span>
             <button type="button" className={styles.pageArrow} disabled={busy || isPaginating || (ur
               ? (visualPageIndex === 0 && !reading.previousRecordId)
@@ -544,12 +576,12 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           {readingMode === "translation" ? <button type="button" className={btn} onClick={() => setReadingMode("original")}>{ur ? "عربی پر واپس جائیں" : "Return to Arabic"}</button> : null}
         </p> : null}
         <div className={styles.paragraphs} style={{ fontSize: fontSize + "px" }} data-testid="reader-page-text-area">
-          {(visualPages[visualPageIndex] ?? []).map((fragment, index) => <div key={`${fragment.key}:${fragment.startOffset}`} className={styles.paragraph + (targetParagraph === fragment.paragraphId ? " " + styles.targetParagraph : "")} data-paragraph-id={fragment.paragraphId} data-source-kind={fragment.kind} data-start-offset={fragment.startOffset} data-end-offset={fragment.endOffset}>
+          {(visualPages[visualPageIndex] ?? []).map((fragment, index) => <div key={`${fragment.key}:${fragment.startOffset}`} className={styles.paragraph + (targetParagraph === fragment.paragraphId ? " " + styles.targetParagraph : "")} data-passage-index={index} data-paragraph-id={fragment.paragraphId} data-source-kind={fragment.kind} data-start-offset={fragment.startOffset} data-end-offset={fragment.endOffset}>
             {onAdd && selectionMode && fragment.kind === "original" && fragment.unitStart ? <label className={styles.paragraphSelect}>
               <input type="checkbox" aria-label={ur ? "پیراگراف " + fragment.paragraphId.split(":p").at(-1) + " منتخب کریں" : "Select paragraph " + fragment.paragraphId.split(":p").at(-1)} checked={selectedIds.includes(fragment.paragraphId)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, fragment.paragraphId] : ids.filter(id => id !== fragment.paragraphId))}/>
             </label> : null}
             {fragment.kind === "translation" ? <section className={styles.translationBlock} lang={fragment.language} dir="rtl"><BookPassageText text={fragment.text} language={fragment.language}/>{fragment.unitEnd ? <p className={styles.translationCredit}>{fragment.translator} · {fragment.source}</p> : null}</section>
-              : <BookPassageText text={fragment.text} language={fragment.language} highlight={targetParagraph === fragment.paragraphId ? originalBookQuerySpan(fragment.text, findText) ?? undefined : undefined}/>}
+              : <BookPassageText text={fragment.text} language={fragment.language} bookArabicDisplay={fragment.language === "ar"} highlight={targetParagraph === fragment.paragraphId ? originalBookQuerySpan(fragment.text, findText) ?? undefined : undefined}/>}
           </div>)}
         </div>
         {onAdd && selectedIds.length ? <div className={styles.selectionActions}><button type="button" className={btn} disabled={busy} onClick={() => void addToSermon()}>{ur ? "میری مجلس میں شامل کریں" : "Add to My Sermon"}</button></div> : null}

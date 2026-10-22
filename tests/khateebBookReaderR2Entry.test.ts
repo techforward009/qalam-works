@@ -57,6 +57,11 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain("KHATEEB_READER_PROGRESS_KEY");
     expect(reader).toContain("qalam-book-reader-print");
     expect(reader).toContain("readingFlowUnits");
+    expect(reader).toContain("displayArabicBookText(fragment.text)");
+    expect(reader).toContain('onCopyCapture={copySourceSelection}');
+    expect(reader).toContain("bookArabicDisplay={fragment.language === \"ar\"}");
+    expect(reader).not.toContain('{ur ? "صفحہ " : "Page "}');
+
     expect(reader).toContain("اصل");
   });
 });
