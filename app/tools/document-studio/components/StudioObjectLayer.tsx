@@ -57,6 +57,10 @@ function newId(): string {
 
 const PX_PER_MM = 96 / 25.4;
 
+export function isUndraggedShape(w: number, h: number): boolean {
+  return Math.abs(w) < 4 && Math.abs(h) < 4;
+}
+
 export function StudioObjectLayer({
   editor,
   tool,
@@ -170,10 +174,7 @@ export function StudioObjectLayer({
       h = -h;
     }
     if (tool === "textbox" && (w < 4 || h < 4)) return;
-    if (w < 4 && h < 4) {
-      w = 120;
-      h = kind === "line" ? 40 : 72;
-    }
+    if (isUndraggedShape(w, h)) return;
     const stride = pageHeightPx + gapPx;
     const page = pageOf(y);
     const yOnPage = y - (page - 1) * stride;
@@ -336,7 +337,8 @@ export function StudioObjectLayer({
                       background: "#000",
                       border: "1px solid #000",
                       ...handlePos(edge),
-                      cursor: edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
+                      pointerEvents: drawing ? "none" : "auto",
+                      cursor: drawing ? "crosshair" : edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
                     }}
                     onPointerDown={(event) => {
                       event.stopPropagation();
@@ -434,7 +436,7 @@ function FrameShape({
     <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden>
       {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} /> : null}
       {frame.kind === "rect" || frame.kind === "round-rect" ? (
-        <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? 1.6 * PX_PER_MM : undefined} {...stroke} />
+        <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? 6.35 * PX_PER_MM : undefined} {...stroke} />
       ) : null}
       {frame.kind === "line" ? (
         <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
