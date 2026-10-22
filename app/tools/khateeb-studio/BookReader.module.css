@@ -242,6 +242,14 @@
 .paragraphs :global(.khateeb-book-text) { line-height: 2.05; }
 .paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif; font-size: 1em; line-height: 2.35; }
 .paragraphs :global(.khateeb-book-ar) { font-family: "Digital Khatt IndoPak Book", "DigitalKhattIndoPak", var(--font-amiri), serif; font-size: 1em; line-height: 2.05; }
+/* Parenthesized Arabic honorifics need a single RTL bidi island even when
+   preceded by Latin digits, western parentheses or punctuation. */
+.readingPage :global(.khateeb-book-bracket-isolate) {
+  direction: rtl;
+  unicode-bidi: isolate;
+  white-space: inherit;
+}
+
 .paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: .84em; line-height: 1.62; font-weight: 400; letter-spacing: 0; }
 .readingPage[data-book-language="en"] .paragraphs { gap: .55rem; }
 .readingPage[data-book-language="en"] .paragraphs :global(.khateeb-book-en) { text-align: left; overflow-wrap: normal; word-break: normal; }
