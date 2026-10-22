@@ -248,16 +248,6 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     return page;
   }
 
-  function rememberVisiblePosition() {
-    const fragment = visualPages[visualPageIndex]?.find(item => item.kind === "original") ?? visualPages[visualPageIndex]?.[0];
-    if (!reading || !fragment) return;
-    const offset = fragment.kind === "original" ? fragment.startOffset : 0;
-    visiblePosition.current = anchorForPage(reading, fragment.paragraphId, offset);
-  }
-  function changeReadingMode(mode: BookCopyMode) {
-    rememberVisiblePosition();
-    setReadingMode(mode);
-  }
   function firstSourceFragment(page: ReaderVisualPage | undefined) {
     return page?.find(item => item.kind === "original") ?? page?.[0];
   }
@@ -432,7 +422,6 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const isBookmarked = !!currentBookmark && progress.bookmarks.some(b => sameReaderAnchor(b, currentBookmark));
   const visibleBookmarks = progress.bookmarks.filter(b =>
     b.sourceId === sourceId && b.sourceSha256 === selectedSource?.sha256);
-  const isArabic = selectedSource?.language === "ar";
   const untranslatedParagraphs = reading?.paragraphs.filter(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id))).length ?? 0;
   const missingTranslation = !!reading && reading.language === "ar" && readingMode !== "original" && untranslatedParagraphs === reading.paragraphs.length;
   const partialTranslation = !!reading && reading.language === "ar" && readingMode !== "original"
@@ -452,11 +441,6 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         </label>
         <button type="button" className={btn} onClick={() => { setTocOpen(true); if (!toc) void contents(sourceId); }}>{ur ? "فہرست" : "Contents"}</button>
         <button type="button" className={btn} aria-expanded={searchOpen} aria-controls="book-search-panel" onClick={() => setSearchOpen(open => !open)}>{ur ? "تلاش" : "Search"}</button>
-        {isArabic ? <label className={styles.languageSelect}><span>{ur ? "مطالعہ" : "Read"}</span>
-          <select className={field} aria-label={ur ? "مطالعے کی صورت" : "Reading mode"} value={readingMode} onChange={e => changeReadingMode(e.target.value as BookCopyMode)}>
-            <option value="original">{ur ? "عربی" : "Arabic"}</option><option value="translation">{ur ? "اردو" : "Urdu"}</option><option value="combined">{ur ? "عربی + اردو" : "Arabic + Urdu"}</option>
-          </select>
-        </label> : null}
         <details ref={moreMenuRef} className={styles.menu}>
           <summary className={btn}>{ur ? "مزید" : "More"}</summary>
           <div className={styles.menuPanel}>

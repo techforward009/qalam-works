@@ -40,11 +40,17 @@ describe("Khateeb proper public Book Library entry", () => {
     expect(reader).toContain('document.addEventListener("pointerdown", closeOutsideMenu)');
     expect(css).toContain('.readerShell:lang(ur) .toolbar option');
     expect(reader).not.toContain('" از " + visualPages.length');
-    expect(css).toContain('font-family: var(--font-amiri), "Scheherazade New"');
+    expect(css).toContain('font-family: "Digital Khatt IndoPak Book"');
     expect(css).toContain('font-family: "Nafees Nastaleeq", "Mehr Nastaliq Web"');
-    expect(css).not.toContain("Digital Khatt IndoPak Book");
+    expect(css).toContain("Digital Khatt IndoPak Book");
     expect(reader).not.toContain("<footer className={styles.pageFooter}>");
     expect(reader).not.toContain("نسخے کی معلومات");
+    expect(reader).not.toContain('aria-label={ur ? "مطالعے کی صورت" : "Reading mode"}');
+    expect(reader).not.toContain("changeReadingMode");
+    expect(css).toContain(".chapterTitle { grid-area: chapter; min-width: 0; text-align: left;");
+    expect(css).toContain(".bookIdentity { grid-area: book; min-width: 0; text-align: right;");
+    expect(css).toContain("min-width: max-content;");
+    expect(css).toContain("gap: .18rem;");
     expect(client).toContain("max-w-[58rem]");
   });
   it("keeps bookmarks, page controls and source paragraphs separate from translation", () => {
