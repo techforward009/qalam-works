@@ -34,3 +34,27 @@ for (const locale of ["ur", "en"] as const) it(`keeps oversized source text avai
   expect(screen.queryByTestId("knowledge-research-summary")).toBeNull();
   expect(screen.getByTestId("knowledge-assistant").getAttribute("dir")).toBe(locale === "ur" ? "rtl" : "ltr");
 });
+
+it("spaces the original-source action and the Digital Khatt reader link in a wrapped RTL row", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+    question: "والدین کا احترام", status: "evidence", method: "lexical-bm25-topic-expansion", expandedTerms: [], availableCollections: ["quran"],
+    passages: [{
+      id: "quran:test:17:24", collection: "quran", language: "ar", text: "وَاخْفِضْ لَهُمَا جَنَاحَ الذُّلِّ",
+      referenceUr: "قرآن، 17:24", referenceEn: "Quran, 17:24", sourceSha256: "a".repeat(64),
+      quranEdition: "digital-khatt", quranLocation: { surah: 17, ayah: 24 }, translator: null,
+      suppliedTranslation: { text: "ان پر رحم فرما جس طرح انہوں نے مجھے بچپن میں پالا تھا۔", language: "ur", translator: "علامہ شیخ محسن علی نجفی" }
+    }]
+  }) }));
+  render(<KnowledgeAssistant locale="ur" />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "والدین کا احترام" } });
+  fireEvent.click(screen.getByRole("button", { name: "سوال کے مصادر تلاش کریں" }));
+  const open = await screen.findByRole("button", { name: "اصل ماخذ اور سیاق دیکھیں" });
+  const reader = await screen.findByRole("link", { name: "ڈیجیٹل خط میں آیت کھولیں" });
+  const wrapper = open.closest('[data-testid="knowledge-source-actions"]');
+  expect(wrapper).not.toBeNull();
+  expect(wrapper).toContain(reader);
+  expect(wrapper?.className).toContain("gap-x-4");
+  expect(wrapper?.className).toContain("gap-y-2");
+  expect(wrapper?.className).toContain("flex-wrap");
+  expect(reader.getAttribute("href")).toBe("/quran/indopak-digital-khatt/17/24");
+});

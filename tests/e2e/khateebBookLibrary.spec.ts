@@ -25,7 +25,7 @@ for(const locale of ['ur','en'] as const){
   await library.getByRole('combobox',{name:ur?'زبان':'Language',exact:true}).selectOption('ar');
   await library.getByLabel(ur?'خطبہ، حکمت یا دعا کا نمبر':'Sermon, saying or prayer number',{exact:true}).fill('۲۸');
   await library.getByRole('button',{name:ur?'کتاب میں تلاش کریں':'Search books',exact:true}).click();
-  await expect(library.locator('.khateeb-book-ar .khateeb-muhammadi-quranic').first()).toHaveCSS('font-family',/Muhammadi Quranic/);
+  await expect(library.locator('.khateeb-book-ar.qalam-book-arabic').first()).toHaveCSS('font-family',/^"?Noorehuda"?/);
   await library.getByRole('button',{name:ur?'مکمل عبارت اور انتخاب':'Read full passage and select',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:ur?'مکمل کتابی عبارت':'Full book passage'});await expect(dialog).toBeVisible();
   const checkbox = dialog.getByRole('checkbox',{name:ur?'پیراگراف 1':'Paragraph 1',exact:true});

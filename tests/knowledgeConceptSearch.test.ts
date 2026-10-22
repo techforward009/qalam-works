@@ -13,6 +13,11 @@ it('recognizes natural Urdu phrases and Roman Urdu without literal Arabic in the
  expect(planKnowledgeQuery('walidain aur tarbiyat').topics.map(t=>t.id)).toEqual(expect.arrayContaining(['parents','upbringing']));
  expect(planKnowledgeQuery('بچوں کے ساتھ نرمی کیسے کریں؟').topics.map(t=>t.id)).toEqual(expect.arrayContaining(['children','kindness']));
 });
+it('keeps a separately requested literal topic beside a precise phrase',()=>{
+ const topics=planKnowledgeQuery('ماں باپ کی خدمت کیسے کریں؟', ['marriage']).topics.map(t=>t.id);
+ expect(topics).toEqual(expect.arrayContaining(['parents','service']));
+ expect(topics).not.toContain('marriage');
+});
 it('finds an Arabic concept in a continuation and returns the whole numbered hadith',()=>{
  const result=ask('نرمی');
  expect(result.passages).toHaveLength(1);

@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { blockAutoLineHeight } from "../utils/autoLeading";
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
@@ -226,6 +229,29 @@ export default function DocumentCanvas({
     if (!(zoomFactor > 0)) return;
     onZoomPercentChange?.(Math.round(zoomFactor * 100));
   }, [zoomFactor, onZoomPercentChange]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const key = new PluginKey("qalam-auto-leading");
+    const typography = documentSettings.typography;
+    editor.registerPlugin(new Plugin({
+      key,
+      props: {
+        decorations(state) {
+          const decorations: Decoration[] = [];
+          state.doc.descendants((node, pos) => {
+            if (node.type.name !== "paragraph") return;
+            if (typeof node.attrs.lineHeight === "number") return false;
+            const leading = blockAutoLineHeight(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography.lineHeight, node.attrs.dir ?? dir);
+            decorations.push(Decoration.node(pos, pos + node.nodeSize, { style: `line-height:${leading}` }));
+            return false;
+          });
+          return DecorationSet.create(state.doc, decorations);
+        },
+      },
+    }));
+    return () => { if (!editor.isDestroyed) editor.unregisterPlugin(key); };
+  }, [editor, documentSettings.typography, dir]);
 
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
@@ -519,7 +545,7 @@ export default function DocumentCanvas({
                       }
                       dir={dir}
                       onClick={(event) => {
-                        if (tool === "hand") return;
+                        if (tool !== "text") return;
                         onWrapperClick(event);
                       }}
                       role="textbox"
@@ -539,6 +565,7 @@ export default function DocumentCanvas({
                             tool={tool}
                             frames={frames}
                             onFramesChange={onFramesChange ?? (() => undefined)}
+                            onToolAction={chooseTool}
                             pageCount={pageCount}
                             pageWidthPx={natural.widthPx}
                             pageHeightPx={natural.heightPx}
@@ -579,6 +606,10 @@ export default function DocumentCanvas({
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
       <style jsx global>{`
+        .qalam-editor-content .ProseMirror {
+          font-variant-ligatures: normal;
+          font-feature-settings: normal;
+        }
         .qalam-editor-content.qalam-doc-page .ProseMirror,
         .qalam-editor-content.qalam-view-pageless .ProseMirror {
           min-height: var(--qalam-page-min-height, 60vh);

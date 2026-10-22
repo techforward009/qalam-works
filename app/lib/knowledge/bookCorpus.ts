@@ -88,6 +88,32 @@ export function bookKindLabel(kind: string, locale: "ur" | "en"): string {
   const names: Record<string, [string, string]> = { chapter: ["باب", "Chapter"], section: ["حصہ", "Section"], sermon: ["خطبہ", "Sermon"], letter: ["مکتوب", "Letter"], saying: ["کلمۂ قصار", "Saying"], supplication: ["دعا", "Supplication"], "weekday-supplication": ["روزانہ کی دعا", "Weekday prayer"], right: ["حق", "Right"], "front-matter": ["مقدمہ", "Front matter"] };
   return names[kind]?.[locale === "ur" ? 0 : 1] ?? (locale === "ur" ? "اضافی مواد" : "Supplement");
 }
+/** The reviewed Sahifa Urdu edition contains a publisher's explanation after
+ * the original prayer. Keep the explanation in the immutable full-book reader,
+ * but do not mistake its embedded Quran citations for prayer text in searches.
+ */
+export function bookSearchableParagraphs(record: BookRecord): BookRecord["paragraphs"] {
+  if (record.book !== "sahifa" || record.language !== "ur") return record.paragraphs;
+  const boundary = record.paragraphs.findIndex((p, index) =>
+    index > 1 && normalizeBookSearch(p.text).startsWith(normalizeBookSearch("خداوند عالم کے عظیم احسانات کے بعد")));
+  return boundary >= 0 ? record.paragraphs.slice(0, boundary) : record.paragraphs;
+}
+
+/** A book heading or prayer caption is not the source passage itself.
+ * This affects search previews only: full records, paragraph IDs, and hashes
+ * remain untouched, including authentic translator/editor annotations.
+ */
+function isSearchPreviewCaption(record: BookRecord, text: string, index: number): boolean {
+  const normalized = normalizeBookSearch(text);
+  if (!normalized) return true;
+  if (record.paragraphs.length < 2) return false;
+  if (index === 0 && normalized === normalizeBookSearch(cleanBookTitle(record.title))) return true;
+  if (record.book !== "sahifa" || index > 2 || text.length > 180) return false;
+  if (record.language === "ur") return index === 0 && /^(?:اپنے|حضرت|دعا)/u.test(normalized) && /دعا/u.test(normalized);
+  if (record.language === "en") return index === 0 && /^(?:his supplication|supplication for|prayer for)/u.test(normalized);
+  return /^(?:ل(?:ا|أ)بويه|عليهما السلام|وكان من دعائه|و كان من دعائه)/u.test(normalized);
+}
+
 export function searchBookRecords(records: readonly BookRecord[], options: BookSearchOptions): BookSearchResult {
   const terms = normalizeBookSearch(options.query ?? "").split(" ").filter(Boolean);
   const pageSize = 20;
@@ -96,11 +122,18 @@ export function searchBookRecords(records: readonly BookRecord[], options: BookS
   const matches = records.filter(record => {
     if (options.book && record.book !== options.book || options.language && record.language !== options.language || options.sourceId && record.sourceId !== options.sourceId || options.kind && record.kind !== options.kind || number !== null && (record.book === "kafi" ? !record.paragraphs.some(p => kafiHadithNumber(p.text) === number) : bookRecordNumber(record) !== number)) return false;
     if (record.book === "kafi" && number !== null) return record.paragraphs.some(p => kafiHadithNumber(p.text) === number && terms.every(term => normalizeBookSearch(p.text).includes(term)));
-    const text = normalizeBookSearch(record.title + "\n" + record.paragraphs.map(p => p.text).join("\n"));
+    const text = normalizeBookSearch(record.title + "\n" + bookSearchableParagraphs(record).map(p => p.text).join("\n"));
     return terms.every(term => text.includes(term));
   });
   return { page, pageSize, total: matches.length, hits: matches.slice((page - 1) * pageSize, page * pageSize).map(record => {
-    const paragraph = record.paragraphs.find(p => record.book === "kafi" && number !== null ? kafiHadithNumber(p.text) === number && terms.every(term => normalizeBookSearch(p.text).includes(term)) : terms.some(term => normalizeBookSearch(p.text).includes(term))) ?? record.paragraphs[0];
+    const body = bookSearchableParagraphs(record).filter((p, index) => !isSearchPreviewCaption(record, p.text, index));
+    // A title-only or number-only match should preview the genuine source,
+    // never repeat the record caption as if it were a prayer or saying.
+    const paragraph = body.find(p => record.book === "kafi" && number !== null
+      ? kafiHadithNumber(p.text) === number && terms.every(term => normalizeBookSearch(p.text).includes(term))
+      : terms.length > 0 && terms.every(term => normalizeBookSearch(p.text).includes(term)))
+      ?? body.find(p => terms.some(term => normalizeBookSearch(p.text).includes(term)))
+      ?? body[0] ?? record.paragraphs[0];
     return { id: record.id, sourceId: record.sourceId, title: record.title, kind: record.kind, number: record.book === "kafi" ? paragraph ? kafiHadithNumber(paragraph.text) : null : record.number, language: record.language, referenceLabelUr: bookRecordReference(record, "ur", paragraph?.id), referenceLabelEn: bookRecordReference(record, "en", paragraph?.id), snippet: (paragraph?.text ?? "").slice(0, 350) };
   }) };
 }

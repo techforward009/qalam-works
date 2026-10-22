@@ -1,0 +1,994 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "screenshots": [
+    "01-library-book-list.png",
+    "02-nahj-contents.png",
+    "03-arabic-page-1.png",
+    "04-arabic-page-2.png",
+    "05-in-book-search.png",
+    "06-arabic-dark.png",
+    "12-urdu-more-menu.png",
+    "07-urdu-page-1.png",
+    "08-urdu-page-2.png",
+    "09-urdu-dark.png",
+    "10-english-ui-arabic.png",
+    "11-more-menu-font-label.png",
+    "13-english-dark-selector.png"
+  ],
+  "observations": {
+    "01-library-book-list": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "02-nahj-contents": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "03-arabic-page-1": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "04-arabic-page-2": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 3,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 8.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 3,
+        "inkBottomInset": 676.921875,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p6",
+            "start": 0,
+            "end": 387
+          }
+        ]
+      },
+      "pageNumber": "2",
+      "textDirection": "rtl"
+    },
+    "05-in-book-search": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 690,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "06-arabic-dark": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": {
+        "selector": {
+          "foreground": "rgb(241, 245, 242)",
+          "background": "rgb(16, 32, 23)",
+          "ratio": 15.37722912615757
+        },
+        "caption": {
+          "foreground": "rgb(212, 223, 214)",
+          "background": "rgb(12, 23, 16)",
+          "ratio": 13.376842214394994
+        }
+      },
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "12-urdu-more-menu": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [
+        {
+          "left": 442.75,
+          "right": 682.75,
+          "width": 240,
+          "top": 260.09375,
+          "bottom": 1038.625
+        }
+      ],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "07-urdu-page-1": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 14,
+        "fontSize": 22,
+        "lineHeight": 51.7,
+        "maxInkHeight": 53,
+        "minimumInkClearance": 4.6875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 0,
+        "inkBottomInset": 46.296875,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ur:sermon:1:p1",
+            "start": 0,
+            "end": 425
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p2",
+            "start": 0,
+            "end": 294
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p3",
+            "start": 0,
+            "end": 414
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "08-urdu-page-2": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 14,
+        "fontSize": 22,
+        "lineHeight": 51.7,
+        "maxInkHeight": 53,
+        "minimumInkClearance": 0.6875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 20.90625,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ur:sermon:1:p3",
+            "start": 414,
+            "end": 449
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p4",
+            "start": 0,
+            "end": 380
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p5",
+            "start": 0,
+            "end": 443
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p6",
+            "start": 0,
+            "end": 263
+          }
+        ]
+      },
+      "pageNumber": "2",
+      "textDirection": "rtl"
+    },
+    "09-urdu-dark": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 410.078125,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": {
+        "selector": {
+          "foreground": "rgb(241, 245, 242)",
+          "background": "rgb(16, 32, 23)",
+          "ratio": 15.37722912615757
+        },
+        "caption": {
+          "foreground": "rgb(212, 223, 214)",
+          "background": "rgb(12, 23, 16)",
+          "ratio": 13.376842214394994
+        }
+      },
+      "lineMetrics": {
+        "lines": 14,
+        "fontSize": 22,
+        "lineHeight": 51.7,
+        "maxInkHeight": 53,
+        "minimumInkClearance": 4.6875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 0,
+        "inkBottomInset": 46.296875,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ur:sermon:1:p1",
+            "start": 0,
+            "end": 425
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p2",
+            "start": 0,
+            "end": 294
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p3",
+            "start": 0,
+            "end": 414
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "10-english-ui-arabic": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 381.421875,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "11-more-menu-font-label": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [
+        {
+          "left": 622.671875,
+          "right": 862.671875,
+          "width": 240,
+          "top": 231.4375,
+          "bottom": 943.46875
+        }
+      ],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 381.421875,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": null,
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    },
+    "13-english-dark-selector": {
+      "overflow": {
+        "viewport": 1280,
+        "scrollWidth": 1280
+      },
+      "menuBounds": [],
+      "themeButton": {
+        "x": 1220,
+        "y": 940,
+        "width": 40,
+        "height": 40
+      },
+      "textArea": {
+        "x": 341.796875,
+        "y": 381.421875,
+        "width": 596.40625,
+        "height": 799.015625
+      },
+      "overlapsText": false,
+      "darkContrast": {
+        "selector": {
+          "foreground": "rgb(241, 245, 242)",
+          "background": "rgb(16, 32, 23)",
+          "ratio": 15.37722912615757
+        },
+        "caption": {
+          "foreground": "rgb(212, 223, 214)",
+          "background": "rgb(12, 23, 16)",
+          "ratio": 13.376842214394994
+        }
+      },
+      "lineMetrics": {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      "pageNumber": "1",
+      "textDirection": "rtl"
+    }
+  },
+  "headerGeometry": {
+    "leftGap": 8,
+    "rightGap": 8,
+    "centeringError": 0
+  },
+  "fonts": [
+    {
+      "family": "Nafees Nastaleeq",
+      "status": "loaded"
+    },
+    {
+      "family": "Noorehuda",
+      "status": "loaded"
+    }
+  ],
+  "allPages": {
+    "ar": [
+      {
+        "lines": 16,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 5.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 50.25,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p1",
+            "start": 0,
+            "end": 446
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p2",
+            "start": 0,
+            "end": 317
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p3",
+            "start": 0,
+            "end": 344
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p4",
+            "start": 0,
+            "end": 305
+          },
+          {
+            "paragraphId": "nahj-ar:sermon:1:p5",
+            "start": 0,
+            "end": 424
+          }
+        ]
+      },
+      {
+        "lines": 3,
+        "fontSize": 23,
+        "lineHeight": 42.55,
+        "maxInkHeight": 35,
+        "minimumInkClearance": 8.546875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 3,
+        "inkBottomInset": 676.921875,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ar:sermon:1:p6",
+            "start": 0,
+            "end": 387
+          }
+        ]
+      }
+    ],
+    "ur": [
+      {
+        "lines": 14,
+        "fontSize": 22,
+        "lineHeight": 51.7,
+        "maxInkHeight": 53,
+        "minimumInkClearance": 4.6875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 0,
+        "inkBottomInset": 46.296875,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ur:sermon:1:p1",
+            "start": 0,
+            "end": 425
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p2",
+            "start": 0,
+            "end": 294
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p3",
+            "start": 0,
+            "end": 414
+          }
+        ]
+      },
+      {
+        "lines": 14,
+        "fontSize": 22,
+        "lineHeight": 51.7,
+        "maxInkHeight": 53,
+        "minimumInkClearance": 0.6875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 5,
+        "inkBottomInset": 20.90625,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ur:sermon:1:p3",
+            "start": 414,
+            "end": 449
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p4",
+            "start": 0,
+            "end": 380
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p5",
+            "start": 0,
+            "end": 443
+          },
+          {
+            "paragraphId": "nahj-ur:sermon:1:p6",
+            "start": 0,
+            "end": 263
+          }
+        ]
+      },
+      {
+        "lines": 2,
+        "fontSize": 22,
+        "lineHeight": 51.7,
+        "maxInkHeight": 45,
+        "minimumInkClearance": 15.6875,
+        "paragraphGap": 18.4,
+        "availableHeight": 799,
+        "scrollHeight": 799,
+        "inkTopInset": 0,
+        "inkBottomInset": 702.328125,
+        "fragments": [
+          {
+            "paragraphId": "nahj-ur:sermon:1:p6",
+            "start": 263,
+            "end": 374
+          }
+        ]
+      }
+    ]
+  }
+}

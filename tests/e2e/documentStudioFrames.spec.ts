@@ -6,6 +6,7 @@ async function openCanvas(page: Page) {
   await page.addInitScript(() => localStorage.setItem("qalam-site-language", "en"));
   await page.goto("/tools/document-studio");
   await expect(page.locator(".ProseMirror")).toBeEditable();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
   await expect(page.locator('[data-studio-zoom="100"]')).toBeVisible();
 }
 
@@ -19,31 +20,121 @@ async function draw(page: Page, tool: string, x: number, y: number, w = 180, h =
   await page.mouse.up();
 }
 
-test("new and existing text frames receive typing with Text and Select", async ({ page }) => {
+// The Textbox drawing tool is not available yet; preserve coverage of saved text frames.
+async function loadTextFrame(page: Page, text: string, y = 100) {
+  await page.evaluate(({ text, y }) => {
+    const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+    const frames = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}");
+    frames[id] = [...(frames[id] || []), { id: "saved-text-box", kind: "text", page: 1,
+      xMm: 80 * 25.4 / 96, yMm: y * 25.4 / 96, wMm: 180 * 25.4 / 96,
+      hMm: 90 * 25.4 / 96, text, flip: false }];
+    localStorage.setItem("qalam-studio-frames-v1", JSON.stringify(frames));
+  }, { text, y });
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Text box", exact: true })).toHaveValue(text);
+}
+
+test("Arrow marquee selects fully enclosed frames, Shift toggles, and groups move and delete", async ({ page }) => {
+  await openCanvas(page);
+  for (const x of [100, 260, 420]) await draw(page, "rect", x, 120, 100, 60);
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const layer = (await page.locator('[data-studio-objects]').boundingBox())!;
+  const frames = page.locator('[data-studio-frame="rect"]');
+  const handles = page.locator('[data-studio-frame-handle]');
+  await page.mouse.move(layer.x + 80, layer.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(layer.x + 460, layer.y + 210, { steps: 6 });
+  await expect(page.locator('[data-studio-marquee]')).toHaveCSS("border", "1px dashed rgb(0, 0, 0)");
+  await page.mouse.up();
+  await expect(handles).toHaveCount(16);
+  await expect(frames.nth(2).locator('[data-studio-frame-handle]')).toHaveCount(0);
+  await frames.nth(2).click({ modifiers: ["Shift"], position: { x: 30, y: 30 } });
+  await expect(handles).toHaveCount(24);
+  await frames.nth(2).click({ modifiers: ["Shift"], position: { x: 30, y: 30 } });
+  await expect(handles).toHaveCount(16);
+  const before = await Promise.all([0, 1, 2].map((i) => frames.nth(i).boundingBox()));
+  await page.mouse.move(before[0]!.x + 30, before[0]!.y + 30);
+  await page.mouse.down();
+  await page.mouse.move(before[0]!.x + 70, before[0]!.y + 55, { steps: 5 });
+  await page.mouse.up();
+  for (const i of [0, 1]) {
+    const after = (await frames.nth(i).boundingBox())!;
+    expect(after.x - before[i]!.x).toBeCloseTo(40, 0);
+    expect(after.y - before[i]!.y).toBeCloseTo(25, 0);
+  }
+  expect((await frames.nth(2).boundingBox())!.x).toBeCloseTo(before[2]!.x, 0);
+  await page.keyboard.press("Delete");
+  await expect(frames).toHaveCount(1);
+  await expect(handles).toHaveCount(0);
+  await frames.first().click({ position: { x: 30, y: 30 } });
+  await expect(handles).toHaveCount(8);
+  await page.keyboard.press("Escape");
+  await expect(handles).toHaveCount(0);
+});
+
+test("existing text frames are edited only with IBEAM", async ({ page }) => {
   await openCanvas(page);
   const main = page.locator(".ProseMirror");
   const original = await main.innerText();
-  await draw(page, "text", 80, 100);
+  await loadTextFrame(page, "Frame one");
+  await page.locator('[data-studio-tool-button="text"]').click();
   const input = page.getByRole("textbox", { name: "Text box", exact: true });
-  await page.keyboard.type("Frame one");
+  await input.click();
   await expect(input).toBeFocused();
   await expect(input).toHaveValue("Frame one");
-  for (const tool of ["select", "text"]) {
-    await page.locator(`[data-studio-tool-button="${tool}"]`).click();
-    await input.click();
-    await expect(input).toBeFocused();
-    await page.keyboard.press("End");
-    await page.keyboard.type(` ${tool}`);
-    await expect(input).toHaveValue(new RegExp(tool + "$"));
-    await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
-  }
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const box = (await input.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(input).not.toBeFocused();
+  await expect(input).toHaveAttribute("readonly", "");
+  await page.keyboard.type("x");
+  await expect(input).toHaveValue("Frame one");
+  await page.locator('[data-studio-tool-button="text"]').click();
+  await input.click();
+  await expect(input).toBeFocused();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" edited");
+  await expect(input).toHaveValue("Frame one edited");
+  await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
   expect(await main.innerText()).toBe(original);
+});
+
+test("plain clicks never create Rectangle, Ellipse, Rounded rectangle or Line", async ({ page }) => {
+  await openCanvas(page);
+  const layer = page.locator("[data-studio-objects]");
+  const bounds = (await layer.boundingBox())!;
+  for (const tool of ["rect", "ellipse", "round-rect", "line"]) {
+    const button = page.locator(`[data-studio-tool-button="${tool}"]`);
+    await button.click();
+    const before = await page.locator("[data-studio-frame]").count();
+    await page.mouse.click(bounds.x + 410, bounds.y + 170);
+    await expect(page.locator("[data-studio-frame]")).toHaveCount(before);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(layer).toHaveCSS("cursor", "crosshair");
+  }
+});
+
+test("draw cursor stays crosshair over previously selected frames and handles", async ({ page }) => {
+  await openCanvas(page);
+  await draw(page, "round-rect", 110, 120, 180, 90);
+  const frame = page.locator('[data-studio-frame="round-rect"]');
+  await expect(frame).toHaveCSS("cursor", "crosshair");
+  const rect = frame.locator("svg > rect").first();
+  expect(Number(await rect.getAttribute("rx"))).toBeCloseTo(6.35 * 96 / 25.4, 8);
+  const handles = frame.locator("[data-studio-frame-handle]");
+  await expect(handles).toHaveCount(8);
+  await expect(handles.first()).toHaveCSS("pointer-events", "none");
+  const box = (await frame.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect.poll(() => page.evaluate(({ x, y }) => getComputedStyle(document.elementFromPoint(x, y)!).cursor, { x: box.x + box.width / 2, y: box.y + box.height / 2 })).toBe("crosshair");
+  await expect(frame).toHaveCSS("cursor", "crosshair");
 });
 
 test("shapes use black non-scaling 1px strokes on a snapped pixel grid", async ({ page }) => {
   await openCanvas(page);
   for (const [index, tool] of ["rect", "ellipse", "round-rect", "line"].entries()) {
     await draw(page, tool, 100.3, 90.2 + index * 125, 200.4, 75.3);
+    await expect(page.locator(`[data-studio-frame="${tool}"]`)).toHaveCSS("cursor", "crosshair");
     const frame = page.locator(`[data-studio-frame="${tool}"]`);
     const shape = frame.locator("svg > :first-child");
     await expect(shape).toHaveAttribute("stroke", "#000");
@@ -55,9 +146,7 @@ test("shapes use black non-scaling 1px strokes on a snapped pixel grid", async (
     }
   }
   // Hide selection handles so the screenshot shows the actual black outlines.
-  await page.locator('[data-studio-tool-button="text"]').click();
-  await draw(page, "text", 360, 120, 260, 110);
-  await page.keyboard.type("یہ ایک متن کا خانہ ہے۔");
+  await page.keyboard.press("Escape");
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: test.info().outputPath("qalam-frames-1920x1080.png") });
 });
@@ -77,10 +166,10 @@ test("Select deselects frames with Escape and empty page or pasteboard clicks", 
     await expect(handles).toHaveCount(0);
     await expect(frame).toHaveCount(1);
   }
-  await draw(page, "text", 100, 350);
-  await page.keyboard.insertText("Frame text");
+  await loadTextFrame(page, "Frame text", 350);
   await page.locator('[data-studio-tool-button="select"]').click();
-  await page.getByRole("textbox", { name: "Text box", exact: true }).click();
+  const textBox = (await page.locator('[data-studio-frame="text"]').boundingBox())!;
+  await page.mouse.click(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
   await expect(handles).toHaveCount(8);
   await page.keyboard.press("Escape");
   await expect(handles).toHaveCount(0);
@@ -90,6 +179,7 @@ test("Select deselects frames with Escape and empty page or pasteboard clicks", 
 test("Latin runs in Urdu paragraphs follow the English font without changing Urdu", async ({ page }) => {
   await openCanvas(page);
   const editor = page.locator(".ProseMirror");
+  await page.locator('[data-studio-tool-button="text"]').click();
   await editor.click();
   await page.keyboard.insertText("یہ اردو عبارت ہے Hello Qalam 2026 اور پھر اردو۔");
   const paragraph = editor.locator('p[dir="rtl"]').first();
@@ -123,7 +213,7 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
   await expect.poll(geometry).toEqual(englishGeometry);
   expect(englishGeometry[0].x).toBe(0);
   expect(englishGeometry[1].x).toBe(1903);
-  const labels = { select: "Select", text: "Text", image: "Picture", rect: "Rectangle",
+  const labels = { select: "Select", text: "Text", textbox: "Textbox Tool", rect: "Rectangle",
     ellipse: "Ellipse", "round-rect": "Rounded rectangle", line: "Line" };
   for (const [id, label] of Object.entries(labels)) {
     const button = page.locator(`[data-studio-tool-button="${id}"]`);

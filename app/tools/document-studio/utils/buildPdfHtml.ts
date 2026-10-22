@@ -2,6 +2,7 @@
 // Fonts and direction resolve through the central font registry.
 // Effective CSS classes are chosen only from faces that fully loaded.
 
+import { blockAutoLineHeight } from "./autoLeading";
 import type { DocNode, Direction } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
@@ -242,7 +243,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
   const lh =
     typeof node.attrs?.lineHeight === "number"
       ? validateLineHeight(node.attrs.lineHeight)
-      : node.type === "heading" ? 1.5 : ctx.typography?.lineHeight ?? null;
+      : node.type === "heading" ? 1.5 : blockAutoLineHeight(node, blockFont.family, ctx.typography?.lineHeight ?? 1.5, blockDir);
   const firstLineIndentMm =
     typeof node.attrs?.firstLineIndentMm === "number"
       ? validateIndentMm(node.attrs.firstLineIndentMm)
@@ -456,6 +457,8 @@ export function buildPdfHtml(
 ${fontFaceCss(faces)}
 ${classRulesCss()}
   body {
+    font-variant-ligatures: normal;
+    font-feature-settings: normal;
     font-family: ${defaultFamily};
     font-size: ${bodyFontSize};
     line-height: ${bodyLineHeight};

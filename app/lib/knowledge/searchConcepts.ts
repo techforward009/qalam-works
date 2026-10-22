@@ -17,7 +17,7 @@ const rows: readonly [string, string, string, string][] = [
  ['sincerity','اخلاص','Sincerity','اخلاص|sincerity|مخلص|مخلصين|ikhlas'],
  ['knowledge','علم و تعلیم','Knowledge','علم|knowledge|learning|education|تعليم|يعلمون|ilm'],
  ['anger','غصہ','Anger','غصہ|anger|غضب|غيظ|الغضب|gussa|ghussa'],
- ['parents','والدین','Parents','والدین|parents|والدي|والد|والده|الوالدين|والديك|الوالد|الوالده|ابويه|ماں باپ|والدہ|ماں|والد|باپ|walidain'],
+ ['parents','والدین','Parents','والدین|والدین کا احترام|والدین کی عزت|والدین کے حقوق|ماں باپ کا احترام|ماں باپ کی عزت|والدین کے ساتھ حسن سلوک|والدين|parents|respect parents|honor parents|honour parents|filial piety|birr al walidayn|بر الوالدين|البر بالوالدين|البر بالوالديْن|بالوالدين احسانا|احسانا بالوالدين|حسن صحبتهما|برهما|العقوق|عقوق الوالدين|والدي|والد|والده|الوالدين|والديك|الوالد|الوالده|ابويه|ماں باپ|والدہ|ماں|والد|باپ|walidain'],
  ['upbringing','تربیت','Upbringing','تربیت|تربيه|تربية|upbringing|parenting|تاديب|ادب|discipline|tarbiyat'],
  ['children','اولاد','Children','اولاد|بچے|بچوں|bachon|bachay|child|children|الولد|الاولاد|البنين|البنات|بچہ|اولاد کی|بچوں کی|aulad'],
  ['kindness','نرمی و حسنِ سلوک','Kindness','نرمی|نرم|kindness|gentleness|رفق|الرفق|حسن سلوک|حسنِ سلوک|حسن الخلق'],
@@ -63,7 +63,17 @@ export const knowledgeTopicCatalog: readonly SearchTopic[] = concepts.map(({id,l
 export function planKnowledgeQuery(question: string, inferredTopicIds: readonly string[] = []): {direct: string[]; groups: string[][]; topics: SearchTopic[]} {
  const normalized=normalizeBookSearch(question); const words=normalized.split(' ');
  const inferred=concepts.filter(c=>inferredTopicIds.includes(c.id));
- const found=inferred.length ? inferred : concepts.filter(c=>c.terms.some(term=>(' '+normalized+' ').includes(' '+term+' ')));
+ // An explicit, meaningful multiword request (e.g. والدین کا احترام) is the
+ // user's subject. Model-inferred adjacent topics must not replace it.
+ const literal=concepts.filter(c=>c.terms.some(term=>(' '+normalized+' ').includes(' '+term+' ')));
+ const precise=literal.filter(c=>c.terms.some(term=>term.includes(' ')&&(' '+normalized+' ').includes(' '+term+' ')));
+ // Keep other subjects explicitly requested outside the precise phrase. A
+ // phrase such as ماں باپ must not swallow the separate request خدمت.
+ const preciseTerms=precise.flatMap(c=>c.terms.filter(term=>term.includes(' ')&&(' '+normalized+' ').includes(' '+term+' '))).sort((a,b)=>b.length-a.length);
+ let remaining=' '+normalized+' ';
+ for(const term of preciseTerms) remaining=remaining.split(' '+term+' ').join(' ');
+ const additional=literal.filter(c=>!precise.includes(c)&&c.terms.some(term=>remaining.includes(' '+term+' ')));
+ const found=precise.length ? [...precise,...additional] : inferred.length ? inferred : literal;
  const consumed=new Set(found.flatMap(c=>c.terms.filter(term=>(' '+normalized+' ').includes(' '+term+' ')).flatMap(t=>t.split(' '))));
  const direct=[...new Set(words.filter(t=>t.length>1&&!stop.has(t)&&!/^\d+$/.test(t)))].slice(0,24);
  const groups=[...found.map(c=>c.terms),...(inferred.length ? [] : direct.filter(t=>!consumed.has(t)).map(t=>[t]))];
