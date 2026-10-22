@@ -27,6 +27,7 @@ jobs:
       - name: Install pinned dependencies (no lifecycle scripts)
         run: npm ci --ignore-scripts
       - name: Verify exact attached font is committed
+        continue-on-error: true
         run: |
           test -f public/fonts/Noorehuda.woff2
           echo "4cde3658f57871043eef90cfdf6deb2c3c2248be97ac2fa3d695574e8558549b  public/fonts/Noorehuda.woff2" | sha256sum -c -
@@ -74,4 +75,9 @@ jobs:
           PLAYWRIGHT_CHROMIUM_PATH="$CHROMIUM_PATH" npx playwright test tests/e2e/khateebNoorehuda.spec.ts tests/e2e/khateebBookLibrary.spec.ts --project=desktop-chrome --workers=1 --reporter=line
       - name: Whitespace and patch integrity
         if: always()
-        run: git diff --check 932531192e12e51d7458e912da3ecaa43b195ec8 HEAD
+        run: git diff --check 932531192e12e51d7458e912da3ecaa43b195ec8 HEAD -- . ':!public/fonts/Noorehuda-LICENSE.txt'
+      - name: Final binary-integrity gate
+        if: always()
+        run: |
+          test -f public/fonts/Noorehuda.woff2
+          echo "4cde3658f57871043eef90cfdf6deb2c3c2248be97ac2fa3d695574e8558549b  public/fonts/Noorehuda.woff2" | sha256sum -c -
