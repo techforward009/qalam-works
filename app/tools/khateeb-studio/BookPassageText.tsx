@@ -1,9 +1,16 @@
 "use client";
 import KhateebScriptText, { renderKhateebSalawat } from "./KhateebScriptText";
-import { displayArabicBookText } from "../../lib/knowledge/bookArabicDisplay";
+import { displayArabicBookText, splitArabicBookParentheses } from "../../lib/knowledge/bookArabicDisplay";
 type PassageLanguage = "ar" | "ur" | "en";
 function PassageScript({ text, language, quran, digitalKhatt, bookArabicDisplay }: { text: string; language: PassageLanguage; quran: boolean; digitalKhatt: boolean; bookArabicDisplay: boolean }) {
-  if (language === "ar" && bookArabicDisplay) return <span lang="ar" dir="rtl" className="qalam-book-arabic">{renderKhateebSalawat(displayArabicBookText(text))}</span>;
+  if (language === "ar" && bookArabicDisplay) {
+    const pieces = splitArabicBookParentheses(displayArabicBookText(text));
+    return <span lang="ar" dir="rtl" className="qalam-book-arabic">
+      {pieces.map((piece, index) => piece.isolateRtl
+        ? <bdi key={index} lang="ar" dir="rtl" className="khateeb-book-bracket-isolate">{renderKhateebSalawat(piece.text)}</bdi>
+        : <span key={index}>{renderKhateebSalawat(piece.text)}</span>)}
+    </span>;
+  }
   if (language === "ar" && digitalKhatt) return <span lang="ar" dir="rtl" className="qalam-knowledge-digital-khatt-quran">{text}</span>;
   return language === "ar" && !quran ? <span lang="ar" dir="rtl" className="qalam-book-arabic">{renderKhateebSalawat(text)}</span> : language === "ar" ? <KhateebScriptText text={text} forceArabic /> : language === "ur" ? <KhateebScriptText text={text} forceUrdu /> : <>{renderKhateebSalawat(text)}</>;
 }
