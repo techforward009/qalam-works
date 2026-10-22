@@ -36,6 +36,54 @@ test("Noorehuda loads for non-Quran book Arabic while Quran ayat keep Digital Kh
   const arabic = library.locator(".khateeb-book-ar.qalam-book-arabic").first();
   await expect(arabic).toBeVisible();
   await expect(arabic).toHaveCSS("font-family", /^"?Noorehuda"?/);
+  // Compare computed styles against the same DOM element with just the new
+  // book-font class removed. This catches fixed-size utility overrides.
+  const metrics = await arabic.evaluate(element => {
+    const book = element as HTMLElement;
+    const base = book.cloneNode(false) as HTMLElement;
+    base.textContent = book.textContent;
+    base.classList.remove("qalam-book-arabic");
+    book.parentElement!.appendChild(base);
+    const oldSize = parseFloat(getComputedStyle(base).fontSize);
+    const newStyle = getComputedStyle(book);
+    const newSize = parseFloat(newStyle.fontSize);
+    const wordSpacing = parseFloat(newStyle.wordSpacing);
+    base.remove();
+    const nested = book.querySelector<HTMLElement>(".qalam-book-arabic");
+    return {
+      oldSize, newSize, wordSpacing,
+      nestedSize: nested ? parseFloat(getComputedStyle(nested).fontSize) : null,
+    };
+  });
+  expect(metrics.newSize / metrics.oldSize).toBeGreaterThan(1.20);
+  expect(metrics.newSize / metrics.oldSize).toBeLessThan(1.30);
+  expect(metrics.wordSpacing).toBeGreaterThan(0);
+  // Nested BookPassageText spans must not accumulate a second 1.25x increase.
+  if (metrics.nestedSize !== null) expect(metrics.nestedSize).toBeCloseTo(metrics.newSize, 1);
+
+  // Existing text-lg users (KhateebPrimaryArabic) are measured separately,
+  // because Tailwind's fixed font size can otherwise mask the relative change.
+  const primaryMetrics = await page.evaluate(() => {
+    const host = document.createElement("div");
+    host.style.visibility = "hidden";
+    const control = document.createElement("div");
+    control.className = "text-lg";
+    control.textContent = "بِسْمِ اللّٰهِ";
+    const actual = document.createElement("div");
+    actual.className = "text-lg qalam-book-arabic";
+    actual.textContent = control.textContent;
+    host.append(control, actual);
+    document.body.appendChild(host);
+    const originalPx = parseFloat(getComputedStyle(control).fontSize);
+    const newPx = parseFloat(getComputedStyle(actual).fontSize);
+    const spacingPx = parseFloat(getComputedStyle(actual).wordSpacing);
+    host.remove();
+    return { originalPx, newPx, spacingPx };
+  });
+  expect(primaryMetrics.newPx / primaryMetrics.originalPx).toBeGreaterThan(1.20);
+  expect(primaryMetrics.newPx / primaryMetrics.originalPx).toBeLessThan(1.30);
+  expect(primaryMetrics.spacingPx).toBeGreaterThan(0);
+
   await page.evaluate(() => document.fonts.ready);
   expect(await page.evaluate(() =>
     [...document.fonts].some(face => face.family.replaceAll('"', "") === "Noorehuda" && face.status === "loaded")
