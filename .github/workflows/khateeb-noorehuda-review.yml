@@ -1,0 +1,77 @@
+name: Noorehuda Book Arabic — Review Only
+
+on:
+  push:
+    branches:
+      - feature/khateeb-noorehuda-book-arabic-20261022
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  font-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install pinned dependencies (no lifecycle scripts)
+        run: npm ci --ignore-scripts
+      - name: Verify exact attached font is committed
+        run: |
+          test -f public/fonts/Noorehuda.woff2
+          echo "4cde3658f57871043eef90cfdf6deb2c3c2248be97ac2fa3d695574e8558549b  public/fonts/Noorehuda.woff2" | sha256sum -c -
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Focused font regression
+        run: npx vitest run tests/noorehudaFontScope.test.ts tests/bookPassageFont.test.tsx
+      - name: Build, no Vercel deployment
+        run: npm run build
+      - name: Full Vitest, compared with clean main
+        shell: bash
+        run: |
+          set +e
+          npx vitest run --reporter=json --outputFile="$RUNNER_TEMP/branch-vitest.json" > "$RUNNER_TEMP/branch-vitest.log" 2>&1
+          branch_rc=$?
+          main_dir="$RUNNER_TEMP/qalam-main-baseline"
+          git worktree add --detach "$main_dir" 932531192e12e51d7458e912da3ecaa43b195ec8
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$main_dir/node_modules"
+          (cd "$main_dir" && ./node_modules/.bin/vitest run --reporter=json --outputFile="$RUNNER_TEMP/main-vitest.json") > "$RUNNER_TEMP/main-vitest.log" 2>&1
+          baseline_rc=$?
+          set -e
+          node - "$RUNNER_TEMP/main-vitest.json" "$RUNNER_TEMP/branch-vitest.json" "$baseline_rc" "$branch_rc" <<'NODE'
+          const fs = require('node:fs');
+          const [mainPath, branchPath, mainRc, branchRc] = process.argv.slice(2);
+          if (!fs.existsSync(mainPath) || !fs.existsSync(branchPath)) throw new Error('Missing full-suite JSON');
+          const main = JSON.parse(fs.readFileSync(mainPath, 'utf8'));
+          const branch = JSON.parse(fs.readFileSync(branchPath, 'utf8'));
+          function failures(r) {
+            return new Set((r.testResults || []).flatMap(s =>
+              (s.assertionResults || []).filter(a => a.status === 'failed').map(a => s.name + ' :: ' + a.fullName)));
+          }
+          const before = failures(main), after = failures(branch);
+          const newFailures = [...after].filter(x => !before.has(x));
+          console.log('Clean main: failed tests=' + main.numFailedTests + ', branch: failed tests=' + branch.numFailedTests);
+          console.log('Baseline reference: 42 known failures; actual baseline is evaluated here.');
+          if (newFailures.length || (mainRc === '0' && branchRc !== '0')) {
+            console.error('New full-Vitest failures:', newFailures);
+            process.exit(1);
+          }
+          console.log('PASS: no new failed test compared with clean main.');
+          NODE
+      - name: Related Chromium Playwright specs
+        run: |
+          CHROMIUM_PATH="$(node -e "require('@sparticuz/chromium').executablePath().then(process.stdout.write)")"
+          PLAYWRIGHT_CHROMIUM_PATH="$CHROMIUM_PATH" npx playwright test tests/e2e/khateebNoorehuda.spec.ts tests/e2e/khateebBookLibrary.spec.ts --project=desktop-chrome --workers=1 --reporter=line
+      - name: Whitespace and patch integrity
+        if: always()
+        run: git diff --check 932531192e12e51d7458e912da3ecaa43b195ec8 HEAD
