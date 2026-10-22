@@ -44,7 +44,7 @@ test("Noorehuda loads for non-Quran book Arabic while Quran ayat keep Digital Kh
   expect(new URL(fontRequests[0]).pathname).toBe("/fonts/Noorehuda.woff2");
 
   await page.goto("/quran/indopak-digital-khatt/1/1");
-  const ayah = page.locator('[class*="ayah_"]').filter({ hasText: /[\u0621-\u064A]/ }).first();
+  const ayah = page.locator(".quran-flow .quran-ayah").filter({ hasText: /[\u0621-\u064A]/ }).first();
   await expect(ayah).toBeVisible();
   const fontFamily = await ayah.evaluate(el => getComputedStyle(el).fontFamily);
   expect(fontFamily).toContain("DigitalKhattIndoPak");
