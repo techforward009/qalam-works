@@ -77,8 +77,7 @@ jobs:
           console.log('PASS: no new failed test compared with clean main.');
           NODE
       - name: Existing book workflow legacy selector diagnostics
-        if: false # temporary browser-size diagnostic, full suite already passed on prior SHA
-        if: always()
+        if: false # temporary browser-size diagnostic
         continue-on-error: true
         run: |
           CHROMIUM_PATH="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
