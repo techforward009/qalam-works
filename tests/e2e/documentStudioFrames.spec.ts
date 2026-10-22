@@ -61,6 +61,37 @@ test("existing text frames are edited only with IBEAM", async ({ page }) => {
   expect(await main.innerText()).toBe(original);
 });
 
+test("plain clicks never create Rectangle, Ellipse, Rounded rectangle or Line", async ({ page }) => {
+  await openCanvas(page);
+  const layer = page.locator("[data-studio-objects]");
+  const bounds = (await layer.boundingBox())!;
+  for (const tool of ["rect", "ellipse", "round-rect", "line"]) {
+    const button = page.locator(`[data-studio-tool-button="${tool}"]`);
+    await button.click();
+    const before = await page.locator("[data-studio-frame]").count();
+    await page.mouse.click(bounds.x + 410, bounds.y + 170);
+    await expect(page.locator("[data-studio-frame]")).toHaveCount(before);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(layer).toHaveCSS("cursor", "crosshair");
+  }
+});
+
+test("draw cursor stays crosshair over previously selected frames and handles", async ({ page }) => {
+  await openCanvas(page);
+  await draw(page, "round-rect", 110, 120, 180, 90);
+  const frame = page.locator('[data-studio-frame="round-rect"]');
+  await expect(frame).toHaveCSS("cursor", "crosshair");
+  const rect = frame.locator("svg > rect").first();
+  await expect(rect).toHaveAttribute("rx", String(6.35 * 96 / 25.4));
+  const handles = frame.locator("[data-studio-frame-handle]");
+  await expect(handles).toHaveCount(8);
+  await expect(handles.first()).toHaveCSS("pointer-events", "none");
+  const box = (await frame.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect.poll(() => page.evaluate(({ x, y }) => getComputedStyle(document.elementFromPoint(x, y)!).cursor, { x: box.x + box.width / 2, y: box.y + box.height / 2 })).toBe("crosshair");
+  await expect(frame).toHaveCSS("cursor", "crosshair");
+});
+
 test("shapes use black non-scaling 1px strokes on a snapped pixel grid", async ({ page }) => {
   await openCanvas(page);
   for (const [index, tool] of ["rect", "ellipse", "round-rect", "line"].entries()) {
