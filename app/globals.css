@@ -236,9 +236,18 @@ textarea {
 
 .qalam-book-arabic {
   font-family: "Noorehuda", "Digital Khatt IndoPak Book", serif !important;
+  font-size: 1.25em;
+  word-spacing: 0.12em;
   font-variant-ligatures: normal;
   font-feature-settings: normal;
   line-height: 2.1;
+}
+
+/* BookPassageText nests an Arabic span inside an Arabic block.
+   Inherit the scaled size/spacing rather than multiplying 1.25 twice. */
+.qalam-book-arabic .qalam-book-arabic {
+  font-size: inherit;
+  word-spacing: inherit;
 }
 
 /* Keep a Quranic descendant on its original font, even if placed in a book card. */
