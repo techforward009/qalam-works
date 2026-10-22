@@ -72,7 +72,7 @@ jobs:
       - name: Related Chromium Playwright specs
         if: always()
         run: |
-          CHROMIUM_PATH="$(node -e "require('@sparticuz/chromium').executablePath().then(p=>process.stdout.write(p))")"
+          CHROMIUM_PATH="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
           PLAYWRIGHT_CHROMIUM_PATH="$CHROMIUM_PATH" npx playwright test tests/e2e/khateebNoorehuda.spec.ts tests/e2e/khateebBookLibrary.spec.ts --project=desktop-chrome --workers=1 --reporter=line
       - name: Whitespace and patch integrity
         if: always()
