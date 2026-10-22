@@ -1,6 +1,6 @@
 import {timingSafeEqual} from "node:crypto";
 import {NextRequest,NextResponse} from "next/server";
-import {researchBlobClientFromEnv} from "../../research/vercelResearchBlob";
+import {feedbackStoreFromEnv} from "../../feedback/feedbackR2Store";
 export const runtime="nodejs";
 export async function POST(req:NextRequest){
  const origin=req.headers.get("origin");
@@ -11,7 +11,7 @@ export async function POST(req:NextRequest){
  let limit=30;
  try{const body=await req.json() as {limit?:number};if(Number.isInteger(body?.limit))limit=Math.max(1,Math.min(100,body.limit!));}catch{}
  try{
-  const client=await researchBlobClientFromEnv();
+  const client=await feedbackStoreFromEnv();
   const paths=(await client.listObjects("contact-inquiries/v1/")).sort().reverse().slice(0,limit);
   const items=await Promise.all(paths.map(async path=>{
    const value=await client.getObject(path);if(!value)return null;

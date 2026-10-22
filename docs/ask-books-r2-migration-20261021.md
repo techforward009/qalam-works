@@ -1,0 +1,10 @@
+# Ask the books — R2 migration (21 October 2026)
+
+- The shared KnowledgeAssistant is now shown as its own clearly labelled **کتاب سے سوال کریں** action in Khateeb Studio, retaining citations, original context, follow-ups, copy/export and sermon-draft transfer.
+- Research Studio retains the separate password-protected personal-document workspace. Its former shared book-question panel was removed; no user document access changes.
+- `POST /api/knowledge/ask` reads the verified private Cloudflare R2 book corpus selected by `QALAM_BOOK_LIBRARY_READ_BACKEND=cloudflare-r2`. The server reuses the same integrity-checked catalog and source indexes as the live Khateeb reader and does **not** use Vercel Blob or fall back to Blob for book searches.
+- Existing reviewed Arabic↔Urdu source-edition bindings from `suppliedTranslationBindings.json` still operate on matching versioned R2 records. Quran retrieval remains on its existing curated provider.
+- **Unmigrated owner-entered reviewed translations** were stored in the separate Vercel research Blob sidecar store. They cannot be read via R2 today. They are intentionally not fetched when R2 is active. The owner-only translation editor fails closed (409) instead of writing to a soon-to-be-deleted legacy store. Inventory/migrate these sidecars and separately validate original reviewed text and metadata before any permanent Blob deletion. Do not imply that sidecars have been preserved in R2.
+- The existing bounded AI research/summary steps still use Cloudflare inference credentials; if AI inference cannot generate a verified answer, original retrieved source passages should remain visible.
+- Deleting Vercel Blob remains **out of scope**. Audit all other Blob consumers (personal research documents, private reviewed translations, saved imports, fonts, tafsir, etc.) and their recovery copies separately. This PR is not proof that the whole website no longer needs Blob.
+- Production is intentionally unchanged until explicit owner release approval; verify Preview API with real question payloads and source citations before release.
