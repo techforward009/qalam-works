@@ -155,7 +155,8 @@
   padding: clamp(1.15rem, 4.5vw, 2.8rem);
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  /* Keep a late font swap inside the sheet while the observer repaginates. */
+  overflow: hidden;
   border: 1px solid #e5dece;
   border-radius: 1px;
   background: #fffdf9;
@@ -293,6 +294,7 @@
     min-height: 0;
     max-height: none;
     aspect-ratio: auto;
+    overflow: visible;
     margin: 0;
     padding: 12mm;
     border: 0;
