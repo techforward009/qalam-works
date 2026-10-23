@@ -27,12 +27,12 @@ describe("bounded and shared-cacheable date pages", () => {
   it("disallows crawler date walks while keeping the discovery sitemap", () => {
     expect(robots().rules).toMatchObject({allow:"/",disallow:["/api/","/tools/research-studio","/date/"]});
     const urls=sitemap().map(item=>item.url);
-    expect(urls).toContain("https://www.qalamworks.com/today");
+    expect(urls).not.toContain("https://www.qalamworks.com/today");
     expect(urls).toContain(`https://www.qalamworks.com/calendar/${new Date().getFullYear()}`);
   });
   it("sets long-lived public cache headers for fonts and Quran assets", async () => {
     const headers=await nextConfig.headers!();
     expect(headers.find(rule=>rule.source==="/fonts/:path*")?.headers).toContainEqual({key:"Cache-Control",value:"public, max-age=31536000, immutable"});
-    expect(headers.find(rule=>rule.source==="/quran/:path*")?.headers).toContainEqual({key:"Cache-Control",value:"public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800"});
+    expect(headers.find(rule=>rule.source==="/quran/:path*.json")?.headers).toContainEqual({key:"Cache-Control",value:"public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800"});
   });
 });
