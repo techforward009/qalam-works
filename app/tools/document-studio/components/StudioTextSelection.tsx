@@ -27,9 +27,10 @@ export function StudioTextSelection({ editor, zoom }: { editor: Editor | null; z
         try {
         if (layerHost && scroller && !editor.isDestroyed && selection?.rangeCount && !selection.isCollapsed && root.contains(selection.anchorNode) && root.contains(selection.focusNode)) {
           const clip = scroller.getBoundingClientRect(), origin = layerHost.getBoundingClientRect();
+          const hostScale = origin.width / parseFloat(getComputedStyle(layerHost).width) || 1;
           next = selectedLineBoxes(root, selection.getRangeAt(0), clip).map(box => {
             const left = Math.max(box.left, clip.left), top = Math.max(box.top, clip.top);
-            return { left: left - origin.left, top: top - origin.top, width: Math.max(0, Math.min(box.left + box.width, clip.right) - left), height: Math.max(0, Math.min(box.top + box.height, clip.bottom) - top) };
+            return { left: (left - origin.left)/hostScale, top: (top - origin.top)/hostScale, width: Math.max(0, Math.min(box.left + box.width, clip.right) - left)/hostScale, height: Math.max(0, Math.min(box.top + box.height, clip.bottom) - top)/hostScale };
           }).filter(box => box.width > 0 && box.height > 0);
         }
         } catch { next = EMPTY_BOXES; }

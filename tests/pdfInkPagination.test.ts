@@ -22,7 +22,7 @@ describe("measured PDF ink pagination", () => {
     const first = { ...line(30), boxTop: -25, boxBottom: 15 };
     const placed = placeInkLines([first, { ...first, baseline: 70 }], 120);
     expect(placed[0].baseline + first.boxTop).toBe(0);
-    expect(placed[1].baseline - placed[0].baseline).toBe(40);
+    expect(placed[1].baseline).toBe(70); // Later lines retain their legacy placement.
     expect(placed[0].baseline + first.inkTop).toBeGreaterThan(0);
   });
   it("uses the same line-box top on automatic and authored new pages", () => {
@@ -51,6 +51,15 @@ describe("measured PDF ink pagination", () => {
     const placed = placeInkLines(lines, 100);
     expect(placed.map(item => item.page)).toEqual(expected);
     expect(placed.at(-1)!.page + 1).toBe(101);
+  });
+  it("clamps positive first-line paint at the bottom and never shifts a later fit-boundary line", () => {
+    const first = { ...line(25), boxTop: -20, boxBottom: 12, paintBoxTop: -60 };
+    const last = { ...line(87), boxTop: -20, boxBottom: 12 };
+    const placed = placeInkLines([first, last], 100);
+    expect(placed[0].baseline + first.boxBottom).toBeLessThanOrEqual(99);
+    expect(placed[1]).toEqual({page:0,baseline:87});
+    expect(placed[1].baseline + last.boxBottom).toBe(99);
+    expect(placeInkLines([first], 50)[0].baseline + first.boxBottom).toBe(49);
   });
   it("preserves exact baseline distances when lines fit", () => {
     expect(placeInkLines([line(20), line(52), line(84)], 100)).toEqual([{ page: 0, baseline: 20 }, { page: 0, baseline: 52 }, { page: 0, baseline: 84 }]);

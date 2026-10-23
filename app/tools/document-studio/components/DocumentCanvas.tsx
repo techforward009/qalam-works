@@ -402,7 +402,6 @@ export default function DocumentCanvas({
           >
             <div
               style={{ width: Math.max(contentWidth, 1), minHeight: contentHeight, position: "relative" }}
-              data-studio-selection-host
               data-ruler-gutter={showRuler ? String(PASTEBOARD_TOP_PX) : undefined}
               data-studio-pasteboard-pad={String(PASTEBOARD_TOP_PX)}
             >
@@ -541,6 +540,7 @@ export default function DocumentCanvas({
                     )}
                     <div
                       className="relative z-[1] cursor-text"
+                      data-studio-selection-host
                       style={
                         isPages
                           ? { width: "100%", minHeight: stackHeight, cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : "text" }
@@ -847,6 +847,10 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror blockquote {
           clear: both;
         }
+        /* Headings must not clear the pagination widget's full stack of floats. */
+        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6) {
+          clear: none;
+        }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
           outline: 2px solid #B8935A;
           outline-offset: 3px;
@@ -863,6 +867,10 @@ export default function DocumentCanvas({
           opacity: 0;
           transition: opacity .15s ease;
           cursor: nwse-resize;
+        }
+        /* Headings must not clear the pagination widget's full stack of floats. */
+        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6) {
+          clear: none;
         }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-handle],
         .qalam-editor-content .ProseMirror [data-resize-container]:hover [data-resize-handle] { opacity: 1; }

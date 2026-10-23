@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { autoLineHeight } from "../utils/autoLeading";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
@@ -504,11 +505,12 @@ function StudioCaret({
         selectionRect = rects.length ? rects[rects.length - 1] : null;
       }
       const coords = selectionRect ?? editor.view.coordsAtPos(editor.state.selection.head);
+      const firstLine = firstLineRunAt(editor.state, editor.state.selection.head);
       const rect = host.getBoundingClientRect();
       const scale = rect.width > 0 ? rect.width / pageWidthPx : 1;
       setBox({
         left: editor.isEmpty ? pageWidthPx - marginRightPx - 3 : (coords.left - rect.left) / scale,
-        top: editor.isEmpty ? marginTopPx : (Math.min(coords.top, coords.bottom) - rect.top) / scale,
+        top: editor.isEmpty ? marginTopPx : (Math.min(coords.top, coords.bottom) - rect.top) / scale + (firstLine?.empty ? firstLine.offset : 0) + (firstLine?.selectionOffset ?? 0),
         height: Math.max(12, coords.bottom - coords.top) / scale,
       });
     };

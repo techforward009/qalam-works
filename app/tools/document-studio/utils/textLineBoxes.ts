@@ -47,35 +47,13 @@ export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = ro
     const range = document.createRange();
     range.setStart(text, start); range.setEnd(text, end);
     const leading = parseFloat(getComputedStyle(text.parentElement!).lineHeight);
+    const selectionOffset = parseFloat(text.parentElement!.closest("[data-studio-line-selection-offset]")?.getAttribute("data-studio-line-selection-offset") ?? "0") * scale;
     for (const rect of range.getClientRects()) {
       if (rect.width < 0.1 || rect.height < 1 || (clip && (rect.bottom <= clip.top || rect.top >= clip.bottom || rect.right <= clip.left || rect.left >= clip.right))) continue;
-      rects.push({ left: rect.left, top: rect.top, width: rect.width, height: Number.isFinite(leading) ? leading * scale : rect.height, fontTop: rect.top, fontBottom: rect.bottom });
+      rects.push({ left: rect.left, top: rect.top + selectionOffset, width: rect.width, height: Number.isFinite(leading) ? leading * scale : rect.height, fontTop: rect.top + selectionOffset, fontBottom: rect.bottom + selectionOffset });
     }
   };
   if (common.nodeType === Node.TEXT_NODE) visit(common);
   else for (let node = walker.nextNode(); node; node = walker.nextNode()) visit(node);
   return groupVisualLineRects(rects);
-}
-
-/** Mirror at natural size, then transform: zoom must not change wrapping. */
-export function selectedTextareaLineBoxes(input: HTMLTextAreaElement): TextLineBox[] {
-  if (input.selectionStart === input.selectionEnd) return [];
-  const style = getComputedStyle(input), rect = input.getBoundingClientRect();
-  const scale = elementScale(input);
-  const mirror = document.createElement("div");
-  mirror.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;white-space:pre-wrap;overflow-wrap:break-word;margin:0;border:0;box-sizing:border-box;transform-origin:top left;";
-  for (const property of ["font-family", "font-size", "line-height", "font-weight", "font-style", "font-variant-ligatures", "font-feature-settings", "direction", "text-align", "letter-spacing", "word-spacing", "unicode-bidi", "text-indent", "tab-size", "font-kerning", "padding"]) mirror.style.setProperty(property, style.getPropertyValue(property));
-  Object.assign(mirror.style, {
-    left: `${rect.left + input.clientLeft * scale}px`,
-    top: `${rect.top + input.clientTop * scale - input.scrollTop * scale}px`,
-    width: `${input.clientWidth + (input.offsetWidth ? rect.width / scale - input.offsetWidth : 0)}px`,
-    transform: `scale(${scale})`,
-  });
-  const text = document.createTextNode(input.value);
-  mirror.append(text); document.body.append(mirror);
-  try {
-    const range = document.createRange();
-    range.setStart(text, input.selectionStart); range.setEnd(text, input.selectionEnd);
-    return selectedLineBoxes(mirror, range, rect);
-  } finally { mirror.remove(); }
 }

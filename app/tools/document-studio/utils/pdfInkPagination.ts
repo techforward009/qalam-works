@@ -1,3 +1,4 @@
+import { firstLinePaintShift } from "./firstLinePaint";
 import type { Page } from "puppeteer-core";
 
 export interface InkLine {
@@ -100,7 +101,7 @@ export function fitHorizontalInk(
   return 0;
 }
 
-/** Keep baseline distances unchanged within a page; break only between whole ink extents.
+/** Preserve legacy fit decisions and later-line baselines; paint only the first line differently.
  *  Body paragraphs fill the remaining page and may split. Headings stay with the next line.
  *  A trailing blank caret paragraph must not mint an extra last page. */
 export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] {
@@ -140,11 +141,12 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     if (newPage) {
       const boxTop = line.paintBoxTop ?? line.boxTop;
       // Nastaliq ink may rise above its line box: preserve the old ink guard.
-      const anchorShift = !line.image && boxTop !== undefined && line.inkTop >= boxTop && line.inkTop >= (line.boxTop ?? boxTop)
-        ? Math.max(-line.baseline - boxTop, edgeGuard - line.baseline - line.inkTop) : edgeGuard - top;
-      paintShift = boxTop !== undefined && !line.image ? anchorShift - shift : 0;
+      paintShift = boxTop !== undefined && !line.image ? firstLinePaintShift(
+        placedBaseline + boxTop, placedBaseline + line.inkTop,
+        placedBaseline + relativeBottom, 0, height, placedBaseline + (line.boxTop ?? boxTop), edgeGuard,
+      ) : 0;
     }
-    return { page, baseline: placedBaseline + paintShift };
+    return { page, baseline: placedBaseline + (newPage ? paintShift : 0) };
   });
 }
 
