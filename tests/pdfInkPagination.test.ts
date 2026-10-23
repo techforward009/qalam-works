@@ -17,6 +17,22 @@ const NORMAL_MARGIN_PX = mmToCssPx(25.4);
 
 const line = (baseline: number, block = 0, top = -15, bottom = 5): InkLine => ({ block, baseline, heading: false, inkTop: top, inkBottom: bottom, inkLeft: 1, inkRight: 99, offset: 0, frameTop: 0, frameBottom: 0, frameLeft: 0, frameRight: 100, metricTop: top, metricBottom: bottom });
 describe("measured PDF ink pagination", () => {
+  it("anchors the first line box exactly at the page top, retaining normal font ascent", () => {
+    const first = { ...line(30), boxTop: -25, boxBottom: 15 };
+    const placed = placeInkLines([first, { ...first, baseline: 70 }], 120);
+    expect(placed[0].baseline + first.boxTop).toBe(0);
+    expect(placed[1].baseline - placed[0].baseline).toBe(40);
+    expect(placed[0].baseline + first.inkTop).toBeGreaterThan(0);
+  });
+  it("uses the same line-box top on automatic and authored new pages", () => {
+    const first = { ...line(30), boxTop: -25, boxBottom: 15 };
+    for (const forceBreak of [false, true]) {
+      const next = { ...first, baseline: 110, forceBreak };
+      const placed = placeInkLines([first, next], 100);
+      expect(placed[1].page).toBe(1);
+      expect(placed[1].baseline + next.boxTop).toBe(0);
+    }
+  });
   it("preserves exact baseline distances when lines fit", () => {
     expect(placeInkLines([line(20), line(52), line(84)], 100)).toEqual([{ page: 0, baseline: 20 }, { page: 0, baseline: 52 }, { page: 0, baseline: 84 }]);
   });

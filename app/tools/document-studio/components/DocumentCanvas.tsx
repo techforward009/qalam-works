@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { StudioTextSelection } from "./StudioTextSelection";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
@@ -605,6 +606,7 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
+      <StudioTextSelection editor={editor} zoom={zoomFactor} />
       <style jsx global>{`
         .qalam-editor-content .ProseMirror {
           font-variant-ligatures: normal;
@@ -622,6 +624,11 @@ export default function DocumentCanvas({
           background: transparent;
           display: flow-root;
           caret-color: transparent;
+        }
+        .qalam-editor-content .ProseMirror ::selection,
+        [data-studio-text-frame]::selection {
+          background: transparent;
+          color: inherit;
         }
         [data-studio-scroller]::-webkit-scrollbar { width: 0; height: 0; display: none; }
         .qalam-editor-content.qalam-view-pages .ProseMirror.qalam-pagination {

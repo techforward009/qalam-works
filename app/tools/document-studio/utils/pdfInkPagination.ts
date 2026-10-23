@@ -110,7 +110,12 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     const relativeBottom = Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom);
     const top = line.baseline + relativeTop, bottom = line.baseline + relativeBottom;
     if (relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
-    if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
+    // Page starts are anchored to the line box, not the font's ink extents.
+    // Keep legacy ink-only/image placement and all fit decisions unchanged.
+    const lineBoxTop = !line.image && line.boxTop !== undefined ? line.baseline + line.boxTop : null;
+    const pageStartShift = lineBoxTop !== null ? -lineBoxTop : edgeGuard - top;
+    if (index === 0 && lineBoxTop !== null) shift = pageStartShift;
+    else if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
     let end = index;
     if (line.heading) {
       while (end + 1 < lines.length && lines[end + 1].block === line.block) end++;
@@ -122,13 +127,13 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     let placedBaseline = line.baseline + shift;
     if (index > 0 && line.forceBreak) {
       page++;
-      shift = -top + edgeGuard;
+      shift = pageStartShift;
       placedBaseline = line.baseline + shift;
     } else if (index > 0 && trailingBlank) {
       if (bottom + shift > height - edgeGuard) placedBaseline = height - edgeGuard - relativeBottom;
     } else if (index > 0 && (bottom + shift > height - edgeGuard || (keepHeading && groupBottom + shift > height - edgeGuard))) {
       page++;
-      shift = -top + edgeGuard;
+      shift = pageStartShift;
       placedBaseline = line.baseline + shift;
     }
     return { page, baseline: placedBaseline };

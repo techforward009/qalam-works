@@ -425,6 +425,7 @@ function FrameShape({
   if (frame.kind === "text") {
     return (
       <textarea
+        data-studio-text-frame
         value={frame.text}
         readOnly={!editable}
         tabIndex={editable ? 0 : -1}
@@ -447,7 +448,7 @@ function FrameShape({
           fontFeatureSettings: "normal",
           fontSize: 16,
           lineHeight: autoLineHeight("Jameel Noori Nastaleeq"),
-          padding: 2,
+          padding: 0,
           outline: "none",
         }}
       />
