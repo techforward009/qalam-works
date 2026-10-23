@@ -56,7 +56,11 @@ export async function readTafsirMirror(
   });
   if (!response.ok || !response.body) throw new Error("Tafsir mirror unavailable");
   const declaredLength = response.headers.get("content-length");
-  if (declaredLength !== null && (!Number.isSafeInteger(Number(declaredLength)) || Number(declaredLength) < 1 || Number(declaredLength) > MAX_TAFSIR_ARCHIVE_BYTES)) {
+  if (declaredLength === null || !Number.isSafeInteger(Number(declaredLength)) || Number(declaredLength) < 1) {
+    await response.body.cancel();
+    throw new Error("tafsir-mirror-invalid-content-length");
+  }
+  if (Number(declaredLength) > MAX_TAFSIR_ARCHIVE_BYTES) {
     await response.body.cancel();
     throw new Error("Tafsir mirror archive too large");
   }

@@ -49,6 +49,24 @@ describe("research private R2 client", () => {
     const truncated = createResearchR2Client(env, vi.fn(async () => new Response("{}", { status: 200, headers: { "content-length": "20" } })) as unknown as typeof fetch);
     await expect(truncated.getObject(key)).rejects.toThrow();
   });
+  it("accepts fetch-decoded gzip bytes without comparing them to the wire length", async () => {
+    const client = createResearchR2Client(env, vi.fn(async () => new Response('{"id":1}', {
+      status:200,headers:{"content-length":"2","content-encoding":"gzip"},
+    })) as unknown as typeof fetch);
+    expect(await client.getObject(key)).toBe('{"id":1}');
+  });
+  it("cancels an encoded body above the 25 MiB decoded cap", async () => {
+    let reads = 0;
+    const cancel = vi.fn();
+    const chunk = new Uint8Array(1024*1024);
+    const body = new ReadableStream<Uint8Array>({pull(controller) {reads++;controller.enqueue(chunk);},cancel}, {highWaterMark:0});
+    const client = createResearchR2Client(env, vi.fn(async () => new Response(body, {
+      status:200,headers:{"content-length":"2","content-encoding":"gzip"},
+    })) as unknown as typeof fetch);
+    await expect(client.getObject(key)).rejects.toThrow();
+    expect(reads).toBe(26);
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
   it("never falls back when R2 fails", async () => {
     const client = createResearchR2Client(env, vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch);
     await expect(client.getObject(key)).rejects.toThrow();

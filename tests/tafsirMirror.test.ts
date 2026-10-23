@@ -15,7 +15,7 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
     const seen: Array<{url: string; init: RequestInit}> = [];
     const mock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
       seen.push({url: String(url), init: init ?? {}});
-      return new Response(new Uint8Array([1,2,3,4]), {status: 200});
+      return new Response(new Uint8Array([1,2,3,4]), {status: 200, headers:{"content-length":"4"}});
     }) as typeof fetch;
     expect(await readTafsirMirror("ur", {urUrl, enUrl, bearerToken:"test-secret"}, mock)).toEqual(Buffer.from([1,2,3,4]));
     expect(seen).toHaveLength(1);
@@ -26,7 +26,7 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
   });
 
   it("separately selects English without requesting Urdu", async () => {
-    const mock = vi.fn(async (_url: RequestInfo | URL) => new Response(new Uint8Array([5])));
+    const mock = vi.fn(async (_url: RequestInfo | URL) => new Response(new Uint8Array([5]), {headers:{"content-length":"1"}}));
     expect(await readTafsirMirror("en", {urUrl,enUrl}, mock as typeof fetch)).toEqual(Buffer.from([5]));
     expect(mock.mock.calls[0][0]).toBe(enUrl);
   });
@@ -42,6 +42,13 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
   it("rejects private mirror errors without silently falling back to the suspended store", async () => {
     const mock = vi.fn(async () => new Response(null, {status:503})) as typeof fetch;
     await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("Tafsir mirror unavailable");
+  });
+
+  it.each([null, "0", "not-a-number"])("names an invalid Content-Length (%s)", async length => {
+    const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3]), {
+      status:200, headers:length === null ? {} : {"content-length":length},
+    })) as typeof fetch;
+    await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("tafsir-mirror-invalid-content-length");
   });
 
   it("rejects a declared oversize archive before reading it", async () => {

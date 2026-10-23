@@ -52,6 +52,8 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
         await res.body?.cancel(); throw new ResearchPersistenceError("failed");
       }
       if (!res.body) throw new ResearchPersistenceError("failed");
+      // Fetch decodes encoded bodies; Content-Length describes wire bytes only.
+      const encoded = res.headers.has("content-encoding");
       const reader = res.body.getReader();
       const chunks: Uint8Array[] = [];
       let total = 0;
@@ -60,7 +62,7 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
           const part = await reader.read();
           if (part.done) break;
           total += part.value.byteLength;
-          if (total > len || total > MAX_BYTES) {
+          if ((!encoded && total > len) || total > MAX_BYTES) {
             await reader.cancel();
             throw new ResearchPersistenceError("failed");
           }
@@ -68,7 +70,7 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
         }
       } catch { throw new ResearchPersistenceError("failed"); }
       finally { reader.releaseLock(); }
-      if (total !== len) throw new ResearchPersistenceError("failed");
+      if (!encoded && total !== len) throw new ResearchPersistenceError("failed");
       return Buffer.concat(chunks.map(chunk => Buffer.from(chunk)), total).toString("utf8");
     },
     async listObjects(prefix) {

@@ -11,11 +11,14 @@ export const TEST_RESEARCH_PASSWORD = "test-owner-password";
 export const TEST_RESEARCH_SECRET = "test-session-secret-value";
 
 export function useTestResearchAuth(): void {
+  // Existing route fixtures inject an in-memory client into this explicit legacy adapter.
+  process.env.QALAM_RESEARCH_STORAGE_BACKEND = "vercel-blob";
   process.env.QALAM_RESEARCH_ACCESS_PASSWORD = TEST_RESEARCH_PASSWORD;
   process.env.QALAM_RESEARCH_SESSION_SECRET = TEST_RESEARCH_SECRET;
 }
 
 export function clearTestResearchAuth(): void {
+  delete process.env.QALAM_RESEARCH_STORAGE_BACKEND;
   delete process.env.QALAM_RESEARCH_ACCESS_PASSWORD;
   delete process.env.QALAM_RESEARCH_SESSION_SECRET;
 }
