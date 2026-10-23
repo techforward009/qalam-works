@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { StudioLineLayout } from "./StudioLineLayout";
+import { StudioTextSelection } from "./StudioTextSelection";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
@@ -377,7 +379,7 @@ export default function DocumentCanvas({
           ) : null}
           <div
             ref={scrollerRef}
-            className="min-h-0 min-w-0 flex-1 overflow-auto"
+            className="relative isolate min-h-0 min-w-0 flex-1 overflow-auto"
             data-studio-scroller="true"
             style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined, scrollbarWidth: "none" }}
             onPointerDown={(event) => {
@@ -538,6 +540,7 @@ export default function DocumentCanvas({
                     )}
                     <div
                       className="relative z-[1] cursor-text"
+                      data-studio-selection-host
                       style={
                         isPages
                           ? { width: "100%", minHeight: stackHeight, cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : "text" }
@@ -605,6 +608,8 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
+      <StudioLineLayout editor={editor} />
+      <StudioTextSelection editor={editor} zoom={zoomFactor} />
       <style jsx global>{`
         .qalam-editor-content .ProseMirror {
           font-variant-ligatures: normal;

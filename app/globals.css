@@ -2116,3 +2116,10 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
 [data-quran-edition="digital-khatt"] .quran-banner-digit {
   font-family: "Amiri","Noto Naskh Arabic",serif;
 }
+
+/* Keep this outside styled-jsx: only a painted story suppresses native selection.
+   Text boxes, inputs and dialogs always retain their native selection highlight. */
+.qalam-editor-content .ProseMirror[data-studio-selection-painted] ::selection {
+  background: transparent;
+  color: inherit;
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { lineBoxTop } from "../utils/textLineBoxes";
+import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { autoLineHeight } from "../utils/autoLeading";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
@@ -425,6 +427,7 @@ function FrameShape({
   if (frame.kind === "text") {
     return (
       <textarea
+        data-studio-text-frame
         value={frame.text}
         readOnly={!editable}
         tabIndex={editable ? 0 : -1}
@@ -503,11 +506,17 @@ function StudioCaret({
         selectionRect = rects.length ? rects[rects.length - 1] : null;
       }
       const coords = selectionRect ?? editor.view.coordsAtPos(editor.state.selection.head);
+      const firstLine = firstLineRunAt(editor.state, editor.state.selection.head);
       const rect = host.getBoundingClientRect();
       const scale = rect.width > 0 ? rect.width / pageWidthPx : 1;
+      const anchor = window.getSelection()?.anchorNode;
+      const owner = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor instanceof HTMLElement ? anchor : editor.view.dom;
+      const leading = parseFloat(getComputedStyle(owner ?? editor.view.dom).lineHeight) * scale;
+      const top = firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
+        : lineBoxTop(coords.top, coords.bottom - coords.top, Number.isFinite(leading) ? leading : coords.bottom - coords.top);
       setBox({
         left: editor.isEmpty ? pageWidthPx - marginRightPx - 3 : (coords.left - rect.left) / scale,
-        top: editor.isEmpty ? marginTopPx : (Math.min(coords.top, coords.bottom) - rect.top) / scale,
+        top: editor.isEmpty ? marginTopPx : (top - rect.top) / scale,
         height: Math.max(12, coords.bottom - coords.top) / scale,
       });
     };
