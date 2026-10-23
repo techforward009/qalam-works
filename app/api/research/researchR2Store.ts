@@ -2,7 +2,7 @@ import "server-only";
 import { ResearchPersistenceError, type ResearchBlobClient } from "../../tools/research-studio/engine";
 
 const PREFIX = "research/v1/documents/";
-const OBJECT = /^research\/v1\/documents\/[A-Za-z0-9_-]{1,128}\.json$/;
+const OBJECT = /^research\/v1\/documents\/[A-Za-z0-9][A-Za-z0-9_-]{0,127}\.json$/;
 const MAX_BYTES = 25 * 1024 * 1024;
 const MAX_PAGES = 50;
 type Env = Record<string, string | undefined>;
