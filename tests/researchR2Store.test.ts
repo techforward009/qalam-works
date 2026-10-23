@@ -21,7 +21,7 @@ describe("research private R2 client", () => {
     await client.putObject(key, '{"id":1}');
     expect(await client.getObject(key)).toBe('{"id":1}');
     expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(fetcher.mock.calls[0][1]?.headers).toMatchObject({ Authorization: `Bearer ${env.QALAM_RESEARCH_R2_BEARER_TOKEN}` });
+    expect(fetcher.mock.calls[0]?.[1]?.headers).toMatchObject({ Authorization: `Bearer ${env.QALAM_RESEARCH_R2_BEARER_TOKEN}` });
   });
   it("rejects unexpected keys and oversized payloads", async () => {
     const client = createResearchR2Client(env, vi.fn() as unknown as typeof fetch);
