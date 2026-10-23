@@ -71,3 +71,33 @@ it('retains only allowlisted native Gemini error statuses',async()=>{
  const unknown=await sermonProviderErrorDetails(Response.json({error:{code:503,status:'private arbitrary status',message:'private source text'}}));
  expect(unknown.code).toBeUndefined();expect(JSON.stringify(unknown)).not.toContain('private');
 });
+
+it("waits for repeated reported quotas without exhausting composition attempts",async()=>{
+ const fetchMock=vi.fn().mockImplementation(async()=>fetchMock.mock.calls.length<5?new Response(null,{status:429,headers:{"retry-after":"1"}}):new Response("ok"));
+ const wait=vi.fn(async()=>{});
+ expect((await fetchSermonProvider("https://provider.test",{},fetchMock,wait,Date.now()+285000)).status).toBe(200);
+ expect(fetchMock).toHaveBeenCalledTimes(5);expect(wait).toHaveBeenCalledTimes(4);expect(wait).toHaveBeenCalledWith(2000);
+});
+it("honors a reported wait longer than a minute only when the request deadline permits it",async()=>{
+ const fetchMock=vi.fn().mockResolvedValueOnce(new Response(null,{status:429,headers:{"retry-after":"90"}})).mockResolvedValueOnce(new Response("ok"));const wait=vi.fn(async()=>{});
+ expect((await fetchSermonProvider("https://provider.test",{},fetchMock,wait,Date.now()+200000)).status).toBe(200);expect(wait).toHaveBeenCalledWith(91000);
+ const limited=vi.fn(async()=>new Response(null,{status:429,headers:{"retry-after":"90"}}));wait.mockClear();
+ expect((await fetchSermonProvider("https://provider.test",{},limited,wait,Date.now()+50000)).status).toBe(429);expect(wait).not.toHaveBeenCalled();expect(limited).toHaveBeenCalledTimes(1);
+});
+it("waits after an oversized reservation adjustment when the provider reports exhausted quota",async()=>{
+ const fetchMock=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({error:{message:"tokens per minute (TPM): Limit 8000, Requested 9100. Please try again in 12.4s."}}),{status:429})).mockResolvedValueOnce(new Response("ok"));const wait=vi.fn(async()=>{});
+ await fetchSermonProvider("https://provider.test",{body:JSON.stringify({max_completion_tokens:5000})},fetchMock,wait,Date.now()+285000,2000);
+ expect(wait).toHaveBeenCalledWith(13400);expect(JSON.parse(fetchMock.mock.calls[1][1].body).max_completion_tokens).toBe(3772);
+});
+it("parses Groq minute-and-second waits without leaking the provider message",()=>{
+ expect(sermonThrottleMetrics({error:{message:"private topic; Please try again in 1m2.5s."}}).retrySeconds).toBe(62.5);
+ expect(sermonThrottleMetrics({error:{message:"Please try again in 2m."}}).retrySeconds).toBe(120);
+});
+it("does not send another provider request when a quota wait consumes the deadline",async()=>{
+ vi.useFakeTimers();
+ try{
+  const deadline=Date.now()+20000;const fetchMock=vi.fn(async()=>new Response(null,{status:429,headers:{"retry-after":"1"}}));
+  await expect(fetchSermonProvider("https://provider.test",{},fetchMock,async()=>{vi.setSystemTime(deadline+1);},deadline)).rejects.toThrow("composition-timeout");
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+ }finally{vi.useRealTimers();}
+});

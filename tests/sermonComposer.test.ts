@@ -76,7 +76,7 @@ it("permits independent format, length, and source-review corrections without pu
  })};
  const project=await composeSermon(input,result,{generate:provider,reviewer:audit,env:{}});
  expect(project.sections).toHaveLength(5);
- expect(provider).toHaveBeenCalledTimes(4);
+ expect(provider).toHaveBeenCalledTimes(6);
  expect(audit.review).toHaveBeenCalledTimes(2);
 });
 it("preserves source-approved sections while rewriting rejected ones",async()=>{
@@ -121,7 +121,7 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(fetchMock.mock.calls[0][0]).toBe("https://api.groq.com/openai/v1/chat/completions");
  const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
  expect(body.model).toBe("openai/gpt-oss-120b");
- expect(body.max_completion_tokens).toBe(5000);expect(body.max_tokens).toBeUndefined();
+ expect(body.max_completion_tokens).toBe(6500);expect(body.max_tokens).toBeUndefined();
  expect(body.reasoning_effort).toBe("low");
  expect(body.reasoning_format).toBeUndefined();
  expect(body.response_format).toEqual({type:"json_object"});
@@ -139,13 +139,15 @@ it("repairs a short first draft before reviewing and preserves minimum length",a
  const repair=vi.fn(async(_request:SermonRequest)=>({sections:repair.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
  const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
  const project=await composeSermon(input,result,{generate:repair,reviewer:check,env:{}});
- expect(project.sections).toHaveLength(5);expect(repair).toHaveBeenCalledTimes(2);expect(check.review).toHaveBeenCalledTimes(1);expect(repair.mock.calls[1][0].instruction).toContain("at least 750 words");expect(repair.mock.calls[1][0].previous).toContain("sections");
+ expect(project.sections).toHaveLength(5);expect(repair).toHaveBeenCalledTimes(4);expect(check.review).toHaveBeenCalledTimes(1);expect(repair.mock.calls[1][0].instruction).toContain("at least 210 words each");expect(repair.mock.calls[1][0].repair?.indices).toEqual([0,1]);expect(repair.mock.calls[1][0].previous).toBeUndefined();
+ expect(repair.mock.calls.slice(1).map(call=>call[0].repair?.indices)).toEqual([[0,1],[2,3],[4]]);
+ expect(project.sections.every(s=>s.userText.split(/\s+/u).length>=130)).toBe(true);
 });
 it("rejects a sermon with one underlength section even when its total is long enough",async()=>{
  const uneven=sections.map((section,i)=>i===2?{...section,text:Array.from({length:8},(_,n)=>`یہ جملہ نمبر ${n+1} سامعین کو غور کی دعوت دیتا ہے۔`).join(" ")}:section);
  const generateUneven=vi.fn(async()=>({sections:uneven}));const check={...reviewer,review:vi.fn()};
  await expect(composeSermon(input,result,{generate:generateUneven,reviewer:check,env:{}})).rejects.toThrow("insufficient-draft");
- expect(generateUneven).toHaveBeenCalledTimes(2);expect(check.review).not.toHaveBeenCalled();
+ expect(generateUneven).toHaveBeenCalledTimes(3);expect(check.review).not.toHaveBeenCalled();
 });
 it("sends supplied meanings to the writer without duplicated original text or metadata",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
@@ -198,8 +200,8 @@ it("keeps a source-review repair after a short draft without unbounded retries",
  let checks=0;
  const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>{const reject=checks++===0;return {reviews:claims.map((c,i)=>({claimId:c.id,verdict:reject&&i===2?'unsupported':'supported',reason:reject&&i===2?'not-in-evidence':'entailed'}))};})};
  expect((await composeSermon(input,result,{generate:draft,reviewer:check,env:{}})).sections).toHaveLength(5);
- expect(draft).toHaveBeenCalledTimes(3);expect(check.review).toHaveBeenCalledTimes(2);
- expect(draft.mock.calls[2][0].instruction).toContain('section-3');
+ expect(draft).toHaveBeenCalledTimes(5);expect(check.review).toHaveBeenCalledTimes(2);
+ expect(draft.mock.calls[4][0].instruction).toContain('section-3');
 });
 
 it("preserves rejected-source feedback when a repair draft also needs more length",async()=>{
@@ -214,4 +216,31 @@ it("preserves rejected-source feedback when a repair draft also needs more lengt
  expect(generateDraft.mock.calls[1][0].instruction).toContain("Source review rejected section-1");
  expect(generateDraft.mock.calls[2][0].instruction).toContain("Source review rejected section-1");
  expect(generateDraft.mock.calls[2][0].instruction).toContain(sermonSentences(sections[0].text)[0]);
+});
+
+it("expands only short sections and preserves adequate sections byte for byte",async()=>{
+ const original=sections.map((s,i)=>i===1?{...s,text:s.text.slice(0,250)}:s);
+ const provider=vi.fn(async(request:SermonRequest)=>request.repair?{sections:request.repair.indices.map(i=>sections[i])}:{sections:original});
+ const project=await composeSermon(input,result,{generate:provider,reviewer,env:{}});
+ expect(provider).toHaveBeenCalledTimes(2);expect(provider.mock.calls[1][0].repair?.indices).toEqual([1]);
+ expect(provider.mock.calls[1][0].repair?.sections).toEqual([original[1]]);
+ expect(provider.mock.calls[1][0].previous).toBeUndefined();
+ for(const i of [0,2,3,4])expect(project.sections[i].userText.split("\n\n")[0]).toBe(original[i].text);
+});
+it("gives a still-short section a second targeted repair without restarting the sermon",async()=>{
+ const short={...sections[0],text:sections[0].text.slice(0,300)};
+ const provider=vi.fn(async(request:SermonRequest)=>!request.repair?{sections:[short,...sections.slice(1)]}:{sections:[provider.mock.calls.length===2?short:sections[0]]});
+ await expect(composeSermon(input,result,{generate:provider,reviewer,env:{}})).resolves.toHaveProperty("sections");
+ expect(provider).toHaveBeenCalledTimes(3);expect(provider.mock.calls[2][0].repair?.indices).toEqual([0]);
+});
+it("limits a repair response and prompt to requested sections and their cited evidence",async()=>{
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>Response.json({choices:[{message:{content:JSON.stringify({sections:[sections[1]]})}}]}));
+ await generateSermonSections({...input,repair:{indices:[1],sections:[sections[1]]}},evidence,{CLOUDFLARE_ACCOUNT_ID:"fixture",CLOUDFLARE_AUTH_TOKEN:"fixture"},fetchMock);
+ const payload=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+ expect(payload.response_format.json_schema.schema.properties.sections).toMatchObject({minItems:1,maxItems:1});
+ const user=JSON.parse(payload.messages[1].content);
+ expect(user.repair).toHaveLength(1);expect(user.repair[0].section).toBe(2);expect(user.evidence.map((e:{ref:number})=>e.ref)).toEqual([2]);
+});
+it("uses the supplied shared deadline before spending a generation attempt",async()=>{
+ const provider=vi.fn();await expect(composeSermon(input,result,{generate:provider,reviewer,env:{},deadline:Date.now()-1})).rejects.toThrow("composition-timeout");expect(provider).not.toHaveBeenCalled();
 });

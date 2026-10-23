@@ -5,7 +5,9 @@ export function sermonThrottleMetrics(payload:unknown):SermonErrorMetrics{
   if(typeof message!=="string")return {};
   const number=(pattern:RegExp)=>{const found=message.match(pattern);return found?Number(found[1]):undefined;};
   const unit=message.match(/\b(ITPM|OTPM|TPM|TPD|RPM|RPD)\b(?=[^:]*:|[^L]*Limit)/i)?.[1]?.toUpperCase();
-  return {...(unit?{unit}:{}),limit:number(/\bLimit\s*:?\s*(\d+)/i),used:number(/\bUsed\s*:?\s*(\d+)/i),requested:number(/\bRequested\s*:?\s*(\d+)/i),retrySeconds:number(/try again in\s+(\d+(?:\.\d+)?)s\b/i)};
+  const retry=message.match(/try again in\s+(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?(?=[\s.,]|$)/i);
+  const retrySeconds=retry&&(retry[1]||retry[2])?Number(retry[1]??0)*60+Number(retry[2]??0):undefined;
+  return {...(unit?{unit}:{}),limit:number(/\bLimit\s*:?\s*(\d+)/i),used:number(/\bUsed\s*:?\s*(\d+)/i),requested:number(/\bRequested\s*:?\s*(\d+)/i),retrySeconds};
 }
 export async function sermonProviderErrorDetails(response:Response):Promise<SermonErrorMetrics>{
   try{
@@ -20,15 +22,19 @@ export async function sermonProviderErrorDetails(response:Response):Promise<Serm
     return {...sermonThrottleMetrics(payload),...(code?{code}:{})};
   }catch{return {};}
 }
-export async function fetchSermonProvider(url:string,init:RequestInit,fetchImpl:typeof fetch=fetch,wait?:(ms:number)=>Promise<void>):Promise<Response>{
-  let waited=0;let request=init;
-  for(let attempt=0;attempt<3;attempt++){
+export async function fetchSermonProvider(url:string,init:RequestInit,fetchImpl:typeof fetch=fetch,wait?:(ms:number)=>Promise<void>,deadline?:number,minimumOutput=800):Promise<Response>{
+  let waited=0;let request=init;let transientRetries=0;
+  const retryLimit=deadline===undefined?3:8;
+  const waitBudget=deadline===undefined?60_000:Math.max(0,deadline-Date.now()-5_000);
+  for(let attempt=0;attempt<retryLimit;attempt++){
+    if(deadline!==undefined&&Date.now()>=deadline)throw new Error("composition-timeout");
     request.signal?.throwIfAborted();
     let response:Response;
     try{response=await fetchImpl(url,request);}
     catch(error){console.warn("Sermon provider transport",{code:error instanceof Error&&error.name==="TimeoutError"?"timeout":request.signal?.aborted?"aborted":"unavailable"});throw error;}
-    if(response.status===503&&attempt<2){
-      const delay=(attempt+1)*1000;
+    if(response.status===503&&transientRetries<2){
+      const delay=(++transientRetries)*1000;
+      if(deadline!==undefined&&Date.now()+delay+5000>=deadline)return response;
       console.warn("Sermon provider transient retry",{status:503,attempt,delayMs:delay});
       await response.body?.cancel();
       await (wait??(ms=>waitForSermonRetry(ms,request.signal)))(delay);
@@ -41,23 +47,27 @@ export async function fetchSermonProvider(url:string,init:RequestInit,fetchImpl:
     const details=await sermonProviderErrorDetails(response);
     request.signal?.throwIfAborted();
     const numericHeader=(name:string)=>{const value=response.headers.get(name);return value!==null&&/^\d+(?:\.\d+)?$/.test(value)?Number(value):undefined;};
-    const seconds=numericHeader("retry-after")??details.retrySeconds;
+    const rawRetry=response.headers.get("retry-after")??"";
+    const headerDate=/^[A-Za-z]{3},/.test(rawRetry)?Date.parse(rawRetry):NaN;
+    const seconds=numericHeader("retry-after")??details.retrySeconds??(Number.isFinite(headerDate)?Math.max(0,(headerDate-Date.now())/1000):undefined);
     console.warn("Sermon provider throttle",{attempt,retryAfterSeconds:seconds,tokenLimit:numericHeader("x-ratelimit-limit-tokens"),remainingTokens:numericHeader("x-ratelimit-remaining-tokens"),remainingRequests:numericHeader("x-ratelimit-remaining-requests"),...details});
-    if(attempt===2)return response;
+    if(attempt===retryLimit-1)return response;
     // If the provider's own token count exceeds its ceiling, reduce only the output reservation.
     if((details.unit==="TPM"||details.unit==="OTPM")&&details.requested!==undefined&&details.limit!==undefined&&details.requested>details.limit&&typeof request.body==="string"){
       try{
         const body=JSON.parse(request.body);const budget=body.max_completion_tokens;
-        const minimum=body.response_format?.json_schema?.name==="sermon_composition"?2000:800;
+        const minimum=body.response_format?.json_schema?.name==="sermon_composition"?Math.max(2000,minimumOutput):minimumOutput;
         const reduced=budget-(details.requested-details.limit)-128;
         if(Number.isInteger(budget)&&reduced>=minimum){
-          await response.body?.cancel();request={...request,body:JSON.stringify({...body,max_completion_tokens:reduced})};continue;
-        }
-      }catch{/* Invalid or nonadjustable requests remain rejected. */}
-      return response;
+          request={...request,body:JSON.stringify({...body,max_completion_tokens:reduced})};
+          // A reservation adjustment fixes impossible requests; if quota is also
+          // exhausted, still honor its reported wait before sending the retry.
+          if(seconds===undefined){await response.body?.cancel();continue;}
+        }else{return response;}
+      }catch{/* Invalid or nonadjustable requests remain rejected. */return response;}
     }
-    const delay=seconds===undefined?NaN:Math.min(60000,Math.max(1000,Math.ceil(seconds*1000)+1000));
-    if(!Number.isFinite(delay)||(seconds!==undefined&&(seconds<0||seconds>60))||waited+delay>60_000)return response;
+    const delay=seconds===undefined?NaN:Math.min(deadline===undefined?60000:Infinity,Math.max(1000,Math.ceil(seconds*1000)+1000));
+    if(!Number.isFinite(delay)||(seconds!==undefined&&(seconds<0||deadline===undefined&&seconds>60))||waited+delay>waitBudget||deadline!==undefined&&Date.now()+delay+5000>=deadline)return response;
     await response.body?.cancel();waited+=delay;
     await (wait??(ms=>waitForSermonRetry(ms,request.signal)))(delay);
   }

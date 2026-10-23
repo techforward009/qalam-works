@@ -166,12 +166,12 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; geminiK
       } };
       const endpoint=useGemini?"https://generativelanguage.googleapis.com/v1beta/openai/chat/completions":useCloudflare?`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(options.cloudflareAccountId!)}/ai/v1/chat/completions`:"https://api.groq.com/openai/v1/chat/completions";
       const response = await fetchSermonProvider(endpoint, {
-        method: "POST", headers: { Authorization: `Bearer ${useGemini?options.geminiKey:useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline,useCloudflare?120_000:90_000),
+        method: "POST", headers: { Authorization: `Bearer ${useGemini?options.geminiKey:useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline,options.deadline===undefined?(useCloudflare?120_000:90_000):Infinity),
         body: JSON.stringify({ model: useGemini?"gemini-3.8-flash":useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useGemini?{}:useCloudflare?{chat_template_kwargs:{enable_thinking:false}}:{}), ...(useGemini?{max_tokens:Math.max(4500,reviewBudget)}:{max_completion_tokens: useCloudflare?Math.max(3000,reviewBudget):reviewBudget}),
           response_format: useGemini||useCloudflare ? { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } } : { type: "json_object" },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),
-      }, useGemini ? geminiSermonFetch(fetchImpl) : fetchImpl);
+      }, useGemini ? geminiSermonFetch(fetchImpl) : fetchImpl, undefined, options.deadline);
       if (!response.ok) { console.warn("Sermon sentence review", { status: response.status }); await response.body?.cancel(); throw new Error(response.status===429?"provider-rate-limited":"provider-unavailable"); }
       if (!response.body) throw new Error("provider-unavailable");
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;

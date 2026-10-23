@@ -37,3 +37,19 @@ it("identifies the failing stage without logging private provider errors",async(
  mocks.collect.mockResolvedValueOnce({status:"evidence"});mocks.compose.mockRejectedValueOnce(new Error("provider-format"));await POST(request(valid,"https://qalam.test","audit-failure"));expect(warning).toHaveBeenLastCalledWith("Sermon request failed",{stage:"composition",code:"provider-format",elapsedMs:expect.any(Number)});
  }finally{warning.mockRestore();}
 });
+
+it("counts source retrieval against the same deadline as drafting and review",async()=>{
+ vi.useFakeTimers();vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","fixture");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","fixture");
+ try{
+  const started=Date.now();mocks.collect.mockImplementationOnce(async()=>{await new Promise(resolve=>setTimeout(resolve,25000));return {status:"evidence"};});mocks.compose.mockResolvedValueOnce({id:"deadline-fixture"});
+  const response=POST(request(valid,"https://qalam.test","shared-deadline"));await vi.advanceTimersByTimeAsync(25000);
+  expect((await response).status).toBe(200);expect(mocks.compose.mock.calls[0][2].deadline).toBe(started+285000);expect(vi.getTimerCount()).toBe(0);
+ }finally{vi.useRealTimers();}
+});
+it("returns before the platform timeout even if source retrieval hangs",async()=>{
+ vi.useFakeTimers();vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","fixture");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","fixture");
+ try{
+  mocks.collect.mockImplementationOnce(()=>new Promise(()=>{}));const response=POST(request(valid,"https://qalam.test","bounded-sources"));await vi.advanceTimersByTimeAsync(285000);
+  expect((await response).status).toBe(503);expect(mocks.compose).not.toHaveBeenCalled();expect(vi.getTimerCount()).toBe(0);
+ }finally{vi.useRealTimers();}
+});
