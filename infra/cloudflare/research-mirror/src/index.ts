@@ -1,6 +1,10 @@
 /** Private research documents in R2. This Worker is NOT public storage. */
 interface Env {
-  RESEARCH_BUCKET: {\n    get(key: string): Promise<{ body: ReadableStream<Uint8Array>; size: number } | null>;\n    put(key: string, bytes: Uint8Array, options: { httpMetadata: { contentType: string } }): Promise<unknown>;\n    list(options: { prefix: string; limit: number; cursor?: string }): Promise<{ objects: { key: string }[]; cursor?: string; truncated: boolean }>;\n  };
+  RESEARCH_BUCKET: {
+    get(key: string): Promise<{ body: ReadableStream<Uint8Array>; size: number } | null>;
+    put(key: string, bytes: Uint8Array, options: { httpMetadata: { contentType: string } }): Promise<unknown>;
+    list(options: { prefix: string; limit: number; cursor?: string }): Promise<{ objects: { key: string }[]; cursor?: string; truncated: boolean }>;
+  };
   AUTH_TOKEN: string;
 }
 const MAX_BYTES = 25 * 1024 * 1024;
