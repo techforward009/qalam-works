@@ -12,3 +12,6 @@ export default async function AhmedGrafPage({params}:{params:Promise<{surah:stri
  if(!Number.isInteger(s)||!Number.isInteger(a)||!ahmedgrafQuranReference.getAyah(s,a))notFound();
  return <QuranReader editionId="qalam-indopak" surah={s} ayah={a}/>;
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

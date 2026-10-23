@@ -12,3 +12,6 @@ export default async function DigitalKhattAyahPage({params}:{params:Promise<{sur
  if(!Number.isInteger(s)||!Number.isInteger(a)||s<1||s>114||a<1||a>(HAFS_AYAH_COUNTS[s-1]??0))notFound();
  return <QuranReader editionId="digital-khatt" surah={s} ayah={a}/>;
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

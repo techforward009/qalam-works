@@ -53,3 +53,6 @@ export default async function HijriYearPage({ params }: { params: Promise<{ year
     </main>
   );
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

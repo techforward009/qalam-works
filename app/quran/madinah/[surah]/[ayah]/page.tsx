@@ -11,3 +11,6 @@ export default async function MadinahAyahPage({ params }: { params: Promise<{ su
   const { surah, ayah } = await params;
   return <MadinahReader surah={Number(surah)} ayah={Number(ayah)} />;
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

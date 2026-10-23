@@ -44,3 +44,6 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
     </main>
   );
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

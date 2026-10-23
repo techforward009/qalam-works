@@ -5,3 +5,6 @@ export default async function LegacyQuranAyah({params}:{params:Promise<{surah:st
  if(!/^\d{1,3}$/.test(surah)||!/^\d{1,3}$/.test(ayah)||s<1||s>114||a<1||a>(HAFS_AYAH_COUNTS[s-1]??0))notFound();
  permanentRedirect("/quran/indopak-digital-khatt/"+s+"/"+a);
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;
