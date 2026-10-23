@@ -337,7 +337,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     setBusy(true); setError("");
     try {
       const response = await fetch(`/api/khateeb/book-reader?${params}`, {
-        signal: controller.signal, credentials: "same-origin", cache: "no-store",
+        signal: controller.signal, credentials: "same-origin",
       });
       if (!response.ok) throw new Error(response.status === 401 ? "auth" : "request");
       return await response.json();
@@ -450,7 +450,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     setProgress(stored);
     const controller = new AbortController();
     fetch("/api/khateeb/book-reader?op=catalog", {
-      signal: controller.signal, credentials: "same-origin", cache: "no-store",
+      signal: controller.signal, credentials: "same-origin",
     }).then(async response => {
       if (!response.ok) throw new Error("catalog");
       return response.json() as Promise<Shelf>;

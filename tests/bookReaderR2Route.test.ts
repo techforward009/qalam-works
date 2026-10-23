@@ -42,12 +42,14 @@ describe("Public Book Reader: verified R2-only delivery", () => {
   it("serves public shelf, bounded contents, and exact source records", async () => {
     const shelf = await GET(new NextRequest(url + "?op=catalog"));
     expect(shelf.status).toBe(200);
+    expect(shelf.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=300, stale-while-revalidate=604800");
     expect((await shelf.json()).sources[0].id).toBe(source.id);
     const contents = await GET(new NextRequest(url + "?op=contents&sourceId=sahifa-ur"));
     expect(contents.status).toBe(200);
     expect((await contents.json()).entries[0].id).toBe(original.id);
     const read = await GET(new NextRequest(url + "?op=read&sourceId=sahifa-ur&id=" + original.id));
     expect(read.status).toBe(200);
+    expect(read.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=86400, stale-while-revalidate=604800");
     const body = await read.json();
     expect(body.paragraphs.map((p: { text: string }) => p.text)).toEqual(original.paragraphs.map(p => p.text));
     expect(body.recordSha256).toBe(original.textSha256);
@@ -74,6 +76,7 @@ describe("Public Book Reader: verified R2-only delivery", () => {
         paragraphIds: [original.paragraphs[1].id] }) });
     const response = await POST(req);
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     const data = await response.json();
     expect(data.excerpt.paragraphs).toEqual([original.paragraphs[1]]);
     expect(data.excerpt.sourceSha256).toBe(source.sha256);
@@ -85,11 +88,28 @@ describe("Public Book Reader: verified R2-only delivery", () => {
       headers: { "Content-Type": "application/json", Origin: "https://attacker.invalid" },
       body: JSON.stringify({}) }));
     expect(bad.status).toBe(400);
+    expect(bad.headers.get("cache-control")).toBe("private, no-store");
     const stale = await POST(new NextRequest(url, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sourceId: source.id, recordId: original.id, part: 1,
         sourceSha256: "d".repeat(64), recordSha256: original.textSha256,
         paragraphIds: [original.paragraphs[1].id] }) }));
     expect(stale.status).toBe(409);
+  });
+
+  it.each([["cookie", "qalam_research_session=owner"], ["authorization", "Bearer owner"]])("does not publicly cache credential-bearing GETs: %j", async (name, value) => {
+    const response = await GET(new NextRequest(url, { headers: { [name]: value } }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("keeps invalid and unavailable GET responses private", async () => {
+    const invalid = await GET(new NextRequest(url + "?op=invalid"));
+    expect(invalid.status).toBe(400);
+    expect(invalid.headers.get("cache-control")).toBe("private, no-store");
+    r2.selected.mockResolvedValue(false);
+    const unavailable = await GET(new NextRequest(url));
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("fails closed with no Vercel Blob fallback", async () => {
