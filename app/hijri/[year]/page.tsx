@@ -5,7 +5,7 @@ import { HijriYearDashboard, type HijriYearMonthSummary } from "@/app/components
 import { convert } from "@/app/tools/date-converter/utils/dateEngine";
 
 function isSupportedHijriYear(year: number) {
-  if (!Number.isInteger(year) || year <= 0) return false;
+  if (!Number.isInteger(year) || year < 1317 || year > 1500) return false;
   try {
     return Boolean(convert("hijri", { year, month: 1, day: 1 }).gregorian);
   } catch {
@@ -42,8 +42,8 @@ export default async function HijriYearPage({ params }: { params: Promise<{ year
   return (
     <main className="mx-auto max-w-7xl p-4 sm:p-6">
       <DateStudioRouteNav
-        previousHref={`/hijri/${y - 1}`}
-        nextHref={`/hijri/${y + 1}`}
+        previousHref={y > 1317 ? `/hijri/${y - 1}` : undefined}
+        nextHref={y < 1500 ? `/hijri/${y + 1}` : undefined}
         periodLabel={{ en: `${y} AH`, ur: `${y} ھ` }}
         currentCalendar="hijri"
         counterpartHref={`/calendar/${gregorianStart.year}`}

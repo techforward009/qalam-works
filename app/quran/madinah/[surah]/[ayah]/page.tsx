@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { HAFS_AYAH_COUNTS } from "../../../../tools/arabic-diacritics/quran/hafsCounts";
 import type { Metadata } from "next";
 import MadinahReader from "../../MadinahReader";
 import {surahTitle} from "../../../reader/metadata";
@@ -9,7 +11,9 @@ export async function generateMetadata({ params }: { params: Promise<{ surah: st
 
 export default async function MadinahAyahPage({ params }: { params: Promise<{ surah: string; ayah: string }> }) {
   const { surah, ayah } = await params;
-  return <MadinahReader surah={Number(surah)} ayah={Number(ayah)} />;
+  const s = Number(surah), a = Number(ayah);
+  if (!Number.isInteger(s) || !Number.isInteger(a) || s < 1 || s > 114 || a < 1 || a > (HAFS_AYAH_COUNTS[s - 1] ?? 0)) notFound();
+  return <MadinahReader surah={s} ayah={a} />;
 }
 
 export async function generateStaticParams() { return []; }
