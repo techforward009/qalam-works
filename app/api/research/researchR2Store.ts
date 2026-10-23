@@ -46,7 +46,8 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
       const res = await request("/v1/objects/" + path);
       if (res.status === 404) { await res.body?.cancel(); return null; }
       if (res.status !== 200) throw new ResearchPersistenceError("failed");
-      const len = Number(res.headers.get("content-length"));
+      const declaredLength = res.headers.get("content-length");
+      const len = declaredLength === null ? NaN : Number(declaredLength);
       if (!Number.isInteger(len) || len < 2 || len > MAX_BYTES) {
         await res.body?.cancel(); throw new ResearchPersistenceError("failed");
       }
