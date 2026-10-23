@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { isSingleEmptyParagraph } from "../utils/singleEmptyParagraph";
 import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
 import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
@@ -259,7 +260,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [minimumPages, setMinimumPages] = useState(1);
   const minimumPagesRef = useRef(1);
   const [frames, setFrames] = useState<StudioFrame[]>([]);
-  const [canvasTool, setCanvasTool] = useState<StudioToolId>("select");
+  const [canvasTool, setCanvasTool] = useState<StudioToolId>("text");
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
@@ -642,7 +643,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (target.closest("button, a, input, select, textarea, img, [data-resize-container]")) return;
     if (!editor.isFocused || !target.closest(".ProseMirror")) {
       const hit = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
-      editor.commands.focus(editor.isEmpty ? "start" : hit?.pos ?? "end");
+      editor.commands.focus(isSingleEmptyParagraph(editor.state.doc) ? "start" : hit?.pos ?? "end");
     }
   };
 
@@ -749,6 +750,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         content: input?.content ?? emptyDocumentContent(dir),
         documentSettings: withStudioUrduFont(input?.documentSettings ?? defaultDocumentSettings()),
       });
+      setCanvasTool("text");
+      canvasToolRef.current = "text";
       applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
       await refreshLibraryList(library);
       return true;

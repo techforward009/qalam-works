@@ -93,6 +93,75 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("new documents focus a blinking first-line caret without a page click", async ({ page }) => {
+    await openStudio(page);
+    const story=page.locator(".ProseMirror"), caret=page.locator("[data-studio-caret]");
+    await expect(story).toBeFocused();
+    await expect(page.locator('[data-studio-tool-button="text"]')).toHaveAttribute("aria-pressed","true");
+    await expect(caret).toBeVisible();
+    await expect(caret).not.toHaveCSS("animation-name","none");
+    await expect(caret).toHaveCSS("animation-duration","1.06s");
+    // New must leave Arrow mode, including when it was explicitly chosen.
+    await page.locator('[data-studio-tool-button="select"]').click();
+    await expect(caret).toHaveCount(0);
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.new"]').click();
+    const dialog=page.getByRole("dialog",{name:"New Document",exact:true});
+    await dialog.getByRole("button",{name:"OK",exact:true}).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(story).toBeFocused();
+    await expect(page.locator('[data-studio-tool-button="text"]')).toHaveAttribute("aria-pressed","true");
+    await expect(caret).toBeVisible();
+    await expect(caret).not.toHaveCSS("animation-name","none");
+    await expect.poll(()=>story.evaluate(root=>{
+      const p=root.querySelector("p")!.getBoundingClientRect();
+      const c=document.querySelector("[data-studio-caret]")?.getBoundingClientRect();
+      return c?Math.abs(c.top-p.top):999;
+    })).toBeLessThanOrEqual(2);
+  });
+
+  test("blank paragraphs advance the caret onto page two and stay visible", async ({ page }) => {
+    await openStudio(page);
+    const story=page.locator(".ProseMirror");
+    await expect(story).toBeFocused();
+    for(let n=0;n<40;n++)await page.keyboard.press("Enter");
+    await expect(story.locator("p")).toHaveCount(41);
+    await expect(page.locator('[data-studio-page-paper="2"]')).toBeAttached();
+    await expect.poll(()=>story.evaluate(root=>{
+      const p=root.querySelector("p:last-child")!.getBoundingClientRect();
+      const c=document.querySelector("[data-studio-caret]")?.getBoundingClientRect();
+      const clip=root.closest("[data-studio-scroller]")!.getBoundingClientRect();
+      return c?{aligned:Math.abs(c.top-p.top)<=2,visible:c.top>=clip.top&&c.bottom<=clip.bottom}:{aligned:false,visible:false};
+    })).toEqual({aligned:true,visible:true});
+  });
+
+  test("clicking a lower blank paragraph places the caret on that line", async ({ page }) => {
+    await openStudio(page);
+    const story=page.locator(".ProseMirror");
+    await expect(story).toBeFocused();
+    for(let n=0;n<5;n++)await page.keyboard.press("Enter");
+    const lower=story.locator("p").nth(3);
+    await story.evaluate(el=>(el as HTMLElement).blur());
+    await lower.click();
+    await expect(story).toBeFocused();
+    await expect.poll(()=>lower.evaluate(p=>{
+      const c=document.querySelector("[data-studio-caret]")?.getBoundingClientRect();
+      return c?Math.abs(c.top-p.getBoundingClientRect().top):999;
+    })).toBeLessThanOrEqual(2);
+    await page.keyboard.type("x");
+    await expect(lower).toHaveText("x");
+  });
+
+  test("Facing Pages stays disabled even when Double Sided is checked", async ({ page }) => {
+    await openStudio(page,"ur");
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.new"]').click();
+    const dialog=page.getByRole("dialog",{name:"New Document",exact:true});
+    await dialog.getByLabel("Double Sided",{exact:true}).check();
+    await expect(dialog.getByRole("checkbox",{name:/Facing Pages/})).toBeDisabled();
+    await expect(dialog.locator("#studio-facing-pages-note")).toHaveText("جلد آ رہا ہے");
+  });
+
   test("imports InPage fixture page setup as A5 starting at page 77", async ({ page }) => {
     await openStudio(page);
     await page.locator('[data-menu-root="file"]').click();
@@ -211,10 +280,11 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(story).toContainText("السلام علیکم اللہ وبرکاتہ");
   });
 
-  test("Arrow is inactive for typing on load and story ligatures stay enabled", async ({ page }) => {
+  test("Arrow is inactive for typing when selected and story ligatures stay enabled", async ({ page }) => {
     await openStudio(page);
     const story = page.locator(".ProseMirror");
     const before = await story.textContent();
+    await page.locator('[data-studio-tool-button="select"]').click();
     await expect(page.locator('[data-studio-tool-button="select"]')).toHaveAttribute("aria-pressed", "true");
     await expect(story).not.toBeFocused();
     await expect(page.locator('[data-studio-caret]')).toHaveCount(0);

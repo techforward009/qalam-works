@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { isSingleEmptyParagraph } from "../utils/singleEmptyParagraph";
 import { lineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { autoLineHeight } from "../utils/autoLeading";
@@ -515,8 +516,8 @@ function StudioCaret({
       const top = firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
         : lineBoxTop(coords.top, coords.bottom - coords.top, Number.isFinite(leading) ? leading : coords.bottom - coords.top);
       setBox({
-        left: editor.isEmpty ? pageWidthPx - marginRightPx - 3 : (coords.left - rect.left) / scale,
-        top: editor.isEmpty ? marginTopPx : (top - rect.top) / scale,
+        left: isSingleEmptyParagraph(editor.state.doc) && getComputedStyle(owner ?? editor.view.dom).direction === "rtl" ? pageWidthPx - marginRightPx - 3 : (coords.left - rect.left) / scale,
+        top: isSingleEmptyParagraph(editor.state.doc) ? marginTopPx : (top - rect.top) / scale,
         height: Math.max(12, coords.bottom - coords.top) / scale,
       });
     };
@@ -540,8 +541,10 @@ function StudioCaret({
   if (!box) return null;
   return (
     <div
+      key={`${box.left}:${box.top}:${box.height}`}
       data-studio-caret="true"
       style={{
+        animation: "qalam-studio-caret-blink 1060ms step-end infinite",
         position: "absolute",
         left: box.left,
         top: box.top,
