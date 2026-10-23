@@ -25,7 +25,7 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
     try {
       return await fetchImpl(origin + path, {
         ...init, cache: "no-store", redirect: "error",
-        headers: { Authorization: `Bearer ${token}`, ...(init.headers as Record<string, string> | undefined) },
+        headers: { ...(init.headers as Record<string, string> | undefined), Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(60000),
       });
     } catch { throw new ResearchPersistenceError("failed"); }
@@ -50,9 +50,25 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
       if (!Number.isInteger(len) || len < 2 || len > MAX_BYTES) {
         await res.body?.cancel(); throw new ResearchPersistenceError("failed");
       }
-      const bytes = Buffer.from(await res.arrayBuffer());
-      if (bytes.byteLength !== len) throw new ResearchPersistenceError("failed");
-      return bytes.toString("utf8");
+      if (!res.body) throw new ResearchPersistenceError("failed");
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      try {
+        while (true) {
+          const part = await reader.read();
+          if (part.done) break;
+          total += part.value.byteLength;
+          if (total > len || total > MAX_BYTES) {
+            await reader.cancel();
+            throw new ResearchPersistenceError("failed");
+          }
+          chunks.push(part.value);
+        }
+      } catch { throw new ResearchPersistenceError("failed"); }
+      finally { reader.releaseLock(); }
+      if (total !== len) throw new ResearchPersistenceError("failed");
+      return Buffer.concat(chunks.map(chunk => Buffer.from(chunk)), total).toString("utf8");
     },
     async listObjects(prefix) {
       if (prefix !== PREFIX) throw new ResearchPersistenceError("failed");
@@ -62,7 +78,11 @@ export function createResearchR2Client(env: Env, fetchImpl: typeof fetch = fetch
         const params = new URLSearchParams({ prefix });
         if (cursor) params.set("cursor", cursor);
         const res = await request("/v1/objects?" + params);
-        if (res.status !== 200) throw new ResearchPersistenceError("failed");
+        if (res.status !== 200) { await res.body?.cancel(); throw new ResearchPersistenceError("failed"); }
+        const declared = res.headers.get("content-length");
+        if (declared !== null && (!Number.isInteger(Number(declared)) || Number(declared) > 256_000)) {
+          await res.body?.cancel(); throw new ResearchPersistenceError("failed");
+        }
         let data: { paths?: unknown; cursor?: unknown; truncated?: unknown };
         try { data = await res.json(); } catch { throw new ResearchPersistenceError("failed"); }
         if (!Array.isArray(data.paths) || data.paths.length > 1000 ||
