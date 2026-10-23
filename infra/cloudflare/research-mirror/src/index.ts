@@ -8,7 +8,7 @@ interface Env {
   AUTH_TOKEN: string;
 }
 const MAX_BYTES = 25 * 1024 * 1024;
-const KEY = /^research\/v1\/documents\/[A-Za-z0-9_-]{1,128}\.json$/;
+const KEY = /^research\/v1\/documents\/[A-Za-z0-9][A-Za-z0-9_-]{0,127}\.json$/;
 const PREFIX = "research/v1/documents/";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
 const empty = (status: number) => new Response(null, { status, headers });
