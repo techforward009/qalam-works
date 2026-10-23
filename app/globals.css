@@ -2123,3 +2123,9 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
   background: transparent;
   color: inherit;
 }
+
+/* Restarted by the positioned caret key on movement; solid while typing. */
+@keyframes qalam-studio-caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
