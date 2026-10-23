@@ -448,7 +448,7 @@ function FrameShape({
           fontFeatureSettings: "normal",
           fontSize: 16,
           lineHeight: autoLineHeight("Jameel Noori Nastaleeq"),
-          padding: 0,
+          padding: 2,
           outline: "none",
         }}
       />

@@ -27,7 +27,9 @@ for (const zoom of [100, 200]) {
       const naturalWidth = parseFloat(getComputedStyle(prose).width);
       const scale = prose.getBoundingClientRect().width / naturalWidth;
       const frameTop = prose.getBoundingClientRect().top + parseFloat(getComputedStyle(prose).paddingTop) * scale;
-      const lineTop = prose.querySelector("p")!.getBoundingClientRect().top;
+      const paragraph = prose.querySelector("p")!;
+      const range = document.createRange(); range.selectNodeContents(paragraph);
+      const lineTop = Math.min(...[...range.getClientRects()].filter(rect => rect.width > 0).map(rect => rect.top));
       const boxes = [...document.querySelectorAll("[data-studio-line-selection]")].map(el => el.getBoundingClientRect()).sort((a,b) => a.top-b.top);
       if (boxes.length !== 2) return false;
       return Math.abs(lineTop - frameTop) <= 1 && Math.abs(boxes[0].top - frameTop) <= 1
@@ -36,7 +38,7 @@ for (const zoom of [100, 200]) {
     await expect(story).toHaveText("ترجمہ قرآنالسلام علیکم اللہ وبرکاتہ");
   });
 
-  test(`text box selection starts at its inner frame top at ${zoom}%`, async ({ page }) => {
+  test(`text box retains padding and native selection at ${zoom}%`, async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto("/tools/document-studio");
     await expect(page.locator(".ProseMirror")).toBeEditable();
@@ -57,11 +59,11 @@ for (const zoom of [100, 200]) {
       window.dispatchEvent(new Event("resize"));
       document.dispatchEvent(new Event("selectionchange"));
     }, zoom);
-    await expect.poll(async () => {
-      const frame = (await box.boundingBox())!;
-      const first = await page.locator('[data-studio-line-selection]').first().boundingBox();
-      return first ? Math.abs(first.y - (frame.y + zoom / 100)) : 999;
-    }).toBeLessThanOrEqual(1);
+    // Textareas retain their original inset/wrapping and native selection.
+    await expect(box).toHaveCSS("padding", "2px");
+    await expect(page.locator("[data-studio-line-selection]")).toHaveCount(0);
+    await expect(box).toHaveValue("ترجمہ قرآن\nالسلام علیکم");
+    expect(await box.evaluate(el => (el as HTMLTextAreaElement).selectionEnd - (el as HTMLTextAreaElement).selectionStart)).toBeGreaterThan(0);
   });
 }
 

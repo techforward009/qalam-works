@@ -6,6 +6,7 @@ export interface InkLine {
   inkTop: number; inkBottom: number; inkLeft: number; inkRight: number;
   metricTop: number; metricBottom: number;
   boxTop?: number; boxBottom?: number;
+  paintBoxTop?: number;
   horizontalShift?: number;
   blank?: boolean;
   text?: string;
@@ -104,18 +105,15 @@ export function fitHorizontalInk(
  *  A trailing blank caret paragraph must not mint an extra last page. */
 export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] {
   const edgeGuard = 1;
-  let page = 0, shift = 0;
+  let page = 0, shift = 0, paintShift = 0;
   return lines.map((line, index) => {
     const relativeTop = Math.min(line.inkTop, line.boxTop ?? line.inkTop);
     const relativeBottom = Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom);
     const top = line.baseline + relativeTop, bottom = line.baseline + relativeBottom;
     if (relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
-    // Page starts are anchored to the line box, not the font's ink extents.
-    // Keep legacy ink-only/image placement and all fit decisions unchanged.
-    const lineBoxTop = !line.image && line.boxTop !== undefined ? line.baseline + line.boxTop : null;
-    const pageStartShift = lineBoxTop !== null ? -lineBoxTop : edgeGuard - top;
-    if (index === 0 && lineBoxTop !== null) shift = pageStartShift;
-    else if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
+    // Fit decisions use exactly the old shift. A separate paint-only shift cannot
+    // change page membership, heading keeps, or authored page breaks.
+    if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
     let end = index;
     if (line.heading) {
       while (end + 1 < lines.length && lines[end + 1].block === line.block) end++;
@@ -124,19 +122,29 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     const groupBottom = lines[end].baseline + Math.max(lines[end].inkBottom, lines[end].boxBottom ?? lines[end].inkBottom);
     const keepHeading = line.heading && (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
     const trailingBlank = Boolean(line.blank) && !line.image && lines.slice(index).every(item => item.blank && !item.image);
+    let newPage = index === 0;
     let placedBaseline = line.baseline + shift;
     if (index > 0 && line.forceBreak) {
       page++;
-      shift = pageStartShift;
+      shift = edgeGuard - top;
       placedBaseline = line.baseline + shift;
+      newPage = true;
     } else if (index > 0 && trailingBlank) {
       if (bottom + shift > height - edgeGuard) placedBaseline = height - edgeGuard - relativeBottom;
     } else if (index > 0 && (bottom + shift > height - edgeGuard || (keepHeading && groupBottom + shift > height - edgeGuard))) {
       page++;
-      shift = pageStartShift;
+      shift = edgeGuard - top;
       placedBaseline = line.baseline + shift;
+      newPage = true;
     }
-    return { page, baseline: placedBaseline };
+    if (newPage) {
+      const boxTop = line.paintBoxTop ?? line.boxTop;
+      // Nastaliq ink may rise above its line box: preserve the old ink guard.
+      const anchorShift = !line.image && boxTop !== undefined && line.inkTop >= boxTop && line.inkTop >= (line.boxTop ?? boxTop)
+        ? Math.max(-line.baseline - boxTop, edgeGuard - line.baseline - line.inkTop) : edgeGuard - top;
+      paintShift = boxTop !== undefined && !line.image ? anchorShift - shift : 0;
+    }
+    return { page, baseline: placedBaseline + paintShift };
   });
 }
 
@@ -374,7 +382,13 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       ? elementBounds.top
       : first ? baseline(first, 0, (first.data.codePointAt(0) ?? 0) > 0xffff ? 2 : 1) : parseFloat(element.style.top) + item.fontHeight;
     const frameBottom = Math.ceil(Math.max(item.image ? elementBounds.bottom + 1 : measuredBaseline + item.fontHeight, elementBounds.bottom));
-    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image });
+    // Match the editor: mixed sizes share the earliest font box on this line.
+    const fontTops = item.image ? [] : textNodes(element).filter(node => node.length).map(node => {
+      const range = document.createRange(); range.setStart(node, 0); range.setEnd(node, 1);
+      return range.getBoundingClientRect().top;
+    });
+    const paintBoxTop = fontTops.length ? Math.min(...fontTops) - measuredBaseline : undefined;
+    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, paintBoxTop, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image });
     element.dataset.pdfMeasureBaseline = String(measuredBaseline); cursor = frameBottom + Math.max(measurementGap, Math.ceil(item.fontHeight));
     if (cursor > maxStagingHeight) throw new Error(`PDF measurement exceeds the supported ${maxStagingHeight}px staging limit; export blocked`);
   }

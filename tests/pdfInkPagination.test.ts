@@ -1,3 +1,4 @@
+import { performanceDocument } from "./fixtures/documentStudioPerformance";
 import { describe, expect, it } from "vitest";
 import {
   assertPdfMeasurementLimits,
@@ -32,6 +33,24 @@ describe("measured PDF ink pagination", () => {
       expect(placed[1].page).toBe(1);
       expect(placed[1].baseline + next.boxTop).toBe(0);
     }
+  });
+  it("preserves the old guard when ascenders extend above the line box", () => {
+    const overhang = { ...line(30, 0, -30, 5), boxTop: -20, boxBottom: 15 };
+    const next = { ...overhang, baseline: 130, forceBreak: true };
+    const placed = placeInkLines([overhang, next], 100);
+    placed.forEach((item, i) => expect(item.baseline + [overhang, next][i].inkTop).toBe(1));
+    const fontBoxAboveLayoutBox = { ...overhang, paintBoxTop: -40 };
+    expect(placeInkLines([fontBoxAboveLayoutBox], 100)[0].baseline + overhang.inkTop).toBe(1);
+  });
+  it("keeps legacy page assignments for the existing 300-row document at a fit boundary", () => {
+    // Fixed line measurements isolate pagination from browser/font variation.
+    const lines = performanceDocument().content.map((paragraph, index) => ({
+      ...line(25 + index * 32, index), text: paragraph.content[0].text, boxTop: -20, boxBottom: 12,
+    }));
+    const expected = lines.map((_, i) => i < 2 ? 0 : 1 + Math.floor((i - 2) / 3));
+    const placed = placeInkLines(lines, 100);
+    expect(placed.map(item => item.page)).toEqual(expected);
+    expect(placed.at(-1)!.page + 1).toBe(101);
   });
   it("preserves exact baseline distances when lines fit", () => {
     expect(placeInkLines([line(20), line(52), line(84)], 100)).toEqual([{ page: 0, baseline: 20 }, { page: 0, baseline: 52 }, { page: 0, baseline: 84 }]);

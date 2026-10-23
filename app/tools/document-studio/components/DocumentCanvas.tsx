@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { StudioLineLayout } from "./StudioLineLayout";
 import { StudioTextSelection } from "./StudioTextSelection";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
@@ -378,7 +379,7 @@ export default function DocumentCanvas({
           ) : null}
           <div
             ref={scrollerRef}
-            className="min-h-0 min-w-0 flex-1 overflow-auto"
+            className="relative isolate min-h-0 min-w-0 flex-1 overflow-auto"
             data-studio-scroller="true"
             style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined, scrollbarWidth: "none" }}
             onPointerDown={(event) => {
@@ -401,6 +402,7 @@ export default function DocumentCanvas({
           >
             <div
               style={{ width: Math.max(contentWidth, 1), minHeight: contentHeight, position: "relative" }}
+              data-studio-selection-host
               data-ruler-gutter={showRuler ? String(PASTEBOARD_TOP_PX) : undefined}
               data-studio-pasteboard-pad={String(PASTEBOARD_TOP_PX)}
             >
@@ -606,6 +608,7 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
+      <StudioLineLayout editor={editor} />
       <StudioTextSelection editor={editor} zoom={zoomFactor} />
       <style jsx global>{`
         .qalam-editor-content .ProseMirror {
@@ -625,8 +628,7 @@ export default function DocumentCanvas({
           display: flow-root;
           caret-color: transparent;
         }
-        .qalam-editor-content .ProseMirror ::selection,
-        [data-studio-text-frame]::selection {
+        .qalam-editor-content .ProseMirror[data-studio-selection-painted] ::selection {
           background: transparent;
           color: inherit;
         }
