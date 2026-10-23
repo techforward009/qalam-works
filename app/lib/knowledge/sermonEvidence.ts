@@ -1,5 +1,4 @@
 import { completeQuranTranslationFor } from "./completeQuranTranslations";
-import { researchBlobClientFromEnv } from "../../api/research/vercelResearchBlob";
 import { loadKnowledgeBooks } from "./knowledgeBookBackend";
 import { hasSuppliedAnswerText } from "./answerLanguage";
 import { normalizeBookSearch } from "./bookCorpus";
@@ -8,7 +7,7 @@ import { retrieveKnowledge } from "./retrieval";
 import { understandKnowledgeQuestion } from "./questionUnderstanding";
 import { rankKnowledgePassages } from "./passageRanking";
 import { attachCorpusTranslations } from "./suppliedTranslations";
-import { attachBookTranslations } from "./bookTranslations";
+import { attachR2EnglishSermonTranslations } from "./r2EnglishSermonTranslations";
 import { publicDigitalKhattQuranReference } from "../../tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import { QURAN_TRANSLATION_SOURCES } from "../../tools/khateeb-studio/engine/quranTranslationProvider";
 
@@ -30,15 +29,13 @@ export async function collectSermonEvidence(title: string, locale: "ur" | "en", 
   const interpretation = understandKnowledgeQuestion(title, options);
   // Quran-only sermons need no book-store access; the shared book backend
   // reads the verified R2 corpus when selected and never falls back to Blob.
-  const { sources, records, backend } = await loadKnowledgeBooks(scope, locale);
+  const { sources, records } = await loadKnowledgeBooks(scope, locale, { requireR2: true });
   const result = retrieveSermonSources({ question: title, scope, locale, candidateLimit: 16, inferredTopicIds: await interpretation, sources, records,
     quran: publicDigitalKhattQuranReference.listAyahs().map(ayah => {
       const text = completeQuranTranslationFor(ayah.surah, ayah.ayah, locale);
       return { ...ayah, ...(text ? { suppliedTranslation: { text, language: locale, translator: locale === "ur" ? QURAN_TRANSLATION_SOURCES.ur.translatorUr : QURAN_TRANSLATION_SOURCES.en.translatorEn } } : {}) };
     }), quranSha256: publicDigitalKhattQuranReference.getMetadata().sourceSha256! });
   const supplied = attachCorpusTranslations(result, records, sources, locale);
-  const translated = backend === "blob"
-    ? await attachBookTranslations(await researchBlobClientFromEnv(), supplied, locale)
-    : supplied;
+  const translated = locale === "en" ? attachR2EnglishSermonTranslations(supplied, records, sources) : supplied;
   return rankKnowledgePassages({...translated,passages:translated.passages.filter(p=>hasSuppliedAnswerText(p,locale))},options);
 }
