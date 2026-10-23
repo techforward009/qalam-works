@@ -106,8 +106,8 @@ export function fitHorizontalInk(
  *  A trailing blank caret paragraph must not mint an extra last page. */
 export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] {
   const edgeGuard = 1;
-  let page = 0, shift = 0, paintShift = 0;
-  return lines.map((line, index) => {
+  let page = 0, shift = 0;
+  const placements = lines.map((line, index) => {
     const relativeTop = Math.min(line.inkTop, line.boxTop ?? line.inkTop);
     const relativeBottom = Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom);
     const top = line.baseline + relativeTop, bottom = line.baseline + relativeBottom;
@@ -123,30 +123,32 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     const groupBottom = lines[end].baseline + Math.max(lines[end].inkBottom, lines[end].boxBottom ?? lines[end].inkBottom);
     const keepHeading = line.heading && (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
     const trailingBlank = Boolean(line.blank) && !line.image && lines.slice(index).every(item => item.blank && !item.image);
-    let newPage = index === 0;
     let placedBaseline = line.baseline + shift;
     if (index > 0 && line.forceBreak) {
       page++;
       shift = edgeGuard - top;
       placedBaseline = line.baseline + shift;
-      newPage = true;
     } else if (index > 0 && trailingBlank) {
       if (bottom + shift > height - edgeGuard) placedBaseline = height - edgeGuard - relativeBottom;
     } else if (index > 0 && (bottom + shift > height - edgeGuard || (keepHeading && groupBottom + shift > height - edgeGuard))) {
       page++;
       shift = edgeGuard - top;
       placedBaseline = line.baseline + shift;
-      newPage = true;
     }
-    if (newPage) {
-      const boxTop = line.paintBoxTop ?? line.boxTop;
-      // Nastaliq ink may rise above its line box: preserve the old ink guard.
-      paintShift = boxTop !== undefined && !line.image ? firstLinePaintShift(
-        placedBaseline + boxTop, placedBaseline + line.inkTop,
-        placedBaseline + relativeBottom, 0, height, placedBaseline + (line.boxTop ?? boxTop), edgeGuard,
-      ) : 0;
-    }
-    return { page, baseline: placedBaseline + (newPage ? paintShift : 0) };
+    return { page, baseline: placedBaseline };
+  });
+  return placements.map((placement, index) => {
+    if (index > 0 && placements[index - 1].page === placement.page) return placement;
+    const line = lines[index], boxTop = line.paintBoxTop ?? line.boxTop;
+    if (boxTop === undefined || line.image) return placement;
+    const next = placements[index + 1];
+    const nextTop = next?.page === placement.page ? next.baseline + (lines[index + 1].boxTop ?? lines[index + 1].inkTop) : Infinity;
+    const paintShift = firstLinePaintShift(
+      placement.baseline + boxTop, placement.baseline + line.inkTop,
+      placement.baseline + Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom),
+      0, height, placement.baseline + (line.boxTop ?? boxTop), edgeGuard, nextTop,
+    );
+    return { ...placement, baseline: placement.baseline + paintShift };
   });
 }
 

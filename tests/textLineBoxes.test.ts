@@ -1,16 +1,20 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { groupVisualLineRects, selectedLineBoxes } from "../app/tools/document-studio/utils/textLineBoxes";
+import { groupVisualLineRects, selectedLineBoxes, lineBoxTop } from "../app/tools/document-studio/utils/textLineBoxes";
 
 describe("visual line selection boxes", () => {
-  it("gives mixed Urdu/Latin sizes the same top and height and clamps the next line", () => {
+  it("gives mixed Urdu/Latin sizes the same top and height and keeps the full line-height", () => {
     const boxes = groupVisualLineRects([
       { left: 0, top: 10, width: 80, height: 40, fontTop: 10, fontBottom: 40 },
       { left: 80, top: 20, width: 40, height: 20, fontTop: 20, fontBottom: 35 },
-      { left: 0, top: 48, width: 90, height: 40, fontTop: 48, fontBottom: 78 },
+      { left: 0, top: 51, width: 90, height: 40, fontTop: 51, fontBottom: 81 },
     ]);
-    expect(boxes.slice(0, 2).map(({top, height}) => ({top, height}))).toEqual([{top:10,height:38},{top:10,height:38}]);
-    expect(boxes[0].top + boxes[0].height).toBe(boxes[2].top);
+    expect(boxes.slice(0, 2).map(({top, height}) => ({top, height}))).toEqual([{top:10,height:40},{top:10,height:40}]);
+    expect(boxes[2].top - boxes[0].top - boxes[0].height).toBe(1);
+  });
+  it("subtracts half-leading at both zoom levels", () => {
+    expect(lineBoxTop(106, 28, 40)).toBe(100);
+    expect(lineBoxTop(212, 56, 80)).toBe(200);
   });
   it("walks a text common ancestor directly and rejects offscreen rects", () => {
     const root = document.createElement("div"); root.style.cssText = "width:200px;line-height:20px";

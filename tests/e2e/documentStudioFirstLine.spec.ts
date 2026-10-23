@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { unicodeInpage } from "../fixtures/inpage";
 import { placeInkLines } from "../../app/tools/document-studio/utils/pdfInkPagination";
 import { expect, test } from "@playwright/test";
@@ -14,6 +15,8 @@ for (const zoom of [100, 200]) {
     await page.keyboard.type("ترجمہ قرآن");
     await page.keyboard.press("Shift+Enter");
     await page.keyboard.type("السلام علیکم اللہ وبرکاتہ");
+    await page.keyboard.press("Shift+Enter");
+    await page.keyboard.type("یہ تیسری سطر ہے");
     await page.keyboard.press("Control+A");
     await page.locator('[data-studio-font-family]').selectOption({ label: "Mehr Nastaliq Web" });
     await page.locator('[data-studio-font-size]').selectOption("24");
@@ -38,16 +41,26 @@ for (const zoom of [100, 200]) {
         const prior = lines[lines.length-1];
         if (prior && Math.abs(prior[0].top-box.top) < 1) prior.push(box); else lines.push([box]);
       }
-      if (lines.length !== 2) return { visualLines: lines.length };
+      if (lines.length !== 3) return { visualLines: lines.length };
       const run = paragraph.querySelector<HTMLElement>("[data-studio-line-run]")!;
       const leading = parseFloat(getComputedStyle(run).lineHeight) * scale;
       const blockDelta = Math.abs(lineTop-frameTop), highlightDelta = Math.abs(boxes[0].top-frameTop);
       const heightError = Math.max(...boxes.map(box => Math.abs(box.height-leading)));
-      const gap = lines[1][0].top-Math.max(...lines[0].map(box=>box.bottom));
+      // The last two natural pixels are transparent, preserving a visible white gap.
+      const gap = lines[1][0].top-Math.max(...lines[0].map(box=>box.bottom)) + 2*scale;
+      const laterError = Math.max(...lines.slice(1).map((line,index) => Math.abs(line[0].top - (paragraph.getBoundingClientRect().top + (index+1)*leading))));
       return { block: blockDelta <= 1 ? true : blockDelta, highlight: highlightDelta <= 1 ? true : highlightDelta,
-        leading: heightError <= 1 ? true : heightError, gap: gap >= 1 ? true : gap };
-    })).toEqual({block:true,highlight:true,leading:true,gap:true});
-    await expect(story).toHaveText("ترجمہ قرآنالسلام علیکم اللہ وبرکاتہ");
+        later: laterError <= 1 ? true : laterError, leading: heightError <= 1 ? true : heightError, gap: gap >= 1 ? true : gap };
+    })).toEqual({block:true,highlight:true,later:true,leading:true,gap:true});
+    await expect(story).toHaveText("ترجمہ قرآنالسلام علیکم اللہ وبرکاتہیہ تیسری سطر ہے");
+    await page.keyboard.press("Control+End");
+    await expect.poll(() => story.evaluate(root => {
+      const paragraph = root.querySelector("p")!, run = paragraph.querySelector<HTMLElement>("[data-studio-line-run]")!;
+      const scale = root.getBoundingClientRect().width / parseFloat(getComputedStyle(root).width);
+      const expectedTop = paragraph.getBoundingClientRect().top + 2*parseFloat(getComputedStyle(run).lineHeight)*scale;
+      const caret = document.querySelector("[data-studio-caret]");
+      return caret ? Math.abs(caret.getBoundingClientRect().top-expectedTop) : 999;
+    })).toBeLessThanOrEqual(1);
   });
 
   test(`text box retains padding and native selection at ${zoom}%`, async ({ page }) => {
@@ -76,6 +89,18 @@ for (const zoom of [100, 200]) {
     await expect(page.locator("[data-studio-line-selection]")).toHaveCount(0);
     await expect(box).toHaveValue("ترجمہ قرآن\nالسلام علیکم");
     expect(await box.evaluate(el => (el as HTMLTextAreaElement).selectionEnd - (el as HTMLTextAreaElement).selectionStart)).toBeGreaterThan(0);
+    // Real production pixels, not just a non-collapsed range: a bare global
+    // transparent ::selection rule makes this native blue highlight disappear.
+    const countBlue = async () => {
+      const { data, info } = await sharp(await box.screenshot()).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      let count = 0;
+      for (let i = 0; i < data.length; i += info.channels) if (data[i+2] > data[i]+40 && data[i+2] > data[i+1]+30) count++;
+      return count;
+    };
+    const selected = await countBlue();
+    await box.evaluate(el => { const input = el as HTMLTextAreaElement; input.setSelectionRange(0,0); });
+    const collapsed = await countBlue();
+    expect(selected - collapsed).toBeGreaterThan(100);
   });
 }
 
@@ -104,8 +129,11 @@ test("a new page starts its first selected line at the top margin", async ({ pag
 });
 
 test("a heading followed by body text uses the same first-line-only rule as PDF", async ({ page }) => {
+  // Isolate line painting from the existing heading/float pagination behavior.
+  // Heading pagination is outside this PR; this fixture has one controlled frame.
   await page.setViewportSize({width:1920,height:1080});
   await page.goto("/tools/document-studio");
+  await page.addStyleTag({content:".ProseMirror h1 { clear: none !important; }"});
   const story = page.locator(".ProseMirror");
   await expect(story).toBeEditable();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();

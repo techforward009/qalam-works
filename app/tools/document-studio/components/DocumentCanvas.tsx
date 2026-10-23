@@ -628,10 +628,6 @@ export default function DocumentCanvas({
           display: flow-root;
           caret-color: transparent;
         }
-        .qalam-editor-content .ProseMirror[data-studio-selection-painted] ::selection {
-          background: transparent;
-          color: inherit;
-        }
         [data-studio-scroller]::-webkit-scrollbar { width: 0; height: 0; display: none; }
         .qalam-editor-content.qalam-view-pages .ProseMirror.qalam-pagination {
           padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
@@ -847,10 +843,6 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror blockquote {
           clear: both;
         }
-        /* Headings must not clear the pagination widget's full stack of floats. */
-        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6) {
-          clear: none;
-        }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
           outline: 2px solid #B8935A;
           outline-offset: 3px;
@@ -867,10 +859,6 @@ export default function DocumentCanvas({
           opacity: 0;
           transition: opacity .15s ease;
           cursor: nwse-resize;
-        }
-        /* Headings must not clear the pagination widget's full stack of floats. */
-        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6) {
-          clear: none;
         }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-handle],
         .qalam-editor-content .ProseMirror [data-resize-container]:hover [data-resize-handle] { opacity: 1; }

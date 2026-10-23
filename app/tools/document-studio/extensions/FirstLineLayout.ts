@@ -184,7 +184,8 @@ class FirstLineView {
         if (first.top >= frameBottom) continue;
         let lo = unchangedSize ? cached.to : from, hi = unchangedSize ? cached.to : end;
         while (lo < hi) { const mid = Math.ceil((lo + hi) / 2); if (natural(mid).baseline <= first.baseline + 1) lo = mid; else hi = mid - 1; }
-        const to = lo;
+        // Decorations use an exclusive end; include the last character of a soft-wrapped line.
+        const to = !unchangedSize && lo < end && view.state.doc.resolve(lo).nodeAfter?.isText ? lo + 1 : lo;
         let lineTop = first.top, inkTop = first.top, inkBottom = first.bottom;
         let leading = parseFloat(getComputedStyle(dom).lineHeight)*scale || first.bottom-first.top;
         let measuredText = false;
@@ -208,7 +209,18 @@ class FirstLineView {
           measuredText = true;
         });
         const layoutTop = from === start && bounds.top >= frameTop-1 ? bounds.top : lineTop-(leading-(first.bottom-first.top))/2;
-        const offset = firstLinePaintShift(lineTop,inkTop,Math.max(inkBottom,layoutTop+leading),frameTop,frameBottom,layoutTop,scale)/scale;
+        // The following line stays in normal flow; never paint the first line into it.
+        let nextTop = Infinity;
+        const nextPos = to < end ? to + (view.state.doc.resolve(to).nodeAfter?.isText ? 0 : 1) : null;
+        if (nextPos !== null && nextPos <= end) {
+          const next = natural(nextPos);
+          const nextLeading = parseFloat(getComputedStyle(next.parent).lineHeight) * scale;
+          nextTop = next.top - (nextLeading - (next.bottom - next.top)) / 2;
+        } else if (candidate + 1 < state.blocks.length) {
+          const nextBlock = view.nodeDOM(state.blocks[candidate + 1]) as HTMLElement | null;
+          if (nextBlock) nextTop = nextBlock.getBoundingClientRect().top;
+        }
+        const offset = firstLinePaintShift(lineTop,inkTop,Math.max(inkBottom,layoutTop+leading),frameTop,frameBottom,layoutTop,scale,nextTop)/scale;
         runs.push({block,from,to,offset,empty:from===to,selectionOffset:(frameTop-lineTop)/scale-offset,page,width:bounds.width/scale,height:bounds.height/scale});
         break; // Only the FIRST line of this page receives an offset.
       }

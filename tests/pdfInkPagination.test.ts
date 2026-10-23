@@ -56,7 +56,7 @@ describe("measured PDF ink pagination", () => {
     const first = { ...line(25), boxTop: -20, boxBottom: 12, paintBoxTop: -60 };
     const last = { ...line(87), boxTop: -20, boxBottom: 12 };
     const placed = placeInkLines([first, last], 100);
-    expect(placed[0].baseline + first.boxBottom).toBeLessThanOrEqual(99);
+    expect(placed[1].baseline + last.boxTop - (placed[0].baseline + first.boxBottom)).toBeGreaterThanOrEqual(1);
     expect(placed[1]).toEqual({page:0,baseline:87});
     expect(placed[1].baseline + last.boxBottom).toBe(99);
     expect(placeInkLines([first], 50)[0].baseline + first.boxBottom).toBe(49);
