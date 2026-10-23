@@ -50,7 +50,8 @@ export default {
     }
     if (request.method === "PUT") {
       if (!request.headers.get("content-type")?.startsWith("application/json")) return empty(415);
-      const length = Number(request.headers.get("content-length"));
+      const declaredLength = request.headers.get("content-length");
+      const length = declaredLength === null ? NaN : Number(declaredLength);
       if (!Number.isInteger(length) || length < 2 || length > MAX_BYTES) return empty(413);
       let bytes: Uint8Array;
       try {
