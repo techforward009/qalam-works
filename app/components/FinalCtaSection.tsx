@@ -10,7 +10,7 @@ export default function FinalCtaSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-gradient-to-br from-[#1F6C54] to-[#115E59] py-20 md:py-24" dir={dir}>
+    <section className="bg-[#1F6C54] bg-gradient-to-br from-[#1F6C54] to-[#115E59] py-20 md:py-24" dir={dir}>
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className={`mb-6 text-3xl font-bold leading-tight text-white md:text-[2.25rem] ${language === "ur" ? "font-nastaliq font-normal leading-[2.05] md:whitespace-nowrap" : ""}`}>
           {t.headline}

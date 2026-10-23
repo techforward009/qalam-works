@@ -31,7 +31,7 @@ export function DateStudioNav() {
             {copy.description}
           </p>
         </div>
-        <Link href="/tools/date-converter"
+        <Link prefetch={false} href="/tools/date-converter"
           className={`inline-flex min-h-10 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-[#1A3A2A]/25 px-4 py-2 text-sm font-semibold text-[#1A3A2A] hover:bg-[#edf1e9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b58e4d] dark:border-[#78917a] dark:text-[#e8ede9] dark:hover:bg-[#294332] sm:self-auto ${isUr ? "font-naskh" : ""}`}>
           {copy.action}
           <span aria-hidden="true">{isUr ? "←" : "→"}</span>

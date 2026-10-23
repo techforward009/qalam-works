@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Immutable fonts must get a new filename whenever their contents change.
+        source: "/fonts/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/quran/:path*.json",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800" }],
+      },
+      {
         source: "/(.*)",
         headers: [
           {

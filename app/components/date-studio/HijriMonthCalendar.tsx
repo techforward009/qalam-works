@@ -68,7 +68,7 @@ export function HijriMonthCalendar({
       <div className="grid grid-cols-7" dir={isUr ? "rtl" : "ltr"}>
         {cells.map((day, index) =>
           day ? (
-            <Link
+            <Link prefetch={false}
               key={day.gregorianIso}
               href={`/date/${day.gregorianIso}`}
               className={`min-h-[88px] border-b border-e border-[#1A3A2A]/7 p-2.5 transition-colors hover:bg-[#F7F5EF] dark:border-[#2a3d30] dark:hover:bg-[#1e3527] ${isUr ? "text-right font-naskh" : "text-left"}`}

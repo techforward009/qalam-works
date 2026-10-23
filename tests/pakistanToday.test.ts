@@ -20,8 +20,9 @@ it("recomputes /today per request rather than freezing the build date",()=>{
  vi.setSystemTime(new Date("2026-10-20T19:00:00Z"));
  expect(()=>TodayPage()).toThrow("/date/2026-10-21");
 });
-it("publishes the today and current-year calendar entry points",()=>{
+it("publishes current-year calendars but excludes the blocked-date redirect",()=>{
  expect(sitemap().map(entry=>entry.url)).toEqual(expect.arrayContaining([
-  "https://www.qalamworks.com/today",`https://www.qalamworks.com/calendar/${calendarYear}`,`https://www.qalamworks.com/hijri/${hijriYear}`,
+  `https://www.qalamworks.com/calendar/${calendarYear}`,`https://www.qalamworks.com/hijri/${hijriYear}`,
  ]));
+ expect(sitemap().map(entry=>entry.url)).not.toContain("https://www.qalamworks.com/today");
 });

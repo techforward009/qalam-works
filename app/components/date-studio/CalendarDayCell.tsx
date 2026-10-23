@@ -75,7 +75,7 @@ export function CalendarDayCell({
     "relative block overflow-visible border-b border-e border-[var(--calendar-grid)] bg-[var(--calendar-cell)] p-0 transition-colors";
 
   return interactive ? (
-    <Link
+    <Link prefetch={false}
       href={`/date/${cell.gregorianIso}`}
       className={`${className} hover:brightness-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--calendar-frame)]`}
       style={cellStyle}

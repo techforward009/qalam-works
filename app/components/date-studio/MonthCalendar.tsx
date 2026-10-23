@@ -113,7 +113,7 @@ export function MonthCalendar({
   const titleClass = `whitespace-nowrap text-center font-black leading-snug font-nastaliq text-[var(--calendar-month-title)]`;
 
   const titleNode = titleHref ? (
-    <Link href={titleHref} className={`${titleClass} transition-opacity hover:opacity-80`} style={titleStyle}>
+    <Link prefetch={false} href={titleHref} className={`${titleClass} transition-opacity hover:opacity-80`} style={titleStyle}>
       {title}
     </Link>
   ) : (
