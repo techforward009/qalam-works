@@ -26,7 +26,22 @@ describe("research private R2 client", () => {
   it("rejects unexpected keys and oversized payloads", async () => {
     const client = createResearchR2Client(env, vi.fn() as unknown as typeof fetch);
     await expect(client.putObject("user-feedback/v1/x.json", "{}")).rejects.toThrow();
+    await expect(client.putObject("research/v1/documents/_bad.json", "{}")).rejects.toThrow();
     await expect(client.putObject(key, "x".repeat(25 * 1024 * 1024 + 1))).rejects.toThrow();
+  });
+  it("reads paginated document lists without touching other prefixes", async () => {
+    const calls: string[] = [];
+    const fetcher = vi.fn(async (url: string) => {
+      calls.push(url);
+      const next = url.includes("cursor=next");
+      return Response.json(next
+        ? { paths: ["research/v1/documents/doc_2.json"], truncated: false }
+        : { paths: [key], cursor: "next", truncated: true });
+    });
+    const client = createResearchR2Client(env, fetcher as unknown as typeof fetch);
+    expect(await client.listObjects("research/v1/documents/")).toEqual([key, "research/v1/documents/doc_2.json"]);
+    expect(calls).toHaveLength(2);
+    await expect(client.listObjects("khateeb-foundational/v1/")).rejects.toThrow();
   });
   it("never falls back when R2 fails", async () => {
     const client = createResearchR2Client(env, vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch);
