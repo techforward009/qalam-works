@@ -43,6 +43,12 @@ describe("research private R2 client", () => {
     expect(calls).toHaveLength(2);
     await expect(client.listObjects("khateeb-foundational/v1/")).rejects.toThrow();
   });
+  it("rejects missing or mismatched response lengths", async () => {
+    const missing = createResearchR2Client(env, vi.fn(async () => new Response("{}", { status: 200 })) as unknown as typeof fetch);
+    await expect(missing.getObject(key)).rejects.toThrow();
+    const truncated = createResearchR2Client(env, vi.fn(async () => new Response("{}", { status: 200, headers: { "content-length": "20" } })) as unknown as typeof fetch);
+    await expect(truncated.getObject(key)).rejects.toThrow();
+  });
   it("never falls back when R2 fails", async () => {
     const client = createResearchR2Client(env, vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch);
     await expect(client.getObject(key)).rejects.toThrow();
