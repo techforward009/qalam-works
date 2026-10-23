@@ -13,7 +13,8 @@ vi.mock("@/app/tools/date-converter/utils/dateEvents", () => import("../app/tool
 vi.mock("@/app/tools/date-converter/utils/dateEngine", () => import("../app/tools/date-converter/utils/dateEngine"));
 
 describe("bounded and shared-cacheable date pages", () => {
-  it.each(["0001-01-01", "9999-12-31", "1899-12-31", "2101-01-01"])("rejects %s before generating content", async date => {
+  it.each(["0001-01-01", "9999-12-31", "1899-12-31", "2101-01-01", "2026-02-30",
+    "2026-10-23.5", "02026-10-23", "0002026-10-23", "2026-0x0A-23", "2026-1e1-23", "1900-1-1"])("rejects %s before generating content", async date => {
     await expect(DatePage({ params: Promise.resolve({date}) })).rejects.toThrow("NEXT_NOT_FOUND");
   });
   it.each(["1900-01-01", "2026-10-23", "2100-12-31"])("renders %s", async date => {

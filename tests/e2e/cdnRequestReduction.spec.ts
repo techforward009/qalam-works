@@ -8,7 +8,9 @@ test("date bounds and shared caching in a production build", async ({request,pag
   const get=(path:string,maxRedirects?:number)=>request.get(path,{
     headers:{"User-Agent":"Twitterbot/1.0"},maxRedirects,timeout:60000,
   });
-  for (const date of ["0001-01-01","9999-12-31"]) expect((await get(`/date/${date}`)).status()).toBe(404);
+  for (const date of ["0001-01-01","9999-12-31","1899-12-31","2101-01-01","2026-02-30",
+    "2026-10-23.5","02026-10-23","0002026-10-23","2026-0x0A-23","2026-1e1-23","1900-1-1"]) expect((await get(`/date/${date}`)).status()).toBe(404);
+  for (const date of ["1900-01-01","2100-12-31"]) expect((await get(`/date/${date}`)).status()).toBe(200);
   for (const phase of ["initial", "cached"]) {
     const response=await get("/date/2026-10-23");
     expect(response.status(),phase).toBe(200);
@@ -33,7 +35,7 @@ test("date bounds and shared caching in a production build", async ({request,pag
 
 type Ink = { top: number; bottom: number; height: number; edgePixels: number };
 async function textInk(button: import("@playwright/test").Locator): Promise<Ink> {
-  const {data,info}=await sharp(await button.screenshot()).removeAlpha().raw().toBuffer({resolveWithObject:true});
+  const {data,info}=await sharp(await button.screenshot({ scale: "css" })).removeAlpha().raw().toBuffer({resolveWithObject:true});
   let top=info.height,bottom=-1,edgePixels=0;
   // Exclude the pill ends. The safety scan also detects ink clipped into the
   // excluded top/bottom 2px, rather than passing containment by construction.

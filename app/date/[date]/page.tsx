@@ -11,6 +11,7 @@ export const revalidate = 86400;
 export async function generateStaticParams() { return []; }
 
 function parseValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const p = value.split("-").map(Number);
   if (p.length !== 3 || p.some(Number.isNaN)) return null;
   const [year, month, day] = p;
