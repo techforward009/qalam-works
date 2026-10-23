@@ -11,7 +11,7 @@ export default function ReadySermonComposer({locale,project,onPrepared,onCopy,on
  const [libraryOffline,setLibraryOffline]=useState(true);const [libraryChecked,setLibraryChecked]=useState(false);
  useEffect(()=>{
   const abort=new AbortController();
-  fetch("/api/khateeb/library",{cache:"no-store",signal:abort.signal})
+  fetch("/api/khateeb/library",{signal:abort.signal})
    .then(async response=>{if(!response.ok)return false;const catalog=await response.json();return catalog?.ready===true;})
    .then(ready=>{if(!abort.signal.aborted){setLibraryOffline(!ready);setLibraryChecked(true);}})
    .catch(()=>{if(!abort.signal.aborted){setLibraryOffline(true);setLibraryChecked(true);}});

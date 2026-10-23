@@ -18,7 +18,7 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
   const { year, month } = await params;
   const y = Number(year);
   const m = Number(month);
-  if (!Number.isInteger(y) || y <= 0 || !Number.isInteger(m) || m < 1 || m > 12) notFound();
+  if (!Number.isInteger(y) || y < 1317 || y > 1500 || !Number.isInteger(m) || m < 1 || m > 12) notFound();
 
   const reviewed = getReviewedPakistanHijriMonth(y, m);
   const days = reviewed
@@ -33,8 +33,8 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
   return (
     <main className="mx-auto max-w-5xl p-4 sm:p-6">
       <DateStudioRouteNav
-        previousHref={`/hijri/${previousMonth.year}/${previousMonth.month}`}
-        nextHref={`/hijri/${nextMonth.year}/${nextMonth.month}`}
+        previousHref={previousMonth.year >= 1317 ? `/hijri/${previousMonth.year}/${previousMonth.month}` : undefined}
+        nextHref={nextMonth.year <= 1500 ? `/hijri/${nextMonth.year}/${nextMonth.month}` : undefined}
         periodLabel={{ en: `${HIJRI_MONTHS_EN[m - 1]} ${y}`, ur: `${HIJRI_MONTHS_UR[m - 1]} ${y}` }}
         currentCalendar="hijri"
         counterpartHref={`/calendar/${gregorianStart.year}/${gregorianStart.month}`}
@@ -44,3 +44,6 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
     </main>
   );
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

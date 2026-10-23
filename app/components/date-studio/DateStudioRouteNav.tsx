@@ -27,8 +27,8 @@ export type ExplorerPeriodLabel = string | { en: string; ur: string };
 export type ExplorerCalendarKind = "gregorian" | "hijri";
 
 export interface DateStudioRouteNavProps {
-  previousHref: string;
-  nextHref: string;
+  previousHref?: string;
+  nextHref?: string;
   periodLabel: ExplorerPeriodLabel;
   currentCalendar: ExplorerCalendarKind;
   counterpartHref: string;
@@ -80,15 +80,15 @@ export function DateStudioRouteNav({
         aria-label="Date Studio period navigation"
         className="grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)_minmax(5.5rem,auto)] items-center gap-2 px-3 py-3 sm:px-4"
       >
-        <Link href={previousHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
+        {previousHref ? <Link href={previousHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
           {t.previous}
-        </Link>
+        </Link> : <span aria-hidden="true" />}
         <h1 className={`truncate text-center text-lg font-bold text-[#1A3A2A] sm:text-2xl dark:text-[#e8ede9] ${naskh}`}>
           {title}
         </h1>
-        <Link href={nextHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
+        {nextHref ? <Link href={nextHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
           {t.next}
-        </Link>
+        </Link> : <span aria-hidden="true" />}
       </nav>
 
       <div className="border-t border-[#1A3A2A]/8 px-3 py-3 sm:px-4 dark:border-[#2a3d30]">

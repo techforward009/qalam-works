@@ -37,7 +37,7 @@ it('catalog, validated upload, source-specific search and full passage survive n
  const imported=await upload(await fixture());expect(imported.status).toBe(200);expect(await imported.json()).toMatchObject({recordCount:7});
  expect(await (await GET(request())).json()).toMatchObject({ready:true,recordCount:7});
  const response=await GET(request('?op=search&sourceId=sahifa-ar&query=صبر&number=۲۸'));
- expect(response.headers.get('Cache-Control')).toBe('private, no-store');expect(await response.json()).toMatchObject({total:1,hits:[{sourceId:'sahifa-ar',number:28}]});
+ expect(response.headers.get('Cache-Control')).toBe('public, max-age=60, s-maxage=86400, stale-while-revalidate=604800');expect(await response.json()).toMatchObject({total:1,hits:[{sourceId:'sahifa-ar',number:28}]});
  const detail=await GET(request('?op=record&sourceId=sahifa-ar&id=sahifa-ar:supplication:28'));expect(await detail.json()).toMatchObject({record:{paragraphs:[{text:'صَبْرٌ امید'}],reference:{printPage:null}}});
  expect((await GET(request('?op=record&sourceId=sahifa-en&id=sahifa-ar:supplication:28'))).status).toBe(404);
 });

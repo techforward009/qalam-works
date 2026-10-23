@@ -53,15 +53,32 @@ describe("Book Library R2 route switch", () => {
     r2.record.mockResolvedValue({ record: { id: "nahj-ar:sermon:1", paragraphs: [] }, source: { id: "nahj-ar" } });
     const response = await GET(new NextRequest("https://qalam.test/api/khateeb/library?op=record&sourceId=nahj-ar&id=nahj-ar%3Asermon%3A1"));
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=86400, stale-while-revalidate=604800");
     expect(await response.json()).toMatchObject({ record: { id: "nahj-ar:sermon:1" } });
     expect(r2.record).toHaveBeenCalledWith("nahj-ar", "nahj-ar:sermon:1");
     expect(blob).not.toHaveBeenCalled();
+  });
+
+  it("caches the anonymous catalog for five minutes and keeps invalid reads private", async () => {
+    const catalog = await GET(new NextRequest("https://qalam.test/api/khateeb/library"));
+    expect(catalog.status).toBe(200);
+    expect(catalog.headers.get("cache-control")).toBe("public, max-age=60, s-maxage=300, stale-while-revalidate=604800");
+    const invalid = await GET(new NextRequest("https://qalam.test/api/khateeb/library?op=invalid"));
+    expect(invalid.status).toBe(400);
+    expect(invalid.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it.each([["cookie", "qalam_research_session=owner"], ["authorization", "Bearer owner"]])("keeps credential-bearing library reads private: %j", async (name, value) => {
+    const response = await GET(new NextRequest("https://qalam.test/api/khateeb/library", { headers: { [name]: value } }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("fails closed when the R2 mirror is unavailable", async () => {
     r2.catalog.mockRejectedValue(new Error("offline"));
     const response = await GET(new NextRequest("https://qalam.test/api/khateeb/library?op=catalog"));
     expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(await response.json()).toEqual({ code: "unavailable" });
     expect(blob).not.toHaveBeenCalled();
   });

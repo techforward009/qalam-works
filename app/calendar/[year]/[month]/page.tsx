@@ -37,3 +37,6 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
     </main>
   );
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

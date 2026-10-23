@@ -43,7 +43,7 @@ describe("Urdu-first public discovery", () => {
     expect(toolsInGroup(ALL_TOOLS_GROUPS.find(group => group.id === "write")!).map(tool => tool.id)).toContain("roman_converter");
     expect(toolsInGroup(ALL_TOOLS_GROUPS.find(group => group.id === "tools")!).map(tool => tool.id)).not.toContain("roman_converter");
     expect(grouped.filter(tool => tool.route === "/tools/document-studio")).toHaveLength(1);
-    expect(robots().rules).toMatchObject({ disallow: privateRoute });
+    expect(robots().rules).toMatchObject({ disallow: ["/api/", privateRoute] });
   });
 
   it.each(["en", "ur"] as const)("keeps the same groups and route availability in %s", language => {
