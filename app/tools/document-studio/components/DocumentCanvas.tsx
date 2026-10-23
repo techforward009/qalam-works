@@ -2,8 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { StudioLineLayout } from "./StudioLineLayout";
+import { StudioTextSelection } from "./StudioTextSelection";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { blockAutoLineHeight } from "../utils/autoLeading";
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
@@ -227,6 +232,29 @@ export default function DocumentCanvas({
     onZoomPercentChange?.(Math.round(zoomFactor * 100));
   }, [zoomFactor, onZoomPercentChange]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const key = new PluginKey("qalam-auto-leading");
+    const typography = documentSettings.typography;
+    editor.registerPlugin(new Plugin({
+      key,
+      props: {
+        decorations(state) {
+          const decorations: Decoration[] = [];
+          state.doc.descendants((node, pos) => {
+            if (node.type.name !== "paragraph") return;
+            if (typeof node.attrs.lineHeight === "number") return false;
+            const leading = blockAutoLineHeight(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography.lineHeight, node.attrs.dir ?? dir);
+            decorations.push(Decoration.node(pos, pos + node.nodeSize, { style: `line-height:${leading}` }));
+            return false;
+          });
+          return DecorationSet.create(state.doc, decorations);
+        },
+      },
+    }));
+    return () => { if (!editor.isDestroyed) editor.unregisterPlugin(key); };
+  }, [editor, documentSettings.typography, dir]);
+
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
     "--qalam-line-height": documentSettings.typography.lineHeight,
@@ -351,7 +379,7 @@ export default function DocumentCanvas({
           ) : null}
           <div
             ref={scrollerRef}
-            className="min-h-0 min-w-0 flex-1 overflow-auto"
+            className="relative isolate min-h-0 min-w-0 flex-1 overflow-auto"
             data-studio-scroller="true"
             style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined, scrollbarWidth: "none" }}
             onPointerDown={(event) => {
@@ -512,6 +540,7 @@ export default function DocumentCanvas({
                     )}
                     <div
                       className="relative z-[1] cursor-text"
+                      data-studio-selection-host
                       style={
                         isPages
                           ? { width: "100%", minHeight: stackHeight, cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : "text" }
@@ -519,7 +548,7 @@ export default function DocumentCanvas({
                       }
                       dir={dir}
                       onClick={(event) => {
-                        if (tool === "hand") return;
+                        if (tool !== "text") return;
                         onWrapperClick(event);
                       }}
                       role="textbox"
@@ -539,6 +568,7 @@ export default function DocumentCanvas({
                             tool={tool}
                             frames={frames}
                             onFramesChange={onFramesChange ?? (() => undefined)}
+                            onToolAction={chooseTool}
                             pageCount={pageCount}
                             pageWidthPx={natural.widthPx}
                             pageHeightPx={natural.heightPx}
@@ -565,7 +595,7 @@ export default function DocumentCanvas({
             <div className="flex h-full shrink-0 items-center gap-px px-px" data-studio-page-nav="true" data-latin-control="true" style={{ color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}>
               <button type="button" disabled aria-label={isUr ? "ماسٹر صفحات" : "Master pages"} title={isUr ? "جلد آ رہا ہے" : "Coming soon"} style={{ ...navButton, width: 11, color: "#808080" }}>M</button>
               <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} style={navButton} onClick={() => stepPage(-1)}>{"<"}</button>
-              <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{pageCount}</span>
+              <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{(documentSettings.page.firstPageNumber ?? 1) - 1 + Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{(documentSettings.page.firstPageNumber ?? 1) - 1 + pageCount}</span>
               <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} style={navButton} onClick={() => stepPage(1)}>{">"}</button>
               <span style={{ ...navField, width: 46 }} data-studio-zoom-label="true">{percentLabel}</span>
               <span className="sr-only" data-studio-page-count={pageCount}>Pages {pageCount}</span>
@@ -578,7 +608,13 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
+      <StudioLineLayout editor={editor} />
+      <StudioTextSelection editor={editor} zoom={zoomFactor} />
       <style jsx global>{`
+        .qalam-editor-content .ProseMirror {
+          font-variant-ligatures: normal;
+          font-feature-settings: normal;
+        }
         .qalam-editor-content.qalam-doc-page .ProseMirror,
         .qalam-editor-content.qalam-view-pageless .ProseMirror {
           min-height: var(--qalam-page-min-height, 60vh);

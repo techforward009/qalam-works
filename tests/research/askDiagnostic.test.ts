@@ -388,3 +388,6 @@ describe("research ask diagnostics", () => {
     expect(lines[0]).not.toContain("عبارت");
   });
 });
+
+// Next resolves this marker in Server Components; these tests exercise server routes directly.
+vi.mock("server-only", () => ({}));

@@ -1,3 +1,4 @@
+import { performanceDocument } from "./fixtures/documentStudioPerformance";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -286,7 +287,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
   it("bounds long-document measurement before raster work", async () => {
     const request = async (name: string, count: number, size = 12) => {
       currentCase = name; const settings = defaultDocumentSettings(); settings.headerFooter.headerEnabled = false; settings.headerFooter.footerEnabled = false; settings.typography.bodyFontSizePt = size;
-      const doc = { type: "doc", content: Array.from({ length: count }, (_, index) => ({ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: `Performance row ${index + 1}: deterministic layout content.` }] })) };
+      const doc = performanceDocument(count);
       const sourceSize = Buffer.byteLength(JSON.stringify(doc)); const started = Date.now();
       const response = await POST(new NextRequest("http://localhost/api/export-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, dir: "ltr", settings }) }));
       return { response, sourceSize, elapsed: Date.now() - started };

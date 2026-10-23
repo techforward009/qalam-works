@@ -54,3 +54,6 @@ describe("research private R2 client", () => {
     await expect(client.getObject(key)).rejects.toThrow();
   });
 });
+
+// Next resolves this marker in Server Components; these tests exercise server routes directly.
+vi.mock("server-only", () => ({}));

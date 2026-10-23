@@ -33,3 +33,6 @@ export default async function CalendarYearPage({ params }: { params: Promise<{ y
     </main>
   );
 }
+
+export async function generateStaticParams() { return []; }
+export const revalidate = 86400;

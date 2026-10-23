@@ -77,6 +77,8 @@ export async function readTafsirMirror(
   } finally {
     reader.releaseLock();
   }
-  if (declaredLength !== null && total !== Number(declaredLength)) throw new Error("Tafsir mirror length mismatch");
+  // Fetch decodes Content-Encoding; Content-Length then describes the wire bytes,
+  // not the decoded stream. The independent decoded-size limit above still applies.
+  if (!response.headers.has("content-encoding") && declaredLength !== null && total !== Number(declaredLength)) throw new Error("Tafsir mirror length mismatch");
   return Buffer.concat(chunks, total);
 }

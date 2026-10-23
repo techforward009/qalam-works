@@ -36,6 +36,7 @@
     "@vercel/oidc": "^3.8.9",
     "@vercel/speed-insights": "^2.0.0",
     "astronomy-engine": "^2.1.19",
+    "cfb": "^1.2.2",
     "docx": "^9.7.1",
     "lucide-react": "^1.28.0",
     "mammoth": "^1.8.0",
@@ -46,7 +47,8 @@
     "puppeteer-core": "^25.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

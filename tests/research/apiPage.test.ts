@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { GET } from "../../app/api/research/documents/[id]/pages/[page]/route";
 import * as pageRoute from "../../app/api/research/documents/[id]/pages/[page]/route";
 import { handleResearchUpload } from "../../app/api/research/documents/handleUpload";
@@ -196,3 +196,6 @@ describe("GET /api/research/documents/:id/pages/:page", () => {
     expect(invalid.status).toBe(400);
   });
 });
+
+// Next resolves this marker in Server Components; these tests exercise server routes directly.
+vi.mock("server-only", () => ({}));

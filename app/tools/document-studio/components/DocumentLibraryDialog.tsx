@@ -8,6 +8,7 @@ export default function DocumentLibraryDialog({
   activeId,
   onOpen,
   onNew,
+  onOpenInPage,
   onRename,
   onDelete,
   onClose,
@@ -17,6 +18,7 @@ export default function DocumentLibraryDialog({
   activeId: string | null;
   onOpen: (id: string) => void;
   onNew: () => void;
+  onOpenInPage: () => void;
   onRename: (id: string) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
@@ -94,6 +96,7 @@ export default function DocumentLibraryDialog({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[#1A3A2A]/10 px-4 py-3">
+          <button type="button" className="rounded-md border border-gray-400 px-3 py-1.5 text-xs font-semibold" onClick={onOpenInPage}>Open InPage file…</button>
           <button
             type="button"
             className="rounded-md bg-[#1A3A2A] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#244A36]"

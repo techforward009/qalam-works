@@ -38,7 +38,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
 
   useEffect(() => {
     const abort = new AbortController();
-    fetch("/api/khateeb/library", { cache: "no-store", signal: abort.signal }).then(async response => {
+    fetch("/api/khateeb/library", { signal: abort.signal }).then(async response => {
       if (!response.ok) throw new Error("catalog");
       const value = await response.json();
       if (!abort.signal.aborted) setCatalog(value);
@@ -55,7 +55,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     controller.current = abort;
     setBusy(true); setError(""); setMessage("");
     try {
-      const response = await fetch(url, { cache: "no-store", ...options, signal: abort.signal });
+      const response = await fetch(url, { ...options, ...(options?.method && options.method.toUpperCase() !== "GET" ? { cache: "no-store" as const } : {}), signal: abort.signal });
       if (!response.ok) throw new Error(response.status === 400 ? "invalid" : "unavailable");
       const data = await response.json();
       return abort.signal.aborted ? null : data;

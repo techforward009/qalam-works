@@ -14,6 +14,7 @@ describe("DocumentLibraryDialog", () => {
     const onRename = vi.fn();
     const onDelete = vi.fn();
     const onNew = vi.fn();
+    const onOpenInPage = vi.fn();
     render(
       <DocumentLibraryDialog
         isUr={false}
@@ -24,6 +25,7 @@ describe("DocumentLibraryDialog", () => {
         activeId="1"
         onOpen={onOpen}
         onNew={onNew}
+        onOpenInPage={onOpenInPage}
         onRename={onRename}
         onDelete={onDelete}
         onClose={vi.fn()}
@@ -37,5 +39,7 @@ describe("DocumentLibraryDialog", () => {
     expect(onRename).toHaveBeenCalledWith("1");
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
     expect(onNew).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Open InPage file…" }));
+    expect(onOpenInPage).toHaveBeenCalled();
   });
 });

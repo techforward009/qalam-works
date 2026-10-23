@@ -25,7 +25,7 @@ export default function BookTopicGuide({ locale, onCreateDraft, onOpen }: { loca
     const abort = new AbortController(); controller.current = abort;
     setBusy(true); setError("");
     try {
-      const response = await fetch(`/api/khateeb/library?op=topic&topicId=patience&language=${locale}`, { cache: "no-store", signal: abort.signal });
+      const response = await fetch(`/api/khateeb/library?op=topic&topicId=patience&language=${locale}`, { signal: abort.signal });
       if (!response.ok) throw new Error();
       const data = await response.json();
       if (!Array.isArray(data.materials)) throw new Error();

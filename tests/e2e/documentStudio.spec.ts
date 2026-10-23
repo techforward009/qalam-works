@@ -1,4 +1,6 @@
+import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
+import { unicodeInpage } from "../fixtures/inpage";
 import { TINY_PNG_BASE64 } from "./fixtures/tinyPng";
 
 const URL = "/tools/document-studio";
@@ -10,17 +12,21 @@ async function openStudio(page: Page, language: "en" | "ur" = "en") {
     localStorage.setItem("qalam-site-language", value);
   }, language);
   await page.goto(URL);
-  await expect(page.getByRole("textbox", { name: language === "ur" ? "دستاویز ایڈیٹر" : "Document editor" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Document editor" })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toBeEditable();
+  // Wait for the initial saved-document load before any test inserts text.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
 }
 
 async function imageAction(page: Page, label: string) {
+  await page.locator('[data-studio-tool-button="text"]').click();
   await page.locator(".ProseMirror img.qalam-document-image").click({ button: "right" });
   await page.locator('[data-studio-image-menu="true"]').getByRole("menuitem", { name: label, exact: true }).click();
 }
 
 async function replaceEditorContent(page: Page, text: string) {
   const editor = page.locator(".ProseMirror");
+  await page.locator('[data-studio-tool-button="text"]').click();
   await editor.click();
   await page.keyboard.press("Control+A");
   await page.keyboard.type(text);
@@ -87,6 +93,293 @@ async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: 
 const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
 
 test.describe("Document Studio v1 browser smoke", () => {
+  test("imports InPage fixture page setup as A5 starting at page 77", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.open"]').click();
+    const [picker] = await Promise.all([page.waitForEvent("filechooser"), page.getByRole("button", { name: "Open InPage file…" }).click()]);
+    await picker.setFiles(path.resolve("tests/fixtures/inpage/hadiyat.inp"));
+    const imported = page.getByRole("dialog", { name: "InPage text imported" });
+    await expect(imported).toBeVisible();
+    await imported.getByRole("button", { name: "Close", exact: true }).click();
+    const paper = page.locator('[data-studio-page-paper]').first();
+    await expect(paper).toBeAttached();
+    const box = (await paper.boundingBox())!;
+    expect(box.width / box.height).toBeCloseTo(839054 / 1190550, 2);
+    await expect(page.locator('[data-studio-page-label]')).toHaveText(/^77\//);
+    const root = page.locator('[data-studio-print-root]');
+    await expect.poll(() => root.getAttribute("data-print-margin-top-mm")).not.toBeNull();
+    expect(Number(await root.getAttribute("data-print-margin-top-mm")) * 72 / 25.4).toBeCloseTo(50.976, 3);
+    await page.reload();
+    await expect(page.locator('[data-studio-page-label]')).toHaveText(/^77\//);
+    expect(Number(await page.locator('[data-studio-print-root]').getAttribute("data-page-width-mm")) * 72 / 25.4).toBeCloseTo(419.527, 3);
+  });
+
+  test("opens generated InPage text as a new document and offers other stories for copying", async ({ page }) => {
+    await openStudio(page, "ur");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
+    await replaceEditorContent(page, "Existing document stays saved");
+    const previousId = await page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"));
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.open"]').click();
+    const [picker] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.getByRole("button", { name: "Open InPage file…" }).click(),
+    ]);
+    await picker.setFiles({ name: "sample.inp", mimeType: "application/octet-stream", buffer: unicodeInpage([["سرخی"], [], ["یہ مرکزی کہانی ہے۔", "یہ دوسرا پیراگراف ہے۔"]], "پرانی عبارت جو درآمد نہیں ہونی چاہیے\r") });
+    const dialog = page.getByRole("dialog", { name: "InPage text imported" });
+    await expect(dialog).toBeVisible();
+    const story = page.locator(".ProseMirror");
+    await expect(story.locator("p")).toHaveCount(2);
+    await expect(story).toContainText("یہ مرکزی کہانی ہے۔");
+    await expect(story).toContainText("یہ دوسرا پیراگراف ہے۔");
+    await expect(story).not.toContainText("پرانی عبارت");
+    await expect(dialog.getByRole("button", { name: "Copy story 1" })).toBeVisible();
+    await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { (window as unknown as { copiedInpage: string }).copiedInpage = text; } } }); });
+    await dialog.getByRole("button", { name: "Copy story 1" }).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { copiedInpage: string }).copiedInpage)).toBe("سرخی");
+    const importedId = await page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"));
+    expect(importedId).not.toBe(previousId);
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page.locator('[data-studio-print-root]')).toHaveAttribute("data-page-width-mm", "210");
+    await expect(page.locator('[data-studio-page-label]')).toHaveText(/^1\//);
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.open"]').click();
+    await expect(page.getByRole("dialog").getByText("Untitled document", { exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("sample", { exact: true })).toBeVisible();
+  });
+
+  for (const pt of [12, 36]) {
+    test(`Mehr ${pt}pt Auto leading keeps ink below the top margin and lines apart`, async ({ page }) => {
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await openStudio(page, "ur");
+      const story = await replaceEditorContent(page, "السلام علیکم اللہ وبرکاتہ");
+      await page.keyboard.press("Shift+Enter");
+      await page.keyboard.type("السلام علیکم اللہ وبرکاتہ");
+      await page.keyboard.press("Control+A");
+      await page.locator('[data-studio-font-family]').selectOption({ label: "Mehr Nastaliq Web" });
+      await page.locator('[data-studio-font-size]').selectOption(String(pt));
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      await expect.poll(() => story.locator("p").first().evaluate((p) => {
+        const prose = p.closest(".ProseMirror") as HTMLElement;
+        const scale = prose.getBoundingClientRect().width / prose.offsetWidth;
+        const margin = prose.getBoundingClientRect().top + parseFloat(getComputedStyle(prose).paddingTop) * scale;
+        const lines = [...p.childNodes].flatMap((node) => {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
+        });
+        const unique = lines.filter((r, i) => !lines.slice(0, i).some((prior) => Math.abs(prior.top - r.top) < 1)).sort((a, b) => a.top - b.top);
+        if (unique.length < 2) return false;
+        return unique[0].top >= margin - 1 && unique[1].top >= unique[0].bottom - 1;
+      })).toBe(true);
+      await expect(story.locator("p").first()).toHaveAttribute("style", /line-height:\s*2.2/);
+      await page.locator('[data-studio-leading]').selectOption("1.5");
+      await expect(story.locator("p").first()).toHaveAttribute("style", /line-height:\s*1.5/);
+    });
+  }
+
+  test("RTL caret follows the DOM selection at styled line ends and grows at 36pt", async ({ page }) => {
+    await openStudio(page, "ur");
+    const story = await replaceEditorContent(page, "السلام علیکم اللہ وبرکاتہ");
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    const size = page.locator('[data-studio-font-size]');
+    await page.keyboard.press("Control+A");
+    await size.selectOption("18");
+    await page.keyboard.press("End");
+    const caret = page.locator('[data-studio-caret]');
+    await expect(caret).toBeVisible();
+    const expectPosition = async () => {
+      await expect.poll(() => page.evaluate(() => {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount || !selection.isCollapsed) return 999;
+        const rects = selection.getRangeAt(0).getClientRects();
+        const real = rects.length ? rects[rects.length - 1] : null;
+        const drawn = document.querySelector('[data-studio-caret]')?.getBoundingClientRect();
+        return real && drawn ? Math.abs(drawn.left - real.left) : 999;
+      })).toBeLessThanOrEqual(3);
+    };
+    await expectPosition();
+    const smallHeight = (await caret.boundingBox())!.height;
+    await page.keyboard.press("Control+A");
+    await size.selectOption("36");
+    await page.keyboard.press("End");
+    await expectPosition();
+    await expect.poll(async () => (await caret.boundingBox())?.height ?? 0).toBeGreaterThan(smallHeight * 1.5);
+    await page.keyboard.press("Control+End");
+    await expectPosition();
+    await expect(story).toContainText("السلام علیکم اللہ وبرکاتہ");
+  });
+
+  test("Arrow is inactive for typing on load and story ligatures stay enabled", async ({ page }) => {
+    await openStudio(page);
+    const story = page.locator(".ProseMirror");
+    const before = await story.textContent();
+    await expect(page.locator('[data-studio-tool-button="select"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(story).not.toBeFocused();
+    await expect(page.locator('[data-studio-caret]')).toHaveCount(0);
+    await page.keyboard.type("abc");
+    await expect(story).toHaveText(before ?? "");
+    await expect(story).not.toBeFocused();
+    await expect(story).toHaveCSS("font-variant-ligatures", "normal");
+    await expect(story).toHaveCSS("font-feature-settings", "normal");
+  });
+
+  test("Textbox drag creates a frame and switches to IBEAM for immediate typing", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await openStudio(page);
+    await page.locator('[data-studio-tool-button="textbox"]').click();
+    const layer = page.locator('[data-studio-objects]');
+    await expect(layer).toHaveCSS("cursor", "crosshair");
+    const box = (await layer.boundingBox())!;
+    await page.mouse.move(box.x + 100, box.y + 150);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 300, box.y + 250, { steps: 8 });
+    await page.mouse.up();
+    const frame = page.locator('[data-studio-frame="text"]');
+    await expect(frame).toHaveCount(1);
+    await expect(page.locator('[data-studio-tool-button="text"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(frame.locator("textarea")).toBeFocused();
+    await page.keyboard.type("abc");
+    await expect(frame.locator("textarea")).toHaveValue("abc");
+    await expect(frame.locator("textarea")).toHaveCSS("font-variant-ligatures", "normal");
+    await expect(frame.locator("textarea")).toHaveCSS("font-feature-settings", "normal");
+    await expect(frame.locator("textarea")).toHaveCSS("border", "1px solid rgb(0, 0, 0)");
+    await page.locator('[data-studio-tool-button="select"]').click();
+    await page.keyboard.press("Escape");
+    await expect(frame.locator('[data-studio-frame-handle]')).toHaveCount(0);
+    await expect(frame.locator("textarea")).toHaveCSS("border", "1px solid rgb(0, 0, 0)");
+    await expect(page.locator(".ProseMirror")).not.toContainText("abc");
+  });
+
+  test("Textbox click without dragging creates nothing", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-studio-tool-button="textbox"]').click();
+    await page.locator('[data-studio-objects]').click({ position: { x: 100, y: 150 } });
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(0);
+    await expect(page.locator('[data-studio-tool-button="textbox"]')).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("IBEAM edits the story without drawing a text frame", async ({ page }) => {
+    await openStudio(page, "ur");
+    const tool = page.locator('[data-studio-tool-button="text"]');
+    await tool.click();
+    const editor = page.locator(".ProseMirror");
+    const pageArea = page.locator('[data-studio-page-paper]').first();
+    const box = (await pageArea.boundingBox())!;
+    const x = Math.min(300, box.x + 100);
+    const y = box.y + 100;
+    await expect(page.locator('[data-studio-objects]')).toHaveCSS("pointer-events", "none");
+    await expect.poll(() => page.evaluate(({ x, y }) => getComputedStyle(document.elementFromPoint(x, y)!).cursor, { x, y })).toBe("text");
+    await page.mouse.click(x, y);
+    await expect(editor).toBeFocused();
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(0);
+    await page.keyboard.type("abc");
+    await expect(editor).toContainText("abc");
+    await expect(tool).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(0);
+  });
+
+  test("IBEAM edits an existing text box without creating another", async ({ page }) => {
+    await openStudio(page);
+    await page.evaluate(() => {
+      const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+      localStorage.setItem("qalam-studio-frames-v1", JSON.stringify({ [id]: [{
+        id: "existing-text-box", kind: "text", page: 1, xMm: 20, yMm: 35,
+        wMm: 60, hMm: 30, flip: false, text: "Existing box",
+      }] }));
+    });
+    await page.reload();
+    const input = page.getByRole("textbox", { name: "Text box", exact: true });
+    await expect(input).toHaveValue("Existing box");
+    const story = await page.locator(".ProseMirror").innerText();
+    const tool = page.locator('[data-studio-tool-button="text"]');
+    await tool.click();
+    await expect(input).toHaveCSS("cursor", "text");
+    await input.click();
+    await expect(input).toBeFocused();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" edited");
+    await expect(input).toHaveValue("Existing box edited");
+    await expect(page.locator('[data-studio-frame]')).toHaveCount(1);
+    await expect(page.locator(".ProseMirror")).toHaveText(story);
+    await expect(tool).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("Arrow selects and moves a text box without entering text-edit mode", async ({ page }) => {
+    await openStudio(page, "ur");
+    // Textbox drawing is deferred; load the same saved frame that tool will create.
+    await page.evaluate(() => {
+      const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+      localStorage.setItem("qalam-studio-frames-v1", JSON.stringify({ [id]: [{
+        id: "movable-text-box", kind: "text", page: 1, xMm: 20, yMm: 35,
+        wMm: 60, hMm: 30, flip: false, text: "Keep this text",
+      }] }));
+    });
+    await page.reload();
+    const frame = page.locator('[data-studio-frame="text"]');
+    const textarea = frame.locator("textarea");
+    await expect(textarea).toHaveValue("Keep this text");
+    // Enter text mode first so choosing Arrow must also blur the focused textarea.
+    await page.locator('[data-studio-tool-button="text"]').click();
+    await textarea.click();
+    await expect(textarea).toBeFocused();
+    await page.locator('[data-studio-tool-button="select"]').click();
+    await expect(frame).toHaveCSS("cursor", "move");
+    await expect(textarea).toHaveAttribute("readonly", "");
+    await expect(textarea).toHaveCSS("pointer-events", "none");
+    const box = (await frame.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(textarea).not.toBeFocused();
+    await expect(page.locator('[data-studio-caret]')).toHaveCount(0);
+    const handles = frame.locator('[data-studio-frame-handle]');
+    await expect(handles).toHaveCount(8);
+    for (const handle of await handles.all()) await expect(handle).toHaveCSS("background-color", "rgb(0, 0, 0)");
+    await expect(textarea).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
+    await page.keyboard.type("x");
+    await expect(textarea).toHaveValue("Keep this text");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await frame.boundingBox())!.x - box.x)).toBe(40);
+    await expect(textarea).not.toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(handles).toHaveCount(0);
+  });
+
+  test("Select intercepts page clicks without focusing or typing into the story", async ({ page }) => {
+    await openStudio(page, "ur");
+    const editor = page.locator(".ProseMirror");
+    // Set up existing story text without relying on a Select-tool page click.
+    await editor.focus();
+    await page.keyboard.insertText("The story must stay unchanged.");
+    const before = await editor.innerText();
+    await page.locator('[data-studio-tool-button="select"]').click();
+    const expectNoStoryCaret = async () => {
+      await expect.poll(() => page.evaluate(() => document.activeElement?.matches(".ProseMirror"))).toBe(false);
+      await expect(page.locator("[data-studio-caret]")).toHaveCount(0);
+    };
+    await expectNoStoryCaret();
+    const layer = page.locator("[data-studio-objects]");
+    await expect(layer).toHaveCSS("pointer-events", "auto");
+    await expect(layer).toHaveCSS("cursor", "default");
+    const box = (await layer.boundingBox())!;
+    const x = Math.max(60, box.x + 50);
+    const y = box.y + 100;
+    await page.mouse.click(x, y);
+    await expectNoStoryCaret();
+    await page.keyboard.type("x");
+    await expect(editor).toHaveText(before);
+    // A page drag must not select story text either.
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 80, y + 25, { steps: 4 });
+    await page.mouse.up();
+    await expectNoStoryCaret();
+    await expect(editor).toHaveText(before);
+  });
+
   test("loads an editable English workspace, formats it, and persists after reload", async ({ page }) => {
     const errors: Error[] = [];
     page.on("pageerror", (error) => errors.push(error));
@@ -96,7 +389,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await page.keyboard.press("Control+A");
     await page.getByRole("button", { name: "Bold" }).click();
     await expect(editor.locator("strong")).toContainText(ENGLISH);
-    expect(await editor.getAttribute("dir")).toBe("ltr");
+    await expect(editor.locator("p").first()).toHaveAttribute("dir", "ltr");
 
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
     await page.reload();
@@ -106,6 +399,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("keeps Urdu and English paragraphs intact with their paragraph directions", async ({ page }) => {
     await openStudio(page, "ur");
+    await page.locator('[data-studio-tool-button="text"]').click();
     const editor = page.locator(".ProseMirror");
     await editor.click();
     await page.keyboard.type(URDU);
@@ -117,7 +411,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
 
     await editor.locator("p").nth(1).click();
-    await page.getByRole("button", { name: "Left-to-right (English)" }).click();
+    await page.getByRole("button", { name: "Left to right", exact: true }).click();
     await expect(editor.locator("p").nth(1)).toContainText(ENGLISH);
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
     await expect(editor.locator("p").nth(0)).toHaveAttribute("dir", "rtl");
@@ -136,6 +430,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("creates, edits, persists, and exports a multilingual table", async ({ page }) => {
     await openStudio(page);
+    await page.locator('[data-studio-tool-button="text"]').click();
     await page.locator('[data-menu-root="insert"]').click();
     await page.locator('[data-menu-action="insert.table"]').click();
     await page.getByRole("dialog", { name: "Insert table" }).getByLabel("Rows").fill("2");
@@ -239,6 +534,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("wraps paragraph text beside left and right images and persists wrap mode", async ({ page }) => {
     await openStudio(page);
+    await page.locator('[data-studio-tool-button="text"]').click();
     await page.locator('[data-menu-root="insert"]').click();
     await page.locator('[data-menu-action="insert.image"]').click();
     await page.locator('[data-studio-image-input="true"]').setInputFiles({

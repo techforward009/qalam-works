@@ -51,6 +51,21 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
     await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("Tafsir mirror archive too large");
   });
 
+  it.each(["gzip", "br"])("accepts a decoded %s body whose wire length differs", async encoding => {
+    // fetch returns decoded bytes but retains the compressed Content-Length.
+    const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3,4]), {
+      status:200, headers:{"content-length":"2", "content-encoding":encoding},
+    })) as typeof fetch;
+    expect(await readTafsirMirror("ur", {urUrl}, mock)).toEqual(Buffer.from([1,2,3,4]));
+  });
+
+  it("still rejects an unencoded body whose length differs", async () => {
+    const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3,4]), {
+      status:200, headers:{"content-length":"2"},
+    })) as typeof fetch;
+    await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("Tafsir mirror length mismatch");
+  });
+
   it("does not read authorization from URL query or browser and accepts only server-side variables", () => {
     expect(tafsirMirrorConfig({
       QALAM_TAFSIR_V10_MIRROR_UR_URL: urUrl,

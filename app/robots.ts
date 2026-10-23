@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: "/tools/research-studio" },
+    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/tools/research-studio"] },
     sitemap: "https://www.qalamworks.com/sitemap.xml",
   };
 }

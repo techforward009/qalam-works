@@ -1,3 +1,4 @@
+import { publicBookGetCacheControl } from "../cacheControl";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
@@ -16,8 +17,8 @@ import {
 import { attachCorpusTranslations } from "../../../lib/knowledge/suppliedTranslations";
 import type { KnowledgePassage, KnowledgeResult } from "../../../lib/knowledge/retrieval";
 
-const json = (body: unknown, status = 200) =>
-  NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
+const json = (body: unknown, status = 200, cacheControl = "private, no-store") =>
+  NextResponse.json(body, { status, headers: { "Cache-Control": cacheControl } });
 const invalid = () => json({ code: "invalid" }, 400);
 
 /** Attach only SHA/paragraph-bound supplied translations already reviewed.
@@ -60,6 +61,7 @@ async function verifiedTranslations(
 export async function GET(req: NextRequest) {
   const qs = req.nextUrl.searchParams;
   const op = qs.get("op") ?? "catalog";
+  const reply = (body: unknown, status = 200) => json(body, status, publicBookGetCacheControl(req, status, op));
   const sourceId = qs.get("sourceId") ?? "";
   const locale = qs.get("locale") ?? "ur";
   const id = qs.get("id") ?? "";
@@ -77,11 +79,11 @@ export async function GET(req: NextRequest) {
   const pageNumber = Number(pageRaw);
   // One fetched record is laid out as many *visually measured* pages in the
   // browser. Never invent printed page numbers from paragraph counts.
-  if (op === "read" && !["1", "last"].includes(partRaw)) return json({ code: "not-found" }, 404);
+  if (op === "read" && !["1", "last"].includes(partRaw)) return reply({ code: "not-found" }, 404);
   try {
-    if (!(await bookLibraryR2IsSelected())) return json({ code: "unavailable" }, 503);
+    if (!(await bookLibraryR2IsSelected())) return reply({ code: "unavailable" }, 503);
     const catalog = await loadBookLibraryR2Catalog();
-    if (op === "catalog") return json({
+    if (op === "catalog") return reply({
       ready: true, revision: catalog.revision,
       sources: catalog.sources.map(s => ({
         id: s.id, book: s.book, language: s.language,
@@ -89,24 +91,24 @@ export async function GET(req: NextRequest) {
       })),
     });
     const source = catalog.sources.find(s => s.id === sourceId);
-    if (!source) return json({ code: "not-found" }, 404);
+    if (!source) return reply({ code: "not-found" }, 404);
     const indexed = await readBookSourceFromR2(sourceId);
-    if (op === "contents") return json(bookContents(indexed.records, sourceId, locale as "ur" | "en", pageNumber));
-    if (op === "find") return json(bookFind(indexed.records, sourceId, query, locale as "ur" | "en", pageNumber));
+    if (op === "contents") return reply(bookContents(indexed.records, sourceId, locale as "ur" | "en", pageNumber));
+    if (op === "find") return reply(bookFind(indexed.records, sourceId, query, locale as "ur" | "en", pageNumber));
 
     // Search-index paragraphs may be abbreviated. Fetch the complete immutable
     // R2 record by its verified SHA and substitute it at the same ordinal.
     const full = await readBookRecordFromR2(sourceId, id);
-    if (!full || full.source.sha256 !== source.sha256) return json({ code: "not-found" }, 404);
+    if (!full || full.source.sha256 !== source.sha256) return reply({ code: "not-found" }, 404);
     const exactRecords = indexed.records.map(r => r.id === id ? full.record : r);
     const reading = bookReadingPage(exactRecords, source, id, locale as "ur" | "en", 1);
-    if (!reading) return json({ code: "not-found" }, 404);
+    if (!reading) return reply({ code: "not-found" }, 404);
     if (reading.paragraphs.reduce((n, p) => n + Buffer.byteLength(p.text, "utf8"), 0) > 1_000_000) {
-      return json({ code: "record-too-large" }, 413);
+      return reply({ code: "record-too-large" }, 413);
     }
-    return json(await verifiedTranslations(reading, full.record, source, catalog.sources, locale as "ur" | "en"));
+    return reply(await verifiedTranslations(reading, full.record, source, catalog.sources, locale as "ur" | "en"));
   } catch {
-    return json({ code: "unavailable" }, 503);
+    return reply({ code: "unavailable" }, 503);
   }
 }
 

@@ -346,6 +346,8 @@ export function documentPrintCss(widthMm: number, heightMm: number, topMm = 0, b
     padding-bottom: 0 !important;
   }
   [data-studio-print-page] .ProseMirror {
+    font-variant-ligatures: normal;
+    font-feature-settings: normal;
     min-height: 0 !important;
     height: auto !important;
     width: auto !important;
