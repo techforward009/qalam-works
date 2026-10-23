@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { POST } from "../../app/api/research/documents/route";
 import {
@@ -193,3 +193,6 @@ describe("POST /api/research/documents", () => {
     expect(oversized.status).toBe(400);
   });
 });
+
+// Next resolves this marker in Server Components; these tests exercise server routes directly.
+vi.mock("server-only", () => ({}));

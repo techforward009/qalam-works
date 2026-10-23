@@ -1,3 +1,4 @@
+import { rejectUnconfiguredResearchStorage } from "../../../../storageConfig";
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -19,6 +20,8 @@ export async function GET(
 ): Promise<NextResponse> {
   const denied = rejectUnauthenticatedResearch(req);
   if (denied) return denied;
+  const storageDenied = rejectUnconfiguredResearchStorage();
+  if (storageDenied) return storageDenied;
 
   const params = await context.params;
   const parsed = parseResearchPageParams(params.id, params.page);

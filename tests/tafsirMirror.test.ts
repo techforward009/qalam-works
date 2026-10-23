@@ -15,7 +15,7 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
     const seen: Array<{url: string; init: RequestInit}> = [];
     const mock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
       seen.push({url: String(url), init: init ?? {}});
-      return new Response(new Uint8Array([1,2,3,4]), {status: 200});
+      return new Response(new Uint8Array([1,2,3,4]), {status: 200, headers:{"content-length":"4"}});
     }) as typeof fetch;
     expect(await readTafsirMirror("ur", {urUrl, enUrl, bearerToken:"test-secret"}, mock)).toEqual(Buffer.from([1,2,3,4]));
     expect(seen).toHaveLength(1);
@@ -26,7 +26,7 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
   });
 
   it("separately selects English without requesting Urdu", async () => {
-    const mock = vi.fn(async (_url: RequestInfo | URL) => new Response(new Uint8Array([5])));
+    const mock = vi.fn(async (_url: RequestInfo | URL) => new Response(new Uint8Array([5]), {headers:{"content-length":"1"}}));
     expect(await readTafsirMirror("en", {urUrl,enUrl}, mock as typeof fetch)).toEqual(Buffer.from([5]));
     expect(mock.mock.calls[0][0]).toBe(enUrl);
   });
@@ -44,11 +44,33 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
     await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("Tafsir mirror unavailable");
   });
 
+  it.each([null, "0", "not-a-number"])("names an invalid Content-Length (%s)", async length => {
+    const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3]), {
+      status:200, headers:length === null ? {} : {"content-length":length},
+    })) as typeof fetch;
+    await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("tafsir-mirror-invalid-content-length");
+  });
+
   it("rejects a declared oversize archive before reading it", async () => {
     const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3]), {
       status:200, headers:{"content-length":String(17*1024*1024)}
     })) as typeof fetch;
     await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("Tafsir mirror archive too large");
+  });
+
+  it.each(["gzip", "br"])("accepts a decoded %s body whose wire length differs", async encoding => {
+    // fetch returns decoded bytes but retains the compressed Content-Length.
+    const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3,4]), {
+      status:200, headers:{"content-length":"2", "content-encoding":encoding},
+    })) as typeof fetch;
+    expect(await readTafsirMirror("ur", {urUrl}, mock)).toEqual(Buffer.from([1,2,3,4]));
+  });
+
+  it("still rejects an unencoded body whose length differs", async () => {
+    const mock = vi.fn(async () => new Response(new Uint8Array([1,2,3,4]), {
+      status:200, headers:{"content-length":"2"},
+    })) as typeof fetch;
+    await expect(readTafsirMirror("ur", {urUrl}, mock)).rejects.toThrow("Tafsir mirror length mismatch");
   });
 
   it("does not read authorization from URL query or browser and accepts only server-side variables", () => {

@@ -20,6 +20,7 @@ it.each(["both", "password", "secret"])("refuses library reads and writes with m
 });
 
 it("refuses anonymous requests but allows the signed owner session", async () => {
+  vi.stubEnv("QALAM_RESEARCH_STORAGE_BACKEND", "cloudflare-r2");
   vi.stubEnv("QALAM_RESEARCH_ACCESS_PASSWORD", TEST_RESEARCH_PASSWORD);
   vi.stubEnv("QALAM_RESEARCH_SESSION_SECRET", TEST_RESEARCH_SECRET);
   for (const [method, handler] of [["GET", GET], ["POST", POST]] as const) {

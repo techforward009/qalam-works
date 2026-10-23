@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { POST } from "../../app/api/research/ask/route";
 import { handleResearchAsk } from "../../app/api/research/ask/handleAsk";
 import { setResearchBlobClientForTests } from "../../app/api/research/vercelResearchBlob";
@@ -321,3 +321,6 @@ describe("POST /api/research/ask", () => {
     expect(JSON.stringify(json)).not.toContain("CLOUDFLARE");
   });
 });
+
+// Next resolves this marker in Server Components; these tests exercise server routes directly.
+vi.mock("server-only", () => ({}));

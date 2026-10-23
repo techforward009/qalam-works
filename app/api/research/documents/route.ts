@@ -1,3 +1,4 @@
+import { rejectUnconfiguredResearchStorage } from "../storageConfig";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -16,6 +17,8 @@ const FAILED = { error: "Research upload failed.", code: "failed" } as const;
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const denied = rejectUnauthenticatedResearch(req);
   if (denied) return denied;
+  const storageDenied = rejectUnconfiguredResearchStorage();
+  if (storageDenied) return storageDenied;
 
   const length = Number(req.headers.get("content-length") ?? 0);
   if (Number.isFinite(length) && length > MAX_RESEARCH_UPLOAD_BYTES) {

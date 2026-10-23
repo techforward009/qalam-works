@@ -47,7 +47,8 @@
     "puppeteer-core": "^25.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

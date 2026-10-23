@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { DELETE, GET, POST } from "../../app/api/research/auth/route";
 import { POST as upload } from "../../app/api/research/documents/route";
 import { POST as ask } from "../../app/api/research/ask/route";
@@ -341,3 +341,6 @@ describe("research owner authentication", () => {
     expect(blob.calls()).toBe(0);
   });
 });
+
+// Next resolves this marker in Server Components; these tests exercise server routes directly.
+vi.mock("server-only", () => ({}));

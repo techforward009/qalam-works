@@ -56,7 +56,11 @@ export async function readTafsirMirror(
   });
   if (!response.ok || !response.body) throw new Error("Tafsir mirror unavailable");
   const declaredLength = response.headers.get("content-length");
-  if (declaredLength && Number(declaredLength) > MAX_TAFSIR_ARCHIVE_BYTES) {
+  if (declaredLength === null || !Number.isSafeInteger(Number(declaredLength)) || Number(declaredLength) < 1) {
+    await response.body.cancel();
+    throw new Error("tafsir-mirror-invalid-content-length");
+  }
+  if (Number(declaredLength) > MAX_TAFSIR_ARCHIVE_BYTES) {
     await response.body.cancel();
     throw new Error("Tafsir mirror archive too large");
   }
@@ -77,5 +81,8 @@ export async function readTafsirMirror(
   } finally {
     reader.releaseLock();
   }
+  // Fetch decodes Content-Encoding; Content-Length then describes the wire bytes,
+  // not the decoded stream. The independent decoded-size limit above still applies.
+  if (!response.headers.has("content-encoding") && declaredLength !== null && total !== Number(declaredLength)) throw new Error("Tafsir mirror length mismatch");
   return Buffer.concat(chunks, total);
 }

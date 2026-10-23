@@ -1,3 +1,4 @@
+import { rejectUnconfiguredResearchStorage } from "../storageConfig";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -19,6 +20,8 @@ const FAILED = { error: "Research request failed.", code: "failed" } as const;
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const denied = rejectUnauthenticatedResearch(req);
   if (denied) return denied;
+  const storageDenied = rejectUnconfiguredResearchStorage();
+  if (storageDenied) return storageDenied;
 
   const diagnostic = researchDiagnosticsEnabled() ? createAskDiagnosticTrace() : undefined;
   try {
