@@ -24,7 +24,7 @@ export default function FeedbackInvitation(){
    (pathname==="/services"||pathname.startsWith("/services/"))?"services":undefined;
  if(!tool || pathname === "/tools/research-studio")return null;
  return <div className="site-container py-10">
- <section aria-label="رائے و تجاویز" className="relative isolate rounded-3xl border-2 border-teal-300 bg-gradient-to-l from-[#087c7a] via-[#135a79] to-[#123a62] px-6 py-9 text-white shadow-[0_18px_42px_rgba(12,68,97,0.24)] md:px-10" dir={dir} lang={language}>
+ <section aria-label="رائے و تجاویز" className="relative isolate rounded-3xl border-2 border-teal-300 bg-[#087c7a] bg-gradient-to-l from-[#087c7a] via-[#135a79] to-[#123a62] px-6 py-9 text-white shadow-[0_18px_42px_rgba(12,68,97,0.24)] md:px-10" dir={dir} lang={language}>
 
   <div className="relative flex flex-col items-start gap-6">
   <div className={`w-full max-w-3xl ${ur?"font-[family-name:var(--font-nastaliq)]":""}`}>

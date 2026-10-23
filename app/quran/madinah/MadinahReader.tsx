@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
 import { useLanguage } from "../../lib/language-context";
 import EditionTopBar from "../reader/EditionTopBar";
@@ -232,18 +232,21 @@ export default function MadinahReader({
     window.sessionStorage.setItem("qalam-madinah-last-page", String(page.page));
   }, [page, surah, ayah]);
 
+  const prefetchedPages = useRef(new Set<number>());
   useEffect(() => {
     if (!page) return;
-
-    for (const candidate of [page.page - 1, page.page + 1]) {
-      if (candidate < 1 || candidate > MADINAH_V2_EDITION.pageCount) continue;
-      prepareMadinahPage(candidate)
-        .then(({ page: adjacent }) => {
-          const start = firstAyah(adjacent);
-          if (start) router.prefetch(`/quran/madinah/${start.surah}/${start.ayah}`);
-        })
-        .catch(() => undefined);
-    }
+    const candidate = page.page + 1;
+    if (candidate > MADINAH_V2_EDITION.pageCount || prefetchedPages.current.has(candidate)) return;
+    let cancelled = false;
+    // Debounce navigation: rapid page changes must not fan out speculative requests.
+    const timer = window.setTimeout(() => {
+      prefetchedPages.current.add(candidate);
+      prepareMadinahPage(candidate).then(({ page: adjacent }) => {
+        const start = firstAyah(adjacent);
+        if (!cancelled && start) router.prefetch(`/quran/madinah/${start.surah}/${start.ayah}`);
+      }).catch(() => { prefetchedPages.current.delete(candidate); });
+    }, 1000);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [page, router]);
 
   const runSearch = () => {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import { useLanguage } from "../../lib/language-context";
 import EditionTopBar from "../reader/EditionTopBar";
@@ -183,15 +183,18 @@ export default function DigitalKhattReader({
     setPageInput(String(pageNumber));
   }, [pageNumber]);
 
+  const prefetchedPages = useRef(new Set<number>());
   useEffect(() => {
     if (!pages.length || !currentPage) return;
-    for (const candidate of [currentPage.page - 1, currentPage.page + 1]) {
-      const target = digitalKhattPageByNumber(pages, candidate);
-      if (!target) continue;
-      router.prefetch(
-        "/quran/indopak-digital-khatt/" + target.startChapter + "/" + target.startVerse,
-      );
-    }
+    const candidate = currentPage.page + 1;
+    const target = digitalKhattPageByNumber(pages, candidate);
+    if (!target || prefetchedPages.current.has(candidate)) return;
+    // Cancel speculative work while the reader is still changing pages.
+    const timer = window.setTimeout(() => {
+      prefetchedPages.current.add(candidate);
+      router.prefetch(`/quran/indopak-digital-khatt/${target.startChapter}/${target.startVerse}`);
+    }, 1000);
+    return () => window.clearTimeout(timer);
   }, [currentPage, pages, router]);
 
   const navigate = (nextSurah: number, nextAyah: number) => {

@@ -46,7 +46,7 @@ export function BackToDateStudioLink({ className = "" }: { className?: string })
   const t = COPY[lang];
 
   return (
-    <Link
+    <Link prefetch={false}
       href="/tools/date-converter#date-studio"
       dir={dir}
       className={`inline-flex items-center gap-2 rounded-lg border border-[#1A3A2A]/15 bg-white/80 px-3 py-2 text-sm font-semibold text-[#1A3A2A] shadow-sm transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#162a1e] dark:text-[#e8ede9] ${lang === "ur" ? "font-naskh" : ""} ${className}`}
@@ -80,13 +80,13 @@ export function DateStudioRouteNav({
         aria-label="Date Studio period navigation"
         className="grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)_minmax(5.5rem,auto)] items-center gap-2 px-3 py-3 sm:px-4"
       >
-        {previousHref ? <Link href={previousHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
+        {previousHref ? <Link prefetch={false} href={previousHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
           {t.previous}
         </Link> : <span aria-hidden="true" />}
         <h1 className={`truncate text-center text-lg font-bold text-[#1A3A2A] sm:text-2xl dark:text-[#e8ede9] ${naskh}`}>
           {title}
         </h1>
-        {nextHref ? <Link href={nextHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
+        {nextHref ? <Link prefetch={false} href={nextHref} className={`rounded-xl border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-center text-sm font-semibold text-[#1A3A2A] transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${naskh}`}>
           {t.next}
         </Link> : <span aria-hidden="true" />}
       </nav>
@@ -103,13 +103,13 @@ export function DateStudioRouteNav({
           {currentCalendar === "gregorian" ? (
             <span aria-current="page" data-calendar="gregorian" className={activeClass}>{t.gregorian}</span>
           ) : (
-            <Link data-calendar="gregorian" href={counterpartHref} className={linkClass}>{t.gregorian}</Link>
+            <Link prefetch={false} data-calendar="gregorian" href={counterpartHref} className={linkClass}>{t.gregorian}</Link>
           )}
 
           {currentCalendar === "hijri" ? (
             <span aria-current="page" data-calendar="hijri" className={activeClass}>{t.hijri}</span>
           ) : (
-            <Link data-calendar="hijri" href={counterpartHref} className={linkClass}>{t.hijri}</Link>
+            <Link prefetch={false} data-calendar="hijri" href={counterpartHref} className={linkClass}>{t.hijri}</Link>
           )}
         </div>
       </div>

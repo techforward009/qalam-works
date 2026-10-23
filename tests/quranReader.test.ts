@@ -219,14 +219,23 @@ describe("Quran reader", () => {
     expect(mobile).not.toMatch(/\.quran\s*\{[^}]*text-align:\s*right;/);
   });
 
-  test("preloads adjacent Madinah pages and their QCF fonts", () => {
+  test("prefetches only the next reader page after idle navigation, retaining Madinah caches", () => {
     const source = readFileSync("app/quran/madinah/MadinahReader.tsx", "utf8");
     expect(source).toContain("PAGE_CACHE");
     expect(source).toContain("PAGE_PROMISES");
     expect(source).toContain("FONT_PROMISES");
     expect(source).toContain("prepareMadinahPage");
-    expect(source).toContain("[page.page - 1, page.page + 1]");
-    expect(source).toContain("router.prefetch");
+    expect(source).not.toContain("[page.page - 1, page.page + 1]");
+    expect(source).toContain("const candidate = page.page + 1");
+    const digital = readFileSync("app/quran/indopak-digital-khatt/DigitalKhattReader.tsx", "utf8");
+    expect(digital).not.toContain("[currentPage.page - 1, currentPage.page + 1]");
+    expect(digital).toContain("const candidate = currentPage.page + 1");
+    for (const reader of [source, digital]) {
+      expect(reader).toContain("router.prefetch");
+      expect(reader).toContain("}, 1000)");
+      expect(reader).toContain("window.clearTimeout(timer)");
+      expect(reader).toContain("prefetchedPages.current.has(candidate)");
+    }
   });
 
   test("keeps the Taj-style running heads and the display scale", () => {

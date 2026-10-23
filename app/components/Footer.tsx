@@ -43,8 +43,8 @@ export default function Footer() {
             <div key={group.id}>
               <h2 className="mb-3 text-sm font-semibold text-white" data-footer-heading="true">{group.name[language]}</h2>
               <ul className={linkListClass}>
-                {toolsInGroup(group).map(tool => <li key={tool.id}><Link href={tool.route} className="text-sm text-white/90 hover:text-amber-200">{tool.name[language]}</Link></li>)}
-                {group.id === "more" && <li><Link href="/tools/khateeb-studio" className="text-sm text-white/90 hover:text-amber-200">{language === "ur" ? "خطیب اسٹوڈیو" : "Khateeb Studio"}</Link></li>}
+                {toolsInGroup(group).map(tool => <li key={tool.id}><Link prefetch={false} href={tool.route} className="text-sm text-white/90 hover:text-amber-200">{tool.name[language]}</Link></li>)}
+                {group.id === "more" && <li><Link prefetch={false} href="/tools/khateeb-studio" className="text-sm text-white/90 hover:text-amber-200">{language === "ur" ? "خطیب اسٹوڈیو" : "Khateeb Studio"}</Link></li>}
               </ul>
             </div>
           ))}

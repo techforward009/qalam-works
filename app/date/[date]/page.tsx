@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { DateProfileClient } from "@/app/components/date-studio/DateProfileClient";
 import { notFound } from "next/navigation";
 import { DateStudioNav } from "@/app/components/date-studio/DateStudioNav";
 import { DateProfileCard } from "@/app/components/date-studio/DateProfileCard";
@@ -5,11 +7,14 @@ import { getDateEvents } from "@/app/tools/date-converter/utils/dateEvents";
 import { buildDateProfile, formatGregorianDate, formatHijriDate } from "@/app/tools/date-converter/utils/dateProfile";
 import { gregorianMonthLength } from "@/app/tools/date-converter/utils/dateEngine";
 
+export const revalidate = 86400;
+export async function generateStaticParams() { return []; }
+
 function parseValidDate(value: string) {
   const p = value.split("-").map(Number);
   if (p.length !== 3 || p.some(Number.isNaN)) return null;
   const [year, month, day] = p;
-  if (month < 1 || month > 12 || day < 1 || day > gregorianMonthLength(month, year)) return null;
+  if (!Number.isInteger(year) || year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > gregorianMonthLength(month, year)) return null;
   return { year, month, day };
 }
 
@@ -20,6 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ date: str
   const officialDate = profile.pakistanOfficialHijri?.hijri;
   const shownDate = officialDate ?? profile.hijri;
   return {
+    robots: { index: true, follow: false },
     title: `${formatGregorianDate(parsed)} | ${formatHijriDate(shownDate)} | Qalam Works Date Studio`,
     description: officialDate
       ? `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(officialDate)} in the Pakistan Hijri calendar.`
@@ -29,22 +35,21 @@ export async function generateMetadata({ params }: { params: Promise<{ date: str
 
 export default async function DateProfilePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ date: string }>;
-  searchParams?: Promise<{ countryId?: string }>;
 }) {
   const { date } = await params;
   const parsed = parseValidDate(date);
   if (!parsed) notFound();
 
-  const countryId = searchParams ? (await searchParams)?.countryId : undefined;
-  const profile = buildDateProfile(parsed, countryId);
+  const profile = buildDateProfile(parsed);
 
   return (
     <main className="mx-auto max-w-5xl p-4 sm:p-6">
       <DateStudioNav />
-      <DateProfileCard profile={profile} events={getDateEvents(parsed)} />
+      <Suspense fallback={<DateProfileCard profile={profile} events={getDateEvents(parsed)} />}>
+        <DateProfileClient profile={profile} events={getDateEvents(parsed)} />
+      </Suspense>
     </main>
   );
 }
