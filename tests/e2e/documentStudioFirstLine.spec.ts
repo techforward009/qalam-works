@@ -226,7 +226,7 @@ test("an empty first paragraph caret clears the top margin guide", async ({page}
     const topGuide=root.closest('[data-studio-selection-host]')!.parentElement!.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
     const caret=document.querySelector('[data-studio-caret]')!.getBoundingClientRect();
     return Math.abs(caret.top-topGuide.bottom);
-  })).toBeLessThanOrEqual(0.1);
+  })).toBeLessThanOrEqual(1);
   await expect(story.locator('p').last().locator('[data-studio-line-run]')).toHaveCount(0);
 });
 

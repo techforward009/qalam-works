@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
 import { caretGeometry } from "../utils/caretGeometry";
 import { getQalamPaginationState } from "../extensions/QalamPagination";
 import { lineBoxTop } from "../utils/textLineBoxes";
@@ -491,6 +492,8 @@ function StudioCaret({
   marginRightPx: number;
 }) {
   const [box, setBox] = useState<{ left: number; top: number; height: number; width: number } | null>(null);
+  const caretRef = useRef<HTMLDivElement>(null);
+  useStudioCaretVisibility(editor, caretRef, box);
 
   useEffect(() => {
     if (!editor) return;
@@ -556,6 +559,7 @@ function StudioCaret({
   return (
     <div
       key={`${box.left}:${box.top}:${box.height}`}
+      ref={caretRef}
       data-studio-caret="true"
       style={{
         animation: "qalam-studio-caret-blink 1060ms step-end infinite",

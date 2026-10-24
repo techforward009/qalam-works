@@ -36,31 +36,105 @@ for(const value of ['100','150','fit-width']){
   await page.keyboard.press("Home");await caretInside(page);
  });
 }
+// Read actual painted boxes after React, pagination and its page-start pass.
+// No font-metric or <br> half-leading estimate: those vary across Chromium builds.
+async function settledCaret(page:Page){
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+ await expect.poll(()=>page.evaluate(()=>{
+  const caret=document.querySelector('[data-studio-caret]')?.getBoundingClientRect();
+  if(!caret)return false;
+  // Wait for THIS model position, not a still-visible caret from the preceding key.
+  // Both are actual DOM rectangles; no <br>/half-leading reconstruction is used.
+  const editor=(document.querySelector('.ProseMirror') as HTMLElement & {editor:{
+   state:{selection:{head:number}};view:{coordsAtPos:(pos:number)=>{top:number;bottom:number}}
+  }}).editor;
+  const current=editor.view.coordsAtPos(editor.state.selection.head);
+  const middle=(current.top+current.bottom)/2;
+  if(middle<caret.top-1||middle>caret.bottom+1)return false;
+  return [...document.querySelectorAll('[data-studio-margin-guide]')].some(g=>{
+   const top=g.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
+   const bottom=g.querySelector('[data-studio-margin-line="bottom"]')!.getBoundingClientRect();
+   return caret.top>=top.bottom-1&&caret.bottom<=bottom.top+1;
+  });
+ })).toBe(true);
+ return page.evaluate(()=>{
+  const caret=document.querySelector('[data-studio-caret]')!.getBoundingClientRect();
+  const scroller=document.querySelector('[data-studio-scroller]')!.getBoundingClientRect();
+  const guide=[...document.querySelectorAll('[data-studio-margin-guide]')].find(g=>{
+   const top=g.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
+   const bottom=g.querySelector('[data-studio-margin-line="bottom"]')!.getBoundingClientRect();
+   return caret.top>=top.bottom-1&&caret.bottom<=bottom.top+1;
+  })!;
+  const top=guide.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
+  return {page:Number(guide.getAttribute('data-studio-margin-guide')),fromTop:caret.top-top.bottom,
+   visible:caret.top>=scroller.top-1&&caret.bottom<=scroller.bottom+1&&caret.left>=scroller.left-1&&caret.right<=scroller.right+1};
+ });
+}
+async function expectCaretVisible(page:Page){
+ await expect.poll(()=>page.evaluate(()=>{
+  const c=document.querySelector('[data-studio-caret]')?.getBoundingClientRect();
+  const v=document.querySelector('[data-studio-scroller]')!.getBoundingClientRect();
+  return !!c&&c.top>=v.top-1&&c.bottom<=v.bottom+1&&c.left>=v.left-1&&c.right<=v.right+1;
+ })).toBe(true);
+}
 for(const key of ['Enter','Shift+Enter']){
  test(`${key} empty line boxes paginate through page two`,async({page})=>{
   await open(page);
-  for(let i=0;i<30;i++)await page.keyboard.press(key);
-  await expect(page.locator('[data-studio-page-paper="2"]')).toBeAttached();
-  await expect.poll(()=>page.evaluate(()=>{
-   const root=document.querySelector<HTMLElement>('.ProseMirror')!;
-   const frames=[...document.querySelectorAll('[data-studio-margin-guide]')].map(g=>({
-    top:g.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect().top,
-    bottom:g.querySelector('[data-studio-margin-line="bottom"]')!.getBoundingClientRect().top,
-   }));
-   const boxes=[...root.querySelectorAll('br')].map(br=>{
-    const r=br.getBoundingClientRect();const leading=parseFloat(getComputedStyle(br.parentElement!).lineHeight);
-    return {top:r.top-(leading-r.height)/2,bottom:r.top+(leading+r.height)/2};
-   });
-   const c=document.querySelector('[data-studio-caret]')?.getBoundingClientRect();
-   const clip=root.closest('[data-studio-scroller]')!.getBoundingClientRect();
-   const second=boxes.find(b=>b.top>=frames[1].top-.2);
-   return {count:boxes.length,inside:boxes.every(b=>frames.some(f=>b.top>=f.top-.2&&b.bottom<=f.bottom+.2)),
-    second:!!second&&Math.abs(second.top-frames[1].top)<=1,
-    caret:!!c&&frames.some(f=>c.top>=f.top&&c.bottom<=f.bottom),visible:!!c&&c.top>=clip.top&&c.bottom<=clip.bottom};
-  })).toEqual({count:31,inside:true,second:true,caret:true,visible:true});
+  const lines=[await settledCaret(page)];
+  for(let i=0;i<30;i++){
+   await page.keyboard.press(key);
+   lines.push(await settledCaret(page));
+   await expectCaretVisible(page);
+  }
+  expect(lines).toHaveLength(31);
+  expect(lines.every(line=>line.page===1||line.page===2)).toBe(true);
+  const firstOnPageTwo=lines.find(line=>line.page===2);
+  expect(firstOnPageTwo).toBeDefined();
+  expect(Math.abs(firstOnPageTwo!.fromTop)).toBeLessThanOrEqual(1);
   await caretInside(page,true);
  });
 }
+for(const value of ['50','100','150'])for(const key of ['Enter','Shift+Enter']){
+ test(`${key} transition keypress keeps the caret visible at ${value}%`,async({page})=>{
+  await open(page);await zoom(page,value);
+  const target=key==='Enter'?3:2;
+  const transitions:number[]=[];
+  let previous=1;
+  for(let presses=1;presses<=75;presses++){
+   await page.keyboard.press(key);
+   const caret=await settledCaret(page);
+   // Check every key, and especially the transition itself; NO extra key to scroll.
+   await expectCaretVisible(page);
+   if(caret.page>previous){
+    expect(caret.page).toBe(previous+1);
+    expect(Math.abs(caret.fromTop)).toBeLessThanOrEqual(1);
+    transitions.push(caret.page);previous=caret.page;
+   }
+   if(caret.page===target)break;
+  }
+  expect(transitions).toEqual(target===3?[2,3]:[2]);
+ });
+}
+test('caret follow does not move an already visible viewport or a mouse selection',async({page})=>{
+ await open(page);
+ const scroller=page.locator('[data-studio-scroller]');
+ for(let i=0;i<8;i++)await page.keyboard.press('Enter');
+ await expectCaretVisible(page);
+ const before=await scroller.evaluate(el=>el.scrollTop);
+ await page.keyboard.type('Still visible');
+ await settledCaret(page);await expectCaretVisible(page);
+ expect(await scroller.evaluate(el=>el.scrollTop)).toBe(before);
+ const paragraphs=page.locator('.ProseMirror p');
+ const first=(await paragraphs.nth(1).boundingBox())!,last=(await paragraphs.nth(6).boundingBox())!;
+ await page.mouse.move(first.x+first.width-8,first.y+8);await page.mouse.down();
+ await page.mouse.move(last.x+last.width-40,last.y+12,{steps:8});
+ await expect.poll(()=>page.evaluate(()=>!!window.getSelection()&&!window.getSelection()!.isCollapsed)).toBe(true);
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+ expect(await scroller.evaluate(el=>el.scrollTop)).toBe(before);
+ await page.mouse.up();
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+ expect(await scroller.evaluate(el=>el.scrollTop)).toBe(before);
+});
 for(const pattern of ['mixed','typed'])test(`${pattern} paragraphs retain typed-text page capacity`,async({page})=>{
  await open(page);
  for(let i=0;i<30;i++){

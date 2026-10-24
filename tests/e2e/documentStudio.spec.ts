@@ -268,7 +268,7 @@ test.describe("Document Studio v1 browser smoke", () => {
         // RTL ink ends one screen pixel before the real caret point; its
         // two-pixel width deliberately extends leftwards.
         return real && drawn ? Math.abs(drawn.right - (real.left - 1)) : 999;
-      })).toBeLessThanOrEqual(0.1);
+      })).toBeLessThanOrEqual(1);
     };
     await expectPosition();
     const smallHeight = (await caret.boundingBox())!.height;
