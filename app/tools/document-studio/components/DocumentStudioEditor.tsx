@@ -1531,12 +1531,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     saveDocumentViewMode(mode);
   };
 
-  const setZoom = (next: DocumentZoom) => {
+  const setZoom = useCallback((next: DocumentZoom) => {
     zoomTouchedRef.current = true;
     setZoomState(next);
     saveDocumentZoom(next);
     if(editor && canvasToolRef.current === "text") editor.commands.focus();
-  };
+  }, [editor]);
 
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
@@ -1547,7 +1547,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       event.preventDefault();setZoom(next);
     };
     window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
-  });
+  }, [setZoom]);
 
   useEffect(() => {
     if (zoomTouchedRef.current || typeof window === "undefined") return;

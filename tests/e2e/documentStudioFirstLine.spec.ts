@@ -129,16 +129,14 @@ test("a new page starts its first selected line at the top margin", async ({ pag
 });
 
 test("a heading followed by body text uses the same first-line-only rule as PDF", async ({ page }) => {
-  // Isolate line painting from the existing heading/float pagination behavior.
-  // Heading pagination is outside this PR; this fixture has one controlled frame.
+  // Existing heading documents must render safely without test-only CSS.
   await page.setViewportSize({width:1920,height:1080});
   await page.goto("/tools/document-studio");
-  await page.addStyleTag({content:".ProseMirror h1 { clear: none !important; }"});
   const story = page.locator(".ProseMirror");
   await expect(story).toBeEditable();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
   await page.locator('[data-studio-tool-button="text"]').click(); await story.click();
-  await page.locator('[data-studio-style-control]').selectOption("heading-1");
+  await story.evaluate(root => (root as HTMLElement & {editor: import("@tiptap/core").Editor}).editor.commands.setHeading({level:1}));
   await page.keyboard.type("اردو عنوان"); await page.keyboard.press("Enter");
   await page.locator('[data-studio-style-control]').selectOption("normal");
   await page.keyboard.type("یہ متن اپنی عام جگہ پر رہتا ہے۔");
@@ -223,7 +221,7 @@ test("an empty first paragraph caret clears the top margin guide", async ({page}
   await page.keyboard.press("Control+Home");
   await expect(page.locator('[data-studio-caret]')).toBeVisible();
   await expect.poll(()=>story.evaluate(root=>{
-    const topGuide=root.closest('[data-studio-selection-host]')!.parentElement!.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
+    const topGuide=root.closest('[data-studio-pages-stack]')!.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
     const caret=document.querySelector('[data-studio-caret]')!.getBoundingClientRect();
     return Math.abs(caret.top-topGuide.bottom);
   })).toBeLessThanOrEqual(1);

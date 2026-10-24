@@ -25,7 +25,7 @@ for(const zoom of ['200','300'])test(`${zoom}% preserves caret, line selection a
  await open(page);await page.keyboard.insertText('السلام علیکم');await page.keyboard.press('Enter');await page.keyboard.insertText('گھر کا کام');await page.locator('[data-studio-zoom-control]').selectOption(zoom);await settle(page);await visibleCaret(page);
  await expect.poll(()=>page.evaluate(()=>{
   const c=document.querySelector('[data-studio-caret]')?.getBoundingClientRect(),g=document.querySelector('[data-studio-margin-guide="1"]')!,r=g.querySelector('[data-studio-margin-line="right"]')!.getBoundingClientRect(),l=g.querySelector('[data-studio-margin-line="left"]')!.getBoundingClientRect();
-  return !!c&&Math.abs(c.width-2)<.2&&c.right<=r.left+1&&c.left>=l.right-1&&Math.abs(r.left-Math.round(r.left))<.2&&Math.abs(l.left-Math.round(l.left))<.2;
+  return !!c&&Math.abs(c.width-2)<.2&&c.right<=r.left+1&&c.left>=l.right-1&&Math.abs(r.left*devicePixelRatio-Math.round(r.left*devicePixelRatio))<.2&&Math.abs(l.left*devicePixelRatio-Math.round(l.left*devicePixelRatio))<.2;
  })).toBe(true);
  await all(page);await expect(page.locator('[data-studio-line-selection]')).toHaveCount(2);await settle(page);
  const data=await page.locator('[data-studio-line-selection]').evaluateAll(xs=>xs.map(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height};}).sort((a,b)=>a.top-b.top));

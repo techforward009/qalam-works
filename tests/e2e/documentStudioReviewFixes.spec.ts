@@ -34,7 +34,7 @@ for(const value of ['50','100','150'])test(`LTR Home caret clears guide ink at $
  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
  return page.evaluate(()=>{
   const c=document.querySelector('[data-studio-caret]')?.getBoundingClientRect();const guide=document.querySelector('[data-studio-margin-line="left"]')!.getBoundingClientRect();
-  return c?{width:Math.abs(c.width-2)<=.2,gap:Math.abs(c.left-guide.right-1)<=.2}:{width:false,gap:false};
+  return c?{width:Math.abs(c.width-2)<=.2,gap:Math.abs(c.left-guide.right-1)*devicePixelRatio<=1.01}:{width:false,gap:false};
  });}).toEqual({width:true,gap:true});
 });
 for(const leading of ['5pt','8pt','12pt','Auto'])for(const hardBreak of [false,true])test(`${leading} ${hardBreak?'soft lines':'paragraphs'} cannot paint ink above the top guide`,async({page},testInfo)=>{

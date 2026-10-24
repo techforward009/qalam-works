@@ -24,3 +24,22 @@ describe('Home guard',()=>{
  it('uses an original house and an accessible Home label',()=>{render(<StudioHomeButton dirty={false}/>);const link=screen.getByRole('link',{name:'Home'});expect(link.getAttribute('title')).toBe('Home');expect(link.querySelector('svg path')?.getAttribute('d')).toContain('14.5');expect(link.getAttribute('href')).toBe('/');});
  it('offers Stay and Leave only when dirty',()=>{render(<StudioHomeButton dirty/>);fireEvent.click(screen.getByRole('link',{name:'Home'}));expect(screen.getByRole('dialog')).toBeTruthy();expect(screen.getByText('You have unsaved changes. Leave Qalam Page?')).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Stay'}));expect(screen.queryByRole('dialog')).toBeNull();expect(push).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('link',{name:'Home'}));fireEvent.click(screen.getByRole('button',{name:'Leave'}));expect(push).toHaveBeenCalledWith('/');});
 });
+
+describe('automatic pagination safety',()=>{
+ it('bounds runaway float displacement by the actual content and warns',async()=>{
+  const {guardAutomaticPageCount}=await import('../app/tools/document-studio/extensions/QalamPagination');
+  const dom=document.createElement('div'),heading=document.createElement('h1');dom.append(heading);
+  Object.defineProperty(heading,'offsetHeight',{value:80});
+  const geometry={enabled:true,pageWidthPx:800,pageHeightPx:1100,marginTopPx:50,marginBottomPx:50,marginLeftPx:50,marginRightPx:50,gapPx:12,canvasColor:'#fff',minimumPages:1};
+  const warning=vi.spyOn(console,'warn').mockImplementation(()=>{});
+  expect(guardAutomaticPageCount(dom,geometry,1,80)).toBe(2);
+  expect(guardAutomaticPageCount(dom,geometry,1,80)).toBe(2);
+  expect(warning).toHaveBeenCalledTimes(1);warning.mockRestore();
+ });
+ it('limits a single growth pass even for very long content',async()=>{
+  const {guardAutomaticPageCount}=await import('../app/tools/document-studio/extensions/QalamPagination');
+  const dom=document.createElement('div'),p=document.createElement('p');dom.append(p);Object.defineProperty(p,'offsetHeight',{value:50000});
+  const geometry={enabled:true,pageWidthPx:800,pageHeightPx:1100,marginTopPx:50,marginBottomPx:50,marginLeftPx:50,marginRightPx:50,gapPx:12,canvasColor:'#fff',minimumPages:1};
+  const warning=vi.spyOn(console,'warn').mockImplementation(()=>{});expect(guardAutomaticPageCount(dom,geometry,1,70)).toBe(9);warning.mockRestore();
+ });
+});

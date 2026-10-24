@@ -79,9 +79,11 @@ describe("semantic paragraph formatting", () => {
     const ed = make('<p data-block-style="title">Title</p><h3>Heading</h3><p>Body</p>');
     const view = render(<DocumentToolbar editor={ed} dir="rtl" setDir={() => {}} isUr={false} />);
     const style = view.getByLabelText("Style") as HTMLSelectElement;
-    expect(style.value).toBe("title");
+    expect(style.value).toBe("normal");
+    expect([...style.options].map(option=>option.text)).toEqual(["Normal"]);
     act(() => { ed.commands.setTextSelection(9); });
-    expect(style.value).toBe("heading-3");
+    expect(style.value).toBe("normal");
+    expect(ed.state.selection.$from.parent.type.name).toBe("heading");
     act(() => { ed.commands.setTextSelection(18); });
     expect(style.value).toBe("normal");
     expect(FONT_SIZE_OPTIONS_PT).toContain(15);

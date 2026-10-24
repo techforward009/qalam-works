@@ -253,14 +253,6 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
         labelUr: "پیراگراف انداز",
         items: [
           { type: "action", id: "format.style.normal", labelEn: "Normal", labelUr: "عام" },
-          { type: "action", id: "format.style.title", labelEn: "Title", labelUr: "عنوان" },
-          { type: "action", id: "format.style.subtitle", labelEn: "Subtitle", labelUr: "ذیلی عنوان" },
-          { type: "action", id: "format.style.heading-1", labelEn: "Heading 1", labelUr: "سرخی 1" },
-          { type: "action", id: "format.style.heading-2", labelEn: "Heading 2", labelUr: "سرخی 2" },
-          { type: "action", id: "format.style.heading-3", labelEn: "Heading 3", labelUr: "سرخی 3" },
-          { type: "action", id: "format.style.heading-4", labelEn: "Heading 4", labelUr: "سرخی 4" },
-          { type: "action", id: "format.style.quote", labelEn: "Quote", labelUr: "اقتباس" },
-          { type: "action", id: "format.style.caption", labelEn: "Caption", labelUr: "کیپشن" },
         ],
       },
       {

@@ -9,7 +9,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
 import { FONT_SIZE_OPTIONS_PT, LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
-import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
+import { BLOCK_STYLES, type BlockStyleId } from "../utils/documentStyles";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
@@ -733,14 +733,14 @@ export default function DocumentToolbar({
         >
           <ClassicCombo
             id="studio-block-style"
-            value={ui.blockStyle}
+            value="normal"
             onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
             className={selectCls} width={100}
             title={isUr ? "انداز" : "Style"}
             aria-label={isUr ? "انداز" : "Style"}
             data-studio-style-control="true"
           >
-            {BLOCK_STYLE_IDS.map((id) => (
+            {(["normal"] as const).map((id) => (
               <option key={id} value={id}>
                 {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
               </option>

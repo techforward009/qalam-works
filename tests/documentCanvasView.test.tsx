@@ -75,7 +75,7 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelectorAll("[data-studio-margin-corner]").length).toBe(0);
     expect(document.querySelector("[data-margin-cross='page']")).toBeTruthy();
     const marginLine = document.querySelector("[data-studio-margin-line='left']") as HTMLElement;
-    expect(marginLine.style.borderLeft.toLowerCase()).toMatch(/#000|rgb\(0,\s*0,\s*0\)|black/);
+    expect(marginLine.style.background.toLowerCase()).toMatch(/#000|rgb\(0,\s*0,\s*0\)|black/);
     const sheet = document.querySelector("[data-studio-page-sheet]") as HTMLElement;
     expect(sheet.className).not.toContain("rounded");
     expect(sheet.style.borderRadius).toBe("0px");

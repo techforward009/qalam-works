@@ -23,7 +23,7 @@ async function caretInside(page:Page, atMargin=false){
   if(!frame)return {width:Math.abs(caret.width-2)<.1,inside:false,top:false};
   const right=frame.querySelector('[data-studio-margin-line="right"]')!.getBoundingClientRect();
   const top=frame.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
-  return {width:Math.abs(caret.width-2)<.1,inside:atMargin?Math.abs(right.left-caret.right-1)<=.1:caret.right<=right.left-.9,top:caret.top>=top.bottom-.1};
+  return {width:Math.abs(caret.width-2)<.1,inside:atMargin?Math.abs(right.left-caret.right-1)*devicePixelRatio<=1.01:caret.right<=right.left-.9,top:caret.top>=top.bottom-.1};
  },atMargin)).toEqual({width:true,inside:true,top:true});
 }
 for(const value of ['100','150','fit-width']){

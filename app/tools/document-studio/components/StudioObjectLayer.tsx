@@ -1,5 +1,5 @@
 "use client";
-import { snapStudioGuide } from "../utils/documentView";
+import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
@@ -515,7 +515,7 @@ function StudioCaret({
         height: Number.isFinite(leading) ? leading/scale : (coords.bottom-coords.top)/scale, scale,
         rtl,
         blockLeft: (bounds.left-rect.left)/scale, blockRight: (bounds.right-rect.left)/scale,
-        contentRight: snapStudioGuide(pageWidthPx-marginRightPx,scale),
+        contentRight: pageWidthPx-marginRightPx,
         contentLeft: geometry?.marginLeftPx ?? 0,
         contentBottom: geometry?.enabled ? page*(geometry.pageHeightPx+geometry.gapPx)+geometry.pageHeightPx-geometry.marginBottomPx : undefined,
         contentTop: marginTopPx+page*(geometry ? geometry.pageHeightPx+geometry.gapPx : 0),
@@ -540,21 +540,21 @@ function StudioCaret({
 
   if (!box) return null;
   return (
-    <div
+    <StudioScreenOverlay zoom={zoom} zIndex={8}>{({x,y,scale})=><div
       key={`${box.left}:${box.top}:${box.height}`}
       ref={caretRef}
       data-studio-caret="true"
       style={{
         animation: "qalam-studio-caret-blink 1060ms step-end infinite",
         position: "absolute",
-        left: box.left,
-        top: box.top,
-        width: box.width,
-        height: box.height,
+        left: Math.max(x(getQalamPaginationState(editor!)?.geometry.marginLeftPx ?? 0)+2, Math.min(x(pageWidthPx-marginRightPx)-3,x(box.left))),
+        top: y(box.top),
+        width: 2,
+        height: box.height*scale,
         background: "#000",
         pointerEvents: "none",
         zIndex: 8,
       }}
-    />
+    />}</StudioScreenOverlay>
   );
 }
