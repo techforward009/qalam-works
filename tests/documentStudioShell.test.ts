@@ -275,7 +275,7 @@ describe("document menus", () => {
     expect(ids).toContain("insert.link");
     expect(ids).toContain("insert.table");
     expect(ids).toContain("insert.image");
-    expect(ids).toContain("format.style.title");
+    expect(ids.filter(id=>id.startsWith("format.style."))).toEqual(["format.style.normal"]);
     expect(ids).toContain("tools.stats");
     expect(ids).not.toContain("share" as never);
     const blob = menuCatalogText();

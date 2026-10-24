@@ -8,14 +8,14 @@ export function caretGeometry(input: CaretGeometryInput) {
   const width = 2 / scale, inset = 1 / scale;
   const min = input.rtl
     ? Math.max(input.blockLeft, input.contentLeft ?? input.blockLeft) + inset
-    : Math.max(input.blockLeft + inset, (input.contentLeft ?? input.blockLeft) + 1 + inset);
+    : Math.max(input.blockLeft + inset, (input.contentLeft ?? input.blockLeft) + 2 * inset);
   const max = Math.max(min, Math.min(input.blockRight, input.contentRight) - width - inset);
   const bottom = input.contentBottom ?? Infinity;
-  const topGuard = input.contentTop + Math.max(inset,1);
+  const topGuard = input.contentTop + inset;
   const top = Math.min(Math.max(input.top,topGuard),Math.max(topGuard,bottom-input.height));
   return {
     left: Math.max(min, Math.min(max, input.rtl ? input.x - width - inset : input.x + inset)),
-    // The top guide itself is one page pixel thick, even when zoomed.
+    // The guide and its clearance are screen pixels at every magnification.
     top,
     width, height: Math.max(0,Math.min(input.height,bottom-top)),
   };

@@ -9,7 +9,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
 import { FONT_SIZE_OPTIONS_PT, LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
-import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
+import { BLOCK_STYLES, type BlockStyleId } from "../utils/documentStyles";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
@@ -377,18 +377,21 @@ function isLightHex(hex: string): boolean {
 }
 
 function ParagraphSpacingMenu({
+  openRequest = 0,
   editor,
   ui,
   settings,
   isUr,
 }: {
   editor: Editor;
+  openRequest?: number;
   ui: NonNullable<ReturnType<typeof resolveActiveToolbarFormatting>>;
   settings: DocumentStudioSettings;
   isUr: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  useEffect(()=>{if(!openRequest)return;setOpen(false);setCustomOpen(true);const raf=requestAnimationFrame(()=>rootRef.current?.querySelector<HTMLInputElement>("input")?.focus());return()=>cancelAnimationFrame(raf);},[openRequest]);
   const rootRef = useRef<HTMLDivElement>(null);
   const label = isUr ? "پیراگراف فاصلہ" : "Paragraph spacing";
 
@@ -669,6 +672,7 @@ export default function DocumentToolbar({
   documentSettings,
   englishFont = "Arial Unicode MS",
   onEnglishFontChange,
+  paragraphRequest = 0,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -681,6 +685,7 @@ export default function DocumentToolbar({
   documentSettings?: DocumentStudioSettings;
   englishFont?: string;
   onEnglishFontChange?: (family: string) => void;
+  paragraphRequest?: number;
 }) {
   const leadingRef = useRef<HTMLInputElement>(null);
   const kerningRef = useRef<HTMLSelectElement>(null);
@@ -728,14 +733,14 @@ export default function DocumentToolbar({
         >
           <ClassicCombo
             id="studio-block-style"
-            value={ui.blockStyle}
+            value="normal"
             onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
             className={selectCls} width={100}
             title={isUr ? "انداز" : "Style"}
             aria-label={isUr ? "انداز" : "Style"}
             data-studio-style-control="true"
           >
-            {BLOCK_STYLE_IDS.map((id) => (
+            {(["normal"] as const).map((id) => (
               <option key={id} value={id}>
                 {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
               </option>
@@ -834,7 +839,7 @@ export default function DocumentToolbar({
           <ToolbarButton width={19} label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="justify" /></ToolbarButton>
           <ToolbarButton width={19} label={isUr ? "تقسیم" : "Distribute"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="distribute" /></ToolbarButton>
           </div>
-          <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
+          <ParagraphSpacingMenu openRequest={paragraphRequest} editor={editor} ui={ui} settings={settings} isUr={isUr} />
           <ClassicCombo
             id="studio-font-family"
             data-studio-font-family="true"

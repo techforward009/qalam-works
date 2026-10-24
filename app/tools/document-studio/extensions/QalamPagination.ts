@@ -54,6 +54,7 @@ export type QalamPaginationPluginState = {
   geometry: QalamPaginationGeometry;
   pageCount: number;
   decorations: DecorationSet;
+  oversized: number[];
 };
 
 const DISABLED: QalamPaginationGeometry = {
@@ -156,6 +157,13 @@ export function paginationCss(): string {
   height: 0;
 }
 .ProseMirror.${QALAM_PAGINATION_CLASS} [data-studio-empty-line-strut] { display: inline-block !important; }
+.ProseMirror.${QALAM_PAGINATION_CLASS} [data-studio-oversized-line] {
+  line-height: var(--qalam-content-height) !important;
+  max-height: var(--qalam-content-height);
+  margin-block: 0 !important;
+  overflow: hidden;
+  clear: none;
+}
 .${QALAM_PAGINATION_CLASS}-pages {
   pointer-events: none;
   user-select: none;
@@ -291,9 +299,10 @@ export function buildPaginationWidget(pageCount: number): HTMLElement {
   return root;
 }
 
-function decorationSet(doc: EditorView["state"]["doc"], pageCount: number): DecorationSet {
+function decorationSet(doc: EditorView["state"]["doc"], pageCount: number, oversized:number[]=[]): DecorationSet {
   const count = Math.max(1, pageCount);
   return DecorationSet.create(doc, [
+    ...oversized.flatMap(pos=>{const node=doc.nodeAt(pos);return node?[Decoration.node(pos,pos+node.nodeSize,{"data-studio-oversized-line":"true"})]:[];}),
     Decoration.widget(0, () => buildPaginationWidget(count), {
       side: -1,
       ignoreSelection: true,
@@ -329,13 +338,30 @@ function lastContentBottom(dom: HTMLElement): number {
 
 const MAX_PAGES = 80;
 
+/** Bound feedback-driven growth by actual block heights and explicit breaks.
+ * An oversized, indivisible line belongs on one sheet, not dozens of blanks. */
+export function automaticPageLimit(dom: HTMLElement, geometry: QalamPaginationGeometry): number {
+  const blocks = Array.from(dom.children).filter(child=>!child.hasAttribute(QALAM_PAGINATION_ATTR)) as HTMLElement[];
+  const height = blocks.reduce((sum,block)=>sum+block.offsetHeight,0);
+  const breaks = dom.querySelectorAll('[data-document-page-break],[data-document-section-break]').length;
+  return Math.min(MAX_PAGES, Math.max(geometry.minimumPages,1) + breaks + Math.ceil(height/contentAreaHeightPx(geometry)));
+}
+const warnedPageLimits = new WeakSet<HTMLElement>();
+export function guardAutomaticPageCount(dom:HTMLElement, geometry:QalamPaginationGeometry, current:number, requested:number):number {
+  const limit=Math.min(automaticPageLimit(dom,geometry),Math.max(geometry.minimumPages,1,current+8));
+  if(requested>limit && !warnedPageLimits.has(dom)){
+    warnedPageLimits.add(dom);console.warn('Qalam Page: automatic pagination growth capped', {requested,limit});
+  }
+  return Math.min(requested,limit);
+}
+
 /**
  * Measure overflow using offsetTop/offsetHeight (unscaled), never
  * transform-affected getBoundingClientRect.
  */
 export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPaginationGeometry, _currentCount: number): number {
   const floor = Math.max(1, Math.min(MAX_PAGES, Math.floor(geometry.minimumPages) || 1));
-  const atLeast = (count: number) => Math.min(MAX_PAGES, Math.max(floor, count));
+  const atLeast = (count: number) => guardAutomaticPageCount(dom,geometry,_currentCount,Math.max(floor, count));
   if (!geometry.enabled || !(geometry.pageHeightPx > 0)) return 1;
   const contentH = contentAreaHeightPx(geometry);
   const contentBottom = lastContentBottom(dom);
@@ -385,30 +411,35 @@ function createPaginationPlugin() {
   return new Plugin<QalamPaginationPluginState>({
     key: qalamPaginationKey,
     state: {
-      init: () => ({ geometry: DISABLED, pageCount: 1, decorations: DecorationSet.empty }),
+      init: () => ({ geometry: DISABLED, pageCount: 1, decorations: DecorationSet.empty, oversized:[] }),
       apply(tr, prev) {
         const nextGeometry = (tr.getMeta(QALAM_PAGINATION_GEOMETRY_META) as QalamPaginationGeometry | undefined) ?? prev.geometry;
         const countMeta = tr.getMeta(QALAM_PAGINATION_COUNT_META);
         const nextCount =
           typeof countMeta === "number" && Number.isFinite(countMeta)
-            ? Math.max(1, Math.floor(countMeta))
+            ? Math.min(MAX_PAGES, Math.max(1, Math.floor(countMeta)))
             : prev.pageCount;
+        const oversizedMeta=tr.getMeta('qalamOversizedLines') as number[]|undefined;
+        const oversized=oversizedMeta ?? prev.oversized.flatMap(pos=>{const mapped=tr.mapping.mapResult(pos);return mapped.deleted?[]:[mapped.pos];});
+        const oversizedChanged=oversized.length!==prev.oversized.length || oversized.some((pos,index)=>pos!==prev.oversized[index]);
         const geoChanged = !geometryEqual(nextGeometry, prev.geometry);
         const countChanged = nextCount !== prev.pageCount;
         if (!nextGeometry.enabled) {
-          return { geometry: nextGeometry, pageCount: 1, decorations: DecorationSet.empty };
+          return { geometry: nextGeometry, pageCount: 1, decorations: DecorationSet.empty, oversized:[] };
         }
-        if (geoChanged || countChanged) {
+        if (geoChanged || countChanged || oversizedChanged) {
           return {
             geometry: nextGeometry,
             pageCount: nextCount,
-            decorations: decorationSet(tr.doc, nextCount),
+            decorations: decorationSet(tr.doc, nextCount, oversized),
+            oversized,
           };
         }
         return {
           geometry: nextGeometry,
           pageCount: nextCount,
           decorations: prev.decorations.map(tr.mapping, tr.doc),
+          oversized,
         };
       },
     },
@@ -438,6 +469,20 @@ function createPaginationPlugin() {
         if (!st) return;
         syncDom();
         if (!st.geometry.enabled) return;
+        const contentH=contentAreaHeightPx(st.geometry), oversized:number[]=[];
+        view.dom.querySelectorAll<HTMLElement>('p,h1,h2,h3,h4,h5,h6').forEach(block=>{
+          const inline=block.style.lineHeight, fontSize=parseFloat(getComputedStyle(block).fontSize);
+          const leading=inline.endsWith('pt')?parseFloat(inline)*4/3:inline.endsWith('px')?parseFloat(inline):inline&&Number.isFinite(Number(inline))?Number(inline)*fontSize:parseFloat(getComputedStyle(block).lineHeight);
+          if(leading>contentH || [block,...block.querySelectorAll<HTMLElement>('span')].some(node=>parseFloat(getComputedStyle(node).fontSize)>contentH)) {
+            oversized.push(view.posAtDOM(block,0)-1);
+          }
+        });
+        if(oversized.length!==st.oversized.length || oversized.some((pos,index)=>pos!==st.oversized[index])){
+          // Decoration attributes survive ProseMirror's DOM observer. Mutating
+          // these attributes directly is reverted on its next reconciliation.
+          view.dispatch(view.state.tr.setMeta('qalamOversizedLines',oversized).setMeta('addToHistory',false));
+          schedule();return;
+        }
         const measured = measureUnscaledPageCount(view.dom as HTMLElement, st.geometry, st.pageCount);
         if (measured !== st.pageCount) {
           const tr = view.state.tr

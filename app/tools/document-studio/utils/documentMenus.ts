@@ -30,6 +30,8 @@ export type MenuActionId =
   | "view.zoom.100"
   | "view.zoom.125"
   | "view.zoom.150"
+  | "view.zoom.200"
+  | "view.zoom.300"
   | "view.zoom.fit-width"
   | "view.zoom.fit-page"
   | "view.ruler"
@@ -199,6 +201,8 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
           { type: "action", id: "view.zoom.100", labelEn: "100%", labelUr: "100%" },
           { type: "action", id: "view.zoom.125", labelEn: "125%", labelUr: "125%" },
           { type: "action", id: "view.zoom.150", labelEn: "150%", labelUr: "150%" },
+          { type: "action", id: "view.zoom.200", labelEn: "200%", labelUr: "200%" },
+          { type: "action", id: "view.zoom.300", labelEn: "300%", labelUr: "300%" },
           { type: "separator" },
           { type: "action", id: "view.zoom.fit-width", labelEn: "Fit width", labelUr: "چوڑائی کے مطابق" },
           { type: "action", id: "view.zoom.fit-page", labelEn: "Fit page", labelUr: "صفحہ کے مطابق" },
@@ -249,14 +253,6 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
         labelUr: "پیراگراف انداز",
         items: [
           { type: "action", id: "format.style.normal", labelEn: "Normal", labelUr: "عام" },
-          { type: "action", id: "format.style.title", labelEn: "Title", labelUr: "عنوان" },
-          { type: "action", id: "format.style.subtitle", labelEn: "Subtitle", labelUr: "ذیلی عنوان" },
-          { type: "action", id: "format.style.heading-1", labelEn: "Heading 1", labelUr: "سرخی 1" },
-          { type: "action", id: "format.style.heading-2", labelEn: "Heading 2", labelUr: "سرخی 2" },
-          { type: "action", id: "format.style.heading-3", labelEn: "Heading 3", labelUr: "سرخی 3" },
-          { type: "action", id: "format.style.heading-4", labelEn: "Heading 4", labelUr: "سرخی 4" },
-          { type: "action", id: "format.style.quote", labelEn: "Quote", labelUr: "اقتباس" },
-          { type: "action", id: "format.style.caption", labelEn: "Caption", labelUr: "کیپشن" },
         ],
       },
       {

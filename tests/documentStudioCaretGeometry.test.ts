@@ -5,7 +5,7 @@ it.each([1,1.5,3.333,0.625])("keeps RTL ink two screen pixels wide and one insid
  const box=caretGeometry({...input,scale});
  expect(box.width*scale).toBeCloseTo(2,8);
  expect((700-box.left-box.width)*scale).toBeCloseTo(1,8);
- expect((box.top-48)*scale).toBeCloseTo(Math.max(1,scale),8);
+ expect((box.top-48)*scale).toBeCloseTo(1,8);
 });
 it("draws RTL leftwards and LTR rightwards from an interior caret point",()=>{
  expect(caretGeometry({...input,x:300}).left).toBe(297);
@@ -19,6 +19,6 @@ it.each([true,false])("clamps outside positions to the block and content box, RT
 
 it.each([.5,1,1.5])("clears the full LTR guide ink at scale %s without changing RTL",scale=>{
  const box=caretGeometry({...input,x:48,rtl:false,contentLeft:48,scale});
- expect((box.left-49)*scale).toBeCloseTo(1,8);expect(box.width*scale).toBeCloseTo(2,8);
+ expect((box.left-48)*scale).toBeCloseTo(2,8);expect(box.width*scale).toBeCloseTo(2,8);
  const rtl=caretGeometry({...input,scale});expect((700-rtl.left-rtl.width)*scale).toBeCloseTo(1,8);
 });

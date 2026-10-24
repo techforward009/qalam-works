@@ -2,8 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
-import { useLanguage } from "../../../lib/language-context";
+import { StudioHomeButton } from "./StudioHomeButton";
 import {
   applyMenuEscape,
   CLOSED_MENU_STATE,
@@ -108,42 +107,6 @@ function MenuItems({
   })}</>;
 }
 
-function StudioLanguageSwitch() {
-  const { language, setLanguage } = useLanguage();
-  return (
-    <div
-      role="group"
-      aria-label="Document language"
-      dir="ltr"
-      data-studio-language-switch="true"
-      className="me-1 inline-flex h-[18px] shrink-0 items-center rounded-none border border-[#808080] bg-[#f0f0f0]"
-      style={{ height: 18, maxHeight: 18 }}
-    >
-      <button
-        type="button"
-        lang="en"
-        aria-pressed={language === "en"}
-        style={{ height: 16, minHeight: 16, maxHeight: 16 }}
-        onClick={() => setLanguage("en")}
-        className={`grid h-[16px] min-w-7 place-items-center rounded-none px-1 text-[11px] font-semibold leading-none ${language === "en" ? "bg-[#d9d9d9] text-black" : "text-black hover:bg-[#e5e5e5]"}`}
-      >
-        EN
-      </button>
-      <button
-        type="button"
-        lang="ur"
-        dir="rtl"
-        aria-pressed={language === "ur"}
-        style={{ height: 16, minHeight: 16, maxHeight: 16 }}
-        onClick={() => setLanguage("ur")}
-        className={`grid h-[16px] min-w-9 place-items-center rounded-none px-1 text-[12px] font-semibold leading-none ${language === "ur" ? "bg-[#d9d9d9] text-black" : "text-black hover:bg-[#e5e5e5]"}`}
-      >
-        اردو
-      </button>
-    </div>
-  );
-}
-
 function moveMenuFocus(container: HTMLElement | null, key: string) {
   if (!container) return;
   const items = [...container.querySelectorAll<HTMLElement>("[role='menuitem']:not([disabled])")];
@@ -162,6 +125,7 @@ export default function DocumentMenuBar({
   checkedIds,
   showHome = false,
   endSlot,
+  hasUnsavedChanges = false,
 }: {
   isUr: boolean;
   onAction: (id: MenuActionId) => void;
@@ -169,6 +133,7 @@ export default function DocumentMenuBar({
   checkedIds?: ReadonlySet<MenuActionId>;
   showHome?: boolean;
   endSlot?: React.ReactNode;
+  hasUnsavedChanges?: boolean;
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
   const [inlineSubmenus, setInlineSubmenus] = useState(false);
@@ -379,22 +344,9 @@ export default function DocumentMenuBar({
         className="flex items-center"
         style={{ height: 22, padding: "0 6px", fontSize: 12, lineHeight: "22px", borderBottom: "1px solid #d0d0d0" }}
       >
-        {showHome ? (
-          <Link
-            href="/"
-            data-studio-home="true"
-            data-latin-control="true"
-            aria-label="Qalam Works"
-            className="me-1 inline-flex h-4 w-4 shrink-0 items-center justify-center text-[#000]"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <path d="M2 7 H12 M7 2 V12" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          </Link>
-        ) : null}
+        {showHome ? <StudioHomeButton dirty={hasUnsavedChanges} /> : null}
         <span className="shrink-0 whitespace-pre" data-latin-control="true">Qalam Page - </span>
         <div className="flex min-w-0 flex-1 items-center">{endSlot}</div>
-        {showHome ? <StudioLanguageSwitch /> : null}
       </div>
       <div
         ref={rootRef}

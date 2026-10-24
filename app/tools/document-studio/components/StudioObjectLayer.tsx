@@ -1,4 +1,5 @@
 "use client";
+import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
@@ -82,11 +83,13 @@ export function StudioObjectLayer({
   marginTopPx,
   marginRightPx,
   typography,
+  zoom = 1,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
   frames: StudioFrame[];
   typography?: DocumentStudioSettings["typography"];
+  zoom?:number;
   onFramesChange: (frames: StudioFrame[]) => void;
   onToolAction: (tool: StudioToolId) => void;
   pageCount: number;
@@ -398,7 +401,7 @@ export function StudioObjectLayer({
           }}
         />
       ) : null}
-      <StudioCaret
+      <StudioCaret zoom={zoom}
         editor={editor}
         hostRef={rootRef}
         pageWidthPx={pageWidthPx}
@@ -455,6 +458,7 @@ function FrameShape({
 }
 
 function StudioCaret({
+  zoom,
   editor,
   hostRef,
   pageWidthPx,
@@ -462,6 +466,7 @@ function StudioCaret({
   marginRightPx,
 }: {
   editor: Editor | null;
+  zoom:number;
   hostRef: React.RefObject<HTMLDivElement | null>;
   pageWidthPx: number;
   marginTopPx: number;
@@ -531,25 +536,25 @@ function StudioCaret({
       editor.off("focus", place);
       editor.off("blur", place);
     };
-  }, [editor, hostRef, marginRightPx, marginTopPx, pageWidthPx]);
+  }, [editor, hostRef, marginRightPx, marginTopPx, pageWidthPx, zoom]);
 
   if (!box) return null;
   return (
-    <div
+    <StudioScreenOverlay zoom={zoom} zIndex={8}>{({x,y,scale})=><div
       key={`${box.left}:${box.top}:${box.height}`}
       ref={caretRef}
       data-studio-caret="true"
       style={{
         animation: "qalam-studio-caret-blink 1060ms step-end infinite",
         position: "absolute",
-        left: box.left,
-        top: box.top,
-        width: box.width,
-        height: box.height,
+        left: Math.max(x(getQalamPaginationState(editor!)?.geometry.marginLeftPx ?? 0)+2, Math.min(x(pageWidthPx-marginRightPx)-3,x(box.left))),
+        top: y(box.top),
+        width: 2,
+        height: box.height*scale,
         background: "#000",
         pointerEvents: "none",
         zIndex: 8,
       }}
-    />
+    />}</StudioScreenOverlay>
   );
 }
