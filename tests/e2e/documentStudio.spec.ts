@@ -265,8 +265,10 @@ test.describe("Document Studio v1 browser smoke", () => {
         const rects = selection.getRangeAt(0).getClientRects();
         const real = rects.length ? rects[rects.length - 1] : null;
         const drawn = document.querySelector('[data-studio-caret]')?.getBoundingClientRect();
-        return real && drawn ? Math.abs(drawn.left - real.left) : 999;
-      })).toBeLessThanOrEqual(3);
+        // RTL ink ends one screen pixel before the real caret point; its
+        // two-pixel width deliberately extends leftwards.
+        return real && drawn ? Math.abs(drawn.right - (real.left - 1)) : 999;
+      })).toBeLessThanOrEqual(1);
     };
     await expectPosition();
     const smallHeight = (await caret.boundingBox())!.height;

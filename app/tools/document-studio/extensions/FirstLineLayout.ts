@@ -188,9 +188,10 @@ class FirstLineView {
         const to = !unchangedSize && lo < end && view.state.doc.resolve(lo).nodeAfter?.isText ? lo + 1 : lo;
         let lineTop = first.top, inkTop = first.top, inkBottom = first.bottom;
         let leading = parseFloat(getComputedStyle(dom).lineHeight)*scale || first.bottom-first.top;
-        let measuredText = false;
+        let measuredText = false, onlyBreaks = true;
         // Visit model runs only within this one visual line, never the whole block.
         view.state.doc.nodesBetween(from,to,(part,pos) => {
+          if (part.isInline && part.type.name !== "hardBreak") onlyBreaks = false;
           if (!part.isText) return;
           const begin = Math.max(from,pos), finish = Math.min(to,pos+part.nodeSize);
           const glyph = natural(begin), style = getComputedStyle(glyph.parent);
@@ -220,8 +221,11 @@ class FirstLineView {
           const nextBlock = view.nodeDOM(state.blocks[candidate + 1]) as HTMLElement | null;
           if (nextBlock) nextTop = nextBlock.getBoundingClientRect().top;
         }
-        const offset = firstLinePaintShift(lineTop,inkTop,Math.max(inkBottom,layoutTop+leading),frameTop,frameBottom,layoutTop,scale,nextTop)/scale;
-        runs.push({block,from,to,offset,empty:from===to,selectionOffset:(frameTop-lineTop)/scale-offset,page,width:bounds.width/scale,height:bounds.height/scale});
+        // Struts already put empty visual lines into flow below the breaker.
+        // Do not decorate/paint a hardBreak as text; only align its caret to
+        // that same page-start line box.
+        const offset = !onlyBreaks ? firstLinePaintShift(lineTop,inkTop,Math.max(inkBottom,layoutTop+leading),frameTop,frameBottom,layoutTop,scale,nextTop)/scale : 0;
+        runs.push({block,from,to,offset,empty:onlyBreaks,selectionOffset:(frameTop-lineTop)/scale-offset,page,width:bounds.width/scale,height:bounds.height/scale});
         break; // Only the FIRST line of this page receives an offset.
       }
     }

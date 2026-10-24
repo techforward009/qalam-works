@@ -212,7 +212,7 @@ test("typing in a 100-page-length Urdu document measures a bounded viewport", as
   console.log("100-page-length typing", result);
 });
 
-test("an empty first paragraph and its caret use the frame start", async ({page}) => {
+test("an empty first paragraph caret clears the top margin guide", async ({page}) => {
   await page.setViewportSize({width:1920,height:1080});
   await page.goto("/tools/document-studio");
   const story=page.locator(".ProseMirror");
@@ -223,10 +223,9 @@ test("an empty first paragraph and its caret use the frame start", async ({page}
   await page.keyboard.press("Control+Home");
   await expect(page.locator('[data-studio-caret]')).toBeVisible();
   await expect.poll(()=>story.evaluate(root=>{
-    const prose=root as HTMLElement, rect=prose.getBoundingClientRect(), style=getComputedStyle(prose);
-    const frameTop=rect.top+parseFloat(style.paddingTop)*rect.width/parseFloat(style.width);
+    const topGuide=root.closest('[data-studio-selection-host]')!.parentElement!.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect();
     const caret=document.querySelector('[data-studio-caret]')!.getBoundingClientRect();
-    return Math.abs(caret.top-frameTop);
+    return Math.abs(caret.top-topGuide.bottom);
   })).toBeLessThanOrEqual(1);
   await expect(story.locator('p').last().locator('[data-studio-line-run]')).toHaveCount(0);
 });
