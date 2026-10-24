@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { isSingleEmptyParagraph } from "../utils/singleEmptyParagraph";
+import { caretGeometry } from "../utils/caretGeometry";
+import { getQalamPaginationState } from "../extensions/QalamPagination";
 import { lineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { autoLineHeight } from "../utils/autoLeading";
@@ -489,7 +490,7 @@ function StudioCaret({
   marginTopPx: number;
   marginRightPx: number;
 }) {
-  const [box, setBox] = useState<{ left: number; top: number; height: number } | null>(null);
+  const [box, setBox] = useState<{ left: number; top: number; height: number; width: number } | null>(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -515,11 +516,24 @@ function StudioCaret({
       const leading = parseFloat(getComputedStyle(owner ?? editor.view.dom).lineHeight) * scale;
       const top = firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
         : lineBoxTop(coords.top, coords.bottom - coords.top, Number.isFinite(leading) ? leading : coords.bottom - coords.top);
-      setBox({
-        left: isSingleEmptyParagraph(editor.state.doc) && getComputedStyle(owner ?? editor.view.dom).direction === "rtl" ? pageWidthPx - marginRightPx - 3 : (coords.left - rect.left) / scale,
-        top: isSingleEmptyParagraph(editor.state.doc) ? marginTopPx : (top - rect.top) / scale,
-        height: Math.max(12, coords.bottom - coords.top) / scale,
-      });
+      const block = owner?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom;
+      const bounds = block.getBoundingClientRect();
+      const geometry = getQalamPaginationState(editor)?.geometry;
+      const page = geometry?.enabled ? Math.max(0,Math.floor(((top-rect.top)/scale-marginTopPx+1)/(geometry.pageHeightPx+geometry.gapPx))) : 0;
+      const { nodeBefore, nodeAfter } = editor.state.selection.$head;
+      const emptyLine = (!nodeBefore || nodeBefore.type.name === "hardBreak") && (!nodeAfter || nodeAfter.type.name === "hardBreak");
+      const rtl = getComputedStyle(owner ?? editor.view.dom).direction === "rtl";
+      // Layout-only struts consume one page pixel, but an empty line's caret
+      // belongs at its real paragraph edge, independently of that width.
+      const point = emptyLine ? (rtl ? bounds.right : bounds.left) : coords.left;
+      setBox(caretGeometry({
+        x: (point-rect.left)/scale, top: (top-rect.top)/scale,
+        height: Math.max(12,coords.bottom-coords.top)/scale, scale,
+        rtl,
+        blockLeft: (bounds.left-rect.left)/scale, blockRight: (bounds.right-rect.left)/scale,
+        contentRight: pageWidthPx-marginRightPx,
+        contentTop: marginTopPx+page*(geometry ? geometry.pageHeightPx+geometry.gapPx : 0),
+      }));
     };
     place();
     // Native selection changes can follow the ProseMirror transaction, especially
@@ -548,7 +562,7 @@ function StudioCaret({
         position: "absolute",
         left: box.left,
         top: box.top,
-        width: 2,
+        width: box.width,
         height: box.height,
         background: "#000",
         pointerEvents: "none",

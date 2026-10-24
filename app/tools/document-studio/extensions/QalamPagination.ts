@@ -15,6 +15,7 @@
  * Copyright (c) Romik Makavana for the original float/widget approach.
  * See docs/THIRD-PARTY-NOTICES.md.
  */
+import { createEmptyLineStrutPlugin } from "./EmptyLineStruts";
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
@@ -148,6 +149,13 @@ export function paginationCss(): string {
   box-shadow: none;
   outline: none;
 }
+.ProseMirror.${QALAM_PAGINATION_CLASS} :is(p,h1,h2,h3,h4,h5,h6):has(> br:first-child)::before {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 0;
+}
+.ProseMirror.${QALAM_PAGINATION_CLASS} [data-studio-empty-line-strut] { display: inline-block !important; }
 .${QALAM_PAGINATION_CLASS}-pages {
   pointer-events: none;
   user-select: none;
@@ -471,6 +479,6 @@ function createPaginationPlugin() {
 export const QalamPagination = Extension.create({
   name: QALAM_PAGINATION_PLUGIN,
   addProseMirrorPlugins() {
-    return [createPaginationPlugin()];
+    return [createPaginationPlugin(), createEmptyLineStrutPlugin()];
   },
 });
