@@ -219,7 +219,7 @@ describe("document menus", () => {
       toggleBold: () => typeof chain;
       setTextAlign: (align: string) => typeof chain;
       setHeading: (opts: { level: number }) => typeof chain;
-      updateAttributes: (node: string, attrs: { lineHeight: number | null }) => typeof chain;
+      updateAttributes: (node: string, attrs: { lineHeight: number | null; leading?: { mode:string;value?:number } }) => typeof chain;
       run: () => boolean;
     } = {
       focus: () => chain,
@@ -236,7 +236,7 @@ describe("document menus", () => {
         return chain;
       },
       updateAttributes: (_node, attrs) => {
-        calls.push(`lh:${attrs.lineHeight}`);
+        calls.push(`lh:${attrs.leading?.mode === "points" ? attrs.leading.value : "auto"}`);
         return chain;
       },
       run: () => true,
@@ -253,15 +253,15 @@ describe("document menus", () => {
     } finally {
       semanticEditor.destroy();
     }
-    dispatchDocumentMenuAction("format.lh.1.5", editor, h);
+    dispatchDocumentMenuAction("format.lh.20", editor, h);
     dispatchDocumentMenuAction("format.rtl", editor, h);
-    expect(calls).toEqual(["bold", "align:center", "lh:1.5"]);
+    expect(calls).toEqual(["bold", "align:center", "lh:20"]);
     expect(h.calls).toEqual(["dir:rtl"]);
   });
 
   it("parses line-spacing menu ids", () => {
     expect(lineHeightFromMenuAction("format.lh.default")).toBeNull();
-    expect(lineHeightFromMenuAction("format.lh.1.15")).toBe(1.15);
+    expect(lineHeightFromMenuAction("format.lh.16")).toBe(16);
     expect(lineHeightFromMenuAction("format.bold")).toBeUndefined();
   });
 

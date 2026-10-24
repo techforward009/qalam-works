@@ -9,6 +9,8 @@ import { clampMarginMm, resolveMargins, parseCustomPageSizeMm, resolvePageLayout
 import type { PresetId } from "./publishingPresets";
 import { isValidPresetId } from "./publishingPresets";
 
+import { migrateLeading, parseLeading, type Leading } from "./leading";
+
 export type PageNumberMode = "none" | "current" | "current-total";
 export type HeaderMode = "auto-title" | "custom";
 
@@ -30,7 +32,9 @@ export interface DocumentStudioSettings {
   };
   typography: {
     bodyFontSizePt: number;
+    /** Legacy multiplier, read only during migration. */
     lineHeight: number;
+    leading?: Leading;
     paragraphBeforePt: number;
     paragraphAfterPt: number;
     firstLineIndentMm: number;
@@ -53,14 +57,9 @@ export const FONT_SIZE_OPTIONS_PT = [
   8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72,
 ] as const;
 
-export const LINE_HEIGHT_OPTIONS = [1, 1.15, 1.5, 1.8, 2, 2.2] as const;
+export const LINE_HEIGHT_OPTIONS = [12, 16, 20, 24, 28, 36] as const;
 
-export const LINE_SPACING_PRESETS = [
-  { id: "single", value: 1, labelEn: "Single", labelUr: "واحد" },
-  { id: "115", value: 1.15, labelEn: "1.15", labelUr: "1.15" },
-  { id: "150", value: 1.5, labelEn: "1.5", labelUr: "1.5" },
-  { id: "double", value: 2, labelEn: "Double", labelUr: "دگنا" },
-] as const;
+export const LINE_SPACING_PRESETS = [12, 16, 20, 24, 28, 36].map(value => ({ id: String(value), value, labelEn: `${value}pt`, labelUr: `${value}pt` }));
 
 export const FONT_SIZE_MIN_PT = 6;
 export const FONT_SIZE_MAX_PT = 96;
@@ -81,8 +80,9 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
     typography: {
       bodyFontSizePt: 12,
       lineHeight: 1.5,
+      leading: { mode: "auto" },
       paragraphBeforePt: 0,
-      paragraphAfterPt: 6,
+      paragraphAfterPt: 0,
       firstLineIndentMm: 0,
       defaultRtlFontId: "mehr-nastaliq-web",
       defaultLtrFontId: "inter",
@@ -127,17 +127,9 @@ export function withStudioOpeningMargins(settings: DocumentStudioSettings): Docu
   };
 }
 
-/**
- * Studio documents open on Jameel Noori Nastaleeq (InPage's Urdu face).
- * Publishing presets keep their own face. Mehr stays in the font menu.
- */
+/** New documents use Mehr; reopening never replaces a saved face. */
 export function withStudioUrduFont(settings: DocumentStudioSettings): DocumentStudioSettings {
-  const opened = withStudioOpeningMargins(settings);
-  if (opened.presetId !== "default" || opened.typography.defaultRtlFontId !== "mehr-nastaliq-web") return opened;
-  return {
-    ...opened,
-    typography: { ...opened.typography, defaultRtlFontId: "jameel-noori-nastaleeq" },
-  };
+  return withStudioOpeningMargins(settings);
 }
 
 // Batch 16A correction (item 6) — canonical validators for the new
@@ -187,7 +179,7 @@ export function resolveAddSpaceAfterPt(settings: DocumentStudioSettings): number
 
 export function parseNumericField(raw: unknown, kind: "line" | "pt" | "mm"): number | null {
   if (typeof raw === "number") {
-    if (kind === "line") return validateLineHeight(raw);
+    if (kind === "line") { const leading = parseLeading(raw); return leading?.mode === "points" ? leading.value : null; }
     if (kind === "pt") return validateSpacingPt(raw);
     return validateIndentMm(raw);
   }
@@ -195,7 +187,7 @@ export function parseNumericField(raw: unknown, kind: "line" | "pt" | "mm"): num
   const trimmed = raw.trim();
   if (!trimmed) return null;
   const n = Number(trimmed);
-  if (kind === "line") return validateLineHeight(n);
+  if (kind === "line") { const leading = parseLeading(trimmed); return leading?.mode === "points" ? leading.value : null; }
   if (kind === "pt") return validateSpacingPt(n);
   return validateIndentMm(n);
 }
@@ -305,6 +297,7 @@ export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
     typography: {
       bodyFontSizePt,
       lineHeight,
+      leading: parseLeading(typoIn.leading) ?? (typoIn.lineHeight == null || typoIn.lineHeight === 1.5 ? { mode: "auto" } : migrateLeading(typoIn.lineHeight, bodyFontSizePt)),
       paragraphBeforePt: Math.min(
         48,
         Math.max(0, Number(typoIn.paragraphBeforePt) || 0)

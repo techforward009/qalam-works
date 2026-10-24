@@ -50,7 +50,7 @@ describe("Document Studio DOCX Arabic/Urdu Word regression", () => {
     const p = paragraphs(xml)[0];
     expect(p).toContain('w:jc w:val="lowKashida"');
     expect(p).toContain('w:line="640"');
-    expect(p).toContain('w:lineRule="atLeast"');
+    expect(p).toContain('w:lineRule="exact"');
     expect(p).toContain('w:cs="Digital Khatt Indo-Pak"');
     expect(textInParagraph(p)).toBe(hadith);
     expect((p.match(/<w:br\s*\/>/g) ?? []).length).toBe(3);

@@ -1,4 +1,6 @@
 "use client";
+import { migrateDocumentLeading } from "../utils/leading";
+
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { isSingleEmptyParagraph } from "../utils/singleEmptyParagraph";
@@ -105,7 +107,6 @@ import {
   toggleStudioFullscreen,
   type HelpDialogMode,
 } from "../utils/documentMenuActions";
-import { validateLineHeight } from "../utils/documentSettings";
 import {
   loadDocumentViewMode,
   saveDocumentViewMode,
@@ -694,7 +695,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setDocumentSettings(settings);
     documentSettingsRef.current = settings;
     if (!options?.skipContent && editor) {
-      setEditorContent(editor, record.content, "load");
+      setEditorContent(editor, migrateDocumentLeading(record.content, settings.typography.bodyFontSizePt), "load");
     }
     const pages = options?.minimumPages ?? readStoredMinimumPages(record.id);
     minimumPagesRef.current = pages;
@@ -1722,13 +1723,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   if (editor) {
     const styleId = activeBlockStyleId(editor);
     checkedIds.add(`format.style.${styleId}` as MenuActionId);
-    const pAttr = editor.getAttributes("paragraph").lineHeight;
-    const hAttr = editor.getAttributes("heading").lineHeight;
-    const lh =
-      (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
-      (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
-    if (lh === null) checkedIds.add("format.lh.default");
-    else checkedIds.add(`format.lh.${lh}` as MenuActionId);
+    const leading = editor.getAttributes(editor.isActive("heading") ? "heading" : "paragraph").leading;
+    if (!leading || leading.mode === "auto") checkedIds.add("format.lh.default");
+    else checkedIds.add(`format.lh.${leading.value}` as MenuActionId);
   }
   if (editor?.isActive("bulletList")) checkedIds.add("format.bullet");
   if (editor?.isActive("orderedList")) checkedIds.add("format.ordered");

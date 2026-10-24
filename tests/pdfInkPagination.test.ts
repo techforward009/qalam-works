@@ -59,7 +59,8 @@ describe("measured PDF ink pagination", () => {
     expect(placed[1].baseline + last.boxTop - (placed[0].baseline + first.boxBottom)).toBeGreaterThanOrEqual(1);
     expect(placed[1]).toEqual({page:0,baseline:87});
     expect(placed[1].baseline + last.boxBottom).toBe(99);
-    expect(placeInkLines([first], 50)[0].baseline + first.boxBottom).toBe(49);
+    expect(placeInkLines([first], 50)[0].baseline + first.boxBottom).toBeLessThanOrEqual(49);
+    expect(placeInkLines([first], 50)[0].baseline + first.boxTop).toBe(0);
   });
   it("preserves exact baseline distances when lines fit", () => {
     expect(placeInkLines([line(20), line(52), line(84)], 100)).toEqual([{ page: 0, baseline: 20 }, { page: 0, baseline: 52 }, { page: 0, baseline: 84 }]);
@@ -184,4 +185,13 @@ describe("measured PDF ink pagination", () => {
     const leftFrame = wrapFrameBesideFloat(0, 0, CONTENT_WIDTH, 0, 180, "left");
     expect(leftFrame).toEqual({ left: 180, width: CONTENT_WIDTH - 180 });
   });
+});
+
+it("guards following tight-leading ink without changing page-fit decisions",()=>{
+ const first={...line(20),boxTop:-20,boxBottom:-15};
+ const next={...line(25,1,-30,5),boxTop:-20,boxBottom:-15};
+ const placed=placeInkLines([first,next],100);
+ expect(placed.map(item=>item.page)).toEqual([0,0]);
+ expect(placed[1].baseline+next.inkTop).toBe(1);
+ expect(placed[0].baseline).toBe(20);
 });

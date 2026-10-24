@@ -146,7 +146,7 @@ describe("toolbar font selection sync", () => {
     expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
     expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();
-    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").lineHeight).toBe(1.5);
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").lineHeight).toBeNull();
     editor.destroy();
   });
 

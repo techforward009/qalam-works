@@ -108,9 +108,9 @@ describe("semantic paragraph formatting", () => {
     applyBlockStyle(ed, "normal");
     const ui = resolveActiveToolbarFormatting(ed, settings);
     expect(ed.state.doc.firstChild?.type.name).toBe("paragraph");
-    expect(ui.lineHeight).toBe(1.5);
+    expect(ui.lineHeight).toBeNull();
     expect(ui.spaceBeforePt).toBe(0);
-    expect(ui.spaceAfterPt).toBe(6);
+    expect(ui.spaceAfterPt).toBe(0);
     expect(ui.textAlign).toBe("center");
     for (const id of BLOCK_STYLE_IDS.filter(id => BLOCK_STYLES[id].defaultFontSizePt)) {
       expect(BLOCK_STYLE_EDITOR_CSS).toContain(`font-size:${BLOCK_STYLES[id].defaultFontSizePt}pt`);

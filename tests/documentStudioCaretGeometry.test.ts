@@ -12,7 +12,13 @@ it("draws RTL leftwards and LTR rightwards from an interior caret point",()=>{
  expect(caretGeometry({...input,x:300,rtl:false}).left).toBe(301);
 });
 it.each([true,false])("clamps outside positions to the block and content box, RTL=%s",rtl=>{
- expect(caretGeometry({...input,rtl,x:-100}).left).toBe(49);
+ expect(caretGeometry({...input,rtl,x:-100}).left).toBe(rtl?49:50);
  expect(caretGeometry({...input,rtl,x:1000,blockRight:800}).left).toBe(697);
  expect(caretGeometry({...input,rtl,x:1000,blockRight:650}).left).toBe(647);
+});
+
+it.each([.5,1,1.5])("clears the full LTR guide ink at scale %s without changing RTL",scale=>{
+ const box=caretGeometry({...input,x:48,rtl:false,contentLeft:48,scale});
+ expect((box.left-49)*scale).toBeCloseTo(1,8);expect(box.width*scale).toBeCloseTo(2,8);
+ const rtl=caretGeometry({...input,scale});expect((700-rtl.left-rtl.width)*scale).toBeCloseTo(1,8);
 });

@@ -3,6 +3,7 @@
  * ParagraphWithDir / HeadingWithDir and canvas block-style CSS live here
  * so editor, tests, and future toolbar/menu/shortcuts share one schema.
  */
+import { parseLeading } from "./leading";
 import StarterKit from "@tiptap/starter-kit";
 import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
@@ -43,15 +44,28 @@ const PARAGRAPH_STYLE_ATTRS = {
       return v ? { "data-block-style": v } : {};
     },
   },
+  leading: {
+    default: null,
+    parseHTML: (element: HTMLElement) => {
+      const tagged = element.getAttribute("data-leading");
+      if (tagged) { try { return parseLeading(JSON.parse(tagged)); } catch { return null; } }
+      const raw = element.style.lineHeight;
+      return /pt$/.test(raw) ? parseLeading(raw) : /px$/.test(raw) ? parseLeading(parseFloat(raw)*.75) : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = parseLeading(attributes.leading);
+      return value ? { "data-leading": JSON.stringify(value), ...(value.mode === "points" ? { style: `line-height:${value.value}pt` } : {}) } : {};
+    },
+  },
   lineHeight: {
     default: null as number | null,
     parseHTML: (element: HTMLElement) => {
       const v = element.style.lineHeight;
-      const n = v ? parseFloat(v) : NaN;
+      const n = v && !/[a-z%]/i.test(v) && !element.hasAttribute("data-leading") ? Number(v) : NaN;
       return validateLineHeight(n);
     },
     renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.lineHeight === "number" ? validateLineHeight(attributes.lineHeight) : null;
+      const v = !parseLeading(attributes.leading) && typeof attributes.lineHeight === "number" ? validateLineHeight(attributes.lineHeight) : null;
       return v !== null ? { style: `line-height:${v}` } : {};
     },
   },
@@ -170,6 +184,7 @@ export const HeadingWithDir = Heading.extend({
           return { dir: attributes.dir };
         },
       },
+      leading: PARAGRAPH_STYLE_ATTRS.leading,
       lineHeight: PARAGRAPH_STYLE_ATTRS.lineHeight,
       spaceBeforePt: PARAGRAPH_STYLE_ATTRS.spaceBeforePt,
       spaceAfterPt: PARAGRAPH_STYLE_ATTRS.spaceAfterPt,

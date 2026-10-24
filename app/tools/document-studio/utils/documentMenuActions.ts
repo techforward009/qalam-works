@@ -1,3 +1,4 @@
+import { parseLeading } from "./leading";
 /**
  * Menu action dispatcher. Visual menus call this; TipTap work stays in
  * documentCommands. Editor-owned flows (new/upload/export/panels) stay
@@ -21,7 +22,6 @@ import {
 } from "./documentCommands";
 import type { MenuActionId } from "./documentMenus";
 import type { BlockStyleId } from "./documentStyles";
-import { validateLineHeight } from "./documentSettings";
 import type { DocumentViewMode, DocumentZoom, RulerUnit } from "./documentView";
 import { zoomFromMenuAction } from "./documentView";
 
@@ -84,7 +84,8 @@ export function lineHeightFromMenuAction(id: MenuActionId): number | null | unde
   if (id === "format.lh.default") return null;
   if (!id.startsWith("format.lh.")) return undefined;
   const raw = Number(id.slice("format.lh.".length));
-  return validateLineHeight(raw);
+  const leading = parseLeading(raw);
+  return leading?.mode === "points" ? leading.value : null;
 }
 
 export function dispatchDocumentMenuAction(

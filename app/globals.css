@@ -2121,7 +2121,7 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
    Text boxes, inputs and dialogs always retain their native selection highlight. */
 .qalam-editor-content .ProseMirror[data-studio-selection-painted] ::selection {
   background: transparent;
-  color: inherit;
+  color: #000;
 }
 
 /* Restarted by the positioned caret key on movement; solid while typing. */
@@ -2129,3 +2129,6 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* Only painted textarea selections surrender their native highlight. */
+textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: #000; }

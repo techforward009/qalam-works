@@ -1,17 +1,18 @@
-import { autoLineHeight, blockAutoLineHeight } from "../app/tools/document-studio/utils/autoLeading";
-
-describe("font-aware Auto leading", () => {
-  test.each(["Mehr Nastaliq Web", "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu"])("%s gets room for Nastaliq ascenders", (font) => {
-    expect(autoLineHeight(font)).toBe(2.2);
+import { blockLeadingPt } from "../app/tools/document-studio/utils/autoLeading";
+import { autoLeadingPt } from "../app/tools/document-studio/utils/leading";
+const defaults = {bodyFontSizePt:12,lineHeight:1.5,leading:{mode:"auto" as const}};
+describe("font-aware Auto point leading", () => {
+  test.each(["Mehr Nastaliq Web", "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu"])("%s uses about 20pt at 12pt", font => {
+    expect(autoLeadingPt(font,12)).toBeCloseTo(19.8);
   });
-  test("other fonts and explicit document leading stay unchanged", () => {
-    expect(autoLineHeight("Arial")).toBe(1.5);
-    expect(autoLineHeight("Mehr Nastaliq Web", 1.8)).toBe(1.8);
+  test("other fonts and explicit leading use their point values", () => {
+    expect(autoLeadingPt("Arial",12)).toBe(15);
+    expect(blockLeadingPt({},"Mehr Nastaliq Web",{...defaults,leading:{mode:"points",value:5}},"rtl")).toBe(5);
   });
-  test("explicit paragraph 1.5 wins and run font overrides are respected", () => {
+  test("legacy paragraph override migrates and run font overrides are respected", () => {
     const content = [{ type: "text", text: "السلام", marks: [{ type: "textStyle", attrs: { fontFamily: "Mehr Nastaliq Web" } }] }];
-    expect(blockAutoLineHeight({ content }, "Arial", 1.5, "rtl")).toBe(2.2);
-    expect(blockAutoLineHeight({ attrs: { lineHeight: 1.5 }, content }, "Arial", 1.5, "rtl")).toBe(1.5);
-    expect(blockAutoLineHeight({ content }, "Arial", 1.5, "ltr")).toBe(1.5);
+    expect(blockLeadingPt({ content },"Arial",defaults,"rtl")).toBeCloseTo(19.8);
+    expect(blockLeadingPt({ attrs:{lineHeight:1.5},content },"Arial",defaults,"rtl")).toBe(18);
+    expect(blockLeadingPt({ content },"Arial",defaults,"ltr")).toBe(15);
   });
 });

@@ -43,27 +43,27 @@ for (const zoom of [100, 200]) {
       }
       if (lines.length !== 3) return { visualLines: lines.length };
       const run = paragraph.querySelector<HTMLElement>("[data-studio-line-run]")!;
-      const leading = parseFloat(getComputedStyle(run).lineHeight) * scale;
+      const leading = parseFloat(getComputedStyle(paragraph).lineHeight) * scale;
       const blockDelta = Math.abs(lineTop-frameTop), highlightDelta = Math.abs(boxes[0].top-frameTop);
       const heightError = Math.max(...boxes.map(box => Math.abs(box.height-leading)));
-      // The last two natural pixels are transparent, preserving a visible white gap.
-      const gap = lines[1][0].top-Math.max(...lines[0].map(box=>box.bottom)) + 2*scale;
+      // InPage selection fills the entire leading; adjacent bands touch.
+      const gap = lines[1][0].top-Math.max(...lines[0].map(box=>box.bottom));
       const laterError = Math.max(...lines.slice(1).map((line,index) => Math.abs(line[0].top - (paragraph.getBoundingClientRect().top + (index+1)*leading))));
       return { block: blockDelta <= 1 ? true : blockDelta, highlight: highlightDelta <= 1 ? true : highlightDelta,
-        later: laterError <= 1 ? true : laterError, leading: heightError <= 1 ? true : heightError, gap: gap >= 1 ? true : gap };
+        later: laterError <= 1 ? true : laterError, leading: heightError <= 1 ? true : heightError, gap: Math.abs(gap) <= 1 ? true : gap };
     })).toEqual({block:true,highlight:true,later:true,leading:true,gap:true});
     await expect(story).toHaveText("ترجمہ قرآنالسلام علیکم اللہ وبرکاتہیہ تیسری سطر ہے");
     await page.keyboard.press("Control+End");
     await expect.poll(() => story.evaluate(root => {
       const paragraph = root.querySelector("p")!, run = paragraph.querySelector<HTMLElement>("[data-studio-line-run]")!;
       const scale = root.getBoundingClientRect().width / parseFloat(getComputedStyle(root).width);
-      const expectedTop = paragraph.getBoundingClientRect().top + 2*parseFloat(getComputedStyle(run).lineHeight)*scale;
+      const expectedTop = paragraph.getBoundingClientRect().top + 2*parseFloat(getComputedStyle(paragraph).lineHeight)*scale;
       const caret = document.querySelector("[data-studio-caret]");
       return caret ? Math.abs(caret.getBoundingClientRect().top-expectedTop) : 999;
     })).toBeLessThanOrEqual(1);
   });
 
-  test(`text box retains padding and native selection at ${zoom}%`, async ({ page }) => {
+  test(`text box retains padding and paints solid line-height selection at ${zoom}%`, async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto("/tools/document-studio");
     await expect(page.locator(".ProseMirror")).toBeEditable();
@@ -84,22 +84,22 @@ for (const zoom of [100, 200]) {
       window.dispatchEvent(new Event("resize"));
       document.dispatchEvent(new Event("selectionchange"));
     }, zoom);
-    // Textareas retain their original inset/wrapping and native selection.
+    // Textareas retain their original inset/wrapping, with line-height selection.
     await expect(box).toHaveCSS("padding", "2px");
-    await expect(page.locator("[data-studio-line-selection]")).toHaveCount(0);
+    await expect(page.locator("[data-studio-text-frame-selection] [data-studio-line-selection]")).toHaveCount(2);
     await expect(box).toHaveValue("ترجمہ قرآن\nالسلام علیکم");
     expect(await box.evaluate(el => (el as HTMLTextAreaElement).selectionEnd - (el as HTMLTextAreaElement).selectionStart)).toBeGreaterThan(0);
     // Real production pixels, not just a non-collapsed range: a bare global
-    // transparent ::selection rule makes this native blue highlight disappear.
-    const countBlue = async () => {
-      const { data, info } = await sharp(await box.screenshot()).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    // transparent global ::selection rule must not erase the custom black bands.
+    const countBlack = async () => {
+      const { data, info } = await sharp(await page.locator('[data-studio-frame="text"]').screenshot()).removeAlpha().raw().toBuffer({ resolveWithObject: true });
       let count = 0;
-      for (let i = 0; i < data.length; i += info.channels) if (data[i+2] > data[i]+40 && data[i+2] > data[i+1]+30) count++;
+      for (let i = 0; i < data.length; i += info.channels) if (data[i]<60 && data[i+1]<60 && data[i+2]<60) count++;
       return count;
     };
-    const selected = await countBlue();
+    const selected = await countBlack();
     await box.evaluate(el => { const input = el as HTMLTextAreaElement; input.setSelectionRange(0,0); });
-    const collapsed = await countBlue();
+    const collapsed = await countBlack();
     expect(selected - collapsed).toBeGreaterThan(100);
   });
 }
@@ -249,7 +249,7 @@ test("mixed Urdu/Latin sizes share the first line box and highlight height", asy
     const prose=root as HTMLElement, style=getComputedStyle(prose), rect=prose.getBoundingClientRect();
     const frameTop=rect.top+parseFloat(style.paddingTop);
     const boxes=[...document.querySelectorAll('[data-studio-line-selection]')].map(el=>el.getBoundingClientRect());
-    const leading=Math.max(...[...prose.querySelectorAll('span')].map(el=>parseFloat(getComputedStyle(el).lineHeight)));
-    return boxes.length>=3 && boxes.every(box=>Math.abs(box.top-frameTop)<=1 && Math.abs(box.height-leading)<=1);
+    const leading=parseFloat(getComputedStyle(prose.querySelector("p")!).lineHeight);
+    return boxes.length===1 && boxes.every(box=>Math.abs(box.top-frameTop)<=1 && Math.abs(box.height-leading)<=1);
   })).toBe(true);
 });

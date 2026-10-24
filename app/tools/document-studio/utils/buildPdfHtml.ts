@@ -2,9 +2,9 @@
 // Fonts and direction resolve through the central font registry.
 // Effective CSS classes are chosen only from faces that fully loaded.
 
-import { blockAutoLineHeight } from "./autoLeading";
+import { blockLeadingPt } from "./autoLeading";
 import type { DocNode, Direction } from "./extractPlainText";
-import { resolveFontSizePt, type DocumentStudioSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { resolveFontSizePt, type DocumentStudioSettings, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
 import {
   collectPdfEmbedFonts,
@@ -240,10 +240,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
   const styleDef = node.type === "heading"
     ? BLOCK_STYLES[`heading-${node.attrs?.level}` as keyof typeof BLOCK_STYLES]
     : blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
-  const lh =
-    typeof node.attrs?.lineHeight === "number"
-      ? validateLineHeight(node.attrs.lineHeight)
-      : node.type === "heading" ? 1.5 : blockAutoLineHeight(node, blockFont.family, ctx.typography?.lineHeight ?? 1.5, blockDir);
+  const lh = blockLeadingPt(node, blockFont.family, ctx.typography ?? { bodyFontSizePt: 12, lineHeight: 1.5 }, blockDir);
   const firstLineIndentMm =
     typeof node.attrs?.firstLineIndentMm === "number"
       ? validateIndentMm(node.attrs.firstLineIndentMm)
@@ -272,7 +269,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     alignStyleFor(node) || (styleDef?.align ? `text-align:${styleDef.align}` : ""),
     styleDef?.defaultFontSizePt ? `font-size:${styleDef.defaultFontSizePt}pt` : "",
     styleDef?.bold ? "font-weight:bold" : "",
-    lh !== null ? `line-height:${lh}` : "",
+    lh !== null ? `line-height:${lh}pt` : "",
     firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
     indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
     indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",
@@ -447,7 +444,7 @@ export function buildPdfHtml(
         ? '"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif'
         : '"Noto Nastaliq Urdu", serif';
   const bodyFontSize = typography ? `${typography.bodyFontSizePt}pt` : "12pt";
-  const bodyLineHeight = typography ? typography.lineHeight : 2;
+  const bodyLineHeight = blockLeadingPt({ type: "paragraph" },defaultFamily,typography ?? { bodyFontSizePt: 12, lineHeight: 1.5 },dir);
 
   const html = `<!DOCTYPE html>
 <html lang="${dir === "rtl" ? "ur" : "en"}" dir="${dir}">
@@ -461,13 +458,14 @@ ${classRulesCss()}
     font-feature-settings: normal;
     font-family: ${defaultFamily};
     font-size: ${bodyFontSize};
-    line-height: ${bodyLineHeight};
+    line-height: ${bodyLineHeight}pt;
     margin: 0;
     padding: 0;
     color: #111;
     overflow: hidden;
   }
-  p, h1, h2, h3, h4, li, blockquote { margin: 0.5em 0; }
+  p, h1, h2, h3, h4, li, blockquote { margin: 0; }
+  p span, h1 span, h2 span, h3 span, h4 span { line-height: 0; }
   h1, h2, h3, h4, table, hr, blockquote { clear: both; }
   h1 { font-size: 1.6rem; }
   h2 { font-size: 1.3rem; }

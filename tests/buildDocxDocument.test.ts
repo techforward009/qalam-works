@@ -383,7 +383,7 @@ describe("createDocxDocument — v1.1 Phase 1: page layout", () => {
       "ltr"
     );
     expect(xml).toContain("<w:spacing");
-    expect(xml).toContain('w:line="360"');
+    expect(xml).toContain('w:line="300"');
   });
 
   test("applies the same spacing to headings, blockquotes, and list items too", async () => {
@@ -720,7 +720,7 @@ describe("createDocxDocument — v1.3: heading-specific spacing", () => {
       "ltr"
     );
     expect(xml).toContain('w:before="0"');
-    expect(xml).toContain('w:after="120"');
+    expect(xml).toContain('w:after="0"');
   });
 });
 
@@ -980,9 +980,9 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
     const zip = await JSZip.loadAsync(buffer);
     const xml = await zip.file("word/document.xml")!.async("text");
 
-    // 1.8 line-height × 13pt × 20 = 468 twips, at least (not Word auto)
-    expect(xml).toContain('w:line="468"');
-    expect(xml).toContain('w:lineRule="atLeast"');
+    // Legacy 1.8 × 13pt rounds to 23.5pt, exported as exact 470 twips.
+    expect(xml).toContain('w:line="470"');
+    expect(xml).toContain('w:lineRule="exact"');
     // 8mm first-line indent → (8/25.4)*1440 ≈ 454 twips
     expect(xml).toMatch(/w:firstLine="45[0-9]"/);
     // 13pt body -> 26 half-points (Batch 16B — permanent assertion)
@@ -1004,8 +1004,8 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
         },
       ],
     };
-    const bookManuscript = { ...defaultDocumentSettings(), typography: { ...defaultDocumentSettings().typography, bodyFontSizePt: 13, lineHeight: 1.8 } };
-    const academic = { ...defaultDocumentSettings(), typography: { ...defaultDocumentSettings().typography, bodyFontSizePt: 12, lineHeight: 2 } };
+    const bookManuscript = { ...defaultDocumentSettings(), typography: { ...defaultDocumentSettings().typography, bodyFontSizePt: 13, lineHeight: 1.8, leading: {mode:"points" as const,value:23.5} } };
+    const academic = { ...defaultDocumentSettings(), typography: { ...defaultDocumentSettings().typography, bodyFontSizePt: 12, lineHeight: 2, leading: {mode:"points" as const,value:24} } };
 
     const xmlBook = await (async () => {
       const buffer = await Packer.toBuffer(createDocxDocument(doc, "ltr", bookManuscript));
@@ -1024,9 +1024,9 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
       expect(xml).toContain('w:ascii="Amiri"');
       expect(xml).toContain('w:sz w:val="40"'); // 20pt in half-points
     }
-    // The 20pt run sets the line box. Preset line-height still changes it.
-    expect(xmlBook).toContain('w:line="720"'); // 20pt × 1.8 × 20
-    expect(xmlAcademic).toContain('w:line="800"'); // 20pt × 2.0 × 20
+    // Preset point leading is exact, independently of the 20pt run.
+    expect(xmlBook).toContain('w:line="470"'); // Exact 23.5pt
+    expect(xmlAcademic).toContain('w:line="480"'); // Exact 24pt, independent of the run size
   });
 });
 
@@ -1039,7 +1039,7 @@ describe("Batch 16A.1 — DOCX explicit heading spacing overrides canonical defa
     const xml = await extractDocumentXml(doc, "ltr");
     // H2 is 20pt. 20 × 2.0 × 20 = 800. Canonical 1.5 would be 600.
     expect(xml).toContain('w:line="800"');
-    expect(xml).toContain('w:lineRule="atLeast"');
+    expect(xml).toContain('w:lineRule="exact"');
     expect(xml).not.toContain('w:line="600"');
   });
 
