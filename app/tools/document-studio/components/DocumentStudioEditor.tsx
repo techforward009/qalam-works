@@ -133,6 +133,9 @@ import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioO
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
+import { StudioTextContextMenu } from "./StudioTextContextMenu";
+import { StudioCharacterDialog } from "./StudioCharacterDialog";
+import { functionKeyZoom } from "../utils/documentView";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
 import DocumentRightSidebar from "./DocumentRightSidebar";
@@ -264,11 +267,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [canvasTool, setCanvasTool] = useState<StudioToolId>("text");
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
+  const [characterOpen,setCharacterOpen] = useState(false);
+  const [paragraphRequest,setParagraphRequest] = useState(0);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [pendingMetadataWrites,setPendingMetadataWrites] = useState(0);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
@@ -286,10 +292,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (!libraryReadyRef.current || !library || !id) return;
+    setPendingMetadataWrites(count=>count+1);
     void library.updateDocument(id, { documentSettings }).catch((err) => {
       console.error("Failed to save document settings:", err);
       setSaveStatus("error");
-    });
+    }).finally(()=>setPendingMetadataWrites(count=>count-1));
+    // Only the matching pending write clears its part of the Home guard.
   }, [documentSettings]);
 
 
@@ -1510,10 +1518,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (library && id) {
+      setPendingMetadataWrites(count=>count+1);
       void library.renameDocument(id, next).then(() => refreshLibraryList(library)).catch((err) => {
         console.error("Failed to save title:", err);
         setSaveStatus("error");
-      });
+      }).finally(()=>setPendingMetadataWrites(count=>count-1));
     }
   };
 
@@ -1526,7 +1535,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     zoomTouchedRef.current = true;
     setZoomState(next);
     saveDocumentZoom(next);
+    if(editor && canvasToolRef.current === "text") editor.commands.focus();
   };
+
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{
+      const next=functionKeyZoom(event.key);
+      if(next===null || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)return;
+      const target=event.target instanceof Element?event.target:null;
+      if(!target?.closest("[data-studio-root],[data-studio-zoom-scope],[data-studio-text-menu],[data-studio-context-zoom],[data-menu-portaled][data-studio-menu-language]"))return;
+      event.preventDefault();setZoom(next);
+    };
+    window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
+  });
 
   useEffect(() => {
     if (zoomTouchedRef.current || typeof window === "undefined") return;
@@ -1839,7 +1860,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
 
   return (
-    <div className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+    <div data-studio-root="true" className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       {inpageError ? <p role="alert" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
@@ -1875,6 +1896,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         }}
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
+      <StudioTextContextMenu editor={editor} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
+        onCharacter={()=>setCharacterOpen(true)} onParagraph={()=>setParagraphRequest(value=>value+1)} />
+      {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {imageMenu && editor ? (
         <div
           role="menu"
@@ -1987,6 +2011,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           <DocumentMenuBar
             isUr={isUr}
             showHome={fillWindow}
+            hasUnsavedChanges={pendingMetadataWrites > 0 || saveStatus === "saving" || saveStatus === "error" || (editingTitle && documentTitle !== documentTitleRef.current) || (storageDurability === "memory" && !isEditorEmpty)}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
@@ -2029,6 +2054,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             documentSettings={documentSettings}
             englishFont={englishFont}
             onEnglishFontChange={setEnglishFont}
+            paragraphRequest={paragraphRequest}
           />
         }
         findBar={
@@ -2156,6 +2182,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onPageCountChange={setPageCount}
             onVisiblePageChange={setVisiblePage}
             onZoomPercentChange={onZoomPercentChange}
+            onZoomChange={setZoom}
             columnCount={columnCount}
             columnGutterMm={columnGutterMm}
             minimumPages={minimumPages}

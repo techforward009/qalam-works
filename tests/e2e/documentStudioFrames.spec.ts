@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 test.use({ viewport: { width: 1920, height: 1080 } });
 
 async function openCanvas(page: Page) {
-  await page.addInitScript(() => localStorage.setItem("qalam-site-language", "en"));
+  await page.addInitScript(() => { if(!localStorage.getItem("qalam-site-language"))localStorage.setItem("qalam-site-language", "en"); });
   await page.goto("/tools/document-studio");
   await expect(page.locator(".ProseMirror")).toBeEditable();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
@@ -208,7 +208,9 @@ test("Urdu keeps the English window geometry and every enabled tool accepts cent
       .map(box);
   });
   const englishGeometry = await geometry();
-  await page.locator('[data-studio-language-switch] button[lang="ur"]').click();
+  await page.evaluate(()=>localStorage.setItem("qalam-site-language","ur"));
+  await page.reload();
+  await expect(page.locator("[data-studio-language-switch]")).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "Document editor", exact: true })).toBeEditable();
   await expect.poll(geometry).toEqual(englishGeometry);
   expect(englishGeometry[0].x).toBe(0);

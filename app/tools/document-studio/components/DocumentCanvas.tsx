@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { StudioLineLayout } from "./StudioLineLayout";
+import { useStudioZoomVisibility } from "./useStudioZoomVisibility";
 import { StudioTextSelection } from "./StudioTextSelection";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
@@ -14,6 +15,8 @@ import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMargi
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
+  DOCUMENT_ZOOM_PRESETS,
+  parseStoredZoom,
   PAGE_STACK_GAP_PX,
   PAGELESS_MAX_WIDTH_PX,
   resolveZoomFactor,
@@ -60,6 +63,7 @@ export default function DocumentCanvas({
   onPageCountChange,
   onVisiblePageChange,
   onZoomPercentChange,
+  onZoomChange,
   onToolAction,
   columnCount = 1,
   columnGutterMm = 0,
@@ -85,6 +89,7 @@ export default function DocumentCanvas({
   onPageCountChange?: (count: number | null) => void;
   onVisiblePageChange?: (page: number) => void;
   onZoomPercentChange?: (percent: number) => void;
+  onZoomChange?: (zoom: DocumentZoom) => void;
   onToolAction?: (id: StudioToolId) => void;
   columnCount?: number;
   columnGutterMm?: number;
@@ -190,6 +195,7 @@ export default function DocumentCanvas({
     scrollerWidth,
     Math.max(0, scrollerHeight - PASTEBOARD_TOP_PX - bottomPad),
   );
+  useStudioZoomVisibility(editor,zoomFactor,scrollerRef);
   const visualWidth = baseWidth * zoomFactor;
   const visualPageHeight = natural.heightPx * zoomFactor;
   const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
@@ -494,7 +500,7 @@ export default function DocumentCanvas({
                             aria-hidden
                           />
                         ))}
-                        <MarginGuides
+                        <MarginGuides zoom={zoomFactor}
                           pageCount={pageCount}
                           pageWidthPx={natural.widthPx}
                           pageHeightPx={natural.heightPx}
@@ -562,7 +568,7 @@ export default function DocumentCanvas({
                           style={typeVars}
                         />
                         {isPages ? (
-                          <StudioObjectLayer
+                          <StudioObjectLayer zoom={zoomFactor}
                             editor={editor}
                             tool={tool}
                             frames={frames}
@@ -597,7 +603,10 @@ export default function DocumentCanvas({
               <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} style={navButton} onClick={() => stepPage(-1)}>{"<"}</button>
               <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{(documentSettings.page.firstPageNumber ?? 1) - 1 + Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{(documentSettings.page.firstPageNumber ?? 1) - 1 + pageCount}</span>
               <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} style={navButton} onClick={() => stepPage(1)}>{">"}</button>
-              <span style={{ ...navField, width: 46 }} data-studio-zoom-label="true">{percentLabel}</span>
+              <select aria-label="Zoom" data-studio-zoom-control data-studio-zoom-label="true" value={zoom} onChange={event=>onZoomChange?.(parseStoredZoom(event.target.value))} style={{...navField,width:46,border:0,padding:0,appearance:"none",fontFamily:"Tahoma, Arial, sans-serif",color:"#000"}}>
+                {DOCUMENT_ZOOM_PRESETS.map(level=><option key={level} value={level}>{level}%</option>)}
+                <option value="fit-width">Width</option><option value="fit-page">Page</option>
+              </select>
               <span className="sr-only" data-studio-page-count={pageCount}>Pages {pageCount}</span>
             </div>
             <ClassicScrollbar viewport={scrollBox.cw} extent={scrollBox.sw} offset={scrollBox.left} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollLeft = value; }} />

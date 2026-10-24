@@ -19,8 +19,8 @@ export const RULER_PAGE_GUTTER_PX = 8;
 /** Browser-native spellcheck only. Not a Qalam grammar engine. */
 export const EDITOR_SPELLCHECK_ATTR = "true";
 
-export type DocumentZoom = 50 | 75 | 100 | 125 | 150 | "fit-width" | "fit-page";
-export const DOCUMENT_ZOOM_PRESETS = [50, 75, 100, 125, 150] as const;
+export type DocumentZoom = 50 | 75 | 100 | 125 | 150 | 200 | 300 | "fit-width" | "fit-page";
+export const DOCUMENT_ZOOM_PRESETS = [50, 75, 100, 125, 150, 200, 300] as const;
 export const DEFAULT_DOCUMENT_ZOOM: DocumentZoom = 100;
 /** Below this width a new document opens at fit-width so the whole page can be reached. */
 export const NARROW_STUDIO_PX = 900;
@@ -153,7 +153,7 @@ export function resolveZoomFactor(
   return zoom / 100;
 }
 
-export function zoomMenuAction(zoom: DocumentZoom): `view.zoom.${50 | 75 | 100 | 125 | 150 | "fit-width" | "fit-page"}` {
+export function zoomMenuAction(zoom: DocumentZoom): `view.zoom.${50 | 75 | 100 | 125 | 150 | 200 | 300 | "fit-width" | "fit-page"}` {
   return `view.zoom.${zoom}`;
 }
 
@@ -551,4 +551,12 @@ export function collectPageGapBreaksFromLines(
     }
   }
   return breaks;
+}
+
+/** New integer magnifications keep vector guides on the screen pixel grid. */
+export function snapStudioGuide(position:number,scale:number):number {
+  return scale>=2 && Math.abs(scale-Math.round(scale))<.001 ? Math.round(position*scale)/scale : position;
+}
+export function functionKeyZoom(key:string):DocumentZoom|null {
+  return key==="F6"?50:key==="F7"?100:key==="F8"?200:null;
 }

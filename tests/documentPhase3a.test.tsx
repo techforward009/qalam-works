@@ -25,7 +25,7 @@ afterEach(() => {
 
 describe("Phase 3A editor parity", () => {
   it("exposes zoom presets including fit width/page", () => {
-    expect(DOCUMENT_ZOOM_PRESETS).toEqual([50, 75, 100, 125, 150]);
+    expect(DOCUMENT_ZOOM_PRESETS).toEqual([50, 75, 100, 125, 150, 200, 300]);
     expect(DEFAULT_DOCUMENT_ZOOM).toBe(100);
     const ids = allMenuActionIds();
     for (const value of DOCUMENT_ZOOM_PRESETS) expect(ids).toContain(`view.zoom.${value}`);

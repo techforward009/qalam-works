@@ -30,6 +30,8 @@ export type MenuActionId =
   | "view.zoom.100"
   | "view.zoom.125"
   | "view.zoom.150"
+  | "view.zoom.200"
+  | "view.zoom.300"
   | "view.zoom.fit-width"
   | "view.zoom.fit-page"
   | "view.ruler"
@@ -199,6 +201,8 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
           { type: "action", id: "view.zoom.100", labelEn: "100%", labelUr: "100%" },
           { type: "action", id: "view.zoom.125", labelEn: "125%", labelUr: "125%" },
           { type: "action", id: "view.zoom.150", labelEn: "150%", labelUr: "150%" },
+          { type: "action", id: "view.zoom.200", labelEn: "200%", labelUr: "200%" },
+          { type: "action", id: "view.zoom.300", labelEn: "300%", labelUr: "300%" },
           { type: "separator" },
           { type: "action", id: "view.zoom.fit-width", labelEn: "Fit width", labelUr: "چوڑائی کے مطابق" },
           { type: "action", id: "view.zoom.fit-page", labelEn: "Fit page", labelUr: "صفحہ کے مطابق" },

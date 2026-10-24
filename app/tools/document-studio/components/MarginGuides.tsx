@@ -1,3 +1,4 @@
+import { snapStudioGuide } from "../utils/documentView";
 import { mmToPx, type PhysicalMarginsMm } from "../utils/pageLayout";
 
 /** Content box is black. The run from that box out to the page edge is the InPage grey connector. */
@@ -10,25 +11,27 @@ export function MarginGuides({
   pageHeightPx,
   gapPx,
   margins,
+  zoom = 1,
 }: {
   pageCount: number;
   pageWidthPx: number;
   pageHeightPx: number;
   gapPx: number;
   margins: PhysicalMarginsMm;
+  zoom?:number;
 }) {
-  const top = mmToPx(margins.topMm);
+  const top = snapStudioGuide(mmToPx(margins.topMm),zoom);
   const bottom = mmToPx(margins.bottomMm);
-  const left = mmToPx(margins.leftMm);
+  const left = snapStudioGuide(mmToPx(margins.leftMm),zoom);
   const right = mmToPx(margins.rightMm);
-  const yBottom = pageHeightPx - bottom;
-  const xRight = pageWidthPx - right;
+  const yBottom = snapStudioGuide(pageHeightPx - bottom,zoom);
+  const xRight = snapStudioGuide(pageWidthPx - right,zoom);
   const pages = Math.max(1, pageCount);
 
   return (
     <div className="studio-no-print pointer-events-none absolute inset-0 z-[4]" data-studio-margin-guides="true" aria-hidden>
       {Array.from({ length: pages }, (_, index) => {
-        const origin = index * (pageHeightPx + gapPx);
+        const origin = snapStudioGuide(index * (pageHeightPx + gapPx),zoom);
         return (
           <div
             key={index}
