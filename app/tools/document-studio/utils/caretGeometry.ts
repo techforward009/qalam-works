@@ -6,7 +6,9 @@ export interface CaretGeometryInput {
 export function caretGeometry(input: CaretGeometryInput) {
   const scale = input.scale > 0 && Number.isFinite(input.scale) ? input.scale : 1;
   const width = 2 / scale, inset = 1 / scale;
-  const min = Math.max(input.blockLeft, input.contentLeft ?? input.blockLeft) + inset;
+  const min = input.rtl
+    ? Math.max(input.blockLeft, input.contentLeft ?? input.blockLeft) + inset
+    : Math.max(input.blockLeft + inset, (input.contentLeft ?? input.blockLeft) + 1 + inset);
   const max = Math.max(min, Math.min(input.blockRight, input.contentRight) - width - inset);
   const bottom = input.contentBottom ?? Infinity;
   const topGuard = input.contentTop + Math.max(inset,1);

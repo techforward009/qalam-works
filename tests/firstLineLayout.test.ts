@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Schema, Node as PMNode } from "@tiptap/pm/model";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { createFirstLinePlugin, firstLineKey } from "../app/tools/document-studio/extensions/FirstLineLayout";
-import { firstLinePaintShift } from "../app/tools/document-studio/utils/firstLinePaint";
+import { firstLinePaintShift, topEdgeInkShift } from "../app/tools/document-studio/utils/firstLinePaint";
 
 const schema = new Schema({ nodes: { doc: { content: "paragraph+" }, paragraph: { content: "text*", group: "block" }, text: { group: "inline" } } });
 function documentState(count = 2500) {
@@ -55,4 +55,10 @@ describe("incremental first-line paint state", () => {
     // A positive paint offset must leave a real guard before the unshifted second line.
     expect(firstLinePaintShift(-35, 5, 37, 0, 100, 5, 1, 67)).toBe(-4);
   });
+});
+
+it("moves only following ink that rises above the page guard",()=>{
+ expect(topEdgeInkShift(-3,24,0,100)).toBe(4);
+ expect(topEdgeInkShift(4,31,0,100)).toBe(0);
+ expect(topEdgeInkShift(-3,99,0,100)).toBe(0);
 });

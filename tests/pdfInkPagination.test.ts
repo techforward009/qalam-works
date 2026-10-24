@@ -186,3 +186,12 @@ describe("measured PDF ink pagination", () => {
     expect(leftFrame).toEqual({ left: 180, width: CONTENT_WIDTH - 180 });
   });
 });
+
+it("guards following tight-leading ink without changing page-fit decisions",()=>{
+ const first={...line(20),boxTop:-20,boxBottom:-15};
+ const next={...line(25,1,-30,5),boxTop:-20,boxBottom:-15};
+ const placed=placeInkLines([first,next],100);
+ expect(placed.map(item=>item.page)).toEqual([0,0]);
+ expect(placed[1].baseline+next.inkTop).toBe(1);
+ expect(placed[0].baseline).toBe(20);
+});

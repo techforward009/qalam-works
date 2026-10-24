@@ -67,10 +67,21 @@ function elementScale(element: HTMLElement): number {
   return width > 0 ? element.getBoundingClientRect().width / width : 1;
 }
 
-/** Visit only the selected subtree, and discard offscreen rects before grouping. */
+interface PrefixLineRect { left: number; right: number; top: number }
+/** A text-node boundary is not a visual line boundary (marks split text nodes). */
+export function beginsAtVisualLineStart(rect: {left:number;right:number;top:number}, prefix: PrefixLineRect[], rtl: boolean): boolean {
+  return !prefix.some(before => Math.abs(before.top-rect.top)<=1 && (rtl ? before.right>rect.right+.5 : before.left<rect.left-.5));
+}
+function rectLineTop(root:HTMLElement, owner:HTMLElement, rect:DOMRect, height:number, scale:number):number {
+  const absolute=owner.closest("[data-studio-line-box-top]")?.getAttribute("data-studio-line-box-top");
+  return absolute ? root.getBoundingClientRect().top+Number(absolute)*scale : renderedLineBoxTop(owner,rect,height,scale);
+}
+
+/** Walk selected text and cache its starting block's prefix once; discard offscreen selection rects before grouping. */
 export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = root.closest("[data-studio-scroller]")?.getBoundingClientRect()): TextLineBox[] {
   const scale = elementScale(root);
   const rects: LineRect[] = [];
+  const prefixes=new Map<HTMLElement,PrefixLineRect[]>();
   const common = selection.commonAncestorContainer;
   if (common !== root && !root.contains(common)) return [];
   const walker = document.createTreeWalker(common, NodeFilter.SHOW_TEXT);
@@ -84,16 +95,35 @@ export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = ro
     range.setStart(text, start); range.setEnd(text, end);
     const textBlock=text.parentElement!.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? root;
     const leading = parseFloat(getComputedStyle(textBlock).lineHeight);
-    const painted = text.parentElement!.closest("[data-studio-line-selection-offset]");
     const nativeRects = [...range.getClientRects()];
     const block = text.parentElement!.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? root;
     const blockStyle = getComputedStyle(block), blockBounds=block.getBoundingClientRect();
-    for (const [index,rect] of nativeRects.entries()) {
+    let prefix=prefixes.get(block);
+    if(!prefix){
+      prefix=[];prefixes.set(block,prefix);
+      // Only the block containing the range start can have unselected text
+      // before it. Later selected blocks/soft-wrapped lines still reach the guide.
+      if(block.contains(selection.startContainer)){
+        const before=document.createRange();before.setStart(block,0);before.setEnd(selection.startContainer,selection.startOffset);
+        const prior=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
+        for(let node=prior.nextNode();node;node=prior.nextNode()){
+          const value=node as Text;
+          if(before.comparePoint(value,0)>0)break;
+          if(!before.intersectsNode(value))continue;
+          const end=value===selection.startContainer?selection.startOffset:value.length;
+          if(!value.data.slice(0,end).trim())continue;
+          const fragment=document.createRange();fragment.setStart(value,0);fragment.setEnd(value,end);
+          for(const box of fragment.getClientRects())if(box.width>.1 && box.height>0){
+            prefix.push({left:box.left,right:box.right,top:rectLineTop(root,value.parentElement!,box,Number.isFinite(leading)?leading*scale:box.height,scale)});
+          }
+        }
+      }
+    }
+    for (const rect of nativeRects) {
       if (rect.width < 0.1 || rect.height < 1 || (clip && (rect.bottom <= clip.top || rect.top >= clip.bottom || rect.right <= clip.left || rect.left >= clip.right))) continue;
       const height = Number.isFinite(leading) ? leading * scale : rect.height;
-      const absolute=painted?.getAttribute("data-studio-line-box-top");
-      const top = absolute ? root.getBoundingClientRect().top+Number(absolute)*scale : renderedLineBoxTop(text.parentElement!,rect,height,scale);
-      const reachesStart = start === 0 || index > 0;
+      const top = rectLineTop(root,text.parentElement!,rect,height,scale);
+      const reachesStart = beginsAtVisualLineStart({left:rect.left,right:rect.right,top},prefix,blockStyle.direction === "rtl");
       const right = reachesStart && blockStyle.direction === "rtl" ? blockBounds.right - parseFloat(blockStyle.paddingRight || "0") * scale : rect.right;
       const left = reachesStart && blockStyle.direction !== "rtl" ? blockBounds.left + parseFloat(blockStyle.paddingLeft || "0") * scale : rect.left;
       rects.push({ left, top, width: right-left, height, fontTop: rect.top, fontBottom: rect.bottom });

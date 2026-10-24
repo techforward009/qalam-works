@@ -1,4 +1,4 @@
-import { firstLinePaintShift } from "./firstLinePaint";
+import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
 import type { Page } from "puppeteer-core";
 
 export interface InkLine {
@@ -138,7 +138,11 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     return { page, baseline: placedBaseline };
   });
   return placements.map((placement, index) => {
-    if (index > 0 && placements[index - 1].page === placement.page) return placement;
+    if (index > 0 && placements[index - 1].page === placement.page) {
+      const line=lines[index];
+      if(line.image)return placement;
+      return {...placement,baseline:placement.baseline+topEdgeInkShift(placement.baseline+line.inkTop,placement.baseline+line.inkBottom,0,height,edgeGuard)};
+    }
     const line = lines[index], boxTop = line.paintBoxTop ?? line.boxTop;
     if (boxTop === undefined || line.image) return placement;
     const next = placements[index + 1];

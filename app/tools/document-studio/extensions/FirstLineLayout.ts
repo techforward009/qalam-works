@@ -3,9 +3,9 @@ import { Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { getQalamPaginationState } from "./QalamPagination";
-import { firstLinePaintShift } from "../utils/firstLinePaint";
+import { firstLinePaintShift, topEdgeInkShift } from "../utils/firstLinePaint";
 
-export interface FirstLineRun { block: number; from: number; to: number; offset: number; empty: boolean; selectionOffset?: number; lineBoxTop?: number; page?:number; width?:number; height?:number }
+export interface FirstLineRun { block: number; from: number; to: number; offset: number; empty: boolean; selectionOffset?: number; lineBoxTop?: number; page?:number; topGuard?:boolean; width?:number; height?:number }
 interface LineState { blocks: number[]; runs: FirstLineRun[]; decorations: DecorationSet; dirty: Set<number>; textOnly:boolean }
 export const firstLineKey = new PluginKey<LineState>("qalam-first-line");
 const MEASURE = "qalam-first-line-measure";
@@ -107,6 +107,7 @@ class FirstLineView {
   private measure(full: boolean) {
     const view = this.view, state = firstLineKey.getState(view.state)!;
     const changedRuns = state.runs.filter(run => state.dirty.has(run.block));
+    if(changedRuns.some(run=>run.topGuard))full=true;
     if (!full && !changedRuns.length) return; // ResizeObserver catches wrapping in ordinary body blocks.
     const geometry = getQalamPaginationState({ state: view.state })?.geometry;
     const clip = this.scroller?.getBoundingClientRect();
@@ -226,7 +227,45 @@ class FirstLineView {
         // that same page-start line box.
         const offset = !onlyBreaks ? firstLinePaintShift(lineTop,inkTop,Math.max(inkBottom,layoutTop+leading),frameTop,frameBottom,layoutTop,scale,nextTop)/scale : 0;
         runs.push({block,from,to,offset,lineBoxTop:(frameTop-root.top)/scale,empty:onlyBreaks,selectionOffset:(frameTop-lineTop)/scale-offset,page,width:bounds.width/scale,height:bounds.height/scale});
-        break; // Only the FIRST line of this page receives an offset.
+
+        // At small leading, ink from later lines can rise above this frame's
+        // top guide. Inspect only the near-top overhang window, not the document.
+        const windowBottom=frameTop+Math.max(first.bottom-first.top,leading)*2;
+        let scanBlock=candidate, scanFrom=to<end?to+(view.state.doc.resolve(to).nodeAfter?.isText?0:1):end;
+        while(scanBlock<state.blocks.length){
+          const position=state.blocks[scanBlock],part=view.state.doc.nodeAt(position)!;
+          const element=view.nodeDOM(position) as HTMLElement|null;
+          if(!element)break;
+          const blockBounds=element.getBoundingClientRect(),blockStart=position+1,blockEnd=blockStart+part.content.size;
+          if(blockBounds.top>windowBottom || blockBounds.top>=frameBottom)break;
+          if(scanFrom>=blockEnd){scanBlock++;scanFrom=(state.blocks[scanBlock]??0)+1;continue;}
+          const line=natural(scanFrom);
+          if(line.top>windowBottom || line.top>=frameBottom)break;
+          let low=scanFrom,high=blockEnd;
+          while(low<high){const mid=Math.ceil((low+high)/2);if(natural(mid).baseline<=line.baseline+1)low=mid;else high=mid-1;}
+          const stop=low<blockEnd && view.state.doc.resolve(low).nodeAfter?.isText?low+1:low;
+          let minInk=Infinity,maxInk=-Infinity;
+          view.state.doc.nodesBetween(scanFrom,stop,(text,pos)=>{
+            if(!text.isText || !this.context)return;
+            const begin=Math.max(scanFrom,pos),finish=Math.min(stop,pos+text.nodeSize),glyph=natural(begin);
+            this.context.font=getComputedStyle(glyph.parent).font;
+            const metric=this.context.measureText(text.text!.slice(begin-pos,finish-pos));
+            minInk=Math.min(minInk,glyph.top+(metric.fontBoundingBoxAscent-metric.actualBoundingBoxAscent)*scale);
+            maxInk=Math.max(maxInk,glyph.top+(metric.fontBoundingBoxAscent+metric.actualBoundingBoxDescent)*scale);
+          });
+          const shift=topEdgeInkShift(minInk,maxInk,frameTop,frameBottom,scale)/scale;
+          if(shift>.05){
+            const boxTop=scanBlock===candidate ? frameTop+line.baseline-first.baseline : blockBounds.top+line.baseline-natural(blockStart).baseline;
+            affected.add(position);
+            runs.push({block:position,from:scanFrom,to:stop,offset:shift,empty:false,topGuard:true,page,
+              lineBoxTop:(boxTop-root.top)/scale,selectionOffset:(boxTop-line.top)/scale-shift,width:blockBounds.width/scale,height:blockBounds.height/scale});
+          }
+          const next=stop<blockEnd?stop+(view.state.doc.resolve(stop).nodeAfter?.isText?0:1):blockEnd;
+          if(next<=scanFrom)break;
+          scanFrom=next;
+        }
+        break; // Later normal-flow lines remain untouched unless their ink overhangs.
+
       }
     }
     // Old page-start candidates displaced by edits must return to normal flow.

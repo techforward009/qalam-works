@@ -36,7 +36,7 @@ describe("point leading",()=>{
 it.each([.5,1,1.5])("clamps the entire leading-height caret at both guides, scale %s",scale=>{
  const base={x:900,top:990,height:26.4,scale,rtl:true,blockLeft:40,blockRight:700,contentLeft:40,contentRight:700,contentTop:48,contentBottom:1000};
  const last=caretGeometry(base);expect(last.top+last.height).toBeLessThanOrEqual(1000);expect(last.height).toBeCloseTo(26.4,8);expect(last.width*scale).toBe(2);expect((700-last.left-last.width)*scale).toBeCloseTo(1);
- const first=caretGeometry({...base,top:-100,rtl:false,x:40});expect(first.top).toBeGreaterThanOrEqual(48);expect((first.left-40)*scale).toBeCloseTo(1);
+ const first=caretGeometry({...base,top:-100,rtl:false,x:40});expect(first.top).toBeGreaterThanOrEqual(48);expect((first.left-41)*scale).toBeCloseTo(1);
 });
 it("PDF and DOCX retain explicit 5pt leading rather than multiplying the font size",async()=>{
  const {buildPdfHtml}=await import("../app/tools/document-studio/utils/buildPdfHtml");

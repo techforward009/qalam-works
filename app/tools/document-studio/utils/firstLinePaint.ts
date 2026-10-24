@@ -6,3 +6,9 @@ export function firstLinePaintShift(lineTop: number, inkTop: number, bottom: num
   const max = frameBottom - guard - bottom;
   return min > max ? 0 : Math.min(max,Math.max(min,desired));
 }
+
+/** Following tightly spaced lines can overhang the top too. Paint only; never
+ * change their line boxes, selection pitch, or pagination membership. */
+export function topEdgeInkShift(inkTop:number,inkBottom:number,frameTop:number,frameBottom:number,guard=1):number {
+  return Math.max(0,Math.min(frameTop+guard-inkTop,frameBottom-guard-inkBottom));
+}
