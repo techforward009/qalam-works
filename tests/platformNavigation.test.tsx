@@ -65,6 +65,14 @@ describe("Urdu-first public discovery", () => {
     expect(screen.getAllByRole("heading").map(heading => heading.textContent)).toEqual(TOOL_GROUPS.map(group => group.name[language]));
     expect(routes(footer.container).filter(route => route === footerOnly)).toHaveLength(1);
     expect(routes(footer.container)).not.toContain(privateRoute);
+    expect(footer.container.querySelector('a[href^="mailto:"]')).toBeNull();
+    expect(footer.container.querySelector('a[href="/contact"]')).not.toBeNull();
+    const company = footer.container.querySelector('a[href="/contact"]')!.closest("ul")!;
+    expect(routes(company)).toEqual(["/about", "/services", "/contact", "/feedback"]);
+    const legal = footer.container.querySelector('a[href="/privacy"]')!.closest("ul")!;
+    expect(routes(legal)).toEqual(["/privacy", "/terms"]);
+    expect(legal.classList.contains("mb-5")).toBe(false);
+    expect([...footer.container.querySelectorAll("[data-footer-heading]")].map(el => el.textContent)).not.toContain(language === "ur" ? "رابطہ" : "Contact");
     const brand = footer.container.querySelector("footer > div > div")!;
     expect(brand.getAttribute("dir")).toBe(language === "ur" ? "rtl" : "ltr");
     expect(brand.classList.contains("text-start")).toBe(true);
