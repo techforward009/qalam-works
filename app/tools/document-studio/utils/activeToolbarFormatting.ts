@@ -1,3 +1,4 @@
+import { blockLeading, migrateLeading } from "./leading";
 /**
  * Effective toolbar formatting — display only.
  * Does not write marks/attrs into the document.
@@ -9,7 +10,6 @@ import {
   defaultDocumentSettings,
   resolveFontSizePt,
   validateIndentMm,
-  validateLineHeight,
   validateSpacingPt,
   type DocumentStudioSettings,
 } from "./documentSettings";
@@ -60,13 +60,11 @@ function blockDirAt(editor: Editor, pos: number, globalDir: "rtl" | "ltr"): "rtl
   return globalDir;
 }
 
-function lineHeightAt(editor: Editor, pos: number, settings: DocumentStudioSettings): number {
-  const $pos = editor.state.doc.resolve(Math.min(pos, editor.state.doc.content.size));
-  for (let depth = $pos.depth; depth > 0; depth -= 1) {
-    const raw = validateLineHeight($pos.node(depth).attrs.lineHeight);
-    if (raw !== null) return raw;
-  }
-  return settings.typography.lineHeight;
+function lineHeightAt(editor: Editor, pos: number, settings: DocumentStudioSettings): number | null {
+  const node = textblockAt(editor,pos);
+  const fallback = settings.typography.leading ?? (settings.typography.lineHeight === 1.5 ? { mode: "auto" as const } : migrateLeading(settings.typography.lineHeight,settings.typography.bodyFontSizePt));
+  const leading = node ? blockLeading(node.toJSON(),fallback,settings.typography.bodyFontSizePt) : fallback;
+  return leading.mode === "points" ? leading.value : null;
 }
 
 function textblockAt(editor: Editor, pos: number) {
@@ -134,7 +132,7 @@ export function resolveActiveToolbarFormatting(
   const { from, to, empty } = editor.state.selection;
   const families = new Set<string>();
   const sizes = new Set<number>();
-  const lineHeights = new Set<number>();
+  const lineHeights = new Set<number | null>();
   const colors = new Set<string>();
   const highlights = new Set<string>();
   const spaceBefores = new Set<number>();
@@ -228,7 +226,7 @@ export function resolveActiveToolbarFormatting(
   return {
     fontFamily: mixed.fontFamily ? MIXED_TOOLBAR_VALUE : [...families][0] ?? effectiveFamily("", globalDir, settings),
     fontSizePt: mixed.fontSize ? null : [...sizes][0] ?? settings.typography.bodyFontSizePt,
-    lineHeight: mixed.lineHeight ? null : [...lineHeights][0] ?? settings.typography.lineHeight,
+    lineHeight: mixed.lineHeight ? null : [...lineHeights][0] ?? null,
     blockStyle,
     bold: editor.isActive("bold") || Boolean(style.bold),
     italic: editor.isActive("italic"),

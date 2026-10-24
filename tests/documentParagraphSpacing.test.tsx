@@ -67,22 +67,22 @@ const interFace: PdfFontFace = {
 };
 
 describe("paragraph spacing presets and commands", () => {
-  it("applies Single / 1.15 / 1.5 / Double presets", () => {
+  it("applies point leading presets", () => {
     const ed = make({ type: "doc", content: [para("Hello")] });
     ed.commands.setTextSelection({ from: 1, to: 6 });
     for (const preset of LINE_SPACING_PRESETS) {
       applyLineHeight(ed, preset.value);
-      expect((ed.getJSON() as DocNode).content?.[0]?.attrs?.lineHeight).toBe(preset.value);
+      expect((ed.getJSON() as DocNode).content?.[0]?.attrs?.leading).toEqual({mode:"points",value:preset.value});
     }
   });
 
   it("marks the active exact preset and not a custom value", () => {
-    const ed = make({ type: "doc", content: [para("Hello", { lineHeight: 1.5 })] });
+    const ed = make({ type: "doc", content: [para("Hello", { leading: {mode:"points",value:20} })] });
     ed.commands.setTextSelection({ from: 1, to: 6 });
     mount(ed);
     fireEvent.click(document.querySelector("[data-studio-spacing-button]")!);
-    expect(document.querySelector('[data-studio-spacing-preset="1.5"]')?.getAttribute("aria-checked")).toBe("true");
-    expect(document.querySelector('[data-studio-spacing-preset="1"]')?.getAttribute("aria-checked")).toBe("false");
+    expect(document.querySelector('[data-studio-spacing-preset="20"]')?.getAttribute("aria-checked")).toBe("true");
+    expect(document.querySelector('[data-studio-spacing-preset="12"]')?.getAttribute("aria-checked")).toBe("false");
     cleanup();
     applyLineHeight(ed, 1.8);
     mount(ed);
@@ -115,7 +115,7 @@ describe("paragraph spacing presets and commands", () => {
     ed.commands.setTextSelection({ from: 1, to: 6 });
     applyCustomParagraphSpacing(ed, { lineHeight: 1.8, spaceBeforePt: 10, spaceAfterPt: 14 });
     const attrs = (ed.getJSON() as DocNode).content?.[0]?.attrs;
-    expect(attrs?.lineHeight).toBe(1.8);
+    expect(attrs?.leading).toEqual({mode:"points",value:1.8});
     expect(attrs?.spaceBeforePt).toBe(10);
     expect(attrs?.spaceAfterPt).toBe(14);
   });
@@ -153,8 +153,8 @@ describe("paragraph spacing presets and commands", () => {
     applyLineHeight(ed, 2);
     applyParagraphAttrs(ed, { indentStartMm: 15 });
     const json = ed.getJSON() as DocNode;
-    expect(json.content?.[0]?.attrs?.lineHeight).toBe(2);
-    expect(json.content?.[1]?.attrs?.lineHeight).toBe(2);
+    expect(json.content?.[0]?.attrs?.leading).toEqual({mode:"points",value:2});
+    expect(json.content?.[1]?.attrs?.leading).toEqual({mode:"points",value:2});
     expect(json.content?.[0]?.attrs?.indentStartMm).toBe(15);
     expect(json.content?.[1]?.attrs?.indentStartMm).toBe(15);
   });
@@ -202,7 +202,7 @@ describe("paragraph spacing presets and commands", () => {
     expect(marks.some((m) => m.type === "bold")).toBe(true);
     expect(marks.some((m) => m.type === "highlight")).toBe(true);
     expect(marks.find((m) => m.type === "textStyle")?.attrs?.fontFamily).toBe("Inter");
-    expect((ed.getJSON() as DocNode).content?.[0]?.attrs?.lineHeight).toBe(2);
+    expect((ed.getJSON() as DocNode).content?.[0]?.attrs?.leading).toEqual({mode:"points",value:2});
   });
 
   it("persists paragraph attrs in editor JSON", () => {
@@ -218,7 +218,8 @@ describe("paragraph spacing presets and commands", () => {
     });
     const attrs = (ed.getJSON() as DocNode).content?.[0]?.attrs;
     expect(attrs).toMatchObject({
-      lineHeight: 1.15,
+      leading: {mode:"points",value:1.15},
+      lineHeight: null,
       spaceBeforePt: 8,
       spaceAfterPt: 10,
       firstLineIndentMm: 6,
@@ -236,7 +237,7 @@ describe("spacing menu", () => {
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();
     fireEvent.click(document.querySelector("[data-studio-spacing-button]")!);
     expect(document.querySelector("[data-studio-spacing-menu]")).toBeTruthy();
-    expect(document.querySelector('[data-studio-spacing-preset="1"]')).toBeTruthy();
+    expect(document.querySelector('[data-studio-spacing-preset="12"]')).toBeTruthy();
     expect(document.querySelector("[data-studio-add-space-before]")).toBeTruthy();
     expect(document.querySelector("[data-studio-add-space-after]")).toBeTruthy();
     fireEvent.click(document.querySelector("[data-studio-custom-spacing]")!);
@@ -267,14 +268,14 @@ describe("PDF and DOCX spacing export", () => {
 
   it("emits PDF spacing and logical indents", () => {
     const html = buildPdfHtml(spaced, "ltr", { faces: [interFace] });
-    expect(html.html).toContain("line-height:2");
+    expect(html.html).toContain("line-height:24pt");
     expect(html.html).toContain("margin-block-start:10pt");
     expect(html.html).toContain("margin-block-end:14pt");
     expect(html.html).toContain("text-indent:8mm");
     expect(html.html).toContain("margin-inline-start:20mm");
     expect(html.html).toContain("margin-inline-end:5mm");
     expect(html.html).toContain('dir="rtl"');
-    expect(html.html).toContain("line-height:1.15");
+    expect(html.html).toContain("line-height:14pt");
   });
 
   it("emits DOCX spacing and indentation", async () => {

@@ -28,7 +28,7 @@ describe("effective toolbar formatting", () => {
     const ui = resolveActiveToolbarFormatting(ed, settings, "rtl");
     expect(ui.fontFamily).toBe("Mehr Nastaliq Web");
     expect(ui.fontSizePt).toBe(12);
-    expect(ui.lineHeight).toBe(1.5);
+    expect(ui.lineHeight).toBeNull();
     expect(ui.blockStyle).toBe("normal");
     expect(ui.mixed.fontFamily).toBe(false);
   });
@@ -46,7 +46,7 @@ describe("effective toolbar formatting", () => {
     const ui = resolveActiveToolbarFormatting(ed, settings, "rtl");
     expect(ui.fontFamily).toBe("Jameel Noori Nastaleeq");
     expect(ui.fontSizePt).toBe(14);
-    expect(ui.lineHeight).toBe(2);
+    expect(ui.lineHeight).toBe(28);
   });
 
   it("Title and Heading 1 show implied size and bold without adding a bold mark", () => {

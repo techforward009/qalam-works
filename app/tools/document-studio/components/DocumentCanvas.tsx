@@ -8,7 +8,7 @@ import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { blockAutoLineHeight } from "../utils/autoLeading";
+import { blockLeadingPt } from "../utils/autoLeading";
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
@@ -242,10 +242,9 @@ export default function DocumentCanvas({
         decorations(state) {
           const decorations: Decoration[] = [];
           state.doc.descendants((node, pos) => {
-            if (node.type.name !== "paragraph") return;
-            if (typeof node.attrs.lineHeight === "number") return false;
-            const leading = blockAutoLineHeight(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography.lineHeight, node.attrs.dir ?? dir);
-            decorations.push(Decoration.node(pos, pos + node.nodeSize, { style: `line-height:${leading}` }));
+            if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+            const leading = blockLeadingPt(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography, node.attrs.dir ?? dir);
+            decorations.push(Decoration.node(pos, pos + node.nodeSize, { style: `line-height:${leading}pt` }));
             return false;
           });
           return DecorationSet.create(state.doc, decorations);
@@ -257,7 +256,7 @@ export default function DocumentCanvas({
 
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
-    "--qalam-line-height": documentSettings.typography.lineHeight,
+    "--qalam-line-height": `${blockLeadingPt({ type: "paragraph" }, editorFontFamilyStack(documentSettings.typography.defaultRtlFontId), documentSettings.typography, dir)}pt`,
     "--qalam-rtl-font": editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),
     "--qalam-ltr-font": englishFont === "Inter" ? `${editorFontFamilyStack("inter")}, Arial` : `"${englishFont}", Arial, sans-serif`,
     "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
@@ -567,6 +566,7 @@ export default function DocumentCanvas({
                             editor={editor}
                             tool={tool}
                             frames={frames}
+                            typography={documentSettings.typography}
                             onFramesChange={onFramesChange ?? (() => undefined)}
                             onToolAction={chooseTool}
                             pageCount={pageCount}
@@ -685,6 +685,8 @@ export default function DocumentCanvas({
           text-align: start;
         }
         ${BLOCK_STYLE_EDITOR_CSS}
+        /* Inline font marks paint ink without enlarging the paragraph's point grid. */
+        .qalam-editor-content .ProseMirror :is(p,h1,h2,h3,h4,h5,h6) span { line-height: 0; }
         .qalam-editor-content p {
           margin-block-start: var(--qalam-paragraph-before, 0);
           margin-block-end: var(--qalam-paragraph-after, 0.55rem);

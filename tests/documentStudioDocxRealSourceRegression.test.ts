@@ -106,7 +106,7 @@ describe("DOCX synthetic Urdu/Arabic formatting and editable-break regressions",
     expect([5, 6, 8].map(i => textOf(ps[i]))).toEqual(["", "", ""]);
     expect((ps[9].match(/<w:br\s*\/>/g) ?? [])).toHaveLength(3);
     expect(textOf(ps[9])).toBe(hadithStart + " " + hadithStart.repeat(7));
-    expect(ps[9]).toContain('w:lineRule="atLeast"');
+    expect(ps[9]).toContain('w:lineRule="exact"');
     expect(ps[9]).toContain('w:line="640"');
   });
 
@@ -128,8 +128,8 @@ describe("DOCX synthetic Urdu/Arabic formatting and editable-break regressions",
     expect((lastParagraph.match(/<w:br\s*\/>/g) ?? [])).toHaveLength(3);
     expect(lastParagraph).not.toContain('w:type="page"');
     expect(lastParagraph).toContain('w:line="640"');
-    expect(lastParagraph).toContain('w:lineRule="atLeast"');
-    expect(lastParagraph).toContain('w:after="120"');
+    expect(lastParagraph).toContain('w:lineRule="exact"');
+    expect(lastParagraph).toContain('w:after="0"');
     for (const forbidden of ["<w:keepNext", "<w:keepLines", "<w:pageBreakBefore"]) {
       expect(lastParagraph).not.toContain(forbidden);
     }

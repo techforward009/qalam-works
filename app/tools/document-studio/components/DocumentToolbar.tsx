@@ -1,4 +1,6 @@
 "use client";
+import { LeadingInput } from "./LeadingInput";
+import { parseLeading } from "../utils/leading";
 
 import { useEffect, useRef, useState, type CSSProperties, type ComponentProps } from "react";
 import type { Editor } from "@tiptap/react";
@@ -416,7 +418,7 @@ function ParagraphSpacingMenu({
   const hasBefore = !ui.mixed.spaceBefore && (ui.spaceBeforePt ?? 0) > 0;
   const hasAfter = !ui.mixed.spaceAfter && (ui.spaceAfterPt ?? 0) > 0;
 
-  const applyPreset = (value: number) => {
+  const applyPreset = (value: number | null) => {
     applyLineHeight(editor, value);
     setOpen(false);
   };
@@ -427,7 +429,10 @@ function ParagraphSpacingMenu({
       if (!raw) return undefined;
       return parseNumericField(raw, kind);
     };
-    const lineHeight = read("lineHeight", "line");
+    const leadingRaw = String(new FormData(form).get("lineHeight") ?? "").trim();
+    const leading = leadingRaw ? parseLeading(leadingRaw) : undefined;
+    if (leading === null) return;
+    const lineHeight = leading?.mode === "points" ? leading.value : undefined;
     const spaceBeforePt = read("spaceBeforePt", "pt");
     const spaceAfterPt = read("spaceAfterPt", "pt");
     const firstLineIndentMm = read("firstLineIndentMm", "mm");
@@ -442,6 +447,7 @@ function ParagraphSpacingMenu({
       if (typeof value === "number") next[key] = value;
     });
     applyCustomParagraphSpacing(editor, next);
+    if (leading?.mode === "auto") applyLineHeight(editor,null);
     setCustomOpen(false);
     setOpen(false);
   };
@@ -465,7 +471,7 @@ function ParagraphSpacingMenu({
         className="inline-flex h-[20px] min-w-0 items-center justify-center bg-white px-1 text-[11px] leading-none text-black"
         style={{ width: 61, minHeight: 20, justifyContent: "flex-start", boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}
       >
-        <span className="px-0.5" data-latin-control="true">0pt</span>
+        <span className="px-0.5" data-latin-control="true">{ui.mixed.spaceAfter ? "—" : `${ui.spaceAfterPt ?? 0}pt`}</span>
       </button>
       {open ? (
         <div
@@ -477,7 +483,7 @@ function ParagraphSpacingMenu({
           <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
             {isUr ? "لائن اسپیسنگ" : "Line spacing"}
           </div>
-          {LINE_SPACING_PRESETS.map((preset) => {
+          {[{ id:"auto", value:null, labelEn:"Auto", labelUr:"خودکار" }, ...LINE_SPACING_PRESETS].map((preset) => {
             const checked = !ui.mixed.lineHeight && ui.lineHeight === preset.value;
             return (
               <button
@@ -556,7 +562,7 @@ function ParagraphSpacingMenu({
           }}
         >
           {[
-            { name: "lineHeight", label: isUr ? "لائن اسپیسنگ" : "Line spacing", kind: "line" as const, value: ui.mixed.lineHeight ? "" : ui.lineHeight, step: "0.05" },
+            { name: "lineHeight", label: isUr ? "لائن اسپیسنگ" : "Line spacing", kind: "line" as const, value: ui.mixed.lineHeight ? "" : ui.lineHeight, step: "0.5" },
             { name: "spaceBeforePt", label: isUr ? "پہلے فاصلہ (pt)" : "Space before (pt)", kind: "pt" as const, value: ui.mixed.spaceBefore ? "" : ui.spaceBeforePt, step: "1" },
             { name: "spaceAfterPt", label: isUr ? "بعد فاصلہ (pt)" : "Space after (pt)", kind: "pt" as const, value: ui.mixed.spaceAfter ? "" : ui.spaceAfterPt, step: "1" },
             { name: "firstLineIndentMm", label: isUr ? "پہلی سطر انڈینٹ (mm)" : "First-line indent (mm)", kind: "mm" as const, value: ui.mixed.firstLineIndent ? "" : ui.firstLineIndentMm, step: "1" },
@@ -567,9 +573,9 @@ function ParagraphSpacingMenu({
               <span>{field.label}</span>
               <input
                 name={field.name}
-                type="number"
+                type={field.kind === "line" ? "text" : "number"}
                 step={field.step}
-                defaultValue={field.value ?? ""}
+                defaultValue={field.name === "lineHeight" ? field.value == null || field.value === "" ? "Auto" : `${field.value}pt` : field.value ?? ""}
                 placeholder={field.value == null || field.value === "" ? (isUr ? "مخلوط" : "Mixed") : undefined}
                 data-studio-spacing-field={field.name}
                 className="h-7 w-20 rounded border border-gray-200 px-1.5 text-[11px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1A3A2A]/30"
@@ -676,7 +682,7 @@ export default function DocumentToolbar({
   englishFont?: string;
   onEnglishFontChange?: (family: string) => void;
 }) {
-  const leadingRef = useRef<HTMLSelectElement>(null);
+  const leadingRef = useRef<HTMLInputElement>(null);
   const kerningRef = useRef<HTMLSelectElement>(null);
   const scaleRef = useRef<HTMLSelectElement>(null);
   const settings = documentSettings ?? defaultDocumentSettings();
@@ -700,7 +706,7 @@ export default function DocumentToolbar({
   const latinFonts = STUDIO_FONT_GROUPS.find((group) => group.category === "latin")?.fonts ?? [];
   const explicitLatin = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
   const englishValue = explicitLatin === "Arial Unicode MS" || latinFonts.some((font) => font.value === explicitLatin) ? explicitLatin : englishFont;
-  const spacingValue = ui.lineHeight == null || ui.lineHeight === settings.typography.lineHeight ? "auto" : String(ui.lineHeight);
+  const spacingValue = ui.lineHeight == null ? { mode: "auto" as const } : { mode: "points" as const, value: ui.lineHeight };
   const colourValue = !ui.color || ui.color === "#000000" || ui.color === "#111111" ? "#000000" : ui.color;
 
   return (
@@ -735,22 +741,13 @@ export default function DocumentToolbar({
               </option>
             ))}
           </ClassicCombo>
-          <ToolbarButton width={18} gap={1} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} onClick={() => openToolbarCombo(leadingRef.current)} raised><MetricIcon kind="line" /></ToolbarButton>
-          <ClassicCombo entryField ref={leadingRef}
-            aria-label={isUr ? "سطری فاصلہ" : "Line spacing"}
-            data-studio-leading="true"
-            className={selectCls} width={61}
-            value={spacingValue}
-            onChange={(event) => {
-              const raw = event.target.value;
-              applyLineHeight(editor, raw === "auto" ? null : Number(raw));
-            }}
-          >
-            <option value="auto">Auto</option>
-            {LINE_SPACING_PRESETS.map((preset) => (
-              <option key={preset.id} value={preset.value}>{preset.value}</option>
-            ))}
-          </ClassicCombo>
+          <ToolbarButton width={18} gap={1} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} onClick={() => leadingRef.current?.focus()} raised><MetricIcon kind="line" /></ToolbarButton>
+          <LeadingInput ref={leadingRef}
+            aria-label="Line spacing" data-studio-leading="true" value={spacingValue}
+            onChange={value => applyLineHeight(editor,value.mode === "points" ? value.value : null)}
+            style={{ width:61, height:20, minHeight:20, maxHeight:20, flexShrink:0, background:"#fff", color:"#000", fontFamily:"Tahoma, Arial, sans-serif", fontSize:11, padding:"2px 4px", border:0, boxShadow:"inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}
+          />
+          <datalist id="studio-leading-points"><option value="Auto" />{LINE_SPACING_PRESETS.map(preset=><option key={preset.id} value={`${preset.value}pt`} />)}</datalist>
           <ClassicCombo
             aria-label={isUr ? "انگریزی فونٹ" : "English font"}
             leadingIcon={<span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700 }}>Tт</span>}

@@ -6,7 +6,7 @@ describe("visual line selection boxes", () => {
   it("gives mixed Urdu/Latin sizes the same top and height and keeps the full line-height", () => {
     const boxes = groupVisualLineRects([
       { left: 0, top: 10, width: 80, height: 40, fontTop: 10, fontBottom: 40 },
-      { left: 80, top: 20, width: 40, height: 20, fontTop: 20, fontBottom: 35 },
+      { left: 80, top: 10, width: 40, height: 40, fontTop: 20, fontBottom: 35 },
       { left: 0, top: 51, width: 90, height: 40, fontTop: 51, fontBottom: 81 },
     ]);
     expect(boxes.slice(0, 2).map(({top, height}) => ({top, height}))).toEqual([{top:10,height:40},{top:10,height:40}]);

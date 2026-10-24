@@ -81,12 +81,12 @@ for(const key of ['Enter','Shift+Enter']){
  test(`${key} empty line boxes paginate through page two`,async({page})=>{
   await open(page);
   const lines=[await settledCaret(page)];
-  for(let i=0;i<30;i++){
+  for(let i=0;i<60;i++){
    await page.keyboard.press(key);
    lines.push(await settledCaret(page));
    await expectCaretVisible(page);
   }
-  expect(lines).toHaveLength(31);
+  expect(lines).toHaveLength(61);
   expect(lines.every(line=>line.page===1||line.page===2)).toBe(true);
   const firstOnPageTwo=lines.find(line=>line.page===2);
   expect(firstOnPageTwo).toBeDefined();
@@ -100,7 +100,7 @@ for(const value of ['50','100','150'])for(const key of ['Enter','Shift+Enter']){
   const target=key==='Enter'?3:2;
   const transitions:number[]=[];
   let previous=1;
-  for(let presses=1;presses<=75;presses++){
+  for(let presses=1;presses<=120;presses++){
    await page.keyboard.press(key);
    const caret=await settledCaret(page);
    // Check every key, and especially the transition itself; NO extra key to scroll.
@@ -137,16 +137,17 @@ test('caret follow does not move an already visible viewport or a mouse selectio
 });
 for(const pattern of ['mixed','typed'])test(`${pattern} paragraphs retain typed-text page capacity`,async({page})=>{
  await open(page);
- for(let i=0;i<30;i++){
+ for(let i=0;i<60;i++){
   if(pattern==='typed'||i%2===0)await page.keyboard.insertText("السلام علیکم");
   await page.keyboard.press('Enter');
  }
- await expect(page.locator('.ProseMirror p')).toHaveCount(31);
+ await expect(page.locator('.ProseMirror p')).toHaveCount(61);
  await expect.poll(()=>page.evaluate(()=>{
   const border=document.querySelector('[data-studio-margin-guide="1"] [data-studio-margin-line="bottom"]')!.getBoundingClientRect().top;
-  return [...document.querySelectorAll('.ProseMirror p')].filter(p=>{
-   const range=document.createRange();range.selectNodeContents(p);const r=[...range.getClientRects()].find(r=>r.height>0);
-   return r&&r.bottom<=border;
-  }).length;
- })).toBe(23);
+  const ps=[...document.querySelectorAll('.ProseMirror p')];
+  const first=ps[0].getBoundingClientRect().top,pitch=parseFloat(getComputedStyle(ps[0]).lineHeight);
+  const expected=Math.floor((border-first+1)/pitch);
+  const actual=ps.filter(p=>{const r=p.getBoundingClientRect();return r.top>=first-1 && r.top+pitch<=border+1;}).length;
+  return actual===expected;
+ })).toBe(true);
 });

@@ -53,6 +53,6 @@ describe("incremental first-line paint state", () => {
     expect(firstLinePaintShift(-10, 5, 48, 0, 50)).toBe(1);
     expect(firstLinePaintShift(0, -5, 30, 0, 100)).toBe(6);
     // A positive paint offset must leave a real guard before the unshifted second line.
-    expect(firstLinePaintShift(-35, 5, 37, 0, 100, 5, 1, 67)).toBe(29);
+    expect(firstLinePaintShift(-35, 5, 37, 0, 100, 5, 1, 67)).toBe(-4);
   });
 });

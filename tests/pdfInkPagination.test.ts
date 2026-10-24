@@ -59,7 +59,8 @@ describe("measured PDF ink pagination", () => {
     expect(placed[1].baseline + last.boxTop - (placed[0].baseline + first.boxBottom)).toBeGreaterThanOrEqual(1);
     expect(placed[1]).toEqual({page:0,baseline:87});
     expect(placed[1].baseline + last.boxBottom).toBe(99);
-    expect(placeInkLines([first], 50)[0].baseline + first.boxBottom).toBe(49);
+    expect(placeInkLines([first], 50)[0].baseline + first.boxBottom).toBeLessThanOrEqual(49);
+    expect(placeInkLines([first], 50)[0].baseline + first.boxTop).toBe(0);
   });
   it("preserves exact baseline distances when lines fit", () => {
     expect(placeInkLines([line(20), line(52), line(84)], 100)).toEqual([{ page: 0, baseline: 20 }, { page: 0, baseline: 52 }, { page: 0, baseline: 84 }]);

@@ -4,9 +4,10 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
 import { caretGeometry } from "../utils/caretGeometry";
 import { getQalamPaginationState } from "../extensions/QalamPagination";
-import { lineBoxTop } from "../utils/textLineBoxes";
+import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
-import { autoLineHeight } from "../utils/autoLeading";
+import { StudioTextFrame } from "./StudioTextFrame";
+import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
 
@@ -23,6 +24,7 @@ export type StudioFrame = {
   /** Line runs the other diagonal when true. */
   flip: boolean;
   text: string;
+  typography?: DocumentStudioSettings["typography"];
 };
 
 const DRAW_TOOLS = new Set<StudioToolId>(["textbox", "rect", "ellipse", "round-rect", "line"]);
@@ -79,10 +81,12 @@ export function StudioObjectLayer({
   gapPx,
   marginTopPx,
   marginRightPx,
+  typography,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
   frames: StudioFrame[];
+  typography?: DocumentStudioSettings["typography"];
   onFramesChange: (frames: StudioFrame[]) => void;
   onToolAction: (tool: StudioToolId) => void;
   pageCount: number;
@@ -199,6 +203,7 @@ export function StudioObjectLayer({
       hMm: Math.max(1, h) / PX_PER_MM,
       flip,
       text: "",
+      typography,
     };
     if (tool === "textbox") pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
@@ -428,36 +433,7 @@ function FrameShape({
   onText: (text: string) => void;
 }) {
   if (frame.kind === "text") {
-    return (
-      <textarea
-        data-studio-text-frame
-        value={frame.text}
-        readOnly={!editable}
-        tabIndex={editable ? 0 : -1}
-        dir="rtl"
-        aria-label="Text box"
-        onChange={(event) => onText(event.target.value)}
-        onFocus={onTextFocus}
-        onPointerDown={(event) => event.stopPropagation()}
-        style={{
-          width: "100%",
-          height: "100%",
-          resize: "none",
-          pointerEvents: editable ? "auto" : "none",
-          cursor: editable ? "text" : "inherit",
-          border: "1px solid #000",
-          background: "transparent",
-          color: "#000",
-          fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',
-          fontVariantLigatures: "normal",
-          fontFeatureSettings: "normal",
-          fontSize: 16,
-          lineHeight: autoLineHeight("Jameel Noori Nastaleeq"),
-          padding: 2,
-          outline: "none",
-        }}
-      />
-    );
+    return <StudioTextFrame text={frame.text} typography={frame.typography} editable={editable} onFocus={onTextFocus} onText={onText} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const inset = 0.5;
@@ -498,7 +474,7 @@ function StudioCaret({
   useEffect(() => {
     if (!editor) return;
     const place = () => {
-      if (!editor.isFocused || editor.isDestroyed) {
+      if (!editor.isFocused || editor.isDestroyed || !editor.state.selection.empty) {
         setBox(null);
         return;
       }
@@ -516,11 +492,11 @@ function StudioCaret({
       const scale = rect.width > 0 ? rect.width / pageWidthPx : 1;
       const anchor = window.getSelection()?.anchorNode;
       const owner = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor instanceof HTMLElement ? anchor : editor.view.dom;
-      const leading = parseFloat(getComputedStyle(owner ?? editor.view.dom).lineHeight) * scale;
-      const top = firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
-        : lineBoxTop(coords.top, coords.bottom - coords.top, Number.isFinite(leading) ? leading : coords.bottom - coords.top);
+      const leading = parseFloat(getComputedStyle(owner?.closest("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom).lineHeight) * scale;
       const block = owner?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom;
       const bounds = block.getBoundingClientRect();
+      const top = firstLine?.lineBoxTop !== undefined ? rect.top+firstLine.lineBoxTop*scale : firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
+        : renderedLineBoxTop(owner ?? editor.view.dom,{top:coords.top,height:coords.bottom-coords.top},Number.isFinite(leading) ? leading : coords.bottom-coords.top,scale);
       const geometry = getQalamPaginationState(editor)?.geometry;
       const page = geometry?.enabled ? Math.max(0,Math.floor(((top-rect.top)/scale-marginTopPx+1)/(geometry.pageHeightPx+geometry.gapPx))) : 0;
       const { nodeBefore, nodeAfter } = editor.state.selection.$head;
@@ -531,10 +507,12 @@ function StudioCaret({
       const point = emptyLine ? (rtl ? bounds.right : bounds.left) : coords.left;
       setBox(caretGeometry({
         x: (point-rect.left)/scale, top: (top-rect.top)/scale,
-        height: Math.max(12,coords.bottom-coords.top)/scale, scale,
+        height: Number.isFinite(leading) ? leading/scale : (coords.bottom-coords.top)/scale, scale,
         rtl,
         blockLeft: (bounds.left-rect.left)/scale, blockRight: (bounds.right-rect.left)/scale,
         contentRight: pageWidthPx-marginRightPx,
+        contentLeft: geometry?.marginLeftPx ?? 0,
+        contentBottom: geometry?.enabled ? page*(geometry.pageHeightPx+geometry.gapPx)+geometry.pageHeightPx-geometry.marginBottomPx : undefined,
         contentTop: marginTopPx+page*(geometry ? geometry.pageHeightPx+geometry.gapPx : 0),
       }));
     };

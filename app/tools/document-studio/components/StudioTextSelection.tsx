@@ -65,6 +65,6 @@ export function StudioTextSelection({ editor, zoom }: { editor: Editor | null; z
   }, [editor, host, boxes]);
   if (!host || !boxes.length) return null;
   return createPortal(<div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 5, mixBlendMode: "difference" }}>
-    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "linear-gradient(#fff calc(100% - 2px), transparent 0)" }} />)}
+    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "#fff" }} />)}
   </div>, host);
 }

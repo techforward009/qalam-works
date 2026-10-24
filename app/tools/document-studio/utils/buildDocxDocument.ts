@@ -1,3 +1,4 @@
+import { blockLeadingPt } from "./autoLeading";
 // Phase 3C adapter — see docs/PHASE-3C-DOCX-SPEC.md for the full mapping
 // table and the evidence behind each choice below (verified against the
 // installed docx package by generating and inspecting real OOXML, not
@@ -44,7 +45,7 @@ import {
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
 import { deriveDocumentTitle } from "./extractPlainText";
-import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { hexToDocxColor } from "./studioColors";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
@@ -83,52 +84,12 @@ const PAGE_MARGIN = { top: 1440, bottom: 1440, left: 1440, right: 1440 };
 // Line spacing itself is computed by wordLineSpacing() from the user's
 // line-height and the block's point size. Do not switch it back to AUTO.
 
-// Word AUTO spacing multiplies the font's own line grid. Nastaliq faces
-// such as Jameel and Gulzar advertise a very tall grid, so a CSS line-height
-// of 1.5 or 2 becomes roughly double in Word. CSS line-height is a multiplier
-// of the used point size. AT_LEAST matches that box and still grows when a
-// larger glyph needs room, instead of clipping the way EXACT would.
-function wordLineSpacing(lineHeight: number, fontSizePt: number) {
+// Absolute point leading is exported as exact twips, including intentional overlap.
+function wordLineSpacing(lineHeight: number) {
   return {
-    line: Math.max(20, Math.round(lineHeight * fontSizePt * 20)),
-    lineRule: LineRuleType.AT_LEAST,
+    line: Math.max(20, Math.round(lineHeight * 20)),
+    lineRule: LineRuleType.EXACT,
   };
-}
-
-function exportedBlockFontSizePt(node: DocNode, typography: DocumentStudioSettings["typography"]): number {
-  if (node.type === "heading") {
-    const level = node.attrs?.level;
-    if (typeof level === "number") {
-      const heading = BLOCK_STYLES[`heading-${level}` as keyof typeof BLOCK_STYLES];
-      if (heading?.defaultFontSizePt) return heading.defaultFontSizePt;
-    }
-  }
-  const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
-  const styleDef = blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
-  return styleDef?.defaultFontSizePt ?? typography.bodyFontSizePt;
-}
-
-function largestExplicitRunSizePt(node: DocNode): number | null {
-  let largest: number | null = null;
-  for (const child of node.content ?? []) {
-    if (child.type !== "text") continue;
-    const style = child.marks?.find((mark) => mark.type === "textStyle");
-    const size = resolveFontSizePt(style?.attrs?.fontSize);
-    if (size == null) continue;
-    largest = largest == null ? size : Math.max(largest, size);
-  }
-  return largest;
-}
-
-function lineBoxFontSizePt(
-  node: DocNode,
-  typography: DocumentStudioSettings["typography"],
-  includeExplicitRunSize: boolean,
-): number {
-  const base = exportedBlockFontSizePt(node, typography);
-  if (!includeExplicitRunSize) return base;
-  const run = largestExplicitRunSizePt(node);
-  return run == null ? base : Math.max(base, run);
 }
 
 function docxFontSlots(family: string) {
@@ -147,7 +108,7 @@ function docxFontSlots(family: string) {
 function resolveParagraphSpacingAndIndent(
   node: DocNode,
   typography: DocumentStudioSettings["typography"],
-  includeExplicitRunSize = true,
+  dir: Direction = "rtl",
 ): {
   spacing: { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] };
   indent?: { start?: number; end?: number; firstLine?: number };
@@ -157,7 +118,7 @@ function resolveParagraphSpacingAndIndent(
 
   const beforePt = (typeof node.attrs?.spaceBeforePt === "number" ? validateSpacingPt(node.attrs.spaceBeforePt) : null) ?? typography.paragraphBeforePt;
   const afterPt = (typeof node.attrs?.spaceAfterPt === "number" ? validateSpacingPt(node.attrs.spaceAfterPt) : null) ?? typography.paragraphAfterPt;
-  const lineHeight = (typeof node.attrs?.lineHeight === "number" ? validateLineHeight(node.attrs.lineHeight) : null) ?? typography.lineHeight;
+  const lineHeight = blockLeadingPt(node, getFontById(typography.defaultRtlFontId)?.editorFamily ?? "Mehr Nastaliq Web", typography, dir);
   const firstLineIndentMm =
     (typeof node.attrs?.firstLineIndentMm === "number" ? validateIndentMm(node.attrs.firstLineIndentMm) : null) ?? typography.firstLineIndentMm;
   const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? validateIndentMm(node.attrs.indentStartMm) : null;
@@ -166,7 +127,7 @@ function resolveParagraphSpacingAndIndent(
   const spacing = {
     before: ptToTwips(beforePt),
     after: ptToTwips(afterPt),
-    ...wordLineSpacing(lineHeight, lineBoxFontSizePt(node, typography, includeExplicitRunSize)),
+    ...wordLineSpacing(lineHeight),
   };
 
   const indent: { start?: number; end?: number; firstLine?: number } = {};
@@ -199,17 +160,18 @@ const HEADING_SPACING: Record<number, { before: number; after: number }> = {
 function headingSpacingFor(
   level: unknown,
   node: DocNode,
-  typography: DocumentStudioSettings["typography"]
+  typography: DocumentStudioSettings["typography"],
+  dir: Direction,
 ): { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] } {
   const canonical = typeof level === "number" && level in HEADING_SPACING ? HEADING_SPACING[level] : HEADING_SPACING[4];
   const beforePt = typeof node.attrs?.spaceBeforePt === "number" ? validateSpacingPt(node.attrs.spaceBeforePt) : null;
   const afterPt = typeof node.attrs?.spaceAfterPt === "number" ? validateSpacingPt(node.attrs.spaceAfterPt) : null;
-  const lineHeight = typeof node.attrs?.lineHeight === "number" ? validateLineHeight(node.attrs.lineHeight) : null;
+  const lineHeight = blockLeadingPt(node, getFontById(typography.defaultRtlFontId)?.editorFamily ?? "Mehr Nastaliq Web", typography, dir);
   return {
     before: beforePt !== null ? Math.round(beforePt * 20) : canonical.before,
     after: afterPt !== null ? Math.round(afterPt * 20) : canonical.after,
     // Headings use their own 1.5 line-height in the editor unless the user sets one.
-    ...wordLineSpacing(lineHeight ?? 1.5, lineBoxFontSizePt(node, typography, true)),
+    ...wordLineSpacing(lineHeight),
   };
 }
 
@@ -528,7 +490,7 @@ function convertNode(
   switch (node.type) {
     case "paragraph": {
       const blockDir = directionForNode(node, dir);
-      const { spacing, indent } = resolveParagraphSpacingAndIndent(node, typography);
+      const { spacing, indent } = resolveParagraphSpacingAndIndent(node, typography, blockDir);
       // Batch 16A correction — canonical block-style presentation
       // (Title/Subtitle/Caption), sourced from documentStyles.ts's
       // BLOCK_STYLES (same single source of truth the editor CSS and PDF
@@ -562,7 +524,7 @@ function convertNode(
           heading,
           bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node) ?? (blockDir === "rtl" ? AlignmentType.RIGHT : AlignmentType.LEFT),
-          spacing: headingSpacingFor(level, node, typography),
+          spacing: headingSpacingFor(level, node, typography, blockDir),
           children: convertInline(node.content, blockDir, typography, undefined, {
             fontSizePt: headingStyle?.defaultFontSizePt,
             bold: headingStyle?.bold,
@@ -583,7 +545,7 @@ function convertNode(
           // (the quote's own established visual indent, distinct from the
           // new user-configurable indentStartMm/indentEndMm concept) —
           // preserving existing quote styling exactly.
-          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography);
+          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography, blockDir);
           out.push(
             new Paragraph({
               bidirectional: blockDir === "rtl",
@@ -683,7 +645,7 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
       // defaults. Only spacing/line-height come from the shared
       // resolver — the numbering indent stays list-numbering's own
       // (untouched), matching "preserve existing list numbering styling."
-      const { spacing } = resolveParagraphSpacingAndIndent(child, typography);
+      const { spacing } = resolveParagraphSpacingAndIndent(child, typography, blockDir);
       out.push(
         new Paragraph({
           bidirectional: blockDir === "rtl",
@@ -720,7 +682,7 @@ function convertDocxTable(node: DocNode, dir: Direction, ctx: NumberingContext, 
       for (const child of cell.content ?? []) {
         if (child.type === "paragraph") {
           const blockDir = directionForNode(child, dir);
-          const { spacing, indent } = resolveParagraphSpacingAndIndent(child, typography);
+          const { spacing, indent } = resolveParagraphSpacingAndIndent(child, typography, blockDir);
           children.push(new Paragraph({
             bidirectional: blockDir === "rtl",
             alignment: alignmentFor(child) ?? (blockDir === "rtl" ? AlignmentType.RIGHT : AlignmentType.LEFT),

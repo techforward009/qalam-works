@@ -219,7 +219,7 @@ test.describe("Document Studio v1 browser smoke", () => {
   });
 
   for (const pt of [12, 36]) {
-    test(`Mehr ${pt}pt Auto leading keeps ink below the top margin and lines apart`, async ({ page }) => {
+    test(`Mehr ${pt}pt Auto uses point line pitch and keeps first ink below the top margin`, async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await openStudio(page, "ur");
       const story = await replaceEditorContent(page, "السلام علیکم اللہ وبرکاتہ");
@@ -230,21 +230,21 @@ test.describe("Document Studio v1 browser smoke", () => {
       await page.locator('[data-studio-font-size]').selectOption(String(pt));
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       await expect.poll(() => story.locator("p").first().evaluate((p) => {
-        const prose = p.closest(".ProseMirror") as HTMLElement;
-        const scale = prose.getBoundingClientRect().width / prose.offsetWidth;
-        const margin = prose.getBoundingClientRect().top + parseFloat(getComputedStyle(prose).paddingTop) * scale;
-        const lines = [...p.childNodes].flatMap((node) => {
-          const range = document.createRange();
-          range.selectNodeContents(node);
-          return [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
-        });
-        const unique = lines.filter((r, i) => !lines.slice(0, i).some((prior) => Math.abs(prior.top - r.top) < 1)).sort((a, b) => a.top - b.top);
-        if (unique.length < 2) return false;
-        return unique[0].top >= margin - 1 && unique[1].top >= unique[0].bottom - 1;
+        const root=p.closest<HTMLElement>(".ProseMirror")!,scale=root.getBoundingClientRect().width/root.offsetWidth;
+        const margin=root.getBoundingClientRect().top+parseFloat(getComputedStyle(root).paddingTop)*scale;
+        const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT),ctx=document.createElement("canvas").getContext("2d")!;
+        const ink:{top:number;bottom:number}[]=[];
+        for(let node=walker.nextNode();node;node=walker.nextNode()){
+          const range=document.createRange();range.selectNodeContents(node);ctx.font=getComputedStyle(node.parentElement!).font;
+          const m=ctx.measureText(node.textContent!);
+          for(const r of range.getClientRects()) if(r.width>1)ink.push({top:r.top+(m.fontBoundingBoxAscent-m.actualBoundingBoxAscent)*scale,bottom:r.top+(m.fontBoundingBoxAscent+m.actualBoundingBoxDescent)*scale});
+        }
+        ink.sort((a,b)=>a.top-b.top);
+        return ink.length>=2&&ink[0].top>=margin-1;
       })).toBe(true);
-      await expect(story.locator("p").first()).toHaveAttribute("style", /line-height:\s*2.2/);
-      await page.locator('[data-studio-leading]').selectOption("1.5");
-      await expect(story.locator("p").first()).toHaveAttribute("style", /line-height:\s*1.5/);
+      await expect.poll(()=>story.locator("p").first().evaluate(el=>parseFloat(getComputedStyle(el).lineHeight))).toBeCloseTo(pt*1.65*4/3,1);
+      const leading=page.locator('[data-studio-leading]');await leading.fill("20pt");await leading.press("Enter");
+      await expect(story.locator("p").first()).toHaveAttribute("data-leading", JSON.stringify({mode:"points",value:20}));
     });
   }
 

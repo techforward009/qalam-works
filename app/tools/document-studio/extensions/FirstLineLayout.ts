@@ -5,7 +5,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { getQalamPaginationState } from "./QalamPagination";
 import { firstLinePaintShift } from "../utils/firstLinePaint";
 
-export interface FirstLineRun { block: number; from: number; to: number; offset: number; empty: boolean; selectionOffset?: number; page?:number; width?:number; height?:number }
+export interface FirstLineRun { block: number; from: number; to: number; offset: number; empty: boolean; selectionOffset?: number; lineBoxTop?: number; page?:number; width?:number; height?:number }
 interface LineState { blocks: number[]; runs: FirstLineRun[]; decorations: DecorationSet; dirty: Set<number>; textOnly:boolean }
 export const firstLineKey = new PluginKey<LineState>("qalam-first-line");
 const MEASURE = "qalam-first-line-measure";
@@ -17,7 +17,7 @@ function blockAt(doc: PMNode, pos: number): number | null {
 function decorate(run: FirstLineRun): Decoration[] {
   // Empty paragraphs have no text to move. StudioCaret reads the same offset.
   return run.empty ? [] : [Decoration.inline(run.from, run.to, {
-    "data-studio-line-run": "true", "data-studio-line-selection-offset": String(run.selectionOffset ?? 0), style: `position:relative;top:${run.offset}px`,
+    "data-studio-line-run": "true", "data-studio-line-box-top": String(run.lineBoxTop ?? ""), "data-studio-line-selection-offset": String(run.selectionOffset ?? 0), style: `position:relative;top:${run.offset}px`,
   }, { inclusiveStart: true, inclusiveEnd: true })];
 }
 export function firstLineRunAt(state: EditorState, pos: number): FirstLineRun | undefined {
@@ -225,7 +225,7 @@ class FirstLineView {
         // Do not decorate/paint a hardBreak as text; only align its caret to
         // that same page-start line box.
         const offset = !onlyBreaks ? firstLinePaintShift(lineTop,inkTop,Math.max(inkBottom,layoutTop+leading),frameTop,frameBottom,layoutTop,scale,nextTop)/scale : 0;
-        runs.push({block,from,to,offset,empty:onlyBreaks,selectionOffset:(frameTop-lineTop)/scale-offset,page,width:bounds.width/scale,height:bounds.height/scale});
+        runs.push({block,from,to,offset,lineBoxTop:(frameTop-root.top)/scale,empty:onlyBreaks,selectionOffset:(frameTop-lineTop)/scale-offset,page,width:bounds.width/scale,height:bounds.height/scale});
         break; // Only the FIRST line of this page receives an offset.
       }
     }
@@ -242,7 +242,7 @@ class FirstLineView {
     }
     const blocks = [...affected];
     const prior = state.runs.filter(run => affected.has(run.block));
-    const same = prior.length === runs.length && runs.every(run => prior.some(old => old.block === run.block && old.empty === run.empty && old.page === run.page && old.from === run.from && old.to === run.to && Math.abs(old.offset - run.offset) < 0.05 && Math.abs((old.selectionOffset ?? 0) - (run.selectionOffset ?? 0)) < 0.05));
+    const same = prior.length === runs.length && runs.every(run => prior.some(old => old.block === run.block && old.empty === run.empty && old.page === run.page && old.from === run.from && old.to === run.to && Math.abs((old.lineBoxTop ?? 0)-(run.lineBoxTop ?? 0)) < 0.05 && Math.abs(old.offset - run.offset) < 0.05 && Math.abs((old.selectionOffset ?? 0) - (run.selectionOffset ?? 0)) < 0.05));
     if (same) return;
     view.dispatch(view.state.tr.setMeta(MEASURE, { blocks, runs }).setMeta("addToHistory", false));
     document.dispatchEvent(new Event("selectionchange"));

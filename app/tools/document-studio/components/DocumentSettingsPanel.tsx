@@ -1,10 +1,11 @@
 "use client";
+import { LeadingInput } from "./LeadingInput";
+import { migrateLeading } from "../utils/leading";
 
 import { WordRuler } from "./WordRuler";
 import { PublishingPresetSelector } from "./PublishingPresetSelector";
 import {
   FONT_SIZE_OPTIONS_PT,
-  LINE_HEIGHT_OPTIONS,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
 import { commitPhysicalMarginDrag, clampMarginMm, type ResolvedPageLayout } from "../utils/pageLayout";
@@ -173,23 +174,9 @@ export default function DocumentSettingsPanel({
         </label>
         <label className="text-xs font-medium text-gray-600">
           {isUr ? "پہلے سے مقررہ سطری فاصلہ" : "Default line spacing"}
-          <select
-            className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-            value={documentSettings.typography.lineHeight}
-            onChange={(e) => {
-              const lineHeight = Number(e.target.value);
-              setDocumentSettings((s) => ({
-                ...s,
-                typography: { ...s.typography, lineHeight },
-              }));
-            }}
-          >
-            {LINE_HEIGHT_OPTIONS.map((lh) => (
-              <option key={lh} value={lh}>
-                {lh}
-              </option>
-            ))}
-          </select>
+          <LeadingInput className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+            aria-label="Default line spacing" value={documentSettings.typography.leading ?? migrateLeading(documentSettings.typography.lineHeight,documentSettings.typography.bodyFontSizePt)}
+            onChange={leading=>setDocumentSettings(s=>({...s,typography:{...s.typography,leading}}))} />
         </label>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

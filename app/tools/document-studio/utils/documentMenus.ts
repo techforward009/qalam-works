@@ -74,12 +74,12 @@ export type MenuActionId =
   | "format.bullet"
   | "format.ordered"
   | "format.lh.default"
-  | "format.lh.1"
-  | "format.lh.1.15"
-  | "format.lh.1.5"
-  | "format.lh.1.8"
-  | "format.lh.2"
-  | "format.lh.2.2"
+  | "format.lh.12"
+  | "format.lh.16"
+  | "format.lh.20"
+  | "format.lh.24"
+  | "format.lh.28"
+  | "format.lh.36"
   | "format.shade"
   | "format.image.left"
   | "format.image.center"
@@ -290,13 +290,13 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
         labelEn: "Line spacing",
         labelUr: "سطری فاصلہ",
         items: [
-          { type: "action", id: "format.lh.default", labelEn: "Default", labelUr: "طے شدہ" },
-          { type: "action", id: "format.lh.1", labelEn: "1.0", labelUr: "1.0" },
-          { type: "action", id: "format.lh.1.15", labelEn: "1.15", labelUr: "1.15" },
-          { type: "action", id: "format.lh.1.5", labelEn: "1.5", labelUr: "1.5" },
-          { type: "action", id: "format.lh.1.8", labelEn: "1.8", labelUr: "1.8" },
-          { type: "action", id: "format.lh.2", labelEn: "2.0", labelUr: "2.0" },
-          { type: "action", id: "format.lh.2.2", labelEn: "2.2", labelUr: "2.2" },
+          { type: "action", id: "format.lh.default", labelEn: "Auto", labelUr: "خودکار" },
+          { type: "action", id: "format.lh.12", labelEn: "12pt", labelUr: "12pt" },
+          { type: "action", id: "format.lh.16", labelEn: "16pt", labelUr: "16pt" },
+          { type: "action", id: "format.lh.20", labelEn: "20pt", labelUr: "20pt" },
+          { type: "action", id: "format.lh.24", labelEn: "24pt", labelUr: "24pt" },
+          { type: "action", id: "format.lh.28", labelEn: "28pt", labelUr: "28pt" },
+          { type: "action", id: "format.lh.36", labelEn: "36pt", labelUr: "36pt" },
         ],
       },
       {

@@ -1,3 +1,4 @@
+import type { Leading } from "./leading";
 /**
  * Shared Document Studio editor commands.
  * Toolbar, future menus/shortcuts, and tests call these — not TipTap chains
@@ -87,7 +88,7 @@ export function applyBlockStyle(editor: Editor, id: BlockStyleId): void {
         ...node.attrs,
         level: style.headingLevel,
         blockStyle: style.blockStyleAttr ?? null,
-        lineHeight: null, spaceBeforePt: null, spaceAfterPt: null,
+        leading: null, lineHeight: null, spaceBeforePt: null, spaceAfterPt: null,
         firstLineIndentMm: null, indentStartMm: null, indentEndMm: null,
       });
     }
@@ -108,12 +109,13 @@ export function activeBlockStyleId(editor: Editor): BlockStyleId {
 }
 
 export function applyLineHeight(editor: Editor, value: number | null): void {
-  applyParagraphAttrs(editor, { lineHeight: value });
+  applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } });
 }
 
 const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
 
 export type ParagraphSpacingAttrs = {
+  leading?: Leading | null;
   lineHeight?: number | null;
   spaceBeforePt?: number | null;
   spaceAfterPt?: number | null;
@@ -123,6 +125,7 @@ export type ParagraphSpacingAttrs = {
 };
 
 export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs): void {
+  if (typeof attrs.lineHeight === "number" && attrs.leading == null) attrs = { ...attrs, leading: { mode: "points", value: attrs.lineHeight }, lineHeight: null };
   const { state } = editor;
   if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
     const nodeType = editor.isActive("heading") ? "heading" : "paragraph";

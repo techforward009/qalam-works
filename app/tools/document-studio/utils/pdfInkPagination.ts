@@ -101,18 +101,18 @@ export function fitHorizontalInk(
   return 0;
 }
 
-/** Preserve legacy fit decisions and later-line baselines; paint only the first line differently.
+/** Fit the authored line boxes, allowing ink overlap for small point leading; paint only the first line differently.
  *  Body paragraphs fill the remaining page and may split. Headings stay with the next line.
  *  A trailing blank caret paragraph must not mint an extra last page. */
 export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] {
   const edgeGuard = 1;
   let page = 0, shift = 0;
   const placements = lines.map((line, index) => {
-    const relativeTop = Math.min(line.inkTop, line.boxTop ?? line.inkTop);
-    const relativeBottom = Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom);
+    const relativeTop = line.boxTop ?? line.inkTop;
+    const relativeBottom = line.boxBottom ?? line.inkBottom;
     const top = line.baseline + relativeTop, bottom = line.baseline + relativeBottom;
     if (relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
-    // Fit decisions use exactly the old shift. A separate paint-only shift cannot
+    // Fit follows line pitch, never glyph overflow. Paint-only offsets cannot
     // change page membership, heading keeps, or authored page breaks.
     if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
     let end = index;
@@ -120,7 +120,7 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
       while (end + 1 < lines.length && lines[end + 1].block === line.block) end++;
       if (end + 1 < lines.length) end++;
     }
-    const groupBottom = lines[end].baseline + Math.max(lines[end].inkBottom, lines[end].boxBottom ?? lines[end].inkBottom);
+    const groupBottom = lines[end].baseline + (lines[end].boxBottom ?? lines[end].inkBottom);
     const keepHeading = line.heading && (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
     const trailingBlank = Boolean(line.blank) && !line.image && lines.slice(index).every(item => item.blank && !item.image);
     let placedBaseline = line.baseline + shift;
@@ -145,7 +145,7 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     const nextTop = next?.page === placement.page ? next.baseline + (lines[index + 1].boxTop ?? lines[index + 1].inkTop) : Infinity;
     const paintShift = firstLinePaintShift(
       placement.baseline + boxTop, placement.baseline + line.inkTop,
-      placement.baseline + Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom),
+      placement.baseline + Math.max(line.inkBottom,line.boxBottom ?? line.inkBottom),
       0, height, placement.baseline + (line.boxTop ?? boxTop), edgeGuard, nextTop,
     );
     return { ...placement, baseline: placement.baseline + paintShift };

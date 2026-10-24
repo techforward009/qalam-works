@@ -1,23 +1,17 @@
 import type { DocNode } from "./extractPlainText";
-
-/** Explicit document/paragraph leading wins; 1.5 is the legacy Auto default. */
-export function autoLineHeight(fontFamily: string, documentLeading = 1.5): number {
-  if (documentLeading !== 1.5) return documentLeading;
-  return /nastaliq|nastaleeq/i.test(fontFamily) ? 2.2 : 1.5;
-}
-
-export function blockAutoLineHeight(node: DocNode, rtlFont: string, documentLeading: number, direction: string): number {
-  const explicit = node.attrs?.lineHeight;
-  if (typeof explicit === "number") return explicit;
-  if (direction !== "rtl") return autoLineHeight("", documentLeading);
+import { autoLeadingPt, blockFontSizePt, blockLeading, leadingPt, migrateLeading, type Leading } from "./leading";
+export function blockLeadingPt(node: DocNode, rtlFont: string, defaults: { bodyFontSizePt: number; lineHeight: number; leading?: Leading }, direction: string): number {
   const families: string[] = [];
   const visit = (part: DocNode) => {
     if (part.text && /\p{Script=Arabic}/u.test(part.text)) {
-      const family = part.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily;
+      const family = part.marks?.find(mark => mark.type === "textStyle")?.attrs?.fontFamily;
       families.push(typeof family === "string" ? family : rtlFont);
     }
     part.content?.forEach(visit);
   };
   visit(node);
-  return autoLineHeight(families.length ? families.join(",") : rtlFont, documentLeading);
+  const fallback = defaults.leading ?? (defaults.lineHeight === 1.5 ? { mode: "auto" } : migrateLeading(defaults.lineHeight,defaults.bodyFontSizePt));
+  const leading=blockLeading(node,fallback,defaults.bodyFontSizePt),size=blockFontSizePt(node,defaults.bodyFontSizePt);
+  if(leading.mode === "points") return leading.value;
+  return direction === "rtl" ? Math.max(...(families.length ? families : [rtlFont]).map(family=>autoLeadingPt(family,size))) : leadingPt(leading,"",size);
 }

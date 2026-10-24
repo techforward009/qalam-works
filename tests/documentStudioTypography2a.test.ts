@@ -36,7 +36,7 @@ describe("Document Studio typography 2A", () => {
   test("DOCX line spacing follows point size and does not use Word auto", async () => {
     const settings = defaultDocumentSettings();
     settings.typography.bodyFontSizePt = 13;
-    settings.typography.lineHeight = 2;
+    settings.typography.leading = {mode:"points",value:26};
     settings.typography.paragraphBeforePt = 4;
     settings.typography.paragraphAfterPt = 8;
     const xml = await documentXml(
@@ -45,7 +45,7 @@ describe("Document Studio typography 2A", () => {
       settings,
     );
     expect(xml).toContain('w:line="520"');
-    expect(xml).toContain('w:lineRule="atLeast"');
+    expect(xml).toContain('w:lineRule="exact"');
     expect(xml).not.toContain('w:lineRule="auto"');
     expect(xml).toContain('w:before="80"');
     expect(xml).toContain('w:after="160"');
@@ -118,7 +118,7 @@ describe("Document Studio typography 2A", () => {
     expect(html.html).toContain('dir="ltr"');
     expect(html.html).toContain("unicode-bidi:isolate");
     expect(html.html).toContain("English (123)");
-    expect(html.html).toContain("line-height:1.8");
+    expect(html.html).toContain("line-height:29pt");
     expect(html.html).toContain("text-align:justify");
     expect(html.html).not.toMatch(BIDI_CONTROLS);
     expect(html.fontsUsed).toContain("Gulzar");
@@ -141,10 +141,10 @@ describe("Document Studio typography 2A", () => {
     expect(studioJameelFontFaceCss()).toContain("jameel-noori-nastaleeq-400.woff2");
   });
 
-  test("paragraph line spacing uses the largest explicit run, not only the body size", async () => {
+  test("explicit point leading stays exact when a larger run is present", async () => {
     const settings = defaultDocumentSettings();
     settings.typography.bodyFontSizePt = 13;
-    settings.typography.lineHeight = 2;
+    settings.typography.leading = {mode:"points",value:26};
     const xml = await documentXml(
       {
         type: "doc",
@@ -160,10 +160,10 @@ describe("Document Studio typography 2A", () => {
       "rtl",
       settings,
     );
-    // 24pt × 2 × 20 = 960, not 13pt × 2 × 20 = 520
-    expect(xml).toContain('w:line="960"');
-    expect(xml).toContain('w:lineRule="atLeast"');
-    expect(xml).not.toContain('w:line="520"');
+    // Authored 26pt stays 520 twips; changing run size does not multiply it.
+    expect(xml).toContain('w:line="520"');
+    expect(xml).toContain('w:lineRule="exact"');
+    expect(xml).not.toContain('w:lineRule="auto"');
     expect(xml).toContain('w:sz w:val="48"');
     expect(xml).toContain('w:sz w:val="26"');
   });
@@ -217,10 +217,10 @@ describe("Document Studio typography 2A", () => {
     expect(urduSpan).not.toContain('class="qf-inter"');
   });
 
-  test("heading and blockquote line spacing follow the largest explicit run", async () => {
+  test("heading and blockquote keep the exact authored point leading", async () => {
     const settings = defaultDocumentSettings();
     settings.typography.bodyFontSizePt = 13;
-    settings.typography.lineHeight = 2;
+    settings.typography.leading = {mode:"points",value:26};
     const xml = await documentXml(
       {
         type: "doc",
@@ -251,14 +251,14 @@ describe("Document Studio typography 2A", () => {
     const paragraphs = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) ?? [];
     const heading = paragraphs.find((paragraph) => paragraph.includes("سرخی"));
     const quote = paragraphs.find((paragraph) => paragraph.includes("اقتباس"));
-    // H2 is 20pt, but the 32pt run wins. 32 × 1.5 × 20 = 960.
-    expect(heading).toContain('w:line="960"');
+    // H2 retains its run sizes and exact 26pt leading.
+    expect(heading).toContain('w:line="520"');
     expect(heading).toContain('w:sz w:val="64"');
     expect(heading).toContain('w:sz w:val="40"');
-    // Quote body is 13pt, but the 24pt run wins. 24 × 2 × 20 = 960.
-    expect(quote).toContain('w:line="960"');
-    expect(quote).toContain('w:lineRule="atLeast"');
-    expect(quote).not.toContain('w:line="520"');
+    // Quote run sizes likewise do not multiply explicit leading.
+    expect(quote).toContain('w:line="520"');
+    expect(quote).toContain('w:lineRule="exact"');
+    expect(quote).not.toContain('w:lineRule="auto"');
   });
 
   test("PDF font loading requests the RTL fallback without a hand-built Jameel face", async () => {
