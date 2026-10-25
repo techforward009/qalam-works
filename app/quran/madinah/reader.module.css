@@ -60,7 +60,7 @@
 .reader .sidebar {gap:8px}
 .reader .credit {margin-top:2px}
 
-@media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 12.5) * var(--mushaf-scale,1));min-height:1.65em}}
+@media(max-width:600px){.reader .page{border-radius:0;padding:24px 12px}.reader .line{font-size:calc((100cqi / 16) * min(var(--mushaf-scale, 1), 1));min-height:1.65em}}
 
 @media(max-width:600px){.container{padding-left:16px;padding-right:16px}.reader .page{box-shadow:0 4px 14px rgba(40,48,35,.12)}}
 

@@ -29,6 +29,7 @@ import {
   pageUrl,
   type MadinahPage,
 } from "./data";
+import { shrinkMushafScale } from "./fitMushafScale";
 import styles from "./reader.module.css";
 import {HAFS_AYAH_COUNTS} from "../../tools/arabic-diacritics/quran/hafsCounts";
 
@@ -233,6 +234,7 @@ export default function MadinahReader({
   }, [page, surah, ayah]);
 
   const prefetchedPages = useRef(new Set<number>());
+  const linesRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!page) return;
     const candidate = page.page + 1;
@@ -359,6 +361,57 @@ export default function MadinahReader({
     ));
   }, []);
 
+  useLayoutEffect(() => {
+    const root = linesRef.current;
+    if (!root) return;
+    const mobile = window.matchMedia("(max-width: 600px)");
+    let frame = 0;
+    let cancelled = false;
+
+    const fitNow = () => {
+      if (!mobile.matches) {
+        root.style.setProperty("--mushaf-scale", String(scale));
+        return;
+      }
+      root.style.setProperty("--mushaf-scale", String(scale));
+      let current = scale;
+      for (let pass = 0; pass < 8; pass += 1) {
+        const lines = Array.from(root.querySelectorAll<HTMLElement>("[data-mushaf-line]"), (line) => ({
+          scrollWidth: line.scrollWidth,
+          clientWidth: line.clientWidth,
+        }));
+        const next = shrinkMushafScale(current, lines);
+        if (next >= current - 0.001) break;
+        current = next;
+        root.style.setProperty("--mushaf-scale", String(current));
+      }
+    };
+
+    fitNow();
+    let lastWidth = root.clientWidth;
+    const observer = new ResizeObserver(() => {
+      const width = root.clientWidth;
+      if (Math.abs(width - lastWidth) < 0.5) return;
+      lastWidth = width;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fitNow);
+    });
+    observer.observe(root);
+    const onFonts = () => {
+      if (!cancelled) fitNow();
+    };
+    document.fonts?.addEventListener?.("loadingdone", onFonts);
+    void document.fonts?.ready.then(onFonts).catch(() => undefined);
+    mobile.addEventListener?.("change", fitNow);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      document.fonts?.removeEventListener?.("loadingdone", onFonts);
+      mobile.removeEventListener?.("change", fitNow);
+    };
+  }, [page, scale, fontFamily]);
+
   useQuranKeyboardNavigation({
     onPreviousAyah: () => {
       const next = adjacentAyah(surah, ayah, -1);
@@ -427,18 +480,19 @@ export default function MadinahReader({
                 <QuranCorner position="top-right" />
                 <QuranCorner position="bottom-left" />
                 <QuranCorner position="bottom-right" />
-              <div className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
+              <div ref={linesRef} className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
                 {page ? page.lines.map((line) => {
                   if (line.type === "blank") return null;
                   if (line.type === "surah_name") {
                     return line.decor?.surah ? <SurahBand key={line.line} surah={line.decor.surah} /> : null;
                   }
                   if (line.type === "basmallah") {
-                    return <div key={line.line} className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{MADINAH_BASMALA_GLYPH}</span></div>;
+                    return <div key={line.line} data-mushaf-line="true" className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{MADINAH_BASMALA_GLYPH}</span></div>;
                   }
                   return (
                     <div
                       key={line.line}
+                      data-mushaf-line="true"
                       className={`${styles.line} ${line.centered ? styles.centeredLine : ""}`}
                       style={{ fontFamily }}
                       dir="rtl"
