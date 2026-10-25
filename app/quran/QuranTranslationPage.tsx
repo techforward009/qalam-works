@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy as CopyIcon } from "lucide-react";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import { easternDigits, surahTitle } from "./reader/metadata";
+import { splitLastWord, splitTrailingAyahMark } from "./reader/ayahOptions";
+import { AyahMarkerButton, useAyahOptionsMenu } from "./reader/AyahCopyMenu";
 import QuranUrduTranslatorPicker from "./QuranUrduTranslatorPicker";
 import {
   QURAN_READER_TRANSLATION_SOURCES,
@@ -34,6 +35,7 @@ export default function QuranTranslationPage({
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [urduTranslator, setUrduTranslator] = useState<QuranUrduTranslator>("mohsin-najfi");
+  const { openMenu, ayahOptionsMenu } = useAyahOptionsMenu();
 
   useEffect(() => {
     setUrduTranslator(storedQuranUrduTranslator());
@@ -125,6 +127,8 @@ export default function QuranTranslationPage({
         ) : (
           <div className="space-y-1">
             {rows.map(({ ayah, text }) => {
+              const marked = splitTrailingAyahMark(ayah.text);
+              const words = splitLastWord(marked.body);
               return (
                 <section
                   key={ayah.id}
@@ -141,11 +145,18 @@ export default function QuranTranslationPage({
                   </div>
                   {quranFontFamily ? (
                     <p className="mb-3 rounded-md border-b border-[#d9d0b8] pb-2 text-right text-[#252b1a]"
-                      dir="rtl" lang="ar" style={{fontFamily:quranFontFamily,fontSize:Math.round(26*scale)+"px",lineHeight:2}}>
-                      {ayah.text}
-                      <button type="button" className="mx-2 align-middle text-[0.55em] underline"
-                         aria-label={"Copy exact Unicode verse " + ayah.surah + ":" + ayah.ayah}
-                         onClick={() => void navigator.clipboard.writeText(ayah.text)}><CopyIcon size={12} aria-hidden="true" /></button>
+                      dir="rtl" lang="ar" style={{fontFamily:quranFontFamily,fontSize:Math.round(26*scale)+"px",lineHeight:2}}
+                      data-quran-copy={ayah.text}
+                      data-quran-location={ayah.surah + ":" + ayah.ayah}>
+                      {words.prefix}
+                      <span className="whitespace-nowrap">
+                        {words.last}
+                        <AyahMarkerButton
+                          ayah={ayah.ayah}
+                          marker={marked.marker}
+                          onOpen={(anchor) => openMenu(anchor, ayah.surah, ayah.ayah, ayah.text)}
+                        />
+                      </span>
                     </p>
                   ) : null}
                   <p className="quran-translation-text">{text}</p>
@@ -162,6 +173,7 @@ export default function QuranTranslationPage({
           : "Qur'anic text and translation are kept as separate source layers."}
       </footer>
     </article>
+    {ayahOptionsMenu}
     </>
   );
 }

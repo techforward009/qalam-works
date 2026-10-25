@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Copy as CopyIcon } from "lucide-react";
 import * as digitalReaderModel from "./reader/digitalModel";
 import * as ahmedReaderModel from "./reader/model";
 import { ahmedgrafQuranReference } from "../tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { DIGITAL_KHATT_BASMILLAH } from "./indopak-digital-khatt/data";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
@@ -45,6 +44,8 @@ import {
   QURAN_FONT_STACK,
   QURAN_LAYOUT_PROFILE,
 } from "./reader/profile";
+import { splitLastWord, splitTrailingAyahMark } from "./reader/ayahOptions";
+import { AyahMarkerButton, useAyahOptionsMenu } from "./reader/AyahCopyMenu";
 
 type ReaderLanguage = "en" | "ur";
 
@@ -273,7 +274,8 @@ export default function QuranReader({
           "TEXTAREA" ||
         tagName ===
           "SELECT" ||
-        target?.isContentEditable
+        target?.isContentEditable ||
+        target?.closest("[data-ayah-options]")
       ) {
         return;
       }
@@ -1150,12 +1152,30 @@ function QuranPageSurface({
   onPreviousPage: () => void;
   onNextPage: () => void;
 }) {
-  const blocks =
-    blocksFor(
-      ayahs, editionId,
-    );
+  const blocks = blocksFor(ayahs, editionId);
+  const { openMenu, ayahOptionsMenu } = useAyahOptionsMenu();
+
+  const handlePageCopy = (event: ClipboardEvent<HTMLElement>) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const range = selection.getRangeAt(0);
+    const parts = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("[data-quran-copy]"))
+      .filter((element) => {
+        try {
+          return range.intersectsNode(element);
+        } catch {
+          return false;
+        }
+      })
+      .map((element) => element.dataset.quranCopy ?? "")
+      .filter(Boolean);
+    if (!parts.length) return;
+    event.preventDefault();
+    event.clipboardData.setData("text/plain", parts.join("\n"));
+  };
 
   return (
+    <>
     <article
       className="quran-page flex w-full flex-col overflow-hidden px-4 py-5 sm:px-[58px] sm:py-9"
       style={{
@@ -1177,6 +1197,7 @@ function QuranPageSurface({
       data-qalam-face={
         faceLabel
       }
+      onCopyCapture={handlePageCopy}
     >
       <QuranCorner position="top-left" />
       <QuranCorner position="top-right" />
@@ -1205,6 +1226,10 @@ function QuranPageSurface({
                 block.kind ===
                 "bismillah"
               ) {
+                const marked = splitTrailingAyahMark(block.text);
+                const inlineMarker = Boolean(block.anchor) && editionId !== "digital-khatt";
+                const shown = inlineMarker ? marked.body : block.text;
+                const words = splitLastWord(shown);
                 return (
                   <p
                     key={`${idPrefix}b-${block.id}`}
@@ -1214,11 +1239,20 @@ function QuranPageSurface({
                         : undefined
                     }
                     className="quran-bismillah shrink-0"
+                    data-quran-copy={block.anchor ? block.text : undefined}
+                    data-quran-location={block.anchor ? `${block.surah}:${block.ayah}` : undefined}
                   >
-                    {
-                      block.text
-                    }
-                    {block.anchor && <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <DigitalKhattAyahMarker ayah={1} />}<button type="button" className="mx-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>}
+                    {block.anchor ? words.prefix : block.text}
+                    {block.anchor && (
+                      <span className={inlineMarker ? "whitespace-nowrap" : "inline-flex items-center whitespace-nowrap"}>
+                        {inlineMarker ? words.last : <span className="quran-ayah inline">{words.last}</span>}
+                        <AyahMarkerButton
+                          ayah={block.ayah}
+                          marker={inlineMarker ? marked.marker : null}
+                          onOpen={(anchor) => openMenu(anchor, block.surah, block.ayah, block.text)}
+                        />
+                      </span>
+                    )}
                   </p>
                 );
               }
@@ -1244,11 +1278,18 @@ function QuranPageSurface({
                     (
                       item,
                       index,
-                    ) => (
+                    ) => {
+                      const copyText = (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text;
+                      const marked = splitTrailingAyahMark(item.text);
+                      const words = splitLastWord(editionId === "digital-khatt" ? item.text : marked.body);
+                      const open = (anchor: HTMLElement) => openMenu(anchor, item.surah, item.ayah, copyText);
+                      return (
                       <span
                         key={
                           item.id
                         }
+                        data-quran-copy={copyText}
+                        data-quran-location={`${item.surah}:${item.ayah}`}
                       >
                         {index >
                         0
@@ -1269,14 +1310,31 @@ function QuranPageSurface({
                               "clone",
                           }}
                         >
-                          {editionId === "digital-khatt" ? splitLastWord(item.text).prefix : item.text}
+                          {words.prefix}
+                          {editionId !== "digital-khatt" && (
+                            <span className="whitespace-nowrap">
+                              {words.last}
+                              <AyahMarkerButton
+                                ayah={item.ayah}
+                                marker={marked.marker}
+                                onOpen={open}
+                              />
+                            </span>
+                          )}
                         </span>
-                        <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <><span className="quran-ayah inline">{splitLastWord(item.text).last}</span><DigitalKhattAyahMarker ayah={item.ayah} /></>}
-                        <button type="button" className="mx-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
-                            (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
-                          )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>
+                        {editionId === "digital-khatt" && (
+                          <span className="inline-flex items-center whitespace-nowrap">
+                            <span className="quran-ayah inline">{words.last}</span>
+                            <AyahMarkerButton
+                              ayah={item.ayah}
+                              marker={null}
+                              onOpen={open}
+                            />
+                          </span>
+                        )}
                       </span>
-                    ),
+                      );
+                    },
                   )}
                 </p>
               );
@@ -1328,6 +1386,8 @@ function QuranPageSurface({
         </footer>
       </div>
     </article>
+    {ayahOptionsMenu}
+    </>
   );
 }
 
@@ -1552,13 +1612,4 @@ function Select({
       </select>
     </label>
   );
-}
-
-function splitLastWord(text:string):{prefix:string;last:string}{
-  const match=/^(.*?)([^\s]+)$/su.exec(text);
-  return match ? {prefix:match[1],last:match[2]} : {prefix:"",last:text};
-}
-
-function DigitalKhattAyahMarker({ayah}:{ayah:number}) {
-  return <span className="mx-1 inline-flex items-center justify-center rounded-full border px-1.5 align-middle" style={{borderColor:"#9a884f",fontFamily:'"Amiri","Noto Naskh Arabic",serif',fontSize:"0.84em",minWidth:"1.8em",minHeight:"1.8em",lineHeight:1.2,color:"#3c472c"}} aria-label={`Ayah ${ayah}`}><span aria-hidden="true">۝{easternDigits(ayah)}</span></span>;
 }
