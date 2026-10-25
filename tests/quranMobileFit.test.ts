@@ -15,6 +15,8 @@ describe("Madinah mobile line fit", () => {
     expect(reader).toContain("shrinkMushafScale");
     expect(reader).toContain('matchMedia("(max-width: 600px)")');
     expect(reader).toContain('data-mushaf-line="true"');
+    expect(reader).toContain("Math.min(scale, 1)");
+    expect(reader).toContain("scrollWidth > line.clientWidth");
   });
 
   it("shrinks only lines that overflow their box", () => {

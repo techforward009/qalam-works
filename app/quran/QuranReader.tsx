@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { createPortal } from "react-dom";
 import * as digitalReaderModel from "./reader/digitalModel";
 import * as ahmedReaderModel from "./reader/model";
 import { ahmedgrafQuranReference } from "../tools/arabic-diacritics/quran/ahmedgrafProvider";
@@ -45,7 +44,8 @@ import {
   QURAN_FONT_STACK,
   QURAN_LAYOUT_PROFILE,
 } from "./reader/profile";
-import { ayahReferenceCopy, popoverOrigin, splitTrailingAyahMark } from "./reader/ayahOptions";
+import { splitLastWord, splitTrailingAyahMark } from "./reader/ayahOptions";
+import { AyahMarkerButton, useAyahOptionsMenu } from "./reader/AyahCopyMenu";
 
 type ReaderLanguage = "en" | "ur";
 
@@ -274,7 +274,8 @@ export default function QuranReader({
           "TEXTAREA" ||
         tagName ===
           "SELECT" ||
-        target?.isContentEditable
+        target?.isContentEditable ||
+        target?.closest("[data-ayah-options]")
       ) {
         return;
       }
@@ -1152,46 +1153,7 @@ function QuranPageSurface({
   onNextPage: () => void;
 }) {
   const blocks = blocksFor(ayahs, editionId);
-  const [menu, setMenu] = useState<{ surah: number; ayah: number; text: string; top: number; left: number } | null>(null);
-  const [copied, setCopied] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menu) return;
-    const close = () => setMenu(null);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    const onPointer = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (target && menuRef.current?.contains(target)) return;
-      if (target instanceof Element && target.closest("[data-ayah-marker]")) return;
-      close();
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
-    };
-  }, [menu]);
-
-  const openMenu = (anchor: HTMLElement, surahNumber: number, ayahNumber: number, text: string) => {
-    const rect = anchor.getBoundingClientRect();
-    const origin = popoverOrigin(rect, { width: window.innerWidth, height: window.innerHeight }, { width: 210, height: 76 });
-    setCopied(false);
-    setMenu({ surah: surahNumber, ayah: ayahNumber, text, ...origin });
-  };
-
-  const writeCopy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setMenu(null), 900);
-    } catch {
-      setCopied(false);
-    }
-  };
+  const { openMenu, ayahOptionsMenu } = useAyahOptionsMenu();
 
   const handlePageCopy = (event: ClipboardEvent<HTMLElement>) => {
     const selection = window.getSelection();
@@ -1264,6 +1226,10 @@ function QuranPageSurface({
                 block.kind ===
                 "bismillah"
               ) {
+                const marked = splitTrailingAyahMark(block.text);
+                const inlineMarker = Boolean(block.anchor) && editionId !== "digital-khatt";
+                const shown = inlineMarker ? marked.body : block.text;
+                const words = splitLastWord(shown);
                 return (
                   <p
                     key={`${idPrefix}b-${block.id}`}
@@ -1276,13 +1242,16 @@ function QuranPageSurface({
                     data-quran-copy={block.anchor ? block.text : undefined}
                     data-quran-location={block.anchor ? `${block.surah}:${block.ayah}` : undefined}
                   >
-                    {editionId === "digital-khatt" || !block.anchor ? block.text : splitTrailingAyahMark(block.text).body}
+                    {block.anchor ? words.prefix : block.text}
                     {block.anchor && (
-                      <AyahMarkerButton
-                        ayah={block.ayah}
-                        marker={editionId === "digital-khatt" ? null : splitTrailingAyahMark(block.text).marker}
-                        onOpen={(anchor) => openMenu(anchor, block.surah, block.ayah, block.text)}
-                      />
+                      <span className={inlineMarker ? "whitespace-nowrap" : "inline-flex items-center whitespace-nowrap"}>
+                        {inlineMarker ? words.last : <span className="quran-ayah inline">{words.last}</span>}
+                        <AyahMarkerButton
+                          ayah={block.ayah}
+                          marker={inlineMarker ? marked.marker : null}
+                          onOpen={(anchor) => openMenu(anchor, block.surah, block.ayah, block.text)}
+                        />
+                      </span>
                     )}
                   </p>
                 );
@@ -1311,6 +1280,9 @@ function QuranPageSurface({
                       index,
                     ) => {
                       const copyText = (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text;
+                      const marked = splitTrailingAyahMark(item.text);
+                      const words = splitLastWord(editionId === "digital-khatt" ? item.text : marked.body);
+                      const open = (anchor: HTMLElement) => openMenu(anchor, item.surah, item.ayah, copyText);
                       return (
                       <span
                         key={
@@ -1338,24 +1310,25 @@ function QuranPageSurface({
                               "clone",
                           }}
                         >
-                          {editionId === "digital-khatt" ? splitLastWord(item.text).prefix : (
-                            <>
-                              {splitTrailingAyahMark(item.text).body}
+                          {words.prefix}
+                          {editionId !== "digital-khatt" && (
+                            <span className="whitespace-nowrap">
+                              {words.last}
                               <AyahMarkerButton
                                 ayah={item.ayah}
-                                marker={splitTrailingAyahMark(item.text).marker}
-                                onOpen={(anchor) => openMenu(anchor, item.surah, item.ayah, copyText)}
+                                marker={marked.marker}
+                                onOpen={open}
                               />
-                            </>
+                            </span>
                           )}
                         </span>
                         {editionId === "digital-khatt" && (
                           <span className="inline-flex items-center whitespace-nowrap">
-                            <span className="quran-ayah inline">{splitLastWord(item.text).last}</span>
+                            <span className="quran-ayah inline">{words.last}</span>
                             <AyahMarkerButton
                               ayah={item.ayah}
                               marker={null}
-                              onOpen={(anchor) => openMenu(anchor, item.surah, item.ayah, copyText)}
+                              onOpen={open}
                             />
                           </span>
                         )}
@@ -1413,26 +1386,7 @@ function QuranPageSurface({
         </footer>
       </div>
     </article>
-    {menu && typeof document !== "undefined" ? createPortal(
-      <div
-        ref={menuRef}
-        role="menu"
-        data-ayah-options="true"
-        className="fixed z-[80] min-w-[188px] border border-[#c6a35a] bg-[#fffdf8] p-1 text-left shadow-[0_6px_16px_rgba(0,0,0,.12)]"
-        style={{ top: menu.top, left: menu.left }}
-        dir="ltr"
-      >
-        {copied ? (
-          <p role="status" className="px-2 py-1 text-xs text-[#3c472c]">Copied</p>
-        ) : (
-          <>
-            <button type="button" role="menuitem" className="block w-full px-2 py-1 text-left text-xs text-[#241f16] hover:bg-[#f3efe2]" onClick={() => void writeCopy(menu.text)}>Copy ayah</button>
-            <button type="button" role="menuitem" className="block w-full px-2 py-1 text-left text-xs text-[#241f16] hover:bg-[#f3efe2]" onClick={() => void writeCopy(ayahReferenceCopy(menu.text, menu.surah, menu.ayah))}>Copy with reference (S:A)</button>
-          </>
-        )}
-      </div>,
-      document.body,
-    ) : null}
+    {ayahOptionsMenu}
     </>
   );
 }
@@ -1657,47 +1611,5 @@ function Select({
         {children}
       </select>
     </label>
-  );
-}
-
-function splitLastWord(text:string):{prefix:string;last:string}{
-  const match=/^(.*?)([^\s]+)$/su.exec(text);
-  return match ? {prefix:match[1],last:match[2]} : {prefix:"",last:text};
-}
-
-function AyahMarkerButton({
-  ayah,
-  marker,
-  onOpen,
-}: {
-  ayah: number;
-  marker: string | null;
-  onOpen: (anchor: HTMLElement) => void;
-}) {
-  const inline = marker !== null;
-  return (
-    <button
-      type="button"
-      data-ayah-marker="true"
-      aria-label={`Ayah ${ayah} options`}
-      className={inline
-        ? "inline cursor-pointer border-0 bg-transparent p-0 align-baseline font-[inherit] text-[inherit] leading-[inherit]"
-        : "mx-1 inline-flex cursor-pointer items-center justify-center rounded-full border bg-transparent px-1.5 align-middle"}
-      style={inline ? undefined : {
-        borderColor: "#9a884f",
-        fontFamily: '"Amiri","Noto Naskh Arabic",serif',
-        fontSize: "0.84em",
-        minWidth: "1.8em",
-        minHeight: "1.8em",
-        lineHeight: 1.2,
-        color: "#3c472c",
-      }}
-      onClick={(event) => {
-        event.preventDefault();
-        onOpen(event.currentTarget);
-      }}
-    >
-      <span aria-hidden="true">{inline ? marker : `۝${easternDigits(ayah)}`}</span>
-    </button>
   );
 }

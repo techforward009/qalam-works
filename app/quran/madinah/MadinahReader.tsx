@@ -185,6 +185,7 @@ export default function MadinahReader({
   const [hits, setHits] = useState<Hit[]>([]);
   const [loadError, setLoadError] = useState("");
   const [scale, setScale] = useState(1);
+  const [lineScale, setLineScale] = useState(1);
   const [copied, setCopied] = useState(false);
 
   const navigate = (nextSurah: number, nextAyah: number) => {
@@ -369,22 +370,28 @@ export default function MadinahReader({
     let cancelled = false;
 
     const fitNow = () => {
+      const apply = (value: number) => {
+        root.style.setProperty("--mushaf-scale", String(value));
+        setLineScale((prev) => (Math.abs(prev - value) < 0.0001 ? prev : value));
+      };
       if (!mobile.matches) {
-        root.style.setProperty("--mushaf-scale", String(scale));
+        apply(scale);
         return;
       }
-      root.style.setProperty("--mushaf-scale", String(scale));
-      let current = scale;
+      let current = Math.min(scale, 1);
+      root.style.setProperty("--mushaf-scale", String(current));
       for (let pass = 0; pass < 8; pass += 1) {
         const lines = Array.from(root.querySelectorAll<HTMLElement>("[data-mushaf-line]"), (line) => ({
           scrollWidth: line.scrollWidth,
           clientWidth: line.clientWidth,
         }));
+        if (!lines.some((line) => line.scrollWidth > line.clientWidth)) break;
         const next = shrinkMushafScale(current, lines);
         if (next >= current - 0.001) break;
         current = next;
         root.style.setProperty("--mushaf-scale", String(current));
       }
+      apply(current);
     };
 
     fitNow();
@@ -480,7 +487,7 @@ export default function MadinahReader({
                 <QuranCorner position="top-right" />
                 <QuranCorner position="bottom-left" />
                 <QuranCorner position="bottom-right" />
-              <div ref={linesRef} className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
+              <div ref={linesRef} className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(lineScale) }}>
                 {page ? page.lines.map((line) => {
                   if (line.type === "blank") return null;
                   if (line.type === "surah_name") {
