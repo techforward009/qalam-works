@@ -13,6 +13,9 @@ describe("font-aware Auto point leading", () => {
     const content = [{ type: "text", text: "السلام", marks: [{ type: "textStyle", attrs: { fontFamily: "Mehr Nastaliq Web" } }] }];
     expect(blockLeadingPt({ content },"Arial",defaults,"rtl")).toBeCloseTo(19.8);
     expect(blockLeadingPt({ attrs:{lineHeight:1.5},content },"Arial",defaults,"rtl")).toBe(18);
-    expect(blockLeadingPt({ content },"Arial",defaults,"ltr")).toBe(15);
+    expect(blockLeadingPt({ content },"Arial",defaults,"ltr")).toBeCloseTo(19.8);
+    const english = [{ type: "text", text: "Hello" }];
+    expect(blockLeadingPt({ content: english },"Mehr Nastaliq Web",defaults,"rtl")).toBe(15);
+    expect(blockLeadingPt({ content: english },"Mehr Nastaliq Web",defaults,"ltr")).toBe(15);
   });
 });

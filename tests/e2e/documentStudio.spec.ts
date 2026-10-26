@@ -229,7 +229,8 @@ test.describe("Document Studio v1 browser smoke", () => {
       await page.keyboard.type("السلام علیکم اللہ وبرکاتہ");
       await page.keyboard.press("Control+A");
       await page.locator('[data-studio-font-family]').selectOption({ label: "Mehr Nastaliq Web" });
-      await page.locator('[data-studio-font-size]').selectOption(String(pt));
+      await page.locator('[data-studio-font-size]').fill(String(pt));
+      await page.locator('[data-studio-font-size]').press("Enter");
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       await expect.poll(() => story.locator("p").first().evaluate((p) => {
         const root=p.closest<HTMLElement>(".ProseMirror")!,scale=root.getBoundingClientRect().width/root.offsetWidth;
@@ -256,7 +257,9 @@ test.describe("Document Studio v1 browser smoke", () => {
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const size = page.locator('[data-studio-font-size]');
     await page.keyboard.press("Control+A");
-    await size.selectOption("18");
+    await size.fill("18");
+    await size.press("Enter");
+    await story.click();
     await page.keyboard.press("End");
     const caret = page.locator('[data-studio-caret]');
     await expect(caret).toBeVisible();
@@ -275,7 +278,9 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expectPosition();
     const smallHeight = (await caret.boundingBox())!.height;
     await page.keyboard.press("Control+A");
-    await size.selectOption("36");
+    await size.fill("36");
+    await size.press("Enter");
+    await story.click();
     await page.keyboard.press("End");
     await expectPosition();
     await expect.poll(async () => (await caret.boundingBox())?.height ?? 0).toBeGreaterThan(smallHeight * 1.5);

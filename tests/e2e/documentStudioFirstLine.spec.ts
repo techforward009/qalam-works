@@ -19,7 +19,8 @@ for (const zoom of [100, 200]) {
     await page.keyboard.type("یہ تیسری سطر ہے");
     await page.keyboard.press("Control+A");
     await page.locator('[data-studio-font-family]').selectOption({ label: "Mehr Nastaliq Web" });
-    await page.locator('[data-studio-font-size]').selectOption("24");
+    await page.locator('[data-studio-font-size]').fill("24");
+    await page.locator('[data-studio-font-size]').press("Enter");
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // Exercise the same sheet transform at 200% without adding a new UI preset.
     await page.locator('[data-studio-zoom-surface]').evaluate((surface, zoom) => {

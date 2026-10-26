@@ -18,6 +18,7 @@ import {
   type StudioFontDefinition,
 } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
+import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
@@ -65,6 +66,7 @@ const ALIGN_STYLE: Record<string, string> = {
 
 function alignStyleFor(node: DocNode): string {
   const textAlign = node.attrs?.textAlign;
+  if (textAlign === "justify-all") return "text-align:justify;text-align-last:justify;text-justify:inter-word;";
   return typeof textAlign === "string" && ALIGN_STYLE[textAlign]
     ? `text-align:${ALIGN_STYLE[textAlign]};`
     : "";
@@ -196,10 +198,12 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     const safeColor = normalizeSafeHex(styleMark?.attrs?.color);
     const highlightMark = node.marks?.find((m) => m.type === "highlight");
     const safeHighlight = normalizeSafeHex(highlightMark?.attrs?.color);
+    const effectStyle = `${textEffectDeclarations(styleMark?.attrs?.textEffect)}${textOutlineDeclarations(styleMark?.attrs?.textOutline)}`;
     const sizeStyle = [
       explicitSizePt ? `font-size:${explicitSizePt}pt;` : "",
-      safeColor ? `color:${safeColor};` : "",
+      safeColor && !String(effectStyle).includes("color:#fff") ? `color:${safeColor};` : "",
       safeHighlight ? `background-color:${safeHighlight};` : "",
+      effectStyle,
     ].join("");
     const segments = segmentLine(node.text, blockDir);
     const pieces = segments.length > 0 ? segments : [{ text: node.text, dir: blockDir }];
@@ -249,6 +253,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
         : null;
   const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? validateIndentMm(node.attrs.indentStartMm) : null;
   const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? validateIndentMm(node.attrs.indentEndMm) : null;
+  const lineGapPt = typeof node.attrs?.lineGapPt === "number" ? validateSpacingPt(node.attrs.lineGapPt) ?? 0 : 0;
   const spaceBeforePt =
     typeof node.attrs?.spaceBeforePt === "number"
       ? validateSpacingPt(node.attrs.spaceBeforePt)
@@ -269,7 +274,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     alignStyleFor(node) || (styleDef?.align ? `text-align:${styleDef.align}` : ""),
     styleDef?.defaultFontSizePt ? `font-size:${styleDef.defaultFontSizePt}pt` : "",
     styleDef?.bold ? "font-weight:bold" : "",
-    lh !== null ? `line-height:${lh}pt` : "",
+    lh !== null ? `line-height:${lh + lineGapPt}pt` : "",
     firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
     indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
     indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",

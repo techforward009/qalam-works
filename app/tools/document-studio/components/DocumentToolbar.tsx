@@ -2,13 +2,14 @@
 import { LeadingInput } from "./LeadingInput";
 import { parseLeading } from "../utils/leading";
 
-import { useEffect, useRef, useState, type CSSProperties, type ComponentProps } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ComponentProps } from "react";
+import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
-import { FONT_SIZE_OPTIONS_PT, LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
+import { LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
 import { BLOCK_STYLES, type BlockStyleId } from "../utils/documentStyles";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
@@ -20,6 +21,7 @@ import {
   addSpaceAfterParagraph,
   addSpaceBeforeParagraph,
   applyBlockStyle,
+  applyLineGap,
   applyParagraphDirection,
   applyCustomParagraphSpacing,
   applyFontFamily,
@@ -27,6 +29,7 @@ import {
   applyHighlight,
   applyLineHeight,
   applyTextColor,
+  applyTextEffect,
   redo,
   removeSpaceAfterParagraph,
   removeSpaceBeforeParagraph,
@@ -35,9 +38,11 @@ import {
   toggleBulletList,
   toggleItalic,
   toggleOrderedList,
+  toggleTextOutline,
   toggleUnderline,
   undo,
 } from "../utils/documentCommands";
+import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, TOOLBAR_FONT_SIZE_PRESETS, mapToolbarLanguage, parseLineGap, parseToolbarFontSize, studioOverlayRoot, type TextEffect } from "../utils/inpageToolbar";
 
 function ToolbarButton({
   onClick,
@@ -96,15 +101,36 @@ function AlignIcon({ kind }: { kind: "left" | "center" | "right" | "justify" | "
   );
 }
 
-function MetricIcon({ kind }: { kind: "line" | "paragraph" | "kerning" | "scale" }) {
-  return <svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
-    {kind === "line" || kind === "paragraph" ? <>
-      <path d="M3 3V13M1 5L3 3L5 5M1 11L3 13L5 11" />
-      <path d={kind === "line" ? "M7 3H13M7 8H13M7 13H13" : "M7 3H13M10 3V13M7 13H13"} />
-    </> : <>
-      <path d="M1 2H5V6H1ZM9 2H13V6H9Z" />
-      <path d={kind === "kerning" ? "M2 10H12M4 8L2 10L4 12M10 8L12 10L10 12" : "M1 10H13M4 7L1 10L4 13M10 7L13 10L10 13"} />
-    </>}
+function LeadingIcon() {
+  return <svg data-studio-leading-icon="true" width="14" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true">
+    <path d="M7 1.2 V5.2" stroke="#000" strokeWidth="1.2" />
+    <path d="M5.1 3.4 L7 5.4 L8.9 3.4" stroke="#000" strokeWidth="1.2" />
+    <rect x="1" y="6.4" width="12" height="3.2" stroke="#000" fill="none" />
+    <path d="M7 14.8 V10.8" stroke="#000" strokeWidth="1.2" />
+    <path d="M5.1 12.6 L7 10.6 L8.9 12.6" stroke="#000" strokeWidth="1.2" />
+  </svg>;
+}
+
+function InterlineIcon() {
+  return <svg data-studio-interline-icon="true" width="14" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true">
+    <rect x="1" y="1" width="12" height="2.4" stroke="#000" fill="none" />
+    <rect x="1" y="12.6" width="12" height="2.4" stroke="#000" fill="none" />
+    <path d="M7 3.6 V12.4" stroke="#000" strokeWidth="1.2" />
+    <path d="M5 5.1 L7 3.4 L9 5.1" stroke="#000" strokeWidth="1.2" />
+    <path d="M5 10.9 L7 12.6 L9 10.9" stroke="#000" strokeWidth="1.2" />
+  </svg>;
+}
+
+function OutlineIcon() {
+  return <svg data-studio-outline-icon="true" width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
+    <path d="M2 9.5 L5.5 1.5 L9 9.5 M3.3 7 H7.7" fill="none" stroke="#000" strokeWidth="1" />
+  </svg>;
+}
+
+function MetricIcon({ kind }: { kind: "kerning" | "scale" }) {
+  return <svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="#000" strokeWidth="1" aria-hidden="true">
+    <path d="M1 2H5V6H1ZM9 2H13V6H9Z" />
+    <path d={kind === "kerning" ? "M2 10H12M4 8L2 10L4 12M10 8L12 10L10 12" : "M1 10H13M4 7L1 10L4 13M10 7L13 10L10 13"} />
   </svg>;
 }
 
@@ -376,6 +402,156 @@ function isLightHex(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
+function LineGapField({ editor, value }: { editor: Editor; value: number }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const label = `${value}pt`;
+  const [text, setText] = useState(label);
+  useEffect(() => {
+    if (document.activeElement === inputRef.current) return;
+    setText(label);
+  }, [label]);
+  const commit = (raw: string) => {
+    const next = parseLineGap(raw);
+    if (next === null) { setText(label); return; }
+    setText(`${next}pt`);
+    applyLineGap(editor, next);
+  };
+  return <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => commit(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } }} style={{ width: 61, height: 20, background: "#fff", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, padding: "2px 4px", border: 0, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }} />;
+}
+
+/** Fixed list inside the fullscreen element, so ribbon overflow cannot clip it. */
+function StudioList({ anchor, children, onClose, passthrough = false }: { anchor: HTMLElement | null; children: React.ReactNode; onClose?: () => void; passthrough?: boolean }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const [root, setRoot] = useState<HTMLElement | null>(null);
+  const [box, setBox] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      setRoot(studioOverlayRoot());
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      setBox({ top: rect.bottom, left: rect.left });
+    };
+    place();
+    document.addEventListener("fullscreenchange", place);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      document.removeEventListener("fullscreenchange", place);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [anchor]);
+  useEffect(() => {
+    const onPointer = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (anchor?.contains(target) || panelRef.current?.contains(target)) return;
+      closeRef.current?.();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeRef.current?.();
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [anchor]);
+  if (!root || !box) return null;
+  return createPortal(
+    <div ref={panelRef} data-studio-overlay-list="true" style={{ position: "fixed", top: box.top, left: box.left, zIndex: 420, pointerEvents: passthrough ? "none" : "auto" }}>
+      {children}
+    </div>,
+    root,
+  );
+}
+
+function SizeField({ editor, value }: { editor: Editor; value: string }) {
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dirtyRef = useRef(false);
+  const [text, setText] = useState(value);
+  const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (dirtyRef.current || document.activeElement === inputRef.current) return;
+    setText(value);
+  }, [value]);
+  const commit = (raw: string, fromBlur = false) => {
+    const parsed = parseToolbarFontSize(raw);
+    if (!parsed.ok) {
+      setMessage(parsed.message);
+      dirtyRef.current = false;
+      setText(value);
+      return;
+    }
+    // Blur after an invalid Enter restores the old size. Do not wipe the error.
+    if (fromBlur && (raw.trim() === value || parsed.label === value)) {
+      dirtyRef.current = false;
+      setText(parsed.label);
+      return;
+    }
+    setMessage("");
+    dirtyRef.current = false;
+    setText(parsed.label);
+    applyFontSize(editor, String(parsed.pt));
+    setOpen(false);
+  };
+  return <span ref={anchorRef} className="relative inline-flex" style={{ marginInlineStart: 2 }}>
+    <input ref={inputRef} id="studio-font-size" data-studio-font-size="true" aria-label="Size" title="Font size" value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") { dirtyRef.current = false; setText(value); setMessage(""); setOpen(false); } }} onBlur={(event) => commit(event.currentTarget.value, true)} style={{ width: 62, height: 20, background: "#fff", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, padding: "2px 16px 2px 4px", border: 0, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }} />
+    <button type="button" aria-label="Size presets" onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ position: "absolute", right: 1, top: 2, width: 16, height: 16, background: "#f0f0f0", border: 0 }}><svg width="7" height="4" viewBox="0 0 7 4"><path d="M0 0H7L3.5 4Z" fill="#000" /></svg></button>
+    {open ? <StudioList anchor={anchorRef.current} onClose={() => setOpen(false)}>
+      <div role="listbox" aria-label="Size" data-studio-size-list="true" style={{ background: "#fff", border: "1px solid #808080", width: 72 }}>
+        {TOOLBAR_FONT_SIZE_PRESETS.map((pt) => <button key={pt} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => commit(`${pt}pt`)} style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", border: 0, fontSize: 11, padding: "2px 4px", color: "#000" }}>{pt}pt</button>)}
+      </div>
+    </StudioList> : null}
+    {message ? <StudioList anchor={anchorRef.current} passthrough>
+      <span role="alert" data-studio-size-error="true" style={{ width: 240, background: "#fff", border: "1px solid #000", color: "#000", fontSize: 11, padding: 4 }}>{message}</span>
+    </StudioList> : <span data-studio-size-error="true" className="sr-only" />}
+  </span>;
+}
+
+function ColourField({ editor, value }: { editor: Editor; value: string }) {
+  const known = INPAGE_TEXT_COLOURS.find((colour) => colour.hex.toLowerCase() === value.toLowerCase());
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const entries = known || !value ? INPAGE_TEXT_COLOURS : [{ label: value, hex: value }, ...INPAGE_TEXT_COLOURS];
+  return <div className="relative" style={{ marginInlineStart: 2 }} data-studio-colour="true">
+    <button ref={buttonRef} type="button" aria-label="Colour" aria-haspopup="listbox" aria-expanded={open} onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ width: 80, height: 20, background: "#fff", border: 0, display: "flex", alignItems: "center", gap: 4, padding: "0 4px", boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff", color: "#000", fontSize: 11 }}>
+      <span data-studio-colour-swatch="true" style={{ width: 10, height: 10, background: value || "#000", border: "1px solid #000" }} />
+      <span>{known?.label ?? (value || "Black")}</span>
+    </button>
+    {open ? <StudioList anchor={buttonRef.current} onClose={() => setOpen(false)}>
+      <div role="listbox" aria-label="Colour" data-studio-colour-list="true" style={{ width: 120, background: "#fff", border: "1px solid #808080" }}>
+        {entries.map((colour) => <button key={colour.hex + colour.label} type="button" role="option" data-studio-colour-option={colour.label} onMouseDown={(event) => event.preventDefault()} onClick={() => { applyTextColor(editor, colour.hex); setOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", background: "transparent", border: 0, fontSize: 11, padding: "2px 4px", color: "#000" }}>
+          <span style={{ width: 10, height: 10, background: colour.hex, border: "1px solid #000" }} />{colour.label}
+        </button>)}
+      </div>
+    </StudioList> : null}
+  </div>;
+}
+
+function TextStyleField({ editor, value }: { editor: Editor; value: string }) {
+  const effect = (TEXT_EFFECTS as readonly string[]).includes(value) ? value as TextEffect : "none";
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  return <span className="relative inline-flex shrink-0" style={{ marginInlineStart: 4, width: 100 }}>
+    <button ref={buttonRef} type="button" aria-label="Text style" aria-haspopup="listbox" aria-expanded={open} data-studio-text-style="true" data-latin-control="true" onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ width: 100, height: 20, background: "#fff", border: 0, textAlign: "left", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, padding: "2px 18px 2px 4px", boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}>
+      {TEXT_EFFECT_LABELS[effect]}
+    </button>
+    <span aria-hidden="true" className="pointer-events-none absolute right-[2px] top-[2px] grid h-[16px] w-[17px] place-items-center bg-[#f0f0f0]" style={{ boxShadow: "inset 1px 1px 0 #000000, inset 2px 2px 0 #ffffff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0" }}>
+      <svg width="7" height="4" viewBox="0 0 7 4" fill="#000"><path d="M0 0H7L3.5 4Z" /></svg>
+    </span>
+    {open ? <StudioList anchor={buttonRef.current} onClose={() => setOpen(false)}>
+      <div role="listbox" aria-label="Text style" data-studio-text-style-list="true" style={{ width: 100, background: "#fff", border: "1px solid #808080" }}>
+        {TEXT_EFFECTS.map((item) => <button key={item} type="button" role="option" data-studio-text-style-option={item} onMouseDown={(event) => event.preventDefault()} onClick={() => { applyTextEffect(editor, item); setOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", background: item === effect ? "#d6dff2" : "transparent", border: 0, fontSize: 11, padding: "2px 4px", color: "#000" }}>{TEXT_EFFECT_LABELS[item]}</button>)}
+      </div>
+    </StudioList> : null}
+  </span>;
+}
+
 function ParagraphSpacingMenu({
   openRequest = 0,
   editor,
@@ -391,7 +567,7 @@ function ParagraphSpacingMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
-  useEffect(()=>{if(!openRequest)return;setOpen(false);setCustomOpen(true);const raf=requestAnimationFrame(()=>rootRef.current?.querySelector<HTMLInputElement>("input")?.focus());return()=>cancelAnimationFrame(raf);},[openRequest]);
+  useEffect(()=>{if(!openRequest)return;setOpen(false);setCustomOpen(true);const raf=requestAnimationFrame(()=>rootRef.current?.querySelector<HTMLInputElement>("[data-studio-custom-spacing-dialog] input")?.focus());return()=>cancelAnimationFrame(raf);},[openRequest]);
   const rootRef = useRef<HTMLDivElement>(null);
   const label = isUr ? "پیراگراف فاصلہ" : "Paragraph spacing";
 
@@ -457,25 +633,8 @@ function ParagraphSpacingMenu({
 
   return (
     <div ref={rootRef} className="relative inline-flex shrink-0" style={{ width: 79, marginInlineStart: 2 }}>
-      <ToolbarButton width={18} label={isUr ? "پیراگراف فاصلے کے اختیارات" : "Paragraph spacing options"} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} raised><MetricIcon kind="paragraph" /></ToolbarButton>
-      <button
-        type="button"
-        title={label}
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-expanded={open || customOpen}
-        data-studio-line-height="menu"
-        data-studio-spacing-button="true"
-        onMouseDown={keepFocus}
-        onClick={() => {
-          setCustomOpen(false);
-          setOpen((next) => !next);
-        }}
-        className="inline-flex h-[20px] min-w-0 items-center justify-center bg-white px-1 text-[11px] leading-none text-black"
-        style={{ width: 61, minHeight: 20, justifyContent: "flex-start", boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}
-      >
-        <span className="px-0.5" data-latin-control="true">{ui.mixed.spaceAfter ? "—" : `${ui.spaceAfterPt ?? 0}pt`}</span>
-      </button>
+      <ToolbarButton width={18} label={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} raised><span data-studio-spacing-button="true"><InterlineIcon /></span></ToolbarButton>
+      <LineGapField editor={editor} value={ui.lineGapPt ?? 0} />
       {open ? (
         <div
           role="menu"
@@ -596,9 +755,14 @@ function ParagraphSpacingMenu({
               {isUr ? "منسوخ" : "Cancel"}
             </button>
             <button
-              type="submit"
+              type="button"
               data-studio-spacing-apply="true"
-              onMouseDown={keepFocus}
+              onPointerDown={(event) => event.preventDefault()}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget.closest("form");
+                if (form) applyCustom(form);
+              }}
               className="h-7 rounded bg-[#1A3A2A] px-2 text-[11px] font-semibold text-white"
             >
               {isUr ? "لاگو کریں" : "Apply"}
@@ -704,10 +868,6 @@ export default function DocumentToolbar({
   if (!editor || !ui) return null;
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
-  const currentSize = ui.mixed.fontSize ? MIXED_TOOLBAR_VALUE : String(ui.fontSizePt ?? settings.typography.bodyFontSizePt);
-  const sizeOptions = FONT_SIZE_OPTIONS_PT.includes((ui.fontSizePt ?? settings.typography.bodyFontSizePt) as typeof FONT_SIZE_OPTIONS_PT[number])
-    ? FONT_SIZE_OPTIONS_PT
-    : [...FONT_SIZE_OPTIONS_PT, ui.fontSizePt as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
   const latinFonts = STUDIO_FONT_GROUPS.find((group) => group.category === "latin")?.fonts ?? [];
   const explicitLatin = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
   const englishValue = explicitLatin === "Arial Unicode MS" || latinFonts.some((font) => font.value === explicitLatin) ? explicitLatin : englishFont;
@@ -746,13 +906,12 @@ export default function DocumentToolbar({
               </option>
             ))}
           </ClassicCombo>
-          <ToolbarButton width={18} gap={1} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} onClick={() => leadingRef.current?.focus()} raised><MetricIcon kind="line" /></ToolbarButton>
+          <ToolbarButton width={18} gap={1} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} onClick={() => leadingRef.current?.focus()} raised><LeadingIcon /></ToolbarButton>
           <LeadingInput ref={leadingRef}
             aria-label="Line spacing" data-studio-leading="true" value={spacingValue}
             onChange={value => applyLineHeight(editor,value.mode === "points" ? value.value : null)}
             style={{ width:61, height:20, minHeight:20, maxHeight:20, flexShrink:0, background:"#fff", color:"#000", fontFamily:"Tahoma, Arial, sans-serif", fontSize:11, padding:"2px 4px", border:0, boxShadow:"inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}
           />
-          <datalist id="studio-leading-points"><option value="Auto" />{LINE_SPACING_PRESETS.map(preset=><option key={preset.id} value={`${preset.value}pt`} />)}</datalist>
           <ClassicCombo
             aria-label={isUr ? "انگریزی فونٹ" : "English font"}
             leadingIcon={<span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700 }}>Tт</span>}
@@ -760,10 +919,7 @@ export default function DocumentToolbar({
             data-latin-control="true"
             className={selectCls} width={202} gap={2}
             value={englishValue}
-            onChange={(event) => {
-              onEnglishFontChange?.(event.target.value);
-              if (editor.state.selection.$from.parent.attrs.dir !== "rtl") applyFontFamily(editor, event.target.value === "Arial Unicode MS" ? "" : event.target.value);
-            }}
+            onChange={(event) => onEnglishFontChange?.(event.target.value)}
           >
             <option value="Arial Unicode MS">Arial Unicode MS</option>
             {latinFonts.map((font) => (
@@ -776,54 +932,23 @@ export default function DocumentToolbar({
           <ToolbarButton width={19} gap={1} label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin raised>
             <BitmapEmphasis italic />
           </ToolbarButton>
-          <ClassicCombo
-            id="studio-font-size"
-            data-studio-font-size="true"
-            value={currentSize}
-            onChange={(e) => {
-              if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-              applyFontSize(editor, e.target.value);
-            }}
-            className={selectCls} width={80} gap={2}
-            title={isUr ? "سائز" : "Font size"}
-            aria-label={isUr ? "سائز" : "Size"}
-            data-latin-control="true"
-          >
-            {ui.mixed.fontSize && (
-              <option value={MIXED_TOOLBAR_VALUE} disabled>
-                {isUr ? "مخلوط" : "Mixed"}
-              </option>
-            )}
-            {sizeOptions.map((pt) => (
-              <option key={pt} value={pt}>{pt}pt</option>
-            ))}
-          </ClassicCombo>
+          <SizeField editor={editor} value={ui.mixed.fontSize ? "" : `${ui.fontSizePt ?? settings.typography.bodyFontSizePt}pt`} />
           <ToolbarButton disabledTip={isUr ? "جلد آ رہا ہے" : "Coming soon"} width={18} gap={2} label={isUr ? "کرننگ کے اختیارات" : "Kerning options"} onClick={() => openToolbarCombo(kerningRef.current)} raised><MetricIcon kind="kerning" /></ToolbarButton>
           <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} entryField ref={kerningRef} aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={selectCls} width={61} defaultValue="0">
             <option value="0">0%</option>
             <option value="5">5%</option>
           </ClassicCombo>
-          <ToolbarButton width={20} gap={3}
-            label={isUr ? "متن کی سمت" : "Text direction"}
-            active={ui.directionMode !== "auto"}
-            onClick={() => applyParagraphDirection(editor, ui.directionMode === "ltr" ? "rtl" : "ltr")}
-            latin
-          >
-            <span aria-hidden="true" style={{ fontFamily: "Arial, sans-serif", fontSize: 14 }}>↑|</span>
-          </ToolbarButton>
           {setProcessingLanguage ? (
             <ClassicCombo
               className={selectCls} width={68} gap={4}
               aria-label={isUr ? "متن کی زبان" : "Language"}
               data-studio-document-language="true"
               data-latin-control="true"
-              value={processingLanguage ?? "ur"}
-              onChange={(event) => setProcessingLanguage(event.target.value as ProcessingLanguage)}
+              value={mapToolbarLanguage(processingLanguage)}
+              onChange={(event) => setProcessingLanguage(mapToolbarLanguage(event.target.value))}
             >
               <option value="ur">Urdu</option>
-              <option value="ar">Arabic</option>
               <option value="en">English</option>
-              <option value="auto">Auto</option>
             </ClassicCombo>
           ) : null}
         </div>
@@ -837,7 +962,7 @@ export default function DocumentToolbar({
           <ToolbarButton width={19} label={isUr ? "درمیانی سیدھ" : "Align center"} active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}><AlignIcon kind="center" /></ToolbarButton>
           <ToolbarButton width={19} label={isUr ? "دائیں سیدھ" : "Align right"} active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}><AlignIcon kind="right" /></ToolbarButton>
           <ToolbarButton width={19} label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="justify" /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "تقسیم" : "Distribute"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="distribute" /></ToolbarButton>
+          <ToolbarButton width={19} label={isUr ? "مکمل برابر" : "Full justify"} active={ui.textAlign === "justify-all"} onClick={() => setAlign(editor, "justify-all")}><AlignIcon kind="distribute" /></ToolbarButton>
           </div>
           <ParagraphSpacingMenu openRequest={paragraphRequest} editor={editor} ui={ui} settings={settings} isUr={isUr} />
           <ClassicCombo
@@ -866,21 +991,12 @@ export default function DocumentToolbar({
               </optgroup>
             ))}
           </ClassicCombo>
-          <ToolbarButton width={21} gap={2} label={isUr ? "بائیں سے دائیں" : "Left to right"} active={dir === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin><DirectionArrow /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "دائیں سے بائیں" : "Right to left"} active={dir === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin><DirectionArrow left /></ToolbarButton>
-          <ClassicCombo
-            aria-label={isUr ? "رنگ" : "Colour"}
-            data-latin-control="true"
-            className={selectCls} width={80} gap={2}
-            leadingIcon={<span style={{ width: 8, height: 8, background: colourValue }} />}
-            value={colourValue}
-            onChange={(event) => applyTextColor(editor, event.target.value)}
-          >
-            <option value="#000000">Black</option>
-            <option value="#1A3A2A">Green</option>
-            <option value="#7F1D1D">Maroon</option>
-            <option value="#1D4ED8">Blue</option>
-          </ClassicCombo>
+          <ToolbarButton width={21} gap={2} label={isUr ? "بائیں سے دائیں" : "Left to right"} active={editor.state.selection.$from.parent.attrs.dir === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")} latin><DirectionArrow /></ToolbarButton>
+          <ToolbarButton width={19} label={isUr ? "دائیں سے بائیں" : "Right to left"} active={editor.state.selection.$from.parent.attrs.dir !== "ltr"} onClick={() => applyParagraphDirection(editor, "rtl")} latin><DirectionArrow left /></ToolbarButton>
+          <ColourField editor={editor} value={colourValue} />
+          <ToolbarButton width={20} gap={2} label={isUr ? "خاکہ" : "Outline"} active={ui.textOutline} onClick={() => toggleTextOutline(editor)} latin raised>
+            <OutlineIcon />
+          </ToolbarButton>
           <ToolbarButton disabledTip={isUr ? "جلد آ رہا ہے" : "Coming soon"} width={18} gap={2} label={isUr ? "افقی پیمانے کے اختیارات" : "Horizontal scale options"} onClick={() => openToolbarCombo(scaleRef.current)} raised><MetricIcon kind="scale" /></ToolbarButton>
           <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} entryField ref={scaleRef} aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={selectCls} width={61} defaultValue="100">
             <option value="100">100%</option>
@@ -888,10 +1004,8 @@ export default function DocumentToolbar({
             <option value="110">110%</option>
           </ClassicCombo>
           <ColorPaletteControl editor={editor} kind="highlight" colors={STUDIO_HIGHLIGHT_COLORS} value={ui.highlight} mixed={ui.mixed.highlight} isUr={isUr} compact />
-          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="None" data-latin-control="true" className={selectCls} width={100} gap={4} defaultValue="none">
-            <option value="none">None</option>
-          </ClassicCombo>
-          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="K-None" data-latin-control="true" className={selectCls} width={80} gap={3} defaultValue="k">
+          <TextStyleField editor={editor} value={ui.textEffect} />
+          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="K-None" data-studio-kashida="true" data-latin-control="true" className={selectCls} width={80} gap={3} defaultValue="k">
             <option value="k">K-None</option>
           </ClassicCombo>
         </div>
@@ -904,15 +1018,6 @@ export default function DocumentToolbar({
         }
       `}</style>
       <div className="sr-only">
-        <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
-          Auto
-        </ToolbarButton>
-        <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin>
-          RTL
-        </ToolbarButton>
-        <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin>
-          LTR
-        </ToolbarButton>
         <ColorPaletteControl editor={editor} kind="text" colors={STUDIO_TEXT_COLORS} value={ui.color} mixed={ui.mixed.color} isUr={isUr} />
         <ColorPaletteControl editor={editor} kind="highlight" colors={STUDIO_HIGHLIGHT_COLORS} value={ui.highlight} mixed={ui.mixed.highlight} isUr={isUr} />
         <DictationControl editor={editor} docDir={dir} isUr={isUr} />

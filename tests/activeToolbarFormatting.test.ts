@@ -74,13 +74,13 @@ describe("effective toolbar formatting", () => {
     expect(JSON.stringify(heading.getJSON())).not.toContain('"type":"bold"');
   });
 
-  it("default LTR text uses Inter", () => {
+  it("LTR text keeps the Urdu font in the Urdu slot", () => {
     const ed = make({
       type: "doc",
       content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Hello" }] }],
     });
     ed.commands.setTextSelection(2);
-    expect(resolveActiveToolbarFormatting(ed, settings, "ltr").fontFamily).toBe("Inter");
+    expect(resolveActiveToolbarFormatting(ed, settings, "ltr").fontFamily).toBe("Mehr Nastaliq Web");
   });
 
   it("mixed font and size selection does not pick one value", () => {

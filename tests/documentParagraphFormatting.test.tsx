@@ -87,9 +87,11 @@ describe("semantic paragraph formatting", () => {
     act(() => { ed.commands.setTextSelection(18); });
     expect(style.value).toBe("normal");
     expect(FONT_SIZE_OPTIONS_PT).toContain(15);
-    fireEvent.click(view.getByTitle("Right-to-left (Urdu/Arabic/Persian)"));
+    fireEvent.click(view.getByTitle("Right to left"));
     expect(ed.state.selection.$from.parent.attrs.directionMode).toBe("rtl");
-    fireEvent.click(view.getByTitle("Automatic paragraph direction"));
+    fireEvent.click(view.getByTitle("Left to right"));
+    expect(ed.state.selection.$from.parent.attrs.directionMode).toBe("ltr");
+    applyParagraphDirection(ed, "auto");
     expect(ed.state.selection.$from.parent.attrs.dir).toBe("ltr");
   });
 

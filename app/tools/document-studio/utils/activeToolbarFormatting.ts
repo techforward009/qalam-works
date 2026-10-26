@@ -27,13 +27,16 @@ export interface ActiveToolbarFormatting {
   bold: boolean;
   italic: boolean;
   underline: boolean;
-  textAlign: "left" | "center" | "right" | "justify" | "start" | null;
+  textEffect: string;
+  textOutline: boolean;
+  textAlign: "left" | "center" | "right" | "justify" | "justify-all" | "start" | null;
   bullet: boolean;
   ordered: boolean;
   color: string | null;
   highlight: string | null;
   spaceBeforePt: number | null;
   spaceAfterPt: number | null;
+  lineGapPt: number | null;
   firstLineIndentMm: number | null;
   indentStartMm: number | null;
   indentEndMm: number | null;
@@ -107,14 +110,19 @@ function blockStyleAt(editor: Editor, pos: number): BlockStyleId {
   return "normal";
 }
 
+function isLatinToolbarFamily(family: string): boolean {
+  const name = family.replace(/["']/g, "").split(",")[0].trim().toLowerCase();
+  return /^(inter|arial|arial unicode ms|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/.test(name);
+}
+
 function effectiveFamily(
   explicit: string,
-  dir: "rtl" | "ltr",
+  _dir: "rtl" | "ltr",
   settings: DocumentStudioSettings,
 ): string {
-  if (explicit) return explicit;
-  const id = dir === "ltr" ? settings.typography.defaultLtrFontId : settings.typography.defaultRtlFontId;
-  return getFontById(id).editorFamily || (dir === "ltr" ? "Inter" : "Mehr Nastaliq Web");
+  if (explicit && !isLatinToolbarFamily(explicit)) return explicit;
+  const id = settings.typography.defaultRtlFontId;
+  return getFontById(id).editorFamily || "Mehr Nastaliq Web";
 }
 
 function effectiveSize(explicit: number | null, blockStyle: BlockStyleId, settings: DocumentStudioSettings): number {
@@ -213,7 +221,9 @@ export function resolveActiveToolbarFormatting(
     indentEnd: endIndents.size > 1,
   };
 
-  const explicitAlign = editor.isActive({ textAlign: "justify" })
+  const explicitAlign = editor.isActive({ textAlign: "justify-all" })
+    ? "justify-all"
+    : editor.isActive({ textAlign: "justify" })
     ? "justify"
     : editor.isActive({ textAlign: "center" })
       ? "center"
@@ -231,12 +241,18 @@ export function resolveActiveToolbarFormatting(
     bold: editor.isActive("bold") || Boolean(style.bold),
     italic: editor.isActive("italic"),
     underline: editor.isActive("underline"),
+    textEffect: String(editor.getAttributes("textStyle").textEffect || "none"),
+    textOutline: editor.getAttributes("textStyle").textOutline === true || editor.getAttributes("textStyle").textOutline === "true",
     textAlign: explicitAlign ?? style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left"),
     directionMode: textblockAt(editor, from)?.attrs.directionMode ?? "auto",
     color: mixed.color ? null : ([...colors][0] || null),
     highlight: mixed.highlight ? null : ([...highlights][0] || null),
     spaceBeforePt: mixed.spaceBefore ? null : [...spaceBefores][0] ?? settings.typography.paragraphBeforePt,
     spaceAfterPt: mixed.spaceAfter ? null : [...spaceAfters][0] ?? settings.typography.paragraphAfterPt,
+    lineGapPt: (() => {
+      const raw = textblockAt(editor, from)?.attrs.lineGapPt;
+      return typeof raw === "number" ? raw : 0;
+    })(),
     firstLineIndentMm: mixed.firstLineIndent ? null : [...firstIndents][0] ?? settings.typography.firstLineIndentMm,
     indentStartMm: mixed.indentStart ? null : [...startIndents][0] ?? 0,
     indentEndMm: mixed.indentEnd ? null : [...endIndents][0] ?? 0,

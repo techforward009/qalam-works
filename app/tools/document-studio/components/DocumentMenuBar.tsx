@@ -1,5 +1,6 @@
 "use client";
 
+import { studioOverlayRoot } from "../utils/inpageToolbar";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StudioHomeButton } from "./StudioHomeButton";
@@ -36,7 +37,7 @@ function topMenuPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSPr
     position: "fixed",
     top,
     left,
-    zIndex: 80,
+    zIndex: 400,
     width,
     maxHeight,
     overflowX: "hidden",
@@ -136,6 +137,7 @@ export default function DocumentMenuBar({
   hasUnsavedChanges?: boolean;
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [inlineSubmenus, setInlineSubmenus] = useState(false);
   const [pinMenus, setPinMenus] = useState(false);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
@@ -145,6 +147,13 @@ export default function DocumentMenuBar({
   const submenuPortalRef = useRef<HTMLDivElement>(null);
   const triggerRefs = useRef<Partial<Record<MenuId, HTMLButtonElement | null>>>({});
   const focusMenuOnOpen = useRef(false);
+
+  useEffect(() => {
+    const sync = () => setPortalRoot(studioOverlayRoot());
+    sync();
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
@@ -183,7 +192,7 @@ export default function DocumentMenuBar({
       position: "fixed",
       top: placed.top,
       left: placed.left,
-      zIndex: 90,
+      zIndex: 410,
       width: SUBMENU_WIDTH_PX,
       maxHeight: Math.max(120, window.innerHeight - placed.top - 12),
       overflowX: "hidden",
@@ -249,7 +258,7 @@ export default function DocumentMenuBar({
   };
 
   const dropdown =
-    openMenu && typeof document !== "undefined"
+    openMenu && portalRoot
       ? createPortal(
           <>
             <div
@@ -313,7 +322,7 @@ export default function DocumentMenuBar({
               </div>
             ) : null}
           </>,
-          document.body,
+          portalRoot,
         )
       : null;
 

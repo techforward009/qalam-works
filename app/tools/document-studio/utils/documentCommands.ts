@@ -17,6 +17,7 @@ import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
 import { normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
+import type { TextEffect } from "./inpageToolbar";
 import {
   defaultDocumentSettings,
   resolveAddSpaceAfterPt,
@@ -112,11 +113,16 @@ export function applyLineHeight(editor: Editor, value: number | null): void {
   applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } });
 }
 
+export function applyLineGap(editor: Editor, value: number): void {
+  applyParagraphAttrs(editor, { lineGapPt: value });
+}
+
 const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
 
 export type ParagraphSpacingAttrs = {
   leading?: Leading | null;
   lineHeight?: number | null;
+  lineGapPt?: number | null;
   spaceBeforePt?: number | null;
   spaceAfterPt?: number | null;
   firstLineIndentMm?: number | null;
@@ -223,7 +229,8 @@ export function setLinkHref(editor: Editor, url: string | null): void {
   if (url) editor.chain().focus().setLink({ href: url }).run();
   else editor.chain().focus().unsetLink().run();
 }
-export function setAlign(editor: Editor, align: "left" | "center" | "right" | "justify"): void {
+export type StudioTextAlign = "left" | "center" | "right" | "justify" | "justify-all";
+export function setAlign(editor: Editor, align: StudioTextAlign): void {
   editor.chain().focus().setTextAlign(align).run();
 }
 export function undo(editor: Editor): void {
@@ -354,6 +361,16 @@ export function applyTextColor(editor: Editor, hex: string): void {
     return;
   }
   editor.chain().focus().setColor(safe).run();
+}
+
+export function applyTextEffect(editor: Editor, effect: TextEffect): void {
+  editor.chain().focus().setMark("textStyle", { textEffect: effect === "none" ? null : effect }).run();
+}
+
+export function toggleTextOutline(editor: Editor): void {
+  const current = editor.getAttributes("textStyle").textOutline;
+  const on = current === true || current === "true";
+  editor.chain().focus().setMark("textStyle", { textOutline: on ? null : true }).run();
 }
 
 export function applyHighlight(editor: Editor, hex: string): void {

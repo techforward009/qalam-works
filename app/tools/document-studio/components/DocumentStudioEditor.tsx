@@ -85,6 +85,7 @@ import {
   findSuggestionRange,
   replaceAll,
   setEditorContent,
+  setAlign,
   setLinkHref,
   transformPastedSlice,
   activeBlockStyleId,
@@ -1515,6 +1516,22 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || !event.altKey || event.shiftKey) return;
+      const key = event.key.toLowerCase();
+      const align = key === "l" ? "left" as const : key === "r" ? "right" as const : key === "c" ? "center" as const : key === "j" ? "justify" as const : key === "f" ? "justify-all" as const : null;
+      if (!align) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
+      event.preventDefault();
+      setAlign(editor, align);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editor]);
 
   const commitDocumentTitle = () => {
     const next = sanitizeDocumentTitle(documentTitle) || defaultDocumentTitle(isUr);
