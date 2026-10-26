@@ -106,6 +106,25 @@ export function mapToolbarLanguage(value: unknown): "ur" | "en" {
   return value === "en" ? "en" : "ur";
 }
 
+export type PercentKind = "tracking" | "scale";
+
+export type PercentCommit =
+  | { ok: true; value: number; label: string }
+  | { ok: false; message: string };
+
+/** Tracking and horizontal scale. Bare numbers and a trailing % are the same value. */
+export function parseToolbarPercent(raw: string, kind: PercentKind): PercentCommit {
+  const text = raw.trim();
+  const match = text.match(/^(-?\d+(?:\.\d+)?)\s*%?$/);
+  if (!match) return { ok: false, message: "Value not typed properly." };
+  const value = Math.round(parseFloat(match[1]) * 10) / 10;
+  const [min, max] = kind === "tracking" ? [-200, 200] : [1, 400];
+  if (!Number.isFinite(value) || value < min || value > max) {
+    return { ok: false, message: `Value out of range. Minimum allowed is ${min} and Maximum allowed is ${max}.` };
+  }
+  return { ok: true, value, label: `${value}%` };
+}
+
 export function parseLineGap(raw: string): number | null {
   const text = raw.trim();
   // Unit is optional as a whole. "pt?" would make only the t optional and accept "6p".

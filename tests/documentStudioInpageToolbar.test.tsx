@@ -5,16 +5,18 @@ import { cleanup, fireEvent, render } from "@testing-library/react";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
 import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
-import { applyEnglishFont, applyLineGap, applyLineHeight, applyParagraphDirection, applyTextEffect, setAlign, toggleTextOutline } from "../app/tools/document-studio/utils/documentCommands";
+import { LatinScriptRuns } from "../app/tools/document-studio/extensions/LatinScriptRuns";
+import { applyEnglishFont, applyFontFamily, applyLineGap, applyLineHeight, applyParagraphDirection, applyScale, applyTextEffect, applyTracking, setAlign, toggleTextOutline, undo } from "../app/tools/document-studio/utils/documentCommands";
 import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { blockLeadingPt } from "../app/tools/document-studio/utils/autoLeading";
 import { parseLeading } from "../app/tools/document-studio/utils/leading";
-import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, insertKashida, mapToolbarLanguage, parseLineGap, parseToolbarFontSize, studioOverlayRoot } from "../app/tools/document-studio/utils/inpageToolbar";
+import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, insertKashida, mapToolbarLanguage, parseLineGap, parseToolbarFontSize, parseToolbarPercent, studioOverlayRoot } from "../app/tools/document-studio/utils/inpageToolbar";
+import { resolveActiveToolbarFormatting } from "../app/tools/document-studio/utils/activeToolbarFormatting";
 
 const editors: Editor[] = [];
 function make(content = "<p>یہ ایک لمبی عبارت ہے</p>") {
-  const editor = new Editor({ extensions: createDocumentStudioExtensions(), content });
+  const editor = new Editor({ extensions: [...createDocumentStudioExtensions(), LatinScriptRuns], content });
   editors.push(editor);
   return editor;
 }
@@ -36,6 +38,10 @@ describe("InPage toolbar values", () => {
     expect(parseLeading("12")).toEqual({ mode: "points", value: 12 });
     expect(parseLeading("100")).toEqual({ mode: "points", value: 100 });
     expect(parseLeading("6p")).toBeNull();
+    expect(parseToolbarPercent("10", "tracking")).toMatchObject({ ok: true, value: 10, label: "10%" });
+    expect(parseToolbarPercent("-5%", "tracking")).toMatchObject({ ok: true, value: -5, label: "-5%" });
+    expect(parseToolbarPercent("80%", "scale")).toMatchObject({ ok: true, value: 80, label: "80%" });
+    expect(parseToolbarPercent("abc", "scale")).toMatchObject({ ok: false, message: "Value not typed properly." });
     expect(mapToolbarLanguage("ar")).toBe("ur");
     expect(mapToolbarLanguage("fa")).toBe("ur");
     expect(mapToolbarLanguage("auto")).toBe("ur");
@@ -69,19 +75,96 @@ describe("InPage toolbar values", () => {
     expect(document.querySelector("[role='alert']")).toBeNull();
   });
 
+  it("keeps the Urdu face and the Latin face on separate marks", () => {
+    const editor = make("<p>اردو Hello عبارت</p>");
+    editor.commands.selectAll();
+    applyEnglishFont(editor, "Inter");
+    applyFontFamily(editor, "Gulzar");
+    const parts = (editor.getJSON().content?.[0]?.content ?? []) as { text?: string; marks?: { type?: string; attrs?: { fontFamily?: string; latinFontFamily?: string } }[] }[];
+    const hello = parts.find((node) => node.text?.includes("Hello"));
+    const urdu = parts.find((node) => node.text && /\p{Script=Arabic}/u.test(node.text));
+    const helloStyle = hello?.marks?.find((mark) => mark.type === "textStyle")?.attrs;
+    const urduStyle = urdu?.marks?.find((mark) => mark.type === "textStyle")?.attrs;
+    expect(String(helloStyle?.latinFontFamily ?? "")).toContain("Inter");
+    expect(String(helloStyle?.fontFamily ?? "")).not.toContain("Inter");
+    expect(String(urduStyle?.fontFamily ?? "")).toContain("Gulzar");
+    expect(String(urduStyle?.latinFontFamily ?? "")).not.toContain("Inter");
+    const ui = resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl");
+    expect(ui.mixed.fontFamily).toBe(false);
+    expect(ui.fontFamily).toBe("Gulzar");
+    expect(ui.mixed.latinFontFamily).toBe(false);
+    expect(ui.latinFontFamily).toContain("Inter");
+    render(<DocumentToolbar editor={editor} dir="rtl" setDir={() => {}} isUr={false} />);
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Gulzar");
+    expect((document.querySelector("[data-studio-latin-font]") as HTMLSelectElement).value).toBe("Inter");
+  });
+
+  it("does not store the Latin face on Urdu typed after an English font", () => {
+    const editor = make("<p></p>");
+    editor.commands.focus("end");
+    applyEnglishFont(editor, "Inter");
+    editor.view.dispatch(editor.state.tr.insertText("اردو"));
+    editor.state.doc.descendants((node) => {
+      if (!node.isText || !/\p{Script=Arabic}/u.test(node.text ?? "")) return;
+      const attrs = node.marks.find((mark) => mark.type.name === "textStyle")?.attrs ?? {};
+      expect(String(attrs.latinFontFamily ?? "")).not.toContain("Inter");
+      expect(String(attrs.fontFamily ?? "")).not.toMatch(/Inter|Arial Unicode/i);
+    });
+    editor.view.dispatch(editor.state.tr.insertText("A"));
+    let latin = false;
+    editor.state.doc.descendants((node) => {
+      if (!node.isText || !node.text?.includes("A")) return;
+      latin = true;
+      expect(String(node.marks.find((mark) => mark.type.name === "textStyle")?.attrs?.latinFontFamily ?? "")).toContain("Inter");
+    });
+    expect(latin).toBe(true);
+  });
+
+  it("saves tracking and scale, reloads them, and undoes them", () => {
+    const editor = make("<p>Hello اردو</p>");
+    editor.commands.selectAll();
+    applyTracking(editor, 12);
+    applyScale(editor, 80);
+    const again = new Editor({ extensions: [...createDocumentStudioExtensions(), LatinScriptRuns], content: editor.getJSON() });
+    editors.push(again);
+    again.commands.selectAll();
+    expect(again.getAttributes("textStyle").trackingPercent).toBe(12);
+    expect(again.getAttributes("textStyle").scalePercent).toBe(80);
+    undo(editor);
+    undo(editor);
+    editor.commands.selectAll();
+    expect(editor.getAttributes("textStyle").trackingPercent ?? null).toBeNull();
+    expect(editor.getAttributes("textStyle").scalePercent ?? null).toBeNull();
+    render(<DocumentToolbar editor={editor} dir="rtl" setDir={() => {}} isUr={false} />);
+    const tracking = document.querySelector("[data-studio-tracking]") as HTMLInputElement;
+    const scale = document.querySelector("[data-studio-scale]") as HTMLInputElement;
+    expect(tracking.disabled).toBe(false);
+    expect(scale.disabled).toBe(false);
+    expect((document.querySelector("[aria-label='K-None']") as HTMLSelectElement).disabled).toBe(false);
+    fireEvent.change(tracking, { target: { value: "abc" } });
+    fireEvent.keyDown(tracking, { key: "Enter" });
+    expect(document.querySelector("[data-studio-field-error='tracking']")?.textContent).toBe("Value not typed properly.");
+    editor.commands.selectAll();
+    fireEvent.change(tracking, { target: { value: "15" } });
+    fireEvent.keyDown(tracking, { key: "Enter" });
+    expect(tracking.value).toBe("15%");
+    expect(editor.getAttributes("textStyle").trackingPercent).toBe(15);
+  });
+
   it("saves the English font on selected Latin and not on Urdu", () => {
     const editor = make("<p>اردو Hello عبارت</p>");
     editor.commands.selectAll();
     applyEnglishFont(editor, "Inter");
-    const parts = (editor.getJSON().content?.[0]?.content ?? []) as { text?: string; marks?: { type?: string; attrs?: { fontFamily?: string } }[] }[];
+    const parts = (editor.getJSON().content?.[0]?.content ?? []) as { text?: string; marks?: { type?: string; attrs?: { fontFamily?: string; latinFontFamily?: string } }[] }[];
     const hello = parts.find((node) => node.text?.includes("Hello"));
     const urdu = parts.find((node) => node.text && /\p{Script=Arabic}/u.test(node.text));
-    expect(String(hello?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily ?? "")).toContain("Inter");
+    expect(String(hello?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.latinFontFamily ?? "")).toContain("Inter");
     expect(String(urdu?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily ?? "")).not.toContain("Inter");
+    expect(String(urdu?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.latinFontFamily ?? "")).not.toContain("Inter");
     editor.commands.focus("end");
     applyEnglishFont(editor, "Inter");
     const stored = editor.state.storedMarks ?? editor.state.selection.$from.marks();
-    expect(stored.some((mark) => String(mark.attrs.fontFamily ?? "").includes("Inter"))).toBe(true);
+    expect(stored.some((mark) => String(mark.attrs.latinFontFamily ?? "").includes("Inter"))).toBe(true);
   });
 
   it("lists the InPage colours and text styles in order", () => {
@@ -108,9 +191,11 @@ describe("InPage toolbar values", () => {
     expect(kashida.closest("[data-studio-toolbar-row='document']")).toBe(documentRow);
     expect(style.parentElement?.nextElementSibling?.contains(kashida)).toBe(true);
     expect(documentRow.lastElementChild?.contains(kashida)).toBe(true);
-    const colour = document.querySelector("[data-studio-colour]")!;
-    expect(colour.nextElementSibling?.getAttribute("aria-label")).toBe("Outline");
+    const colour = document.querySelector("[data-studio-geom='colour']")!;
+    expect(colour.nextElementSibling?.getAttribute("data-studio-geom")).toBe("scale-icon");
     expect(format.querySelector("[aria-label='Outline']")).toBeNull();
+    expect(document.querySelector("[data-studio-toolbar] [data-studio-highlight-button]")).toBeNull();
+    expect(document.querySelector("[aria-label='Shade']")).toBeTruthy();
     expect(document.querySelector("[aria-label='Text direction']")).toBeNull();
     expect(document.querySelector("[aria-label='Automatic paragraph direction']")).toBeNull();
   });

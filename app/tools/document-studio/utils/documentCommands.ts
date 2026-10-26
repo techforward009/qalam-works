@@ -184,54 +184,139 @@ export function applyCustomParagraphSpacing(editor: Editor, attrs: ParagraphSpac
   applyParagraphAttrs(editor, attrs);
 }
 
-export function applyFontFamily(editor: Editor, family: string): void {
-  if (!family) {
-    editor.chain().focus().unsetFontFamily().run();
-  } else {
-    editor.chain().focus().setFontFamily(quoteEditorFontFamily(family)).run();
-  }
+const LATIN_FACE = /^(inter|arial|arial unicode ms|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
+
+function bareFace(value: unknown): string {
+  return String(value ?? "").replace(/["']/g, "").split(",")[0].trim();
 }
 
-const LATIN_FONT_RUN = /\p{Script=Latin}[\p{Script=Latin}\p{M}\p{N}\s.,:;!?'"()/_+%=@#&-]*/gu;
+function isLatinFace(value: unknown): boolean {
+  return LATIN_FACE.test(bareFace(value));
+}
 
-/** English font box: mark selected Latin, or the next characters at a caret. Urdu is left alone. */
-export function applyEnglishFont(editor: Editor, family: string): void {
-  const clear = family === "Arial Unicode MS";
-  const quoted = clear ? "" : quoteEditorFontFamily(family);
+function runStyleLive(attrs: Record<string, unknown>): boolean {
+  return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
+}
+
+/** Empty selection: change stored textStyle without dropping the other script's face. */
+function patchStoredMark(editor: Editor, update: (attrs: Record<string, unknown>) => void): void {
+  editor.chain().focus().command(({ tr, state }) => {
+    const type = state.schema.marks.textStyle;
+    if (!type) return false;
+    const marks = state.storedMarks ?? state.selection.$from.marks();
+    const current = marks.find((mark) => mark.type === type);
+    const attrs: Record<string, unknown> = { ...(current?.attrs ?? {}) };
+    update(attrs);
+    tr.removeStoredMark(type);
+    if (runStyleLive(attrs)) tr.addStoredMark(type.create(attrs));
+    return true;
+  }).run();
+}
+
+function patchTextRanges(
+  editor: Editor,
+  pattern: RegExp,
+  update: (attrs: Record<string, unknown>) => void,
+): void {
   const { state } = editor;
   const type = state.schema.marks.textStyle;
   if (!type) return;
-  const { empty, from, to } = state.selection;
-  if (empty) {
-    const chain = editor.chain().focus();
-    if (clear || !quoted) chain.unsetFontFamily().run();
-    else chain.setFontFamily(quoted).run();
-    return;
-  }
-  let tr = state.tr;
+  const { from, to } = state.selection;
+  const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
   state.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isText || !node.text) return;
     const localFrom = Math.max(0, from - pos);
     const localTo = Math.min(node.text.length, to - pos);
     const slice = node.text.slice(localFrom, localTo);
-    for (const match of slice.matchAll(LATIN_FONT_RUN)) {
+    const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
+    for (const match of slice.matchAll(pattern)) {
       const start = pos + localFrom + (match.index ?? 0);
       const end = start + match[0].length;
       if (end <= start) continue;
-      const current = node.marks.find((mark) => mark.type === type);
-      if (clear || !quoted) {
-        if (!current?.attrs?.fontFamily) continue;
-        const attrs = { ...current.attrs, fontFamily: null };
-        tr = tr.removeMark(start, end, type);
-        if (Object.values(attrs).some((value) => value != null && value !== false && value !== "")) {
-          tr = tr.addMark(start, end, type.create(attrs));
-        }
-      } else {
-        tr = tr.addMark(start, end, type.create({ ...(current?.attrs ?? {}), fontFamily: quoted }));
-      }
+      const attrs = { ...base };
+      update(attrs);
+      jobs.push({ from: start, to: end, attrs });
     }
   });
-  if (tr.docChanged) editor.view.dispatch(tr);
+  if (jobs.length === 0) {
+    editor.chain().focus().run();
+    return;
+  }
+  jobs.sort((a, b) => b.from - a.from);
+  let tr = state.tr;
+  for (const job of jobs) {
+    tr = tr.removeMark(job.from, job.to, type);
+    if (runStyleLive(job.attrs)) tr = tr.addMark(job.from, job.to, type.create(job.attrs));
+  }
+  editor.view.dispatch(tr);
+  editor.chain().focus().run();
+}
+
+/** Urdu face only. Latin runs keep latinFontFamily (and a legacy Latin fontFamily). */
+export function applyFontFamily(editor: Editor, family: string): void {
+  const quoted = family ? quoteEditorFontFamily(family) : null;
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, (attrs) => { attrs.fontFamily = quoted; });
+    return;
+  }
+  patchTextRanges(editor, /\p{Script=Arabic}+/gu, (attrs) => { attrs.fontFamily = quoted; });
+}
+
+/** Latin face only. Never written onto Urdu, and never clears the Urdu face. */
+export function applyEnglishFont(editor: Editor, family: string): void {
+  const clear = !family || family === "Arial Unicode MS";
+  const quoted = clear ? null : quoteEditorFontFamily(family);
+  const apply = (attrs: Record<string, unknown>) => {
+    attrs.latinFontFamily = quoted;
+    if (clear && isLatinFace(attrs.fontFamily)) attrs.fontFamily = null;
+  };
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, apply);
+    return;
+  }
+  patchTextRanges(editor, /\p{Script=Latin}[\p{Script=Latin}\p{M}\p{N}\s.,:;!?'"()/_+%=@#&-]*/gu, apply);
+}
+
+function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", value: number): void {
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    return;
+  }
+  const { state } = editor;
+  const type = state.schema.marks.textStyle;
+  if (!type) return;
+  const { from, to } = state.selection;
+  const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText || !node.text) return;
+    const start = Math.max(pos, from);
+    const end = Math.min(pos + node.text.length, to);
+    if (end <= start) return;
+    const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value };
+    jobs.push({ from: start, to: end, attrs });
+  });
+  if (jobs.length === 0) {
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    return;
+  }
+  jobs.sort((a, b) => b.from - a.from);
+  let tr = state.tr;
+  for (const job of jobs) {
+    tr = tr.removeMark(job.from, job.to, type);
+    if (runStyleLive(job.attrs)) tr = tr.addMark(job.from, job.to, type.create(job.attrs));
+  }
+  editor.view.dispatch(tr);
+  editor.chain().focus().run();
+}
+
+/** Letter spacing in percent of an em. Stored on the selection; painted on Latin only. */
+export function applyTracking(editor: Editor, percent: number): void {
+  applyMetric(editor, "trackingPercent", percent);
+}
+
+/** Horizontal scale in percent. Stored on the selection; painted on Latin only. */
+export function applyScale(editor: Editor, percent: number): void {
+  applyMetric(editor, "scalePercent", percent);
 }
 
 export function activeToolbarFontFamily(editor: Editor): string {
