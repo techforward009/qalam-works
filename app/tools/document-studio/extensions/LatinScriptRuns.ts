@@ -5,26 +5,100 @@ import type { Node } from "@tiptap/pm/model";
 
 const key = new PluginKey<DecorationSet>("studioLatinScriptRuns");
 const stripKey = "studioLatinFaceStrip";
-const LATIN = /^(inter|arial|arial unicode ms|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
+const LATIN = /^(inter|arial|arial unicode ms|times|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
 
-function bare(family: unknown): string {
+export function bareFamily(family: unknown): string {
   return String(family ?? "").replace(/["']/g, "").split(",")[0].trim();
 }
 
-function latinFamily(family: unknown): boolean {
-  return LATIN.test(bare(family));
+export function isLatinFamilyName(family: unknown): boolean {
+  return LATIN.test(bareFamily(family));
 }
 
-function latinVisual(attrs: Record<string, unknown>): string {
-  const face = bare(attrs.latinFontFamily) || (latinFamily(attrs.fontFamily) ? bare(attrs.fontFamily) : "");
+const LATIN_CONTINUE = /[\p{N}\s.,:;!?'"()/_+%=@#&-]/u;
+
+type Slot = "ar" | "lat" | "mark" | "zw" | "other";
+
+function slotOf(ch: string): Slot {
+  if (ch === "\u200C" || ch === "\u200D") return "zw";
+  // Harakat, tatweel, "،" and "؟" are Script_Extensions=Arabic even when Script is Inherited or Common.
+  if (/\p{Script_Extensions=Arabic}/u.test(ch)) return "ar";
+  if (/\p{M}/u.test(ch)) return "mark";
+  if (/\p{Script=Latin}/u.test(ch)) return "lat";
+  return "other";
+}
+
+/** One classification for Arabic and Latin, so a combining mark never changes script or splits a word. */
+function classify(text: string): Slot[] {
+  const kinds: Slot[] = new Array(text.length);
+  for (let i = 0; i < text.length; i += 1) kinds[i] = slotOf(text[i]);
+  for (let i = 0; i < kinds.length; i += 1) {
+    if (kinds[i] !== "mark") continue;
+    let j = i - 1;
+    while (j >= 0 && (kinds[j] === "mark" || kinds[j] === "zw")) j -= 1;
+    if (j >= 0 && (kinds[j] === "ar" || kinds[j] === "lat")) kinds[i] = kinds[j];
+  }
+  for (let i = 0; i < kinds.length; i += 1) {
+    if (kinds[i] !== "zw") continue;
+    const left = i > 0 ? kinds[i - 1] : "other";
+    const right = i + 1 < kinds.length ? kinds[i + 1] : "other";
+    if (left === "ar" || right === "ar") kinds[i] = "ar";
+    else if (left === "lat" || right === "lat") kinds[i] = "lat";
+  }
+  // A Latin phrase keeps its spaces, digits and ordinary punctuation, matching the
+  // previous run, but it stops at Arabic letters, harakat, tatweel, "،" and "؟".
+  for (let i = 0; i < kinds.length; i += 1) {
+    if (kinds[i] !== "lat") continue;
+    let j = i + 1;
+    while (j < kinds.length && kinds[j] === "other" && LATIN_CONTINUE.test(text[j])) {
+      kinds[j] = "lat";
+      j += 1;
+    }
+  }
+  return kinds;
+}
+
+export function scriptRanges(text: string, script: "arabic" | "latin"): Array<{ start: number; end: number }> {
+  const want = script === "arabic" ? "ar" : "lat";
+  const kinds = classify(text);
+  const ranges: Array<{ start: number; end: number }> = [];
+  let start = -1;
+  for (let i = 0; i < kinds.length; i += 1) {
+    if (kinds[i] === want) {
+      if (start < 0) start = i;
+    } else if (start >= 0) {
+      ranges.push({ start, end: i });
+      start = -1;
+    }
+  }
+  if (start >= 0) ranges.push({ start, end: kinds.length });
+  return ranges;
+}
+
+export function hasScript(text: string, script: "arabic" | "latin"): boolean {
+  return scriptRanges(text, script).length > 0;
+}
+
+/**
+ * scaleX is ignored on a plain inline span. inline-block makes it paint, and the
+ * inline-end margin pulls the layout box toward the visual width so neighbours
+ * do not sit under the glyphs. The caret still follows the unscaled advances
+ * inside the transformed box.
+ */
+export function latinScaleCss(scale: number, sample: string): string {
+  const factor = scale / 100;
+  const em = Math.max(sample.length, 1) * 0.5;
+  const margin = (factor - 1) * em;
+  return `display:inline-block;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline;margin-inline-end:${margin.toFixed(3)}em`;
+}
+
+function latinVisual(attrs: Record<string, unknown>, sample: string): string {
+  const face = bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : "");
   const parts = [face ? `font-family:"${face}", Arial, sans-serif` : "font-family:var(--qalam-ltr-font, Arial, sans-serif)"];
-  // Letter-spacing and scaleX break Urdu joining and the caret, so they paint on Latin runs only.
   const tracking = attrs.trackingPercent;
   const scale = attrs.scalePercent;
   if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em`);
-  if (typeof scale === "number" && scale !== 100) {
-    parts.push(`transform:scaleX(${scale / 100})`, "transform-origin:left center");
-  }
+  if (typeof scale === "number" && scale !== 100) parts.push(latinScaleCss(scale, sample));
   return parts.join(";");
 }
 
@@ -32,7 +106,6 @@ function liveAttrs(attrs: Record<string, unknown>): boolean {
   return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
 }
 
-// View decorations keep mixed-script font selection out of the saved document.
 function decorations(doc: Node) {
   const spans: Decoration[] = [];
   doc.descendants((block, pos) => {
@@ -40,28 +113,21 @@ function decorations(doc: Node) {
     block.descendants((node, offset) => {
       if (!node.isText || !node.text) return;
       const attrs = (node.marks.find((mark) => mark.type.name === "textStyle")?.attrs ?? {}) as Record<string, unknown>;
-      const explicitLatin = bare(attrs.latinFontFamily) || (latinFamily(attrs.fontFamily) ? bare(attrs.fontFamily) : "");
-      const arabicNeedsFace = latinFamily(attrs.fontFamily);
-      for (const match of node.text.matchAll(/\p{Script=Latin}[\p{Script=Latin}\p{M}\p{N}\s.,:;!?'"()/_+%=@#&-]*/gu)) {
-        const start = pos + 1 + offset + (match.index ?? 0);
-        const style = latinVisual(attrs);
-        if (explicitLatin) {
-          spans.push(Decoration.inline(start, start + match[0].length, {
-            "data-studio-latin-run": "true",
-            style,
-          }));
-        } else {
-          spans.push(Decoration.inline(start, start + match[0].length, {
-            "data-studio-latin-run": "true",
-            "data-studio-latin-default": "true",
-            style,
-          }));
-        }
+      const explicitLatin = bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : "");
+      const arabicNeedsFace = isLatinFamilyName(attrs.fontFamily);
+      for (const range of scriptRanges(node.text, "latin")) {
+        const start = pos + 1 + offset + range.start;
+        const sample = node.text.slice(range.start, range.end);
+        const style = latinVisual(attrs, sample);
+        spans.push(Decoration.inline(start, start + sample.length, explicitLatin
+          ? { "data-studio-latin-run": "true", style }
+          : { "data-studio-latin-run": "true", "data-studio-latin-default": "true", style }));
       }
       if (!arabicNeedsFace) return;
-      for (const match of node.text.matchAll(/\p{Script=Arabic}+/gu)) {
-        const start = pos + 1 + offset + (match.index ?? 0);
-        spans.push(Decoration.inline(start, start + match[0].length, {
+      for (const range of scriptRanges(node.text, "arabic")) {
+        const start = pos + 1 + offset + range.start;
+        const sample = node.text.slice(range.start, range.end);
+        spans.push(Decoration.inline(start, start + sample.length, {
           "data-studio-arabic-run": "true",
           style: "font-family:var(--qalam-rtl-font, \"Mehr Nastaliq Web\")",
         }));
@@ -120,7 +186,6 @@ export const LatinScriptRuns = Extension.create({
         apply: (transaction, previous) => transaction.docChanged ? decorations(transaction.doc) : previous,
       },
       props: { decorations: (state) => key.getState(state) },
-      // A stored Latin face applies to the next character of either script. Take it back off Urdu.
       appendTransaction(transactions, _old, state) {
         if (!transactions.some((tr) => tr.docChanged)) return null;
         if (transactions.some((tr) => tr.getMeta(stripKey))) return null;
@@ -146,20 +211,19 @@ export const LatinScriptRuns = Extension.create({
           const mark = node.marks.find((item) => item.type === type);
           if (!mark) return;
           const attrs = mark.attrs as Record<string, unknown>;
-          if (!attrs.latinFontFamily && !latinFamily(attrs.fontFamily)) return;
-          for (const match of node.text.matchAll(/\p{Script=Arabic}+/gu)) {
-            const start = pos + (match.index ?? 0);
-            const end = start + match[0].length;
+          if (!attrs.latinFontFamily && !isLatinFamilyName(attrs.fontFamily)) return;
+          for (const range of scriptRanges(node.text, "arabic")) {
+            const start = pos + range.start;
+            const end = pos + range.end;
             if (end <= Math.max(0, min) || start >= max) continue;
             const next: Record<string, unknown> = { ...attrs, latinFontFamily: null };
-            if (latinFamily(next.fontFamily)) next.fontFamily = null;
+            if (isLatinFamilyName(next.fontFamily)) next.fontFamily = null;
             jobs.push({ from: start, to: end, attrs: next });
           }
         });
         if (jobs.length === 0) return null;
         jobs.sort((a, b) => b.from - a.from);
         let tr = state.tr;
-        // Keep the Latin face available for the next Latin character after it is removed from Urdu.
         const inherit = state.storedMarks ?? (state.selection.empty ? state.selection.$from.marks() : null);
         for (const job of jobs) {
           tr = tr.removeMark(job.from, job.to, type);

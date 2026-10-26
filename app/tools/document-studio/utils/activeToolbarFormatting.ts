@@ -14,6 +14,7 @@ import {
   type DocumentStudioSettings,
 } from "./documentSettings";
 import { getFontById, normalizeEditorFontFamily } from "./fontRegistry";
+import { isLatinFamilyName, hasScript } from "../extensions/LatinScriptRuns";
 import { normalizeSafeHex } from "./studioColors";
 
 export const MIXED_TOOLBAR_VALUE = "__mixed__";
@@ -117,8 +118,7 @@ function blockStyleAt(editor: Editor, pos: number): BlockStyleId {
 }
 
 function isLatinToolbarFamily(family: string): boolean {
-  const name = family.replace(/["']/g, "").split(",")[0].trim().toLowerCase();
-  return /^(inter|arial|arial unicode ms|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/.test(name);
+  return isLatinFamilyName(family);
 }
 
 function latinFaceFromAttrs(attrs: Record<string, unknown> | null | undefined): string {
@@ -217,8 +217,8 @@ export function resolveActiveToolbarFormatting(
       const sliceFrom = Math.max(0, from - pos);
       const sliceTo = Math.min(node.text?.length ?? 0, to - pos);
       const slice = node.text?.slice(sliceFrom, sliceTo) ?? "";
-      const hasArabic = /\p{Script=Arabic}/u.test(slice);
-      const hasLatin = /\p{Script=Latin}/u.test(slice);
+      const hasArabic = hasScript(slice, "arabic");
+      const hasLatin = hasScript(slice, "latin");
       const dir = blockDirAt(editor, pos, globalDir);
       const localStyle = blockStyleAt(editor, pos);
       if (hasArabic) {

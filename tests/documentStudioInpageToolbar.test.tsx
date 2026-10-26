@@ -5,9 +5,9 @@ import { cleanup, fireEvent, render } from "@testing-library/react";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
 import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
-import { LatinScriptRuns } from "../app/tools/document-studio/extensions/LatinScriptRuns";
+import { LatinScriptRuns, hasScript, latinScaleCss, scriptRanges } from "../app/tools/document-studio/extensions/LatinScriptRuns";
 import { applyEnglishFont, applyFontFamily, applyLineGap, applyLineHeight, applyParagraphDirection, applyScale, applyTextEffect, applyTracking, setAlign, toggleTextOutline, undo } from "../app/tools/document-studio/utils/documentCommands";
-import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
+import { buildPdfHtml, requiredPdfEmbedFonts } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { blockLeadingPt } from "../app/tools/document-studio/utils/autoLeading";
 import { parseLeading } from "../app/tools/document-studio/utils/leading";
@@ -289,6 +289,151 @@ describe("InPage toolbar values", () => {
     if (previous) Object.defineProperty(document, "fullscreenElement", previous);
     else delete (document as { fullscreenElement?: Element }).fullscreenElement;
     shell.remove();
+  });
+
+  it("keeps zer, comma, question mark and tatweel on the Urdu face", () => {
+    const editor = make("<p>کِتاب، کیا؟ کتـــاب Hello</p>");
+    editor.commands.selectAll();
+    applyFontFamily(editor, "Gulzar");
+    applyEnglishFont(editor, "Inter");
+    const texts: string[] = [];
+    editor.state.doc.descendants((node) => {
+      if (!node.isText || !node.text) return;
+      texts.push(node.text);
+      const attrs = node.marks.find((mark) => mark.type.name === "textStyle")?.attrs ?? {};
+      if (hasScript(node.text, "arabic")) {
+        expect(node.text.includes("\u0650") || node.text.includes("\u060C") || node.text.includes("\u061F") || node.text.includes("\u0640") || /\p{Script_Extensions=Arabic}/u.test(node.text)).toBe(true);
+        expect(String(attrs.fontFamily ?? "")).toContain("Gulzar");
+        expect(String(attrs.latinFontFamily ?? "")).not.toContain("Inter");
+      }
+      if (hasScript(node.text, "latin") && !hasScript(node.text, "arabic")) {
+        expect(String(attrs.latinFontFamily ?? "")).toContain("Inter");
+        expect(String(attrs.fontFamily ?? "")).not.toContain("Gulzar");
+      }
+    });
+    expect(texts.some((text) => text.includes("کِتاب،"))).toBe(true);
+    expect(texts.some((text) => text.includes("کیا؟"))).toBe(true);
+    expect(texts.some((text) => text.includes("\u0640"))).toBe(true);
+    const ui = resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl");
+    expect(ui.fontFamily).toBe("Gulzar");
+    expect(ui.mixed.latinFontFamily).toBe(false);
+    expect(ui.latinFontFamily).toContain("Inter");
+  });
+
+  it("keeps a Latin phrase with spaces and digits in one run", () => {
+    const text = "یہ اردو عبارت ہے Hello Qalam 2026 اور پھر اردو۔";
+    const ranges = scriptRanges(text, "latin");
+    expect(ranges).toHaveLength(1);
+    expect(text.slice(ranges[0].start, ranges[0].end)).toBe("Hello Qalam 2026 ");
+    const arabic = scriptRanges("کِتاب، کیا؟ کتـــاب", "arabic").map((range) => "کِتاب، کیا؟ کتـــاب".slice(range.start, range.end));
+    expect(arabic).toEqual(["کِتاب،", "کیا؟", "کتـــاب"]);
+  });
+
+  it("round-trips Urdu, English, tracking and scale through HTML", () => {
+    const editor = make("<p>کِتاب Hello</p>");
+    editor.commands.selectAll();
+    applyFontFamily(editor, "Gulzar");
+    applyEnglishFont(editor, "Inter");
+    applyTracking(editor, 15);
+    applyScale(editor, 80);
+    const html = editor.getHTML();
+    expect(html).toContain("data-latin-font");
+    expect(html).toContain("data-tracking=\"15\"");
+    expect(html).toContain("data-scale=\"80\"");
+    const fresh = new Editor({ extensions: [...createDocumentStudioExtensions(), LatinScriptRuns], content: html });
+    editors.push(fresh);
+    let sawLatin = false;
+    let sawArabic = false;
+    fresh.state.doc.descendants((node) => {
+      if (!node.isText || !node.text) return;
+      const attrs = node.marks.find((mark) => mark.type.name === "textStyle")?.attrs ?? {};
+      if (node.text.includes("Hello")) {
+        sawLatin = true;
+        expect(String(attrs.latinFontFamily ?? "")).toContain("Inter");
+        expect(attrs.trackingPercent).toBe(15);
+        expect(attrs.scalePercent).toBe(80);
+      }
+      if (hasScript(node.text, "arabic")) {
+        sawArabic = true;
+        expect(String(attrs.fontFamily ?? "")).toContain("Gulzar");
+        expect(attrs.trackingPercent).toBe(15);
+        expect(attrs.scalePercent).toBe(80);
+      }
+    });
+    expect(sawLatin && sawArabic).toBe(true);
+  });
+
+  it("exports the Latin face, tracking and scale, and leaves Urdu unscaled", () => {
+    const editor = make("<p>Hello کِتاب</p>");
+    editor.commands.selectAll();
+    applyFontFamily(editor, "Gulzar");
+    applyEnglishFont(editor, "Inter");
+    applyTracking(editor, 20);
+    applyScale(editor, 50);
+    const doc = editor.getJSON();
+    const embedded = requiredPdfEmbedFonts(doc, "rtl", defaultDocumentSettings().typography).map((font) => font.pdf.familyName ?? font.editorFamily);
+    expect(embedded).toContain("Inter");
+    expect(embedded).toContain("Gulzar");
+    const face = (family: string) => ({ familyName: family, regularSources: ["data:font/woff2,abc"], complete: true, declaredRegular: 1, declaredBold: 0, loadedRegular: 1, loadedBold: 0 });
+    const pdf = buildPdfHtml(doc, "rtl", { faces: [face("Inter"), face("Gulzar"), face("Noto Nastaliq Urdu")] }, defaultDocumentSettings().typography);
+    expect(pdf.fontsUsed).toContain("Inter");
+    expect(pdf.fontsUsed).toContain("Gulzar");
+    expect(pdf.html).toContain("letter-spacing:0.2em");
+    expect(pdf.html).toContain("scaleX(0.5)");
+    const spans = [...pdf.html.matchAll(/<span\b[^>]*>[\s\S]*?<\/span>/g)].map((match) => match[0]);
+    expect(spans.find((span) => span.includes("Hello"))).toContain("scaleX(0.5)");
+    expect(spans.find((span) => span.includes("data-pdf-urdu")) ?? "").not.toContain("scaleX");
+    applyScale(editor, 25);
+    expect(editor.view.dom.querySelector("[data-studio-latin-run]")?.getAttribute("style")).toContain("scaleX(0.25)");
+    applyScale(editor, 400);
+    expect(editor.view.dom.querySelector("[data-studio-latin-run]")?.getAttribute("style")).toContain("scaleX(4)");
+    applyScale(editor, 100);
+    expect(editor.view.dom.querySelector("[data-studio-latin-run]")?.getAttribute("style") ?? "").not.toContain("scaleX");
+    expect(latinScaleCss(25, "Hello")).not.toBe(latinScaleCss(400, "Hello"));
+  });
+
+  it("shows Times for a legacy Latin run", () => {
+    const editor = make("<p><span style=\"font-family:Times\">Hello</span> اردو</p>");
+    editor.commands.selectAll();
+    const ui = resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl");
+    expect(ui.latinFontFamily).toBe("Times");
+    expect(ui.mixed.fontFamily).toBe(false);
+    render(<DocumentToolbar editor={editor} dir="rtl" setDir={() => {}} isUr={false} />);
+    expect((document.querySelector("[data-studio-latin-font]") as HTMLSelectElement).value).toBe("Times");
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).not.toBe("Times");
+  });
+
+  it("tabs the ribbon in order and keeps hidden tools clickable", () => {
+    const editor = make("<p>Hello</p>");
+    render(<DocumentToolbar editor={editor} dir="rtl" setDir={() => {}} isUr={false} />);
+    const root = document.querySelector("[data-studio-toolbar]")!;
+    const labels = [...root.querySelectorAll<HTMLElement>("button, input, select")].filter((el) => el.tabIndex >= 0).map((el) => el.getAttribute("aria-label"));
+    expect(labels).toEqual([
+      "Style", "Line spacing options", "Line spacing", "English font", "Bold", "Italic", "Size",
+      "Tracking", "Tracking", "Tabs & Indent", "Language",
+      "Align left", "Align right", "Align center", "Justify", "Full justify",
+      "Interline gap", "Interline gap", "Urdu font", "Left to right", "Right to left", "Colour",
+      "Horizontal scale", "Horizontal scale", "Outline", "Text style", "K-None",
+    ]);
+    expect((document.querySelector("[aria-label='Size presets']") as HTMLElement).tabIndex).toBe(-1);
+    for (const label of ["Text color", "Shade", "Dictate"]) {
+      const control = document.querySelector(`[aria-label='${label}']`) as HTMLElement;
+      expect(control.tabIndex).toBe(-1);
+      expect(control.getAttribute("aria-hidden")).toBe("true");
+      expect(control.closest("[aria-hidden='true']")).toBeTruthy();
+    }
+    fireEvent.click(document.querySelector("[aria-label='Shade']")!);
+    expect(document.querySelector("[data-studio-highlight-palette]")).toBeTruthy();
+    const leading = document.querySelector("[data-studio-leading]") as HTMLInputElement;
+    const english = document.querySelector("[data-studio-latin-font]") as HTMLSelectElement;
+    leading.focus();
+    fireEvent.blur(leading, { relatedTarget: english });
+    expect(document.activeElement).toBe(english);
+    const gap = document.querySelector("[data-studio-line-gap]") as HTMLInputElement;
+    const urdu = document.querySelector("[data-studio-font-family]") as HTMLSelectElement;
+    gap.focus();
+    fireEvent.blur(gap, { relatedTarget: urdu });
+    expect(document.activeElement).toBe(urdu);
   });
 });
 

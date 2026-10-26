@@ -18,6 +18,7 @@ import { detectBlockDirection } from "./plainTextToDocNode";
 import { normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
 import type { TextEffect } from "./inpageToolbar";
+import { isLatinFamilyName, scriptRanges } from "../extensions/LatinScriptRuns";
 import {
   defaultDocumentSettings,
   resolveAddSpaceAfterPt,
@@ -184,14 +185,8 @@ export function applyCustomParagraphSpacing(editor: Editor, attrs: ParagraphSpac
   applyParagraphAttrs(editor, attrs);
 }
 
-const LATIN_FACE = /^(inter|arial|arial unicode ms|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
-
-function bareFace(value: unknown): string {
-  return String(value ?? "").replace(/["']/g, "").split(",")[0].trim();
-}
-
 function isLatinFace(value: unknown): boolean {
-  return LATIN_FACE.test(bareFace(value));
+  return isLatinFamilyName(value);
 }
 
 function runStyleLive(attrs: Record<string, unknown>): boolean {
@@ -215,7 +210,7 @@ function patchStoredMark(editor: Editor, update: (attrs: Record<string, unknown>
 
 function patchTextRanges(
   editor: Editor,
-  pattern: RegExp,
+  script: "arabic" | "latin",
   update: (attrs: Record<string, unknown>) => void,
 ): void {
   const { state } = editor;
@@ -229,9 +224,9 @@ function patchTextRanges(
     const localTo = Math.min(node.text.length, to - pos);
     const slice = node.text.slice(localFrom, localTo);
     const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
-    for (const match of slice.matchAll(pattern)) {
-      const start = pos + localFrom + (match.index ?? 0);
-      const end = start + match[0].length;
+    for (const range of scriptRanges(slice, script)) {
+      const start = pos + localFrom + range.start;
+      const end = pos + localFrom + range.end;
       if (end <= start) continue;
       const attrs = { ...base };
       update(attrs);
@@ -259,7 +254,7 @@ export function applyFontFamily(editor: Editor, family: string): void {
     patchStoredMark(editor, (attrs) => { attrs.fontFamily = quoted; });
     return;
   }
-  patchTextRanges(editor, /\p{Script=Arabic}+/gu, (attrs) => { attrs.fontFamily = quoted; });
+  patchTextRanges(editor, "arabic", (attrs) => { attrs.fontFamily = quoted; });
 }
 
 /** Latin face only. Never written onto Urdu, and never clears the Urdu face. */
@@ -274,7 +269,7 @@ export function applyEnglishFont(editor: Editor, family: string): void {
     patchStoredMark(editor, apply);
     return;
   }
-  patchTextRanges(editor, /\p{Script=Latin}[\p{Script=Latin}\p{M}\p{N}\s.,:;!?'"()/_+%=@#&-]*/gu, apply);
+  patchTextRanges(editor, "latin", apply);
 }
 
 function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", value: number): void {

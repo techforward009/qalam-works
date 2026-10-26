@@ -11,5 +11,5 @@ export function LeadingInput({ value, onChange, ref: forwarded, ...props }: Omit
     setText(label);
   }, [label]);
   const commit = (raw: string) => { const next = parseLeading(raw); if (next) { setText(formatLeading(next)); onChange(next); } else setText(label); };
-  return <input {...props} ref={(node) => { inputRef.current = node; if (typeof forwarded === "function") forwarded(node); else if (forwarded) forwarded.current = node; }} value={text} onChange={event => setText(event.target.value)} onBlur={event => commit(event.currentTarget.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") setText(label); }} />;
+  return <input {...props} ref={(node) => { inputRef.current = node; if (typeof forwarded === "function") forwarded(node); else if (forwarded) forwarded.current = node; }} value={text} onChange={event => setText(event.target.value)} onBlur={event => { commit(event.currentTarget.value); const next = event.relatedTarget; if (next instanceof HTMLElement && event.currentTarget.closest("[data-studio-toolbar]")?.contains(next)) next.focus(); }} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") setText(label); }} />;
 }

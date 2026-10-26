@@ -22,6 +22,7 @@ import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
+import { bareFamily, hasScript, isLatinFamilyName, latinScaleCss } from "../extensions/LatinScriptRuns";
 
 export interface PdfFontFace {
   familyName: string;
@@ -172,6 +173,32 @@ function noteEffective(
   }
 }
 
+function runMetrics(attrs: Record<string, unknown> | undefined, text: string, latin: boolean): string {
+  if (!latin || !attrs) return "";
+  const parts: string[] = [];
+  const tracking = attrs.trackingPercent;
+  const scale = attrs.scalePercent;
+  if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em;`);
+  if (typeof scale === "number" && scale !== 100) parts.push(`${latinScaleCss(scale, text)};`);
+  return parts.join("");
+}
+
+function familyForPiece(
+  attrs: Record<string, unknown> | undefined,
+  text: string,
+): { family: string | null; latin: boolean } {
+  const arabic = hasScript(text, "arabic");
+  const latin = hasScript(text, "latin");
+  const explicit = typeof attrs?.fontFamily === "string" && attrs.fontFamily.trim().length > 0 ? attrs.fontFamily : null;
+  const latinFace = bareFamily(attrs?.latinFontFamily);
+  if (latin && !arabic) {
+    const chosen = latinFace || (isLatinFamilyName(explicit) ? bareFamily(explicit) : "");
+    return { family: chosen || null, latin: true };
+  }
+  if (arabic && isLatinFamilyName(explicit)) return { family: null, latin: false };
+  return { family: explicit, latin: false };
+}
+
 function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Direction): string {
   if (!nodes) return "";
   let html = "";
@@ -191,9 +218,6 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
     const styleMark = node.marks?.find((m) => m.type === "textStyle");
-    const explicitFamily = typeof styleMark?.attrs?.fontFamily === "string" && styleMark.attrs.fontFamily.trim().length > 0
-      ? styleMark.attrs.fontFamily
-      : null;
     const explicitSizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
     const safeColor = normalizeSafeHex(styleMark?.attrs?.color);
     const highlightMark = node.marks?.find((m) => m.type === "highlight");
@@ -211,8 +235,9 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     for (const piece of pieces) {
       if (!piece.text) continue;
       let inner = escapeHtml(piece.text);
-      const choice = exportFamilyForSegment(explicitFamily, piece.dir, blockDir);
-      const effective = resolveEffectivePdfFont(choice.family, choice.fontDir, ctx.available, ctx.typography);
+      const picked = familyForPiece(styleMark?.attrs as Record<string, unknown> | undefined, piece.text);
+      const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
+      const effective = resolveEffectivePdfFont(choice.family, picked.latin ? "ltr" : choice.fontDir, ctx.available, ctx.typography);
       noteEffective(ctx, effective);
       if (bold) inner = `<strong>${inner}</strong>`;
       if (italics) inner = `<em>${inner}</em>`;
@@ -223,9 +248,9 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
         ? ` data-pdf-font="${escapeAttr(effective.family)}"`
         : "";
-      const urduMarker = /\p{Script=Arabic}/u.test(piece.text) ? ' data-pdf-urdu="true"' : "";
+      const urduMarker = hasScript(piece.text, "arabic") ? ' data-pdf-urdu="true"' : "";
       const isolate = piece.dir !== blockDir;
-      const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}`;
+      const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, piece.text, picked.latin)}`;
       const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
       inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
       html += inner;
@@ -534,15 +559,13 @@ export function requiredPdfEmbedFonts(
   const noteText = (node: DocNode, blockDir: Direction) => {
     if (typeof node.text !== "string" || node.text.length === 0) return;
     const styleMark = node.marks?.find((mark) => mark.type === "textStyle");
-    const explicitFamily = typeof styleMark?.attrs?.fontFamily === "string" && styleMark.attrs.fontFamily.trim().length > 0
-      ? styleMark.attrs.fontFamily
-      : null;
     const segments = segmentLine(node.text, blockDir);
     const pieces = segments.length > 0 ? segments : [{ text: node.text, dir: blockDir }];
     for (const piece of pieces) {
       if (!piece.text) continue;
-      const choice = exportFamilyForSegment(explicitFamily, piece.dir, blockDir);
-      used.add(preferredPdfFamily(choice.family, choice.fontDir, typography));
+      const picked = familyForPiece(styleMark?.attrs as Record<string, unknown> | undefined, piece.text);
+      const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
+      used.add(preferredPdfFamily(choice.family, picked.latin ? "ltr" : choice.fontDir, typography));
     }
   };
   const walk = (nodes: DocNode[] | undefined, blockDir: Direction) => {

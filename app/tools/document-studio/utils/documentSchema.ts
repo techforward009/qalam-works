@@ -529,6 +529,19 @@ const StudioRunStyle = Extension.create({
   },
 });
 
+const StudioTextStyle = TextStyle.extend({
+  parseHTML() {
+    return [
+      { tag: "span[style]" },
+      { tag: "span[data-latin-font]" },
+      { tag: "span[data-tracking]" },
+      { tag: "span[data-scale]" },
+      { tag: "span[data-text-effect]" },
+      { tag: "span[data-text-outline]" },
+    ];
+  },
+});
+
 const QuotedFontFamily = FontFamily.extend({
   addGlobalAttributes() {
     return [
@@ -565,7 +578,7 @@ export function createDocumentStudioExtensions() {
     ParagraphAutoDirection,
     Link.configure({ openOnClick: false }),
     StudioTextAlign,
-    TextStyle,
+    StudioTextStyle,
     QuotedFontFamily,
     FontSize.configure({ types: ["textStyle"] }),
     Color,
