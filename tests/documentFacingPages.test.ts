@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import {describe,it,expect,vi} from 'vitest';
-import {facingSlot,facingExtent,facingPadding,projectPoint,unprojectPoint,setPageProjection,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalHit} from '../app/tools/document-studio/utils/facingPages';
+import {facingSlot,facingExtent,facingPadding,projectPoint,unprojectPoint,setPageProjection,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalHit,adjacentVisualPosition} from '../app/tools/document-studio/utils/facingPages';
 import {parseStoredViewMode} from '../app/tools/document-studio/utils/documentView';
 import {paginationGeometryFromLayout} from '../app/tools/document-studio/extensions/QalamPagination';
 import {resolvePageLayout} from '../app/tools/document-studio/utils/pageLayout';
@@ -47,4 +47,14 @@ it('makes source text visible only for hit-testing and restores it after nested 
  const root=document.createElement('div');
  withCanonicalHit(root,()=>{expect(root.hasAttribute('data-studio-canonical-hit')).toBe(true);withCanonicalHit(root,()=>{});expect(root.hasAttribute('data-studio-canonical-hit')).toBe(true);});
  expect(root.hasAttribute('data-studio-canonical-hit')).toBe(false);
+});
+
+it('finds precisely the adjacent visual line, including hard breaks and page gaps',()=>{
+ const tops=[0,0,0,24,24,24,1200,1200,1200];
+ expect(adjacentVisualPosition(0,8,1,1,p=>tops[p],12)).toBe(3);
+ expect(adjacentVisualPosition(0,8,4,1,p=>tops[p],12)).toBe(6);
+ expect(adjacentVisualPosition(0,8,7,-1,p=>tops[p],12)).toBe(5);
+ expect(adjacentVisualPosition(0,8,3,-1,p=>tops[p],12)).toBe(2);
+ expect(adjacentVisualPosition(0,8,0,-1,p=>tops[p],12)).toBeNull();
+ expect(adjacentVisualPosition(0,8,8,1,p=>tops[p],12)).toBeNull();
 });

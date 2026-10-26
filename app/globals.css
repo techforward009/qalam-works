@@ -2147,5 +2147,11 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
 @media print { .ProseMirror[data-studio-facing-editor] :is(p,h1,h2,h3,h4,h5,h6) { visibility: visible; } }
 
 .ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: transparent; }
-@media screen { .ProseMirror[data-studio-facing-editor] blockquote { border-left-color: transparent; border-right-color: transparent; } }
+/* The later styled-jsx logical-border rule compiles to physical borders.
+   Keep this override screen-only so the original print border is untouched. */
+@media screen { .qalam-editor-content .ProseMirror[data-studio-facing-editor] blockquote {
+  border-inline-start-color: transparent !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+} }
 @media print { .ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: var(--qalam-quote-border, #d97706); } }

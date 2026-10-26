@@ -54,12 +54,14 @@ test('context items stay ordered, disabled correctly and keyboard navigable',asy
  await settle(page);m=await menu(page);await m.getByRole('menuitem',{name:'Select All',exact:true}).click();m=await menu(page);for(const name of ['Cut','Copy','Clear'])await expect(m.getByRole('menuitem',{name,exact:true})).toBeEnabled();await page.keyboard.press('Escape');await expect(m).toBeHidden();
 });
 for(const width of [390,1280])test(`text and zoom menus fit the ${width}px viewport and close on scroll/outside click`,async({page})=>{
- await open(page,width,850);await page.keyboard.insertText('یہ مینو کی جانچ ہے');await settle(page);
+ await open(page,width,850);await page.keyboard.insertText('یہ مینو کی جانچ ہے');await page.locator('[data-studio-zoom-control]').selectOption('100');await settle(page);
  // Dispatch on the text surface at the viewport edge to test popup clamping.
  await page.locator(story).evaluate((el,width)=>el.dispatchEvent(new MouseEvent('contextmenu',{clientX:width-3,clientY:765,bubbles:true,cancelable:true})),width);const m=page.getByRole('menu',{name:'Text context menu',exact:true});await expect(m).toBeVisible();await m.getByRole('menuitem',{name:'Zoom',exact:true}).hover();const sub=page.getByRole('menu',{name:'Zoom',exact:true});await expect(sub).toBeVisible();
  for(const box of [m,sub]){const r=(await box.boundingBox())!;expect(r.x).toBeGreaterThanOrEqual(0);expect(r.x+r.width).toBeLessThanOrEqual(width);expect(r.y+r.height).toBeLessThanOrEqual(850);}
  const options=await sub.getByRole('menuitem').allTextContents();expect(options).toEqual(['50%','75%','100%','200%','300%','Fit width','Fit page']);
- await page.locator('[data-studio-scroller]').evaluate(el=>{el.scrollTop+=50;el.dispatchEvent(new Event('scroll'));});await expect(m).toBeHidden();
+ // Wait for the real scroll event and settled layout, rather than creating
+ // a synthetic event plus a second queued browser event that closes the next menu.
+ await page.locator('[data-studio-scroller]').evaluate(el=>new Promise<void>(resolve=>{el.addEventListener('scroll',()=>requestAnimationFrame(()=>resolve()),{once:true});el.scrollTop+=el.scrollTop>0?-50:50;}));await expect(m).toBeHidden();await settle(page);
  await page.locator(story).evaluate((el,width)=>el.dispatchEvent(new MouseEvent('contextmenu',{clientX:width-3,clientY:300,bubbles:true,cancelable:true})),width);await expect(m).toBeVisible();await page.locator('[data-studio-titlebar]').click({position:{x:300,y:10}});await expect(m).toBeHidden();
 });
 

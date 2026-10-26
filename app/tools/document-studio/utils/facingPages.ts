@@ -58,3 +58,15 @@ export function requestCanonicalFrame(root: HTMLElement, read: () => void): numb
 export function cancelCanonicalFrame(id: number) {
  if (id < 0) pendingReads.delete(id); else cancelAnimationFrame(id);
 }
+
+/** Find the next actual visual line within a text block, without browser hit
+ * testing (which cannot hit canonical text outside the viewport). */
+export function adjacentVisualPosition(from:number,to:number,head:number,direction:1|-1,lineAt:(pos:number)=>number,tolerance:number):number|null {
+ const current=lineAt(head);
+ if(direction>0){
+  let lo=head+1,hi=to;if(lo>hi||lineAt(hi)<=current+tolerance)return null;
+  while(lo<hi){const mid=(lo+hi)>>>1;if(lineAt(mid)>current+tolerance)hi=mid;else lo=mid+1;}return lo;
+ }
+ let lo=from,hi=head-1;if(lo>hi||lineAt(lo)>=current-tolerance)return null;
+ while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(lineAt(mid)<current-tolerance)lo=mid;else hi=mid-1;}return lo;
+}

@@ -1,6 +1,7 @@
 import {test,expect,type Page} from '@playwright/test';
 import type {Editor} from '@tiptap/core';
-async function open(page:Page){await page.setViewportSize({width:1920,height:1080});await page.addInitScript(()=>localStorage.setItem('qalam-site-language','en'));await page.goto('/tools/document-studio');await expect(page.locator('.ProseMirror')).toBeFocused();await page.evaluate(()=>document.fonts.ready.then(()=>undefined));}
+import sharp from 'sharp';
+async function open(page:Page){await page.setViewportSize({width:1920,height:1080});await page.addInitScript(()=>localStorage.setItem('qalam-site-language','en'));await page.goto('/tools/document-studio');await expect.poll(()=>page.evaluate(()=>localStorage.getItem('qalam-document-studio-active-document-v1'))).not.toBeNull();await expect(page.locator('.ProseMirror')).toBeFocused();await page.evaluate(()=>document.fonts.ready.then(()=>undefined));}
 async function view(page:Page,mode:'pages'|'facing'){await page.locator('[data-menu-root="view"]').click();await page.locator(`[data-menu-action="view.${mode}"]`).click();await expect(page.locator('[data-studio-view]')).toHaveAttribute('data-studio-view',mode);await settle(page);}
 async function settle(page:Page){await page.evaluate(()=>new Promise<void>(resolve=>{let n=8;const tick=()=>--n?requestAnimationFrame(tick):resolve();requestAnimationFrame(tick);}));}
 async function seed(page:Page,lines=170){await page.locator('.ProseMirror').evaluate((root,lines)=>{const e=(root as HTMLElement&{editor:Editor}).editor;e.commands.setContent({type:'doc',content:Array.from({length:lines},(_,i)=>({type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text:`یہ صفحے کی سطر ${i+1} ہے۔`}]}))});e.commands.focus('start');},lines);await expect(page.locator('[data-studio-page-count]')).toHaveAttribute('data-studio-page-count','5');await settle(page);}
@@ -69,6 +70,7 @@ for(const zoom of ['50','100','200','300'])test(`facing arrows cross every sheet
  for(const [key,seen] of [['ArrowDown',down],['ArrowUp',up]] as const){
   for(let i=0;i<200;i++){
    await page.keyboard.press(key);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+   expect(await page.locator('.ProseMirror').evaluate(root=>(root as HTMLElement&{editor:Editor}).editor.state.selection.$head.index(0))).toBe(key==='ArrowDown'?Math.min(i+1,169):Math.max(168-i,0));
    const at=await caretPage(page);if(at&&!seen.has(at)){seen.add(at);await visible(page);}
   }
   expect([...seen].sort()).toEqual(['1','2','3','4','5']);
@@ -84,9 +86,9 @@ test('page one and its own pasteboard are centred like Single at every zoom',asy
   const centre=()=>page.locator('[data-studio-scroller]').evaluate(el=>{const r=el.getBoundingClientRect(),p=el.querySelector('[data-studio-page-paper="1"]')!.getBoundingClientRect();el.scrollLeft+=(p.left+p.right)/2-(r.left+el.clientLeft+el.clientWidth/2);});
   await centre();await settle(page);
   const single=await page.locator('[data-studio-page-paper="1"]').evaluate(el=>{const r=el.getBoundingClientRect();return (r.left+r.right)/2;});
-  await view(page,'facing');await centre();await settle(page);
-  const result=await page.evaluate(()=>{const p=document.querySelector('[data-studio-page-paper="1"]')!.getBoundingClientRect(),s=document.querySelector('[data-studio-scroller]')!,r=s.getBoundingClientRect(),row=document.querySelector('[data-studio-facing-row="1"]')!,b=row.getBoundingClientRect();return {page:(p.left+p.right)/2,viewport:r.left+s.clientLeft+s.clientWidth/2,pasteboard:(b.left+b.right)/2,topBorder:getComputedStyle(row).borderTopWidth};});
-  expect(Math.abs(result.page-single)).toBeLessThanOrEqual(1);expect(Math.abs(result.page-result.pasteboard)).toBeLessThanOrEqual(1);expect(Math.abs(result.page-result.viewport)).toBeLessThanOrEqual(1);expect(result.topBorder).toBe('0px');
+  await view(page,'facing');await settle(page);
+  const result=await page.evaluate(()=>{const p=document.querySelector('[data-studio-page-paper="1"]')!.getBoundingClientRect(),s=document.querySelector('[data-studio-scroller]')!,r=s.getBoundingClientRect(),row=document.querySelector('[data-studio-facing-row="1"]')!,b=row.getBoundingClientRect();return {page:(p.left+p.right)/2,viewport:r.left+s.clientLeft+s.clientWidth/2,scroll:s.scrollLeft,centredScroll:(s.scrollWidth-s.clientWidth)/2,pasteboard:(b.left+b.right)/2,topBorder:getComputedStyle(row).borderTopWidth};});
+  expect(Math.abs(result.page-single)).toBeLessThanOrEqual(1);expect(Math.abs(result.page-result.pasteboard)).toBeLessThanOrEqual(1);expect(Math.abs(result.page-result.viewport)).toBeLessThanOrEqual(1);expect(result.topBorder).toBe('0px');expect(Math.abs(result.scroll-result.centredScroll)).toBeLessThanOrEqual(1);
   await page.locator('[data-studio-tool-button="text"]').click();await page.locator('.ProseMirror p').first().click();await page.keyboard.insertText('abc');await settle(page);await expect.poll(()=>caretPage(page)).toBe('1');await visible(page);await expect(page.locator('.ProseMirror p').first()).toContainText('abc');await page.locator('[data-studio-tool-button="select"]').click();
  }
 });
@@ -110,11 +112,11 @@ test('twenty-page Facing typing stays close to Single without repeated full-docu
  expect(timings.facing.median).toBeLessThan(timings.pages.median*1.6+8);expect(timings.facing.p90).toBeLessThan(timings.pages.p90*1.8+12);
 });
 
-test('quote borders paint only on the left inside Facing sheets at 50%',async({page},testInfo)=>{
- const {default:sharp}=await import('sharp');await open(page);await page.locator('.ProseMirror').evaluate(root=>{const e=(root as HTMLElement&{editor:Editor}).editor;e.commands.setContent({type:'doc',content:[{type:'blockquote',content:Array.from({length:380},(_,i)=>({type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text:`اقتباس ${i+1} — عبارت`}]}))}]});e.commands.focus('start');});await view(page,'facing');await page.locator('[data-studio-zoom-control]').selectOption('50');await settle(page);
+test('quote borders paint only on the left inside Facing sheets at 50% and 100%',async({page},testInfo)=>{
+ await open(page);await page.locator('.ProseMirror').evaluate(root=>{const e=(root as HTMLElement&{editor:Editor}).editor;e.commands.setContent({type:'doc',content:[{type:'blockquote',content:Array.from({length:380},(_,i)=>({type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text:`اقتباس ${i+1} — عبارت`}]}))}]});e.commands.focus('start');});await view(page,'facing');await page.locator('[data-studio-zoom-control]').selectOption('50');await settle(page);
  // Keep the stored caret on page one while inspecting a distant spread.
  await page.locator('.ProseMirror').evaluate(root=>(root as HTMLElement&{editor:Editor}).editor.commands.focus('start'));await settle(page);await page.locator('[data-studio-scroller]').dispatchEvent('wheel',{deltaY:0});
- for(const number of ['1','8']){
+ for(const zoom of ['50','100']){await page.locator('[data-studio-zoom-control]').selectOption(zoom);await settle(page);for(const number of ['1','8']){
   await page.locator('[data-studio-scroller]').evaluate((el,number)=>{const r=el.getBoundingClientRect(),p=el.querySelector(`[data-studio-page-paper="${number}"]`)!.getBoundingClientRect();el.scrollTop+=p.top-r.top-30;},number);await settle(page);
   const metrics=await page.evaluate(number=>({textOnPage:[...document.querySelectorAll('.ProseMirror p')].some(p=>{const r=p.getBoundingClientRect(),paper=document.querySelector(`[data-studio-page-paper="${number}"]`)!.getBoundingClientRect();return getComputedStyle(p).visibility==='visible'&&r.top>=paper.top&&r.bottom<=paper.bottom&&r.left>=paper.left&&r.right<=paper.right;}),papers:[...document.querySelectorAll('[data-studio-page-paper]')].map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};}),clip:(()=>{const r=document.querySelector('[data-studio-scroller]')!.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};})(),borders:[...document.querySelectorAll('.ProseMirror blockquote')].map(el=>{const s=getComputedStyle(el);return [s.borderLeftColor,s.borderRightColor];})}),number);
   expect(metrics.textOnPage).toBe(true);
@@ -122,5 +124,47 @@ test('quote borders paint only on the left inside Facing sheets at 50%',async({p
   const image=await page.screenshot({scale:'css'});await testInfo.attach(`quotes-${number}.png`,{body:image,contentType:'image/png'});const {data,info}=await sharp(image).removeAlpha().raw().toBuffer({resolveWithObject:true});let inside=0,outside=0;
   for(let y=Math.ceil(metrics.clip.top);y<Math.min(info.height,metrics.clip.bottom);y++)for(let x=Math.ceil(metrics.clip.left);x<Math.min(info.width,metrics.clip.right);x++){const i=(y*info.width+x)*info.channels;if(data[i]>150&&data[i]>data[i+1]*1.2&&data[i+1]>data[i+2]*1.4&&data[i+2]<200){if(metrics.papers.some(p=>x>=p.left-1&&x<p.right+1&&y>=p.top-1&&y<p.bottom+1))inside++;else outside++;}}
   expect(inside).toBeGreaterThan(0);expect(outside).toBe(0);
+ }}
+ await page.emulateMedia({media:'print'});await expect(page.locator('.ProseMirror blockquote')).not.toHaveCSS('border-left-color','rgba(0, 0, 0, 0)');
+});
+
+for(const zoom of ['100','200'])test(`one hard-break visual line per facing arrow at ${zoom}%`,async({page})=>{
+ test.setTimeout(60000);await open(page);await page.locator('.ProseMirror').evaluate(root=>{const e=(root as HTMLElement&{editor:Editor}).editor;e.commands.setContent({type:'doc',content:[{type:'paragraph',attrs:{dir:'rtl'},content:Array.from({length:60},(_,i)=>[{type:'text',text:`سطر نمبر ${i+1}`},...(i<59?[{type:'hardBreak'}]:[])]).flat()}]});e.commands.focus('start');});await view(page,'facing');await page.locator('[data-studio-zoom-control]').selectOption(zoom);await page.locator('.ProseMirror').evaluate(root=>(root as HTMLElement&{editor:Editor}).editor.commands.focus('start'));await settle(page);
+ for(const key of ['ArrowDown','ArrowUp'])for(let i=0;i<60;i++){
+  await page.keyboard.press(key);const line=await page.locator('.ProseMirror').evaluate(root=>{const h=(root as HTMLElement&{editor:Editor}).editor.state.selection.$head;let line=0;h.parent.forEach((node,offset)=>{if(offset<h.parentOffset&&node.type.name==='hardBreak')line++;});return line;});expect(line).toBe(key==='ArrowDown'?Math.min(i+1,59):Math.max(58-i,0));
  }
+});
+
+for(const zoom of ['100','200'])test(`held arrows keep the facing caret visible like Single at ${zoom}%`,async({page},testInfo)=>{
+ test.setTimeout(90000);await open(page);await seed(page);await page.addStyleTag({content:'[data-studio-caret]{animation:none!important;opacity:1!important}'});const results:Record<string,{frames:number;bad:number;longest:number;paragraph:number}>={};
+ for(const mode of ['pages','facing'] as const){await view(page,mode);await page.locator('[data-studio-zoom-control]').selectOption(zoom);await page.locator('.ProseMirror').evaluate(root=>(root as HTMLElement&{editor:Editor}).editor.commands.focus('start'));await settle(page);await visible(page);
+  await page.evaluate(()=>{const state={frames:0,bad:0,longest:0,run:0,frame:0,absent:0,offscreen:0};(window as typeof window&{repeatProbe:typeof state}).repeatProbe=state;const tick=()=>{const c=document.querySelector('[data-studio-caret]')?.getBoundingClientRect(),s=document.querySelector('[data-studio-scroller]') as HTMLElement,r=s.getBoundingClientRect(),left=r.left+s.clientLeft,top=r.top+s.clientTop;state.frames++;if(!c||c.top<top-1||c.bottom>top+s.clientHeight+1||c.left<left-1||c.right>left+s.clientWidth+1){state.bad++;if(!c)state.absent++;else state.offscreen++;state.longest=Math.max(state.longest,++state.run);}else state.run=0;state.frame=requestAnimationFrame(tick);};state.frame=requestAnimationFrame(tick);});
+  const started=Date.now();for(let i=0;i<120;i++){const wait=started+i*33-Date.now();if(wait>0)await page.waitForTimeout(wait);await page.keyboard.down('ArrowDown');}await page.keyboard.up('ArrowDown');await settle(page);
+  results[mode]=await page.evaluate(()=>{const state=(window as typeof window&{repeatProbe:{frames:number;bad:number;longest:number;frame:number;absent:number;offscreen:number}}).repeatProbe;cancelAnimationFrame(state.frame);return {frames:state.frames,bad:state.bad,longest:state.longest,absent:state.absent,offscreen:state.offscreen,paragraph:(document.querySelector('.ProseMirror') as HTMLElement&{editor:Editor}).editor.state.selection.$head.index(0)};});expect(results[mode].paragraph).toBeGreaterThanOrEqual(100);
+ }
+ expect(results.facing.paragraph).toBe(120);console.log('REPEAT_VISIBILITY',zoom,JSON.stringify(results));await testInfo.attach(`repeat-${zoom}.json`,{body:JSON.stringify(results),contentType:'application/json'});expect(results.facing.bad/results.facing.frames).toBeLessThanOrEqual(results.pages.bad/results.pages.frames+.12);expect(results.facing.longest).toBeLessThanOrEqual(Math.max(3,results.pages.longest+3));
+});
+
+test('fresh Facing and zoom/view switches centre page one before caret following',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('qalam-document-studio-view-mode-v1','facing'));await open(page);await expect(page.locator('[data-studio-view]')).toHaveAttribute('data-studio-view','facing');
+ for(const zoom of ['50','100','200','300']){
+  await page.locator('[data-studio-zoom-control]').selectOption(zoom);await settle(page);await visible(page);
+  const assertPosition=async()=>{const info=await page.evaluate(()=>{const s=document.querySelector('[data-studio-scroller]') as HTMLElement,r=s.getBoundingClientRect(),c=document.querySelector('[data-studio-caret]')!.getBoundingClientRect(),mid=(s.scrollWidth-s.clientWidth)/2,delta=s.scrollLeft-mid,left=r.left+s.clientLeft,right=left+s.clientWidth,caretAtCentre={left:c.left+delta,right:c.right+delta};const pan=caretAtCentre.left<left?caretAtCentre.left-left-1:caretAtCentre.right>right?caretAtCentre.right-right+1:0;return {actual:s.scrollLeft,expected:mid+pan};});expect(Math.abs(info.actual-info.expected)).toBeLessThanOrEqual(2);};
+  await assertPosition();await view(page,'pages');await view(page,'facing');await assertPosition();await visible(page);
+ }
+});
+
+for(const mode of ['pages','facing'] as const)test(`everyday Urdu editing and menus in ${mode}`,async({page},testInfo)=>{
+ test.setTimeout(60000);await open(page);if(mode==='facing')await view(page,mode);await page.keyboard.insertText('السلام علیکم، یہ روزمرہ تحریر ہے۔');await page.keyboard.press('Enter');await page.keyboard.insertText('دوسری عبارت اور جانچ');
+ const story=page.locator('.ProseMirror');await expect(story).toContainText('دوسری عبارت');const before=await story.textContent();await page.waitForTimeout(550);
+ await story.evaluate(root=>{const e=(root as HTMLElement&{editor:Editor}).editor,end=e.state.selection.head;e.commands.setTextSelection({from:end-4,to:end});});await expect(page.locator('[data-studio-line-selection]').first()).toBeVisible();await page.keyboard.press('Backspace');expect(await story.textContent()).not.toBe(before);await page.keyboard.press('Control+z');await expect(story).toHaveText(before!);
+ await story.evaluate(root=>(root as HTMLElement&{editor:Editor}).editor.commands.selectAll());await page.locator('[data-studio-font-size]').selectOption('18');await expect(story.locator('span[style*="font-size"]').first()).toHaveCSS('font-size','24px');await page.getByRole('combobox',{name:'Colour',exact:true}).selectOption('#1A3A2A');await expect(story.locator('span[style*="color"]').first()).toHaveCSS('color','rgb(26, 58, 42)');await page.getByRole('button',{name:'Left to right',exact:true}).click();await expect(story.locator('p').first()).toHaveAttribute('dir','ltr');await page.getByRole('button',{name:'Right to left',exact:true}).click();await expect(story.locator('p').first()).toHaveAttribute('dir','rtl');await story.evaluate(root=>(root as HTMLElement&{editor:Editor}).editor.commands.focus('end'));
+ for(let i=0;i<50;i++)await page.keyboard.press('Enter');await settle(page);expect(Number(await page.locator('[data-studio-page-count]').getAttribute('data-studio-page-count'))).toBeGreaterThanOrEqual(2);await visible(page);
+ for(const id of await page.locator('[data-menu-root]').evaluateAll(els=>els.map(el=>el.getAttribute('data-menu-root')!))){await page.locator(`[data-menu-root="${id}"]`).click();await expect(page.getByRole('menu').first()).toBeVisible();await page.keyboard.press('Escape');}
+ await page.locator('[data-menu-root="view"]').click();await page.locator('[data-menu-action="view.fullscreen"]').click();await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(true);
+ // Main's body-portaled dropdown is occluded by the native fullscreen layer.
+ // Fullscreen entry is verified above; API exit is cleanup, NOT UI verification.
+ testInfo.annotations.push({type:'main limitation',description:'Fullscreen exit menu is occluded on clean main; unchanged in this five-fix task.'});
+ await page.evaluate(()=>document.exitFullscreen());await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(false);
+ for(const zoom of ['50','100','200']){await page.locator('[data-studio-zoom-control]').selectOption(zoom);await settle(page);}await view(page,mode==='pages'?'facing':'pages');await view(page,mode);await expect(story).toContainText('السلام علیکم');await expect(story).toContainText('دوسری عبارت');
 });

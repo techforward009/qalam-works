@@ -3,10 +3,9 @@ import {useLayoutEffect,useRef} from 'react';
 import type {Editor} from '@tiptap/react';
 import {Plugin,Selection,TextSelection} from '@tiptap/pm/state';
 import {Decoration,DecorationSet} from '@tiptap/pm/view';
-import {getQalamPaginationState} from "../extensions/QalamPagination";
 import {renderedLineBoxTop} from "../utils/textLineBoxes";
 import {firstLineKey} from '../extensions/FirstLineLayout';
-import {facingKey,facingSlot,projectPoint,unprojectPoint,requestCanonicalFrame,cancelCanonicalFrame,pageProjection,setPageProjection,withCanonicalPages,withCanonicalHit,type PageProjection} from '../utils/facingPages';
+import {facingKey,facingSlot,adjacentVisualPosition,projectPoint,unprojectPoint,requestCanonicalFrame,cancelCanonicalFrame,pageProjection,setPageProjection,withCanonicalPages,withCanonicalHit,type PageProjection} from '../utils/facingPages';
 const nodePaint=(from:number,to:number,attrs:Record<string,string>)=>Decoration.node(from,to,attrs,{paint:JSON.stringify(attrs)});
 const inlinePaint=(from:number,to:number,attrs:Record<string,string>)=>Decoration.inline(from,to,attrs,{paint:JSON.stringify(attrs)});
 const paintSignature=(set:DecorationSet)=>JSON.stringify(set.find().map(d=>[d.from,d.to,d.spec.paint??d.spec.key]).sort((a,b)=>Number(a[0])-Number(b[0])||Number(a[1])-Number(b[1])||String(a[2]).localeCompare(String(b[2]))));
@@ -32,29 +31,43 @@ export function StudioFacingLayout({editor,geometry,zoom}:{editor:Editor|null;ge
    key:facingKey,state:{init:()=>DecorationSet.empty,apply:(tr,old)=>tr.getMeta(facingKey)??old.map(tr.mapping,tr.doc)},
    props:{decorations:state=>facingKey.getState(state),handleKeyDown(view,event){
     if(!['ArrowUp','ArrowDown'].includes(event.key)||event.ctrlKey||event.metaKey||event.altKey)return false;
-    const direction=event.key==='ArrowDown'?1:-1;
-    const point=withCanonicalPages(root,()=>{
-     const c=view.coordsAtPos(view.state.selection.head),dom=view.domAtPos(view.state.selection.head).node,owner=(dom.nodeType===Node.TEXT_NODE?dom.parentElement:dom) as HTMLElement;
-     const rect=root.getBoundingClientRect(),scale=rect.width/geometry.width,block=owner.closest<HTMLElement>('p,h1,h2,h3,h4,h5,h6')??root,leading=parseFloat(getComputedStyle(block).lineHeight)*scale;
-     const step=Number.isFinite(leading)?leading:Math.max(12,c.bottom-c.top),line=renderedLineBoxTop(owner,{top:c.top,height:c.bottom-c.top},step,scale);
-     let y=line+step/2+direction*step;
-     const g=getQalamPaginationState({state:view.state})?.geometry;
-     if(g){const stride=(g.pageHeightPx+g.gapPx)*scale,page=Math.max(0,Math.floor((line-rect.top)/stride)),start=rect.top+page*stride+g.marginTopPx*scale,end=rect.top+page*stride+(g.pageHeightPx-g.marginBottomPx)*scale;
-      if(y>end)y=rect.top+(page+1)*stride+g.marginTopPx*scale+step/2;
-      if(y<start&&page>0)y=rect.top+(page-1)*stride+(g.pageHeightPx-g.marginBottomPx)*scale-step/2;
+    const direction:1|-1=event.key==='ArrowDown'?1:-1,head=view.state.selection.$head;
+    const target=withCanonicalPages(root,()=>{
+     const rect=root.getBoundingClientRect(),scale=rect.width/geometry.width;
+     const sample=(pos:number)=>{
+      const c=view.coordsAtPos(pos),dom=view.domAtPos(pos).node,owner=(dom.nodeType===Node.TEXT_NODE?dom.parentElement:dom) as HTMLElement;
+      const block=owner.closest<HTMLElement>('p,h1,h2,h3,h4,h5,h6')??root,style=getComputedStyle(block),leading=parseFloat(style.lineHeight)*scale;
+      const step=Number.isFinite(leading)&&leading>0?leading:Math.max(12,c.bottom-c.top);
+      return {c,block,style,step,line:renderedLineBoxTop(owner,{top:c.top,height:c.bottom-c.top},step,scale)};
+     };
+     const current=sample(head.pos),samples=new Map<number,ReturnType<typeof sample>>([[head.pos,current]]);
+     const at=(pos:number)=>{let value=samples.get(pos);if(!value){value=sample(pos);samples.set(pos,value);}return value;};
+     let depth=head.depth;while(depth>0&&!head.node(depth).isTextblock)depth--;
+     let fallback=depth?adjacentVisualPosition(head.start(depth),head.end(depth),head.pos,direction,pos=>at(pos).line,current.step/2):null;
+     if(fallback===null){
+      const boundary=depth?(direction>0?head.after(depth):head.before(depth)):head.pos;
+      fallback=(Selection.findFrom(view.state.doc.resolve(boundary),direction,true)??Selection.near(view.state.doc.resolve(boundary),direction)).head;
      }
-     const projection=pageProjection(root)??geometry,p=projectPoint((c.left-rect.left)/scale,(y-rect.top)/scale,projection);
-     return {left:rect.left+p.x*scale,top:rect.top+p.y*scale};
+     const next=at(fallback),bounds=next.block.getBoundingClientRect();
+     const left=bounds.left+((parseFloat(next.style.paddingLeft)||0)+(parseFloat(next.style.borderLeftWidth)||0))*scale;
+     const right=bounds.right-((parseFloat(next.style.paddingRight)||0)+(parseFloat(next.style.borderRightWidth)||0))*scale;
+     // The raw bidi caret can lie beyond the text edge. Hit-test safely inside
+     // the target content box, never on a guide or the adjacent paragraph.
+     const inset=Math.max(2,2*scale),x=Math.max(left+inset,Math.min(right-inset,current.c.left));
+     const g=pageProjection(root)??geometry,p=projectPoint((x-rect.left)/scale,(next.line+next.step/2-rect.top)/scale,g);
+     return {point:{left:rect.left+p.x*scale,top:rect.top+p.y*scale},fallback,line:next.line,step:next.step,block:view.state.doc.resolve(fallback).start(),sample};
     });
-    // The patched lookup accepts projected screen coordinates. Browsers cannot
-    // hit-test a page below the viewport, so document order is the safe fallback.
-    const hit=view.posAtCoords(point),head=view.state.selection.$head;
-    let pos=hit ? Selection.near(view.state.doc.resolve(hit.pos),direction).head : undefined;
-    if(pos===undefined || (direction>0?pos<=head.pos:pos>=head.pos)) {
-     const boundary=head.depth ? (direction>0?head.after(1):head.before(1)) : Math.max(0,Math.min(view.state.doc.content.size,head.pos+direction));
-     pos=Selection.near(view.state.doc.resolve(boundary),direction).head;
-    }
+    const hit=view.posAtCoords(target.point);
+    let pos=hit?Selection.near(view.state.doc.resolve(hit.pos),direction).head:target.fallback;
+    // A successful browser hit is not necessarily the adjacent line. Accept it
+    // only in that exact block/line; otherwise use the measured document order.
+    const valid=withCanonicalPages(root,()=>{
+     const resolved=view.state.doc.resolve(pos);
+     return resolved.parent.isTextblock&&resolved.start()===target.block&&Math.abs(target.sample(pos).line-target.line)<target.step/2;
+    });
+    if(!valid)pos=target.fallback;
     view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc,event.shiftKey?view.state.selection.anchor:pos,pos)));
+
     return true;
    }},
    view(view){let frame=0,strutFrame=0,dead=false,last='';
