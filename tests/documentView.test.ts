@@ -96,7 +96,7 @@ describe("View menu Pages/Pageless", () => {
     expect(ids).toContain("view.pageless");
     const view = DOCUMENT_MENU_BAR.find((m) => m.id === "view");
     const actions = (view?.items ?? []).filter((item) => item.type === "action").map((item) => item.id);
-    expect(actions.slice(0, 2)).toEqual(["view.pages", "view.pageless"]);
+    expect(actions.slice(0, 3)).toEqual(["view.pages", "view.facing", "view.pageless"]);
 
     const calls: string[] = [];
     const handlers = {

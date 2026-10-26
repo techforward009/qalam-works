@@ -23,6 +23,7 @@ export type MenuActionId =
   | "view.quality"
   | "view.glossary"
   | "view.settings"
+  | "view.facing"
   | "view.pages"
   | "view.pageless"
   | "view.zoom.50"
@@ -189,6 +190,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelUr: "منظر",
     items: [
       { type: "action", id: "view.pages", labelEn: "Pages", labelUr: "صفحات" },
+      { type: "action", id: "view.facing", labelEn: "Facing Pages", labelUr: "آمنے سامنے صفحات" },
       { type: "action", id: "view.pageless", labelEn: "Pageless", labelUr: "بغیر صفحات" },
       {
         type: "submenu",

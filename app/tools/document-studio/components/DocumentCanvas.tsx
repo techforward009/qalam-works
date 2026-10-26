@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import {useStudioPageAnchor,type StudioPageAnchor} from "./useStudioPageAnchor";
+import {FacingPasteboard} from "./FacingPasteboard";
+import {StudioFacingLayout} from "./StudioFacingLayout";
+import {useFacingPageInteraction} from "./useFacingPageInteraction";
+import {facingSlot,facingRow,facingPadding,facingExtent,projectPoint,withCanonicalPages} from "../utils/facingPages";
 import { StudioLineLayout } from "./StudioLineLayout";
 import { useStudioZoomVisibility } from "./useStudioZoomVisibility";
 import { StudioTextSelection } from "./StudioTextSelection";
@@ -55,6 +60,7 @@ export default function DocumentCanvas({
   documentSettings,
   pageLayout,
   viewMode,
+  viewAnchor,
   zoom = 100,
   rulerVisible = true,
   rulerUnit = "cm",
@@ -80,6 +86,7 @@ export default function DocumentCanvas({
   documentSettings: DocumentStudioSettings;
   pageLayout: ResolvedPageLayout;
   viewMode: DocumentViewMode;
+  viewAnchor?:StudioPageAnchor|null;
   zoom?: DocumentZoom;
   rulerVisible?: boolean;
   rulerUnit?: RulerUnit;
@@ -99,7 +106,9 @@ export default function DocumentCanvas({
   tool?: StudioToolId;
   englishFont?: string;
 }) {
-  const isPages = viewMode === "pages";
+  const isPages = viewMode !== "pageless";
+  const facing=viewMode === "facing";
+  useFacingPageInteraction(editor,facing);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const hShiftRef = useRef<HTMLDivElement>(null);
@@ -109,6 +118,9 @@ export default function DocumentCanvas({
   const [availableHeight, setAvailableHeight] = useState(0);
   const [scrollerBox, setScrollerBox] = useState({ w: 0, h: 0 });
   const [livePageCount, setLivePageCount] = useState(1);
+  const [activePage,setActivePage]=useState(1);
+  const preferredPage=useRef<number|null>(null);
+  useEffect(()=>{preferredPage.current=facing&&viewAnchor?.page?viewAnchor.page:null;},[facing,viewAnchor?.version]);
   const [toolState, setToolState] = useState<StudioToolId>("select");
   const tool = toolProp ?? toolState;
   const [scrollBox, setScrollBox] = useState({ left: 0, top: 0, sw: 1, sh: 1, cw: 1, ch: 1 });
@@ -165,13 +177,16 @@ export default function DocumentCanvas({
       const st = getQalamPaginationState(editor);
       const flow = st?.geometry.enabled ? st.pageCount : 1;
       setLivePageCount(Math.max(1, flow));
+      if(facing&&editor.isFocused){const sample=withCanonicalPages(editor.view.dom,()=>{const rect=editor.view.dom.getBoundingClientRect(),scale=rect.width/natural.widthPx,c=editor.view.coordsAtPos(editor.state.selection.head),point=projectPoint((c.left-rect.left)/scale,(c.top-rect.top)/scale,{width:natural.widthPx,height:natural.heightPx,gap:PAGE_STACK_GAP_PX,count:flow}),viewport=scrollerRef.current?.getBoundingClientRect();return {page:point.page+1,visible:viewport&&rect.top+point.y*scale>=viewport.top-1&&rect.top+point.y*scale<=viewport.bottom+1&&rect.left+point.x*scale>=viewport.left-1&&rect.left+point.x*scale<=viewport.right+1};});if(sample.visible){preferredPage.current=sample.page;setActivePage(sample.page);onVisiblePageChange?.(sample.page);}}
     };
     sync();
     editor.on("transaction", sync);
+    if(facing)editor.on("focus",sync);
     return () => {
       editor.off("transaction", sync);
+      if(facing)editor.off("focus",sync);
     };
-  }, [editor, isPages]);
+  }, [editor, isPages,facing,natural.widthPx,natural.heightPx]);
 
   const showRuler = isPages && rulerVisible;
   const toolboxPx = isPages ? INPAGE_TOOLBOX_PX : 0;
@@ -187,27 +202,33 @@ export default function DocumentCanvas({
   }, [isPages, pageCount, onPageCountChange]);
   const stackHeight = isPages ? pageStackHeightPx(pageCount, natural.heightPx, PAGE_STACK_GAP_PX) : undefined;
   const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, scrollerWidth || PAGELESS_MAX_WIDTH_PX);
+  const projection=facing?{width:natural.widthPx,height:natural.heightPx,gap:PAGE_STACK_GAP_PX,count:pageCount}:undefined;
+  const spread=projection?facingExtent(projection):null;
   const bottomPad = 24;
   const zoomFactor = resolveZoomFactor(
     zoom,
-    baseWidth,
-    natural.heightPx,
+    spread?.width ?? baseWidth,
+    spread ? natural.heightPx+2*facingPadding(natural.widthPx) : natural.heightPx,
     scrollerWidth,
     Math.max(0, scrollerHeight - PASTEBOARD_TOP_PX - bottomPad),
   );
-  useStudioZoomVisibility(editor,zoomFactor,scrollerRef);
-  const visualWidth = baseWidth * zoomFactor;
+  useStudioZoomVisibility(editor,zoomFactor,scrollerRef,viewMode);
+  useStudioPageAnchor(editor,scrollerRef,viewMode,viewAnchor);
+  const visualWidth = (spread?.width ?? baseWidth) * zoomFactor;
   const visualPageHeight = natural.heightPx * zoomFactor;
-  const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
+  const visualHeight = stackHeight ? (spread?.height ?? stackHeight) * zoomFactor : undefined;
   const pageStride = visualPageHeight + PAGE_STACK_GAP_PX * zoomFactor;
   const guideOutset = Math.round(PASTEBOARD_GUIDE_PX * zoomFactor);
   const contentWidth = Math.max(scrollerWidth, Math.ceil(visualWidth));
-  const contentHeight = Math.max(scrollerHeight, Math.ceil((isPages ? PASTEBOARD_TOP_PX : 0) + (visualHeight ?? visualPageHeight) + bottomPad));
+  const topPad=isPages&&!facing?24*zoomFactor:0;
+  const contentHeight = Math.max(scrollerHeight, Math.ceil(topPad+(visualHeight ?? visualPageHeight)+bottomPad));
   const pageLeft = Math.max(0, Math.floor((contentWidth - visualWidth) / 2) - 2);
-  const pageTop = isPages ? PASTEBOARD_TOP_PX : 0;
-  const pxPerMmX = pageLayout.widthMm > 0 ? visualWidth / pageLayout.widthMm : 0;
+  const pageTop = topPad;
+  const pxPerMmX = pageLayout.widthMm > 0 ? baseWidth*zoomFactor / pageLayout.widthMm : 0;
   const pxPerMmY = pageLayout.heightMm > 0 ? visualPageHeight / pageLayout.heightMm : 0;
-  const hOrigin = dir === "rtl" ? pageLeft + visualWidth : pageLeft;
+  const rulerSlot=projection?facingSlot(Math.min(pageCount-1,activePage-1),projection):{x:0,y:0};
+  const rulerPageLeft=pageLeft+rulerSlot.x*zoomFactor,rulerPageTop=pageTop+rulerSlot.y*zoomFactor;
+  const hOrigin = dir === "rtl" ? rulerPageLeft + baseWidth*zoomFactor : rulerPageLeft;
   const hDirection: 1 | -1 = dir === "rtl" ? -1 : 1;
   const rulerLength = Math.max(contentWidth, Math.ceil(hOrigin + 80));
 
@@ -217,8 +238,15 @@ export default function DocumentCanvas({
     const sync = () => {
       if (hShiftRef.current) hShiftRef.current.style.transform = `translateX(${-el.scrollLeft}px)`;
       if (vShiftRef.current) vShiftRef.current.style.transform = `translateY(${-el.scrollTop}px)`;
-      const page = Math.min(pageCount, Math.max(1, Math.floor(el.scrollTop / pageStride + 0.35) + 1));
-      onVisiblePageChange?.(page);
+      const row=Math.floor(el.scrollTop/((natural.heightPx+2*facingPadding(natural.widthPx)+PAGE_STACK_GAP_PX)*zoomFactor));
+      const page = facing?Math.min(pageCount,Math.max(1,2*row)):Math.min(pageCount, Math.max(1, Math.floor(el.scrollTop / pageStride + 0.35) + 1));
+      let report=page;
+      if(facing){
+        if(preferredPage.current&&facingRow(preferredPage.current-1)===row)report=Math.min(pageCount,preferredPage.current);else preferredPage.current=null;const caret=el.querySelector('[data-studio-caret]')?.getBoundingClientRect(),viewport=el.getBoundingClientRect();
+        if(caret&&caret.top>=viewport.top&&caret.bottom<=viewport.bottom){const guide=[...el.querySelectorAll('[data-studio-margin-guide]')].find(node=>{const rect=node.getBoundingClientRect();return caret.left>=rect.left&&caret.right<=rect.right&&caret.top>=rect.top&&caret.bottom<=rect.bottom;});if(guide)report=Number(guide.getAttribute('data-studio-margin-guide'));}
+        setActivePage(report);
+      }
+      onVisiblePageChange?.(report);
       setScrollBox({
         left: el.scrollLeft,
         top: el.scrollTop,
@@ -231,7 +259,7 @@ export default function DocumentCanvas({
     sync();
     el.addEventListener("scroll", sync, { passive: true });
     return () => el.removeEventListener("scroll", sync);
-  }, [isPages, pageCount, pageStride, onVisiblePageChange, contentWidth, contentHeight]);
+  }, [isPages, pageCount, pageStride, onVisiblePageChange, contentWidth, contentHeight,facing]);
 
   useEffect(() => {
     if (!(zoomFactor > 0)) return;
@@ -274,14 +302,14 @@ export default function DocumentCanvas({
   const printMargins = resolvePhysicalMargins(pageLayout.margins, dir);
   const marginHandlesX = onPhysicalMarginChange
     ? [
-        { edge: "left" as const, offsetPx: pageLeft + mmToPx(printMargins.leftMm) * zoomFactor },
-        { edge: "right" as const, offsetPx: pageLeft + visualWidth - mmToPx(printMargins.rightMm) * zoomFactor },
+        { edge: "left" as const, offsetPx: rulerPageLeft + mmToPx(printMargins.leftMm) * zoomFactor },
+        { edge: "right" as const, offsetPx: rulerPageLeft + baseWidth*zoomFactor - mmToPx(printMargins.rightMm) * zoomFactor },
       ]
     : [];
   const marginHandlesY = onPhysicalMarginChange
     ? [
-        { edge: "top" as const, offsetPx: pageTop + mmToPx(printMargins.topMm) * zoomFactor },
-        { edge: "bottom" as const, offsetPx: pageTop + visualPageHeight - mmToPx(printMargins.bottomMm) * zoomFactor },
+        { edge: "top" as const, offsetPx: rulerPageTop + mmToPx(printMargins.topMm) * zoomFactor },
+        { edge: "bottom" as const, offsetPx: rulerPageTop + visualPageHeight - mmToPx(printMargins.bottomMm) * zoomFactor },
       ]
     : [];
 
@@ -294,7 +322,8 @@ export default function DocumentCanvas({
     const el = scrollerRef.current;
     if (!el) return;
     const next = Math.min(pageCount, Math.max(1, Math.floor(el.scrollTop / pageStride + 0.35) + 1 + delta));
-    el.scrollTo({ top: (next - 1) * pageStride });
+    if(projection){const target=Math.min(pageCount,Math.max(1,activePage+delta)),slot=facingSlot(target-1,projection);preferredPage.current=target;setActivePage(target);el.scrollTo({top:slot.y*zoomFactor,left:Math.max(0,(slot.x+natural.widthPx/2)*zoomFactor-el.clientWidth/2)});onVisiblePageChange?.(target);}
+    else el.scrollTo({ top: (next - 1) * pageStride });
   };
 
   const percentLabel = zoom === "fit-width" ? "Width" : zoom === "fit-page" ? "Page" : `${Math.round(zoomFactor * 100)}%`;
@@ -306,6 +335,7 @@ export default function DocumentCanvas({
       className="relative flex h-full min-h-0 overflow-hidden"
       style={{ background: "#FFFFFF" }}
       data-studio-view={viewMode}
+      data-studio-tool={tool}
       data-studio-pasteboard="true"
       data-studio-print-root="true"
       data-page-width-mm={pageLayout.widthMm}
@@ -345,7 +375,7 @@ export default function DocumentCanvas({
                   axis="horizontal"
                   lengthPx={Math.max(1, rulerLength)}
                   originPx={hOrigin}
-                  pageStartPx={pageLeft}
+                  pageStartPx={rulerPageLeft}
                   pxPerMm={pxPerMmX}
                   positiveDirection={hDirection}
                   originName={dir === "rtl" ? "right" : "left"}
@@ -367,8 +397,8 @@ export default function DocumentCanvas({
                 <WindowRuler
                   axis="vertical"
                   lengthPx={Math.max(1, contentHeight)}
-                  originPx={pageTop}
-                  pageStartPx={pageTop}
+                  originPx={rulerPageTop}
+                  pageStartPx={rulerPageTop}
                   pxPerMm={pxPerMmY}
                   positiveDirection={1}
                   originName="top"
@@ -408,16 +438,16 @@ export default function DocumentCanvas({
             <div
               style={{ width: Math.max(contentWidth, 1), minHeight: contentHeight, position: "relative" }}
               data-ruler-gutter={showRuler ? String(PASTEBOARD_TOP_PX) : undefined}
-              data-studio-pasteboard-pad={String(PASTEBOARD_TOP_PX)}
+              data-studio-pasteboard-pad={String(topPad)}
             >
-              {showRuler ? <div data-ruler-page-gap="horizontal" style={{ height: PASTEBOARD_TOP_PX }} /> : null}
+              {isPages ? <div data-ruler-page-gap="horizontal" style={{ height: topPad }} /> : null}
               <div
                 className="relative"
                 style={{ marginLeft: pageLeft, width: visualWidth, height: visualHeight }}
                 dir="ltr"
                 data-studio-page-column="true"
               >
-                {isPages ? (
+                {isPages && !facing ? (
                   <>
                     <div
                       className="studio-no-print pointer-events-none absolute z-0"
@@ -451,10 +481,11 @@ export default function DocumentCanvas({
                 ) : null}
                 <div
                   className={`relative min-w-0 ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
-                  style={{ width: visualWidth, height: visualHeight }}
+                  style={{ width: visualWidth, height: visualHeight,overflow:facing?"clip":undefined }}
                   data-studio-pages-stack={isPages ? "true" : undefined}
                   data-studio-pageless={isPages ? undefined : "true"}
                   data-studio-print-surface="true"
+                  data-studio-facing={facing?"true":undefined}
                 >
                   <div
                     data-studio-zoom-surface="true"
@@ -467,6 +498,12 @@ export default function DocumentCanvas({
                   >
                     {isPages && (
                       <>
+                        {projection ? Array.from({length:facingRow(pageCount-1)+1},(_,row)=>{
+                          const pad=facingPadding(natural.widthPx),first=row===0,top=row*(natural.heightPx+2*pad+PAGE_STACK_GAP_PX),width=(first?natural.widthPx:2*natural.widthPx);
+                          return <div key={`row-${row}`} className="studio-no-print pointer-events-none absolute" style={{top,left:0,width:width+2*pad,height:natural.heightPx+2*pad}}>
+                            <div data-studio-row-shadow style={{position:'absolute',left:pad,top:pad,width,height:natural.heightPx,boxShadow:'-3px 0 0 #404040, -3px 3px 0 #404040, 0 3px 0 #404040'}}/>
+                          </div>;
+                        }):null}
                         <div className="studio-no-print pointer-events-none absolute inset-0 z-[3]" data-studio-page-frames="true" aria-hidden>
                           {Array.from({ length: pageCount }, (_, index) => (
                             <div
@@ -475,13 +512,13 @@ export default function DocumentCanvas({
                               data-print-sheet-last={index === pageCount - 1 ? "true" : undefined}
                               className="absolute bg-transparent"
                               style={{
-                                top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
-                                left: 0,
-                                width: Math.ceil(natural.widthPx) + 1,
+                                top: projection?facingSlot(index,projection).y:index * (natural.heightPx + PAGE_STACK_GAP_PX),
+                                left: projection?facingSlot(index,projection).x:0,
+                                width: facing?natural.widthPx:Math.ceil(natural.widthPx) + 1,
                                 height: natural.heightPx,
                                 borderRadius: 0,
                                 border: "1px solid #000000",
-                                boxShadow: "-3px 0 0 #404040",
+                                boxShadow: facing?undefined:"-3px 0 0 #404040, -3px 3px 0 #404040, 0 3px 0 #404040",
                               }}
                             />
                           ))}
@@ -492,15 +529,16 @@ export default function DocumentCanvas({
                             className="pointer-events-none absolute z-0 bg-white"
                             data-studio-page-paper={index + 1}
                             style={{
-                              top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
-                              left: 0,
-                              width: Math.ceil(natural.widthPx) + 1,
+                              top: projection?facingSlot(index,projection).y:index * (natural.heightPx + PAGE_STACK_GAP_PX),
+                              left: projection?facingSlot(index,projection).x:0,
+                              width: facing?natural.widthPx:Math.ceil(natural.widthPx) + 1,
                               height: natural.heightPx,
                             }}
                             aria-hidden
                           />
                         ))}
-                        <MarginGuides zoom={zoomFactor}
+                        {projection?<FacingPasteboard geometry={projection} zoom={zoomFactor} firstPage={documentSettings.page.firstPageNumber??1}/>:null}
+                        <MarginGuides zoom={zoomFactor} projection={projection}
                           pageCount={pageCount}
                           pageWidthPx={natural.widthPx}
                           pageHeightPx={natural.heightPx}
@@ -568,7 +606,7 @@ export default function DocumentCanvas({
                           style={typeVars}
                         />
                         {isPages ? (
-                          <StudioObjectLayer zoom={zoomFactor}
+                          <StudioObjectLayer zoom={zoomFactor} projection={projection}
                             editor={editor}
                             tool={tool}
                             frames={frames}
@@ -601,7 +639,7 @@ export default function DocumentCanvas({
             <div className="flex h-full shrink-0 items-center gap-px px-px" data-studio-page-nav="true" data-latin-control="true" style={{ color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}>
               <button type="button" disabled aria-label={isUr ? "ماسٹر صفحات" : "Master pages"} title={isUr ? "جلد آ رہا ہے" : "Coming soon"} style={{ ...navButton, width: 11, color: "#808080" }}>M</button>
               <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} style={navButton} onClick={() => stepPage(-1)}>{"<"}</button>
-              <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{(documentSettings.page.firstPageNumber ?? 1) - 1 + Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{(documentSettings.page.firstPageNumber ?? 1) - 1 + pageCount}</span>
+              <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{(documentSettings.page.firstPageNumber ?? 1) - 1 + (facing?activePage:Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1)))}/{(documentSettings.page.firstPageNumber ?? 1) - 1 + pageCount}</span>
               <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} style={navButton} onClick={() => stepPage(1)}>{">"}</button>
               <select aria-label="Zoom" data-studio-zoom-control data-studio-zoom-label="true" value={zoom} onChange={event=>onZoomChange?.(parseStoredZoom(event.target.value))} style={{...navField,width:46,border:0,padding:0,appearance:"none",fontFamily:"Tahoma, Arial, sans-serif",color:"#000"}}>
                 {DOCUMENT_ZOOM_PRESETS.map(level=><option key={level} value={level}>{level}%</option>)}
@@ -617,8 +655,8 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
-      <StudioLineLayout editor={editor} />
-      <StudioTextSelection editor={editor} zoom={zoomFactor} />
+      <StudioFacingLayout editor={editor} geometry={projection??null} zoom={zoomFactor}/><StudioLineLayout editor={editor} />
+      <StudioTextSelection editor={editor} zoom={zoomFactor} revision={viewMode} />
       <style jsx global>{`
         .qalam-editor-content .ProseMirror {
           font-variant-ligatures: normal;
@@ -741,7 +779,8 @@ export default function DocumentCanvas({
           text-align: start;
         }
         .qalam-editor-content blockquote {
-          border-inline-start: 3px solid #d97706;
+          --qalam-quote-border: #d97706;
+          border-inline-start: 3px solid var(--qalam-quote-border);
           padding-inline-start: 1rem;
           color: #57534e;
           font-style: italic;
@@ -856,7 +895,7 @@ export default function DocumentCanvas({
         }
         /* Page breakers are floats. Clearing them moves a heading below ALL
            generated sheets and causes self-feeding page-count growth. */
-        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6) { clear: none; }
+        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6,blockquote) { clear: none; }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
           outline: 2px solid #B8935A;
           outline-offset: 3px;

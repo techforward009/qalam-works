@@ -1,3 +1,4 @@
+import {withCanonicalPages} from "../utils/facingPages";
 /**
  * Qalam-owned Pages-mode pagination.
  *
@@ -360,6 +361,9 @@ export function guardAutomaticPageCount(dom:HTMLElement, geometry:QalamPaginatio
  * transform-affected getBoundingClientRect.
  */
 export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPaginationGeometry, _currentCount: number): number {
+ return withCanonicalPages(dom,()=>measureLinearPageCount(dom,geometry,_currentCount));
+}
+function measureLinearPageCount(dom: HTMLElement, geometry: QalamPaginationGeometry, _currentCount: number): number {
   const floor = Math.max(1, Math.min(MAX_PAGES, Math.floor(geometry.minimumPages) || 1));
   const atLeast = (count: number) => guardAutomaticPageCount(dom,geometry,_currentCount,Math.max(floor, count));
   if (!geometry.enabled || !(geometry.pageHeightPx > 0)) return 1;

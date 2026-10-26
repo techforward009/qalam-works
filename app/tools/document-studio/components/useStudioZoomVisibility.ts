@@ -4,10 +4,12 @@ import type {Editor} from "@tiptap/react";
 
 /** Read final transformed coordinates after zoom and the page-start paint pass.
  * If a selection is taller/wider than the viewport, retain its active end. */
-export function useStudioZoomVisibility(editor:Editor|null,scale:number,scroller:RefObject<HTMLDivElement|null>){
- const previous=useRef(scale);
+export function useStudioZoomVisibility(editor:Editor|null,scale:number,scroller:RefObject<HTMLDivElement|null>,revision=""){
+ const previous=useRef(`${scale}:${revision}`),previousView=useRef(revision);
  useLayoutEffect(()=>{
-  if(previous.current===scale)return;previous.current=scale;
+  const oldView=previousView.current,changedView=oldView!==revision;previousView.current=revision;
+  const next=`${scale}:${revision}`;if(previous.current===next)return;previous.current=next;
+  if(changedView&&oldView!=="pageless"&&revision!=="pageless")return; // The page-anchor hook owns switches between paper views, including Arrow mode.
   if(!editor)return;
   let frame=0,cancelled=false;
   const follow=(remaining:number)=>{frame=requestAnimationFrame(()=>{
@@ -24,5 +26,5 @@ export function useStudioZoomVisibility(editor:Editor|null,scale:number,scroller
    if(box.left<left+12)root.scrollLeft+=box.left-left-12;else if(box.right>right-12)root.scrollLeft+=box.right-right+12;
   });};follow(3);
   return()=>{cancelled=true;cancelAnimationFrame(frame);};
- },[editor,scale,scroller]);
+ },[editor,scale,scroller,revision]);
 }

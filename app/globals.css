@@ -2132,3 +2132,19 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
 
 /* Only painted textarea selections surrender their native highlight. */
 textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: #000; }
+
+/* Facing Pages paints one editable, canonical document into view-only slots. */
+.ProseMirror[data-studio-facing-editor] { background: transparent !important; }
+.ProseMirror[data-studio-facing-editor] .qalam-pagination-pages { visibility: hidden; }
+.ProseMirror[data-studio-canonical-measure] [data-facing-projected] { left: 0 !important; top: 0 !important; }
+@media print {
+  [data-studio-facing-editor] [data-facing-projected] { left: 0 !important; top: var(--qalam-facing-ink-offset, 0px) !important; }
+}
+
+.ProseMirror[data-studio-facing-editor] :is(p,h1,h2,h3,h4,h5,h6) { visibility: hidden; }
+.ProseMirror[data-studio-facing-editor] [data-facing-projected] { visibility: visible; }
+.ProseMirror[data-studio-canonical-measure] :is(p,h1,h2,h3,h4,h5,h6) { visibility: visible !important; }
+@media print { .ProseMirror[data-studio-facing-editor] :is(p,h1,h2,h3,h4,h5,h6) { visibility: visible; } }
+
+.ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: transparent; }
+@media print { .ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: var(--qalam-quote-border, #d97706); } }

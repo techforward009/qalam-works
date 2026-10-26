@@ -127,6 +127,7 @@ import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fon
 import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
+import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
 import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioObjectLayer";
@@ -258,6 +259,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [visiblePage, setVisiblePage] = useState(1);
+  const [viewAnchor,setViewAnchor]=useState<StudioPageAnchor|null>(null);
   const [zoomPercent, setZoomPercent] = useState<number | null>(null);
   const [columnCount, setColumnCount] = useState(1);
   const [columnGutterMm, setColumnGutterMm] = useState(STUDIO_DEFAULT_GUTTER_MM);
@@ -399,7 +401,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [rightPanel, setRightPanel] = useState<RightPanelId>("none");
   const [helpOpen, setHelpOpen] = useState<HelpDialogMode | null>(null);
   const [qalamAiOpen, setQalamAiOpen] = useState(false);
-  const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
+  const [viewMode, setViewModeState] = useState<DocumentViewMode>("pages");
+  useEffect(()=>{setViewModeState(loadDocumentViewMode());},[]);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [zoom, setZoomState] = useState<DocumentZoom>(100);
   const zoomTouchedRef = useRef(false);
@@ -668,6 +671,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
     minimumPagesRef.current = pages;
     setMinimumPages(pages);
+    setViewMode(draft.facingPages ? "facing" : "pages");
+    setViewAnchor(previous=>({page:1,fraction:-1,version:(previous?.version??0)+1}));
     setZoom(openingDocumentZoom(window.innerWidth));
     setVisiblePage(1);
     setNewDocOpen(false);
@@ -1527,8 +1532,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const setViewMode = (mode: DocumentViewMode) => {
+    const scroller=editor?.view.dom.closest('[data-studio-scroller]'),paper=scroller?.querySelector(`[data-studio-page-paper="${visiblePage}"]`);
+    if(viewMode==="pageless")setViewAnchor(previous=>({page:0,fraction:0,version:(previous?.version??0)+1}));
+    else if(scroller&&paper){const v=scroller.getBoundingClientRect(),p=paper.getBoundingClientRect();setViewAnchor(previous=>({page:visiblePage,fraction:v.top>p.top?(v.top-p.top)/p.height:-1,version:(previous?.version??0)+1}));}
     setViewModeState(mode);
     saveDocumentViewMode(mode);
+    if(canvasToolRef.current === "text")editor?.commands.focus(undefined,{scrollIntoView:false});
   };
 
   const setZoom = useCallback((next: DocumentZoom) => {
@@ -1762,6 +1771,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   if (rightPanel === "glossary") checkedIds.add("view.glossary");
   if (rightPanel === "settings") checkedIds.add("view.settings");
   if (viewMode === "pages") checkedIds.add("view.pages");
+  if (viewMode === "facing") checkedIds.add("view.facing");
   if (viewMode === "pageless") checkedIds.add("view.pageless");
   checkedIds.add(`view.zoom.${zoom}` as MenuActionId);
   if (rulerVisible) checkedIds.add("view.ruler");
@@ -2173,6 +2183,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             documentSettings={documentSettings}
             pageLayout={pageLayout}
             viewMode={viewMode}
+            viewAnchor={viewAnchor}
             zoom={zoom}
             rulerVisible={rulerVisible}
             rulerUnit={rulerUnit}
