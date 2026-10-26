@@ -1,6 +1,5 @@
 "use client";
 
-import { useLanguage } from "../../../lib/language-context";
 import { useEffect, useState } from "react";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
 import { clampMarginMm, resolvePageDimensions, type PageOrientation, type PageSizeId } from "../utils/pageLayout";
@@ -201,8 +200,6 @@ export default function NewDocumentDialog({
   onCancel: () => void;
   onConfirm: (draft: NewDocumentDraft) => void;
 }) {
-  const { language } = useLanguage();
-  const comingSoon = language === "ur" ? "جلد آ رہا ہے" : "Coming soon";
   const [draft, setDraft] = useState<NewDocumentDraft>(defaultNewDocumentDraft);
   const [helpNote, setHelpNote] = useState<string | null>(null);
   const dims = resolvePageDimensions(draft.size, draft.orientation);
@@ -261,7 +258,7 @@ export default function NewDocumentDialog({
         </fieldset>
         <label className={`absolute flex h-[13px] items-center gap-1 ${labelCls}`} style={{ left: 244, top: 119 }}><input style={checkStyle} type="checkbox" checked={draft.automaticTextBox} onChange={(event) => set({ automaticTextBox: event.target.checked })} />Automatic Text Box</label>
         <label className={`absolute flex h-[13px] items-center gap-1 ${labelCls}`} style={{ left: 244, top: 136 }}><input style={checkStyle} type="checkbox" checked={draft.doubleSided} onChange={(event) => set({ doubleSided: event.target.checked, facingPages: event.target.checked ? draft.facingPages : false })} />Double Sided</label>
-        <label className={`absolute flex h-[13px] items-center gap-1 ${labelCls}`} style={{ left: 244, top: 153, color: "#808080" }}><input style={checkStyle} type="checkbox" checked={false} disabled aria-describedby="studio-facing-pages-note" />Facing Pages <span id="studio-facing-pages-note" style={{ fontSize: 9 }} lang={language}>{comingSoon}</span></label>
+        <label className={`absolute flex h-[13px] items-center gap-1 ${labelCls}`} style={{ left: 244, top: 153 }}><input style={checkStyle} type="checkbox" checked={draft.facingPages} onChange={event=>set({facingPages:event.target.checked})} />Facing Pages</label>
         <button type="button" style={{ ...btnStyle, position: "absolute", left: 244, top: 176, width: 136 }} onClick={() => saveDefaultDraft(draft)}>Save as Default</button>
         <div className="absolute flex flex-col gap-[6px]" style={{ left: 320, top: 35 }}>
           <button type="submit" style={{ ...btnStyle, outline: "1px dotted #000", outlineOffset: -3 }} data-studio-default-button="true">OK</button>

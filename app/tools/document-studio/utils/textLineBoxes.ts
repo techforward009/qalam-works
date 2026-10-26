@@ -1,3 +1,4 @@
+import {hardBreakLineTop} from "./hardBreakLineGrid";
 export interface TextLineBox { left: number; top: number; width: number; height: number }
 export interface LineRect extends TextLineBox { fontTop: number; fontBottom: number }
 
@@ -38,12 +39,14 @@ export function lineBoxTop(glyphTop: number, glyphHeight: number, leading: numbe
 let measurementContext: CanvasRenderingContext2D | null | undefined;
 /** Read the baseline grid, not glyph overflow or an inline run's zero-height strut. */
 export function renderedLineBoxTop(owner: HTMLElement, rect: Pick<DOMRect,"top"|"height">, leading: number, scale: number): number {
+  const root=owner.closest<HTMLElement>(".ProseMirror");
+  const hardBreakTop=root?hardBreakLineTop(root,owner,rect,leading,scale):undefined;if(hardBreakTop!==undefined)return hardBreakTop;
   const block=owner.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? owner;
   const bounds=block.getBoundingClientRect();
   const context=measurementContext ?? (measurementContext=document.createElement("canvas").getContext("2d"));
   if(!context) return lineBoxTop(rect.top,rect.height,leading,bounds.top,scale);
   const ascent=(element:HTMLElement)=>{context.font=getComputedStyle(element).font;return context.measureText("اM").fontBoundingBoxAscent*scale;};
-  const paint=(element:HTMLElement)=>{const run=element.closest<HTMLElement>("[data-studio-line-run]");return run ? (parseFloat(run.style.top)||0)*scale : 0;};
+  const paint=(element:HTMLElement)=>{if(element.closest("[data-studio-canonical-measure]"))return 0;const run=element.closest<HTMLElement>("[data-studio-line-run]");return run ? (parseFloat(run.style.top)||0)*scale : 0;};
   const baseline=rect.top+ascent(owner)-paint(owner);
   const firstText=(element:HTMLElement)=>document.createTreeWalker(element,NodeFilter.SHOW_TEXT).nextNode();
   const anchors=[block,...block.querySelectorAll<HTMLElement>("[data-studio-line-selection-offset]")];

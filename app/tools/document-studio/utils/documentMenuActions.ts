@@ -161,6 +161,7 @@ export function dispatchDocumentMenuAction(
     case "view.fullscreen":
       handlers.toggleFullscreen();
       return;
+    case "view.facing": handlers.setViewMode("facing"); return;
     case "view.pages":
       handlers.setViewMode("pages");
       return;

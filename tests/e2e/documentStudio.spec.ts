@@ -152,14 +152,16 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(lower).toHaveText("x");
   });
 
-  test("Facing Pages stays disabled even when Double Sided is checked", async ({ page }) => {
+  test("Facing Pages is enabled as a view-only choice", async ({ page }) => {
     await openStudio(page,"ur");
     await page.locator('[data-menu-root="file"]').click();
     await page.locator('[data-menu-action="file.new"]').click();
     const dialog=page.getByRole("dialog",{name:"New Document",exact:true});
     await dialog.getByLabel("Double Sided",{exact:true}).check();
-    await expect(dialog.getByRole("checkbox",{name:/Facing Pages/})).toBeDisabled();
-    await expect(dialog.locator("#studio-facing-pages-note")).toHaveText("جلد آ رہا ہے");
+    await expect(dialog.getByRole("checkbox",{name:/Facing Pages/})).toBeEnabled();
+    await dialog.getByRole("checkbox",{name:/Facing Pages/}).check();
+    await dialog.getByRole("button",{name:"OK",exact:true}).click();
+    await expect(page.locator("[data-studio-view]")).toHaveAttribute("data-studio-view","facing");
   });
 
   test("imports InPage fixture page setup as A5 starting at page 77", async ({ page }) => {

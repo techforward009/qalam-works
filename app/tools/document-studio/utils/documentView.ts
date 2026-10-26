@@ -1,5 +1,5 @@
 /**
- * Pages / Pageless is a VIEW preference only.
+ * Single Pages / Facing Pages / Pageless are VIEW preferences only.
  * It must not live in the document JSON schema.
  */
 import { scaleLayoutToWidth, type ResolvedPageLayout } from "./pageLayout";
@@ -8,7 +8,7 @@ import { studioGulzarFontFaceCss, studioJameelFontFaceCss, studioMehrFontFaceCss
 
 export type { RulerUnit };
 
-export type DocumentViewMode = "pages" | "pageless";
+export type DocumentViewMode = "pages" | "facing" | "pageless";
 
 export const DEFAULT_DOCUMENT_VIEW_MODE: DocumentViewMode = "pages";
 export const VIEW_MODE_STORAGE_KEY = "qalam-document-studio-view-mode-v1";
@@ -35,11 +35,11 @@ export const DEFAULT_RULER_VISIBLE = true;
 export const DEFAULT_RULER_UNIT: RulerUnit = "cm";
 
 export function isDocumentViewMode(value: unknown): value is DocumentViewMode {
-  return value === "pages" || value === "pageless";
+  return value === "pages" || value === "facing" || value === "pageless";
 }
 
 export function parseStoredViewMode(raw: string | null | undefined): DocumentViewMode {
-  if (raw === "pageless" || raw === "pages") return raw;
+  if (raw === "pageless" || raw === "pages" || raw === "facing") return raw;
   return DEFAULT_DOCUMENT_VIEW_MODE;
 }
 
@@ -235,6 +235,15 @@ const VIEW_ONLY_PAGINATION_VARS = [
  *  Pages wrap (spacer + negative margin) must be converted in the same pass,
  *  or the wrapping paragraph climbs into the preceding block. */
 export function stripViewOnlyPagination(root: HTMLElement): void {
+  root.removeAttribute("data-studio-facing-editor");
+  root.querySelectorAll("[data-facing-quote]").forEach(node=>node.remove());
+  root.querySelectorAll<HTMLElement>('[data-studio-facing-editor]').forEach(node=>node.removeAttribute('data-studio-facing-editor'));
+  root.querySelectorAll<HTMLElement>('[data-facing-projected]').forEach(node=>{
+    const ink=node.style.getPropertyValue('--qalam-facing-ink-offset');
+    node.removeAttribute('data-facing-projected');node.style.removeProperty('left');
+    if(ink&&parseFloat(ink))node.style.top=ink;else node.style.removeProperty('top');
+    node.style.removeProperty('--qalam-facing-ink-offset');
+  });
   root.querySelectorAll("[data-qalam-pagination], .qalam-pagination-pages").forEach((node) => node.remove());
   root.querySelectorAll("[data-image-wrap-spacer]").forEach((node) => node.remove());
   const styled: HTMLElement[] = [];

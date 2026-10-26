@@ -1,3 +1,4 @@
+import {withCanonicalPages,requestCanonicalFrame,cancelCanonicalFrame,pageProjection,facingSlot,facingKey} from "../utils/facingPages";
 import { ReplaceStep } from "@tiptap/pm/transform";
 import { Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
@@ -74,7 +75,7 @@ export function createFirstLinePlugin(): Plugin<LineState> {
         return next;
       },
     },
-    props: { decorations: state => firstLineKey.getState(state)!.decorations },
+    props: { decorations: state => facingKey.getState(state)!==undefined ? DecorationSet.empty : firstLineKey.getState(state)!.decorations },
     view: view => new FirstLineView(view),
   });
 }
@@ -103,8 +104,9 @@ class FirstLineView {
     }
   }
   private schedule = () => { this.full = true; this.enqueue(); };
-  private enqueue = () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; const full = this.full; this.full = false; this.measure(full); }); };
-  private measure(full: boolean) {
+  private enqueue = () => { if (!this.raf) this.raf = requestCanonicalFrame(this.view.dom,() => { this.raf = 0; const full = this.full; this.full = false; this.measure(full); }); };
+  private measure(full:boolean){return withCanonicalPages(this.view.dom,()=>this.measureLinear(full));}
+  private measureLinear(full: boolean) {
     const view = this.view, state = firstLineKey.getState(view.state)!;
     const changedRuns = state.runs.filter(run => state.dirty.has(run.block));
     if(changedRuns.some(run=>run.topGuard))full=true;
@@ -119,8 +121,9 @@ class FirstLineView {
     const root = view.dom.getBoundingClientRect();
     const scale = root.width / geometry.pageWidthPx;
     const stride = (geometry.pageHeightPx + geometry.gapPx) * scale;
-    const firstPage = Math.max(0, Math.floor((clip.top - root.top) / stride));
-    const lastPage = Math.max(firstPage, Math.floor((clip.bottom - root.top) / stride));
+    const projection=pageProjection(view.dom);
+    const firstPage = projection ? 0 : Math.max(0, Math.floor((clip.top - root.top) / stride));
+    const lastPage = projection ? projection.count-1 : Math.max(firstPage, Math.floor((clip.bottom - root.top) / stride));
     const affected = new Set<number>(), runs: FirstLineRun[] = [];
     // Binary search the cached block index. No document-wide DOM walk on input.
     const blockIndexAt = (y: number) => {
@@ -159,7 +162,8 @@ class FirstLineView {
     for (let page = firstPage; page <= lastPage; page++) {
       const frameTop = root.top + page * stride + geometry.marginTopPx * scale;
       const frameBottom = root.top + page * stride + (geometry.pageHeightPx - geometry.marginBottomPx) * scale;
-      if (frameTop < clip.top - 100 || frameTop > clip.bottom + 100) continue;
+      const visibleTop=projection?root.top+(facingSlot(page,projection).y+geometry.marginTopPx)*scale:frameTop;
+      if (visibleTop < clip.top - 100 || visibleTop > clip.bottom + 100) continue;
       const cached = !full ? changedRuns.find(run => run.page === page) : undefined;
       if (!full && !cached) continue;
       const index = cached ? state.blocks.indexOf(cached.block) : blockIndexAt(frameTop - 1);
@@ -287,7 +291,7 @@ class FirstLineView {
     document.dispatchEvent(new Event("selectionchange"));
   }
   destroy() {
-    cancelAnimationFrame(this.raf); this.observer.disconnect();
+    cancelCanonicalFrame(this.raf); this.observer.disconnect();
     this.scroller?.removeEventListener("scroll", this.schedule);
     window.removeEventListener("resize", this.schedule);
     document.fonts.removeEventListener("loadingdone", this.schedule);

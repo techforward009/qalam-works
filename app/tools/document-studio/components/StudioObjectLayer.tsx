@@ -1,10 +1,12 @@
 "use client";
+import {pageProjection,projectPoint,facingArrowKey,facingTextRect,facingLineTop,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
 import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
 import { caretGeometry } from "../utils/caretGeometry";
 import { getQalamPaginationState } from "../extensions/QalamPagination";
+import {hardBreakLineTop} from "../utils/hardBreakLineGrid";
 import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { StudioTextFrame } from "./StudioTextFrame";
@@ -84,12 +86,14 @@ export function StudioObjectLayer({
   marginRightPx,
   typography,
   zoom = 1,
+  projection: projectionProp,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
   frames: StudioFrame[];
   typography?: DocumentStudioSettings["typography"];
   zoom?:number;
+  projection?:PageProjection;
   onFramesChange: (frames: StudioFrame[]) => void;
   onToolAction: (tool: StudioToolId) => void;
   pageCount: number;
@@ -160,8 +164,11 @@ export function StudioObjectLayer({
     const root = rootRef.current;
     if (!root) return { x: 0, y: 0 };
     const rect = root.getBoundingClientRect();
-    const scale = rect.width > 0 ? rect.width / pageWidthPx : 1;
-    return { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
+    const surface=root.closest<HTMLElement>("[data-studio-zoom-surface]");
+    const scale = surface ? surface.getBoundingClientRect().width/pageWidthPx : zoom;
+    const point={x:(event.clientX-rect.left)/scale,y:(event.clientY-rect.top)/scale};
+    const projection=editor?pageProjection(editor.view.dom):undefined;
+    return projection?unprojectPoint(point.x,point.y,projection):point;
   };
 
   const pageOf = (y: number) => {
@@ -219,7 +226,7 @@ export function StudioObjectLayer({
       ref={rootRef}
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
-      style={{ pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
+      style={{ width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => {
         if (tool === "select") {
@@ -313,10 +320,11 @@ export function StudioObjectLayer({
         const stride = pageHeightPx + gapPx;
         // Snap the frame to screen pixels, including a fractional page origin.
         const rootBox = rootRef.current?.getBoundingClientRect();
-        const scale = rootBox && rootBox.width > 0 ? rootBox.width / pageWidthPx : 1;
+        const scale = projectionProp ? zoom : rootBox && rootBox.width > 0 ? rootBox.width/pageWidthPx : 1;
         const snap = (value: number, origin = 0) => (Math.round(origin + value * scale) - origin) / scale;
-        const left = snap(frame.xMm * PX_PER_MM, rootBox?.left);
-        const top = snap((frame.page - 1) * stride + frame.yMm * PX_PER_MM, rootBox?.top);
+        const projection=projectionProp,slot=projection?facingSlot(frame.page-1,projection):{x:0,y:(frame.page-1)*stride};
+        const left = snap(slot.x+frame.xMm * PX_PER_MM, rootBox?.left);
+        const top = snap(slot.y+frame.yMm * PX_PER_MM, rootBox?.top);
         const width = Math.max(1, snap(frame.wMm * PX_PER_MM));
         const height = Math.max(1, snap(frame.hMm * PX_PER_MM));
         const active = selected.includes(frame.id);
@@ -401,7 +409,7 @@ export function StudioObjectLayer({
           }}
         />
       ) : null}
-      <StudioCaret zoom={zoom}
+      <StudioCaret zoom={zoom} projection={projectionProp}
         editor={editor}
         hostRef={rootRef}
         pageWidthPx={pageWidthPx}
@@ -458,6 +466,7 @@ function FrameShape({
 }
 
 function StudioCaret({
+  projection: projectionProp,
   zoom,
   editor,
   hostRef,
@@ -467,42 +476,59 @@ function StudioCaret({
 }: {
   editor: Editor | null;
   zoom:number;
+  projection?:PageProjection;
   hostRef: React.RefObject<HTMLDivElement | null>;
   pageWidthPx: number;
   marginTopPx: number;
   marginRightPx: number;
 }) {
-  const [box, setBox] = useState<{ left: number; top: number; height: number; width: number } | null>(null);
+  const [box, setBox] = useState<{ left: number; top: number; height: number; width: number; pos:number } | null>(null);
   const caretRef = useRef<HTMLDivElement>(null);
   useStudioCaretVisibility(editor, caretRef, box);
 
   useEffect(() => {
     if (!editor) return;
-    const place = () => {
+    let frame=0;
+    const measure = () => withCanonicalPages(editor.view.dom,() => {
       if (!editor.isFocused || editor.isDestroyed || !editor.state.selection.empty) {
         setBox(null);
         return;
       }
       const host = hostRef.current;
       if (!host) return;
+      const facing=pageProjection(editor.view.dom);
+      const resolvedDom=facing?editor.view.domAtPos(editor.state.selection.head):null;
+      const selectionHead=editor.state.selection.$head;
+      const facingLeaf=facing?(selectionHead.nodeAfter?.isText?editor.view.nodeDOM(selectionHead.pos):selectionHead.nodeBefore?.isText?editor.view.nodeDOM(selectionHead.pos-1):null):null;
+      // Resolve the model's text leaf, not a pagination widget adjacent to it.
+      const facingAnchor=facingLeaf??resolvedDom?.node;
       const domSelection = window.getSelection();
       let selectionRect: DOMRect | null = null;
       if (domSelection?.rangeCount && domSelection.isCollapsed && editor.view.dom.contains(domSelection.anchorNode)) {
-        const rects = domSelection.getRangeAt(0).getClientRects();
-        selectionRect = rects.length ? rects[rects.length - 1] : null;
+        // Facing decorations can update after the model selection. Do not use
+        // an old native anchor from the other side of a pagination strut.
+        const matches=!facing||editor.view.posAtDOM(domSelection.anchorNode!,domSelection.anchorOffset)===editor.state.selection.head;
+        if(matches){const rects=[...domSelection.getRangeAt(0).getClientRects()].filter(r=>!facing||r.height>0);selectionRect=rects.length?rects[rects.length-1]:null;}
       }
       const coords = selectionRect ?? editor.view.coordsAtPos(editor.state.selection.head);
-      const firstLine = firstLineRunAt(editor.state, editor.state.selection.head);
+      const measuredRun = firstLineRunAt(editor.state, editor.state.selection.head);
+      const firstLine = facing&&measuredRun&&!measuredRun.empty&&selectionHead.pos===measuredRun.to&&selectionHead.pos<selectionHead.end()?undefined:measuredRun;
       const rect = host.getBoundingClientRect();
-      const scale = rect.width > 0 ? rect.width / pageWidthPx : 1;
-      const anchor = window.getSelection()?.anchorNode;
+      const scale = host.closest<HTMLElement>("[data-studio-zoom-surface]")!.getBoundingClientRect().width/pageWidthPx;
+      const anchor = facingAnchor??window.getSelection()?.anchorNode;
       const owner = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor instanceof HTMLElement ? anchor : editor.view.dom;
       const leading = parseFloat(getComputedStyle(owner?.closest("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom).lineHeight) * scale;
       const block = owner?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom;
       const bounds = block.getBoundingClientRect();
-      const top = firstLine?.lineBoxTop !== undefined ? rect.top+firstLine.lineBoxTop*scale : firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
+      let top = firstLine?.lineBoxTop !== undefined ? rect.top+firstLine.lineBoxTop*scale : firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
         : renderedLineBoxTop(owner ?? editor.view.dom,{top:coords.top,height:coords.bottom-coords.top},Number.isFinite(leading) ? leading : coords.bottom-coords.top,scale);
       const geometry = getQalamPaginationState(editor)?.geometry;
+      const hardBreakTop=hardBreakLineTop(editor.view.dom,owner??editor.view.dom,coords,leading,scale);
+      top=hardBreakTop??top;
+      const arrow=facing?facingArrowKey.getState(editor.state):null;
+      const arrowText=arrow?.head===selectionHead.pos?facingTextRect(editor.view,selectionHead.pos):null;
+      if(facing&&geometry?.enabled&&(selectionHead.nodeAfter?.isText||selectionHead.nodeBefore?.isText)&&hardBreakTop===undefined)
+        top=facingLineTop(top,arrowText?.top??coords.top,arrowText?.bottom??coords.bottom,leading,rect.top,scale,geometry,arrow?.head===selectionHead.pos?arrow.page:undefined,arrow?.head===selectionHead.pos&&arrow.lineTop!==undefined?rect.top+arrow.lineTop*scale:undefined);
       const page = geometry?.enabled ? Math.max(0,Math.floor(((top-rect.top)/scale-marginTopPx+1)/(geometry.pageHeightPx+geometry.gapPx))) : 0;
       const { nodeBefore, nodeAfter } = editor.state.selection.$head;
       const emptyLine = (!nodeBefore || nodeBefore.type.name === "hardBreak") && (!nodeAfter || nodeAfter.type.name === "hardBreak");
@@ -510,7 +536,7 @@ function StudioCaret({
       // Layout-only struts consume one page pixel, but an empty line's caret
       // belongs at its real paragraph edge, independently of that width.
       const point = emptyLine ? (rtl ? bounds.right : bounds.left) : coords.left;
-      setBox(caretGeometry({
+      setBox({...caretGeometry({
         x: (point-rect.left)/scale, top: (top-rect.top)/scale,
         height: Number.isFinite(leading) ? leading/scale : (coords.bottom-coords.top)/scale, scale,
         rtl,
@@ -519,7 +545,11 @@ function StudioCaret({
         contentLeft: geometry?.marginLeftPx ?? 0,
         contentBottom: geometry?.enabled ? page*(geometry.pageHeightPx+geometry.gapPx)+geometry.pageHeightPx-geometry.marginBottomPx : undefined,
         contentTop: marginTopPx+page*(geometry ? geometry.pageHeightPx+geometry.gapPx : 0),
-      }));
+      }),pos:editor.state.selection.head});
+    });
+    const place = () => {
+      if(!pageProjection(editor.view.dom))return measure();
+      if(!frame)frame=requestCanonicalFrame(editor.view.dom,()=>{frame=0;measure();});
     };
     place();
     // Native selection changes can follow the ProseMirror transaction, especially
@@ -530,6 +560,7 @@ function StudioCaret({
     editor.on("focus", place);
     editor.on("blur", place);
     return () => {
+      cancelCanonicalFrame(frame);
       document.removeEventListener("selectionchange", place);
       editor.off("selectionUpdate", place);
       editor.off("transaction", place);
@@ -539,16 +570,20 @@ function StudioCaret({
   }, [editor, hostRef, marginRightPx, marginTopPx, pageWidthPx, zoom]);
 
   if (!box) return null;
+  const projection=projectionProp;
+  const projected=projection?projectPoint(box.left,box.top,projection):{x:box.left,y:box.top,page:0};
+  const pageX=projection?facingSlot(projected.page,projection).x:0;
   return (
     <StudioScreenOverlay zoom={zoom} zIndex={8}>{({x,y,scale})=><div
       key={`${box.left}:${box.top}:${box.height}`}
       ref={caretRef}
       data-studio-caret="true"
+      data-studio-caret-pos={box.pos}
       style={{
         animation: "qalam-studio-caret-blink 1060ms step-end infinite",
         position: "absolute",
-        left: Math.max(x(getQalamPaginationState(editor!)?.geometry.marginLeftPx ?? 0)+2, Math.min(x(pageWidthPx-marginRightPx)-3,x(box.left))),
-        top: y(box.top),
+        left: Math.max(x(pageX+(getQalamPaginationState(editor!)?.geometry.marginLeftPx ?? 0))+2, Math.min(x(pageX+pageWidthPx-marginRightPx)-3,x(projected.x))),
+        top: y(projected.y),
         width: 2,
         height: box.height*scale,
         background: "#000",
