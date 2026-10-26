@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const resolved = await fontsForDocument(doc, dir, settings.typography);
     const digitalKhatt = resolved.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak");
     if (digitalKhatt && !digitalKhatt.complete) {
-      throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from DigitalKhattIndoPakRegular.woff2; export blocked");
+      throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from DigitalKhattIndoPakQalam.woff2; export blocked");
     }
     let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
     const executablePath = await chromium.executablePath();
@@ -114,6 +114,11 @@ export async function POST(request: NextRequest) {
       actualFaces: [...new Set(urduFonts.diagnostics.flatMap(run => run.actualFaces.map(face => face.familyName)))],
       sourceHtmlChromiumExact: true,
     }));
+    if (urduFonts.diagnostics.some(part => part.kind === "naskh-fallback" &&
+      part.actualFaces.some(face => /Noto Naskh Arabic/i.test(face.familyName)))) {
+      if (!fontsUsed.includes("Noto Naskh Arabic")) fontsUsed.push("Noto Naskh Arabic");
+      fontFallbacks.push({ requested: "Digital Khatt Indo-Pak (uncovered glyphs)", used: "Noto Naskh Arabic" });
+    }
     if (urduFonts.fallbackRuns > 0) {
       if (!fontsUsed.includes("Noto Nastaliq Urdu")) fontsUsed.push("Noto Nastaliq Urdu");
       fontFallbacks.push({ requested: "Runtime Urdu font", used: "Noto Nastaliq Urdu" });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import {
   directionForNode,
@@ -34,6 +35,16 @@ function face(
 }
 
 describe("fontRegistry", () => {
+  test("Qalam Page uses its local Urdu-alias Digital Khatt derivative", () => {
+    const font = getFontById("digital-khatt-indo-pak");
+    expect(font.editorFamily).toBe("Digital Khatt Indo-Pak");
+    expect(font.pdf.regularFiles).toEqual(["/fonts/DigitalKhattIndoPakQalam.woff2"]);
+    const cmap = JSON.parse(readFileSync("app/tools/document-studio/utils/digitalKhattCmap.json", "utf8")) as number[];
+    for (const cp of [0x06CC, 0x06D2, 0x06C1, 0x06BE, 0x06C3, 0x06A9, 0x06D3]) expect(cmap).toContain(cp);
+    for (const cp of [0x067e, 0x0686, 0x0679, 0x0688, 0x0691, 0x06af, 0x06ba]) expect(cmap).not.toContain(cp);
+    for (let cp = 0x06F0; cp <= 0x06F9; cp++) expect(cmap).toContain(cp);
+  });
+
   test("known fonts resolve for PDF and DOCX", () => {
     const r = resolveEditorFontFamily("Amiri", "rtl");
     expect(r.fellBack).toBe(false);

@@ -1,0 +1,31 @@
+{
+  "nameID21": "DigitalKhatt IndoPak Qalam",
+  "hhea": {
+    "ascender": 1500,
+    "descender": -700,
+    "lineGap": 200,
+    "unitsPerEm": 1000,
+    "autoLeadingRatio": 2.4
+  },
+  "cmap": {
+    "U+06CC": "yehshape.isol",
+    "U+06D2": "yehshape.isol",
+    "U+06C1": "heh.isol",
+    "U+06BE": "heh.isol",
+    "U+06C3": "heh.twodotsup.isol",
+    "U+06A9": "kaf.isol",
+    "U+06D3": "alefmaksura.hamzaabove.isol",
+    "U+06F0": "zeroindic",
+    "U+06F1": "oneindic",
+    "U+06F2": "twoindic",
+    "U+06F3": "threeindic",
+    "U+06F4": "fourindic",
+    "U+06F5": "fiveindic",
+    "U+06F6": "sixindic",
+    "U+06F7": "sevenindic",
+    "U+06F8": "eightindic",
+    "U+06F9": "nineindic"
+  },
+  "sha256": "c3770109925759a71fa40afdb7d910050777b11a829aa4ab366a755acc8486eb",
+  "unchangedTables": true
+}
