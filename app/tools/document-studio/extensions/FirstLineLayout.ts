@@ -1,4 +1,4 @@
-import {withCanonicalPages,pageProjection,facingSlot,facingKey} from "../utils/facingPages";
+import {withCanonicalPages,requestCanonicalFrame,cancelCanonicalFrame,pageProjection,facingSlot,facingKey} from "../utils/facingPages";
 import { ReplaceStep } from "@tiptap/pm/transform";
 import { Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
@@ -104,7 +104,7 @@ class FirstLineView {
     }
   }
   private schedule = () => { this.full = true; this.enqueue(); };
-  private enqueue = () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; const full = this.full; this.full = false; this.measure(full); }); };
+  private enqueue = () => { if (!this.raf) this.raf = requestCanonicalFrame(this.view.dom,() => { this.raf = 0; const full = this.full; this.full = false; this.measure(full); }); };
   private measure(full:boolean){return withCanonicalPages(this.view.dom,()=>this.measureLinear(full));}
   private measureLinear(full: boolean) {
     const view = this.view, state = firstLineKey.getState(view.state)!;
@@ -291,7 +291,7 @@ class FirstLineView {
     document.dispatchEvent(new Event("selectionchange"));
   }
   destroy() {
-    cancelAnimationFrame(this.raf); this.observer.disconnect();
+    cancelCanonicalFrame(this.raf); this.observer.disconnect();
     this.scroller?.removeEventListener("scroll", this.schedule);
     window.removeEventListener("resize", this.schedule);
     document.fonts.removeEventListener("loadingdone", this.schedule);

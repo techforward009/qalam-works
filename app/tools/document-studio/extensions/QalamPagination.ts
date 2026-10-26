@@ -1,4 +1,4 @@
-import {withCanonicalPages} from "../utils/facingPages";
+import {withCanonicalPages,requestCanonicalFrame} from "../utils/facingPages";
 /**
  * Qalam-owned Pages-mode pagination.
  *
@@ -498,7 +498,7 @@ function createPaginationPlugin() {
       const schedule = () => {
         if (scheduled || destroyed) return;
         scheduled = true;
-        requestAnimationFrame(recompute);
+        requestCanonicalFrame(view.dom,recompute);
       };
       syncDom();
       schedule();

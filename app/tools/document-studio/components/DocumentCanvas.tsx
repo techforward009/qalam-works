@@ -6,7 +6,7 @@ import {useStudioPageAnchor,type StudioPageAnchor} from "./useStudioPageAnchor";
 import {FacingPasteboard} from "./FacingPasteboard";
 import {StudioFacingLayout} from "./StudioFacingLayout";
 import {useFacingPageInteraction} from "./useFacingPageInteraction";
-import {facingSlot,facingRow,facingPadding,facingExtent,projectPoint,withCanonicalPages} from "../utils/facingPages";
+import {facingSlot,facingRow,facingPadding,facingExtent,projectPoint,withCanonicalPages,requestCanonicalFrame,cancelCanonicalFrame} from "../utils/facingPages";
 import { StudioLineLayout } from "./StudioLineLayout";
 import { useStudioZoomVisibility } from "./useStudioZoomVisibility";
 import { StudioTextSelection } from "./StudioTextSelection";
@@ -173,16 +173,20 @@ export default function DocumentCanvas({
       setLivePageCount(1);
       return;
     }
+    let frame=0,lastDoc=editor.state.doc,lastHead=-1,lastCount=-1;
     const sync = () => {
       const st = getQalamPaginationState(editor);
       const flow = st?.geometry.enabled ? st.pageCount : 1;
       setLivePageCount(Math.max(1, flow));
-      if(facing&&editor.isFocused){const sample=withCanonicalPages(editor.view.dom,()=>{const rect=editor.view.dom.getBoundingClientRect(),scale=rect.width/natural.widthPx,c=editor.view.coordsAtPos(editor.state.selection.head),point=projectPoint((c.left-rect.left)/scale,(c.top-rect.top)/scale,{width:natural.widthPx,height:natural.heightPx,gap:PAGE_STACK_GAP_PX,count:flow}),viewport=scrollerRef.current?.getBoundingClientRect();return {page:point.page+1,visible:viewport&&rect.top+point.y*scale>=viewport.top-1&&rect.top+point.y*scale<=viewport.bottom+1&&rect.left+point.x*scale>=viewport.left-1&&rect.left+point.x*scale<=viewport.right+1};});if(sample.visible){preferredPage.current=sample.page;setActivePage(sample.page);onVisiblePageChange?.(sample.page);}}
+      if(lastDoc===editor.state.doc&&lastHead===editor.state.selection.head&&lastCount===flow)return;
+      lastDoc=editor.state.doc;lastHead=editor.state.selection.head;lastCount=flow;
+      if(facing&&editor.isFocused&&!frame)frame=requestCanonicalFrame(editor.view.dom,()=>{frame=0;const sample=withCanonicalPages(editor.view.dom,()=>{const rect=editor.view.dom.getBoundingClientRect(),scale=rect.width/natural.widthPx,c=editor.view.coordsAtPos(editor.state.selection.head),point=projectPoint((c.left-rect.left)/scale,(c.top-rect.top)/scale,{width:natural.widthPx,height:natural.heightPx,gap:PAGE_STACK_GAP_PX,count:getQalamPaginationState(editor)?.pageCount??flow}),viewport=scrollerRef.current?.getBoundingClientRect();return {page:point.page+1,visible:viewport&&rect.top+point.y*scale>=viewport.top-1&&rect.top+point.y*scale<=viewport.bottom+1&&rect.left+point.x*scale>=viewport.left-1&&rect.left+point.x*scale<=viewport.right+1};});if(sample.visible){preferredPage.current=sample.page;setActivePage(sample.page);onVisiblePageChange?.(sample.page);}});
     };
     sync();
     editor.on("transaction", sync);
     if(facing)editor.on("focus",sync);
     return () => {
+      cancelCanonicalFrame(frame);
       editor.off("transaction", sync);
       if(facing)editor.off("focus",sync);
     };
@@ -222,7 +226,10 @@ export default function DocumentCanvas({
   const contentWidth = Math.max(scrollerWidth, Math.ceil(visualWidth));
   const topPad=isPages&&!facing?24*zoomFactor:0;
   const contentHeight = Math.max(scrollerHeight, Math.ceil(topPad+(visualHeight ?? visualPageHeight)+bottomPad));
-  const pageLeft = Math.max(0, Math.floor((contentWidth - visualWidth) / 2) - 2);
+  // Centre the painted sheet, including Single's border width, rather than
+  // rounding the logical page and leaving an extra two-pixel left bias.
+  const centredWidth = isPages&&!facing ? (Math.ceil(natural.widthPx)+1)*zoomFactor : visualWidth;
+  const pageLeft = isPages ? Math.max(0, (contentWidth-centredWidth)/2) : Math.max(0,Math.floor((contentWidth-visualWidth)/2)-2);
   const pageTop = topPad;
   const pxPerMmX = pageLayout.widthMm > 0 ? baseWidth*zoomFactor / pageLayout.widthMm : 0;
   const pxPerMmY = pageLayout.heightMm > 0 ? visualPageHeight / pageLayout.heightMm : 0;
@@ -500,7 +507,7 @@ export default function DocumentCanvas({
                       <>
                         {projection ? Array.from({length:facingRow(pageCount-1)+1},(_,row)=>{
                           const pad=facingPadding(natural.widthPx),first=row===0,top=row*(natural.heightPx+2*pad+PAGE_STACK_GAP_PX),width=(first?natural.widthPx:2*natural.widthPx);
-                          return <div key={`row-${row}`} className="studio-no-print pointer-events-none absolute" style={{top,left:0,width:width+2*pad,height:natural.heightPx+2*pad}}>
+                          return <div key={`row-${row}`} className="studio-no-print pointer-events-none absolute" style={{top,left:first?natural.widthPx/2:0,width:width+2*pad,height:natural.heightPx+2*pad}}>
                             <div data-studio-row-shadow style={{position:'absolute',left:pad,top:pad,width,height:natural.heightPx,boxShadow:'-3px 0 0 #404040, -3px 3px 0 #404040, 0 3px 0 #404040'}}/>
                           </div>;
                         }):null}

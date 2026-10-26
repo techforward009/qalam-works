@@ -2143,8 +2143,9 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
 
 .ProseMirror[data-studio-facing-editor] :is(p,h1,h2,h3,h4,h5,h6) { visibility: hidden; }
 .ProseMirror[data-studio-facing-editor] [data-facing-projected] { visibility: visible; }
-.ProseMirror[data-studio-canonical-measure] :is(p,h1,h2,h3,h4,h5,h6) { visibility: visible !important; }
+.ProseMirror[data-studio-canonical-hit] :is(p,h1,h2,h3,h4,h5,h6) { visibility: visible !important; }
 @media print { .ProseMirror[data-studio-facing-editor] :is(p,h1,h2,h3,h4,h5,h6) { visibility: visible; } }
 
 .ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: transparent; }
+@media screen { .ProseMirror[data-studio-facing-editor] blockquote { border-left-color: transparent; border-right-color: transparent; } }
 @media print { .ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: var(--qalam-quote-border, #d97706); } }

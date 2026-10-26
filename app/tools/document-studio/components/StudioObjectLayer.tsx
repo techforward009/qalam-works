@@ -1,5 +1,5 @@
 "use client";
-import {pageProjection,projectPoint,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
+import {pageProjection,projectPoint,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
 import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
@@ -488,7 +488,8 @@ function StudioCaret({
 
   useEffect(() => {
     if (!editor) return;
-    const place = () => withCanonicalPages(editor.view.dom,() => {
+    let frame=0;
+    const measure = () => withCanonicalPages(editor.view.dom,() => {
       if (!editor.isFocused || editor.isDestroyed || !editor.state.selection.empty) {
         setBox(null);
         return;
@@ -532,6 +533,10 @@ function StudioCaret({
         contentTop: marginTopPx+page*(geometry ? geometry.pageHeightPx+geometry.gapPx : 0),
       }),pos:editor.state.selection.head});
     });
+    const place = () => {
+      if(!pageProjection(editor.view.dom))return measure();
+      if(!frame)frame=requestCanonicalFrame(editor.view.dom,()=>{frame=0;measure();});
+    };
     place();
     // Native selection changes can follow the ProseMirror transaction, especially
     // at bidi boundaries. Read the final DOM range after those changes too.
@@ -541,6 +546,7 @@ function StudioCaret({
     editor.on("focus", place);
     editor.on("blur", place);
     return () => {
+      cancelCanonicalFrame(frame);
       document.removeEventListener("selectionchange", place);
       editor.off("selectionUpdate", place);
       editor.off("transaction", place);

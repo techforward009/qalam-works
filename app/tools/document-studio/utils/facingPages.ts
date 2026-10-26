@@ -5,7 +5,7 @@ export const facingKey=new PluginKey<DecorationSet>("qalam-facing-projection");
 export interface PageProjection {width:number;height:number;gap:number;count:number}
 export function facingPadding(width:number){return width/7;}
 export function facingRow(page:number){return page===0?0:Math.floor((page+1)/2);}
-export function facingSlot(page:number,g:PageProjection){const pad=facingPadding(g.width);return {x:pad+(page>0&&page%2===1?g.width:0),y:pad+facingRow(page)*(g.height+2*pad+g.gap)};}
+export function facingSlot(page:number,g:PageProjection){const pad=facingPadding(g.width);return {x:pad+(page===0?g.width/2:page%2===1?g.width:0),y:pad+facingRow(page)*(g.height+2*pad+g.gap)};}
 export function facingExtent(g:PageProjection){const rows=facingRow(Math.max(0,g.count-1))+1,pad=facingPadding(g.width);return {width:2*g.width+2*pad,height:rows*(g.height+2*pad+g.gap)-g.gap};}
 export function projectPoint(x:number,y:number,g:PageProjection){const page=Math.max(0,Math.min(g.count-1,Math.floor((y+.01)/(g.height+g.gap)))),slot=facingSlot(page,g);return {x:x+slot.x,y:y-page*(g.height+g.gap)+slot.y,page};}
 export function unprojectPoint(x:number,y:number,g:PageProjection){const pad=facingPadding(g.width),row=Math.max(0,Math.floor(y/(g.height+2*pad+g.gap)));let page=row===0?0:row*2-(x>=pad+g.width?1:0);page=Math.min(g.count-1,page);const slot=facingSlot(page,g);return {x:Math.max(0,Math.min(g.width,x-slot.x)),y:Math.max(0,Math.min(g.height,y-slot.y))+page*(g.height+g.gap),page};}
@@ -19,8 +19,42 @@ export function withCanonicalPages<T>(root:HTMLElement,read:()=>T):T {
  if(active)root.setAttribute('data-studio-canonical-measure','');
  try{return read();}finally{if(active)root.removeAttribute('data-studio-canonical-measure');}
 }
+/** Only browser hit-testing needs hidden source paragraphs to be visible.
+ * Geometry/range reads work while hidden; flipping every paragraph on each
+ * keystroke needlessly repaints a long document. */
+export function withCanonicalHit<T>(root:HTMLElement,read:()=>T):T {
+ const active=!root.hasAttribute('data-studio-canonical-hit');
+ if(active)root.setAttribute('data-studio-canonical-hit','');
+ try{return read();}finally{if(active)root.removeAttribute('data-studio-canonical-hit');}
+}
 export function canonicalClientPoint(root:HTMLElement,point:{left:number;top:number}){
  const g=projections.get(root);if(!g||root.hasAttribute('data-studio-canonical-measure'))return point;
  const rect=root.getBoundingClientRect(),scale=rect.width/g.width,p=unprojectPoint((point.left-rect.left)/scale,(point.top-rect.top)/scale,g);
  return {left:rect.left+p.x*scale,top:rect.top+p.y*scale};
+}
+
+// Pagination, first-line paint and facing projection share a single canonical
+// read phase per frame. A nested read reuses the scope instead of toggling all
+// projected text between every reader. Single-page scheduling is unchanged.
+let nextRead = -1;
+const pendingReads = new Map<number, () => void>();
+const frameQueues = new WeakMap<HTMLElement, number[]>();
+export function requestCanonicalFrame(root: HTMLElement, read: () => void): number {
+ if (!pageProjection(root)) return requestAnimationFrame(read);
+ const id = nextRead--; pendingReads.set(id, read);
+ const queue = frameQueues.get(root);
+ if (queue) queue.push(id);
+ else {
+  const batch = [id]; frameQueues.set(root, batch);
+  requestAnimationFrame(() => {
+   frameQueues.delete(root);
+   withCanonicalPages(root, () => {
+    for (const key of batch) { const run = pendingReads.get(key); pendingReads.delete(key); run?.(); }
+   });
+  });
+ }
+ return id;
+}
+export function cancelCanonicalFrame(id: number) {
+ if (id < 0) pendingReads.delete(id); else cancelAnimationFrame(id);
 }
