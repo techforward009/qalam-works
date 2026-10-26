@@ -27,6 +27,8 @@ const originalDoc = doc([
 ]);
 type Case = { id: string; document: ReturnType<typeof doc>; expected: number; periods?: number; pages?: number; fault?: boolean };
 const cases: Case[] = [
+ { id: "urdu-digital-aliases", document: doc([para("ی ہ ھ ک", "Digital Khatt Indo-Pak")]), expected: 200 },
+ { id: "urdu-digits-unmapped", document: doc([para("۰۱۲۳۴۵۶۷۸۹", "Digital Khatt Indo-Pak")]), expected: 500 },
  { id: "original-23-periods", document: originalDoc, expected: 200, periods: 23, pages: 3 },
  { id: "multiple-digital-paragraphs", document: doc([para(baseArabic,"Digital Khatt Indo-Pak"),para(baseArabic,"Digital Khatt Indo-Pak"),para(baseArabic,"Digital Khatt Indo-Pak")]), expected: 200, periods: 3 },
  { id: "nested-alternating-runs", document: doc([{ type: "paragraph", attrs: { dir: "rtl" }, content: [
