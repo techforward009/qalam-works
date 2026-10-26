@@ -108,7 +108,8 @@ export function mapToolbarLanguage(value: unknown): "ur" | "en" {
 
 export function parseLineGap(raw: string): number | null {
   const text = raw.trim();
-  const match = text.match(/^(\d+(?:\.\d+)?)\s*pt?$/i);
+  // Unit is optional as a whole. "pt?" would make only the t optional and accept "6p".
+  const match = text.match(/^(\d+(?:\.\d+)?)\s*(?:pt)?$/i);
   if (!match) return null;
   const value = Math.round(parseFloat(match[1]) * 10) / 10;
   if (!Number.isFinite(value) || value < 0 || value > 200) return null;

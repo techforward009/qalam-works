@@ -25,6 +25,7 @@ import {
   applyParagraphDirection,
   applyCustomParagraphSpacing,
   applyFontFamily,
+  applyEnglishFont,
   applyFontSize,
   applyHighlight,
   applyLineHeight,
@@ -472,35 +473,57 @@ function SizeField({ editor, value }: { editor: Editor; value: string }) {
   const anchorRef = useRef<HTMLSpanElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dirtyRef = useRef(false);
+  const messageRef = useRef("");
   const [text, setText] = useState(value);
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
+  const showError = (next: string) => {
+    messageRef.current = next;
+    setMessage(next);
+  };
+  const clearError = () => {
+    if (!messageRef.current) return;
+    messageRef.current = "";
+    setMessage("");
+  };
   useEffect(() => {
     if (dirtyRef.current || document.activeElement === inputRef.current) return;
     setText(value);
   }, [value]);
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(clearError, 8000);
+    const onPointer = (event: MouseEvent) => {
+      if (anchorRef.current?.contains(event.target as Node)) return;
+      clearError();
+    };
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [message]);
   const commit = (raw: string, fromBlur = false) => {
+    if (fromBlur && !dirtyRef.current) {
+      setText(value);
+      return;
+    }
+    if (!dirtyRef.current && raw.trim() === value) return;
     const parsed = parseToolbarFontSize(raw);
     if (!parsed.ok) {
-      setMessage(parsed.message);
+      showError(parsed.message);
       dirtyRef.current = false;
       setText(value);
       return;
     }
-    // Blur after an invalid Enter restores the old size. Do not wipe the error.
-    if (fromBlur && (raw.trim() === value || parsed.label === value)) {
-      dirtyRef.current = false;
-      setText(parsed.label);
-      return;
-    }
-    setMessage("");
+    clearError();
     dirtyRef.current = false;
     setText(parsed.label);
     applyFontSize(editor, String(parsed.pt));
     setOpen(false);
   };
   return <span ref={anchorRef} className="relative inline-flex" style={{ marginInlineStart: 2 }}>
-    <input ref={inputRef} id="studio-font-size" data-studio-font-size="true" aria-label="Size" title="Font size" value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") { dirtyRef.current = false; setText(value); setMessage(""); setOpen(false); } }} onBlur={(event) => commit(event.currentTarget.value, true)} style={{ width: 62, height: 20, background: "#fff", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, padding: "2px 16px 2px 4px", border: 0, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }} />
+    <input ref={inputRef} id="studio-font-size" data-studio-font-size="true" aria-label="Size" title="Font size" value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onFocus={clearError} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") { dirtyRef.current = false; setText(value); clearError(); setOpen(false); } }} onBlur={(event) => { const alreadyShowing = messageRef.current !== ""; commit(event.currentTarget.value, true); if (alreadyShowing) clearError(); }} style={{ width: 62, height: 20, background: "#fff", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, padding: "2px 16px 2px 4px", border: 0, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }} />
     <button type="button" aria-label="Size presets" onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ position: "absolute", right: 1, top: 2, width: 16, height: 16, background: "#f0f0f0", border: 0 }}><svg width="7" height="4" viewBox="0 0 7 4"><path d="M0 0H7L3.5 4Z" fill="#000" /></svg></button>
     {open ? <StudioList anchor={anchorRef.current} onClose={() => setOpen(false)}>
       <div role="listbox" aria-label="Size" data-studio-size-list="true" style={{ background: "#fff", border: "1px solid #808080", width: 72 }}>
@@ -855,16 +878,12 @@ export default function DocumentToolbar({
   const kerningRef = useRef<HTMLSelectElement>(null);
   const scaleRef = useRef<HTMLSelectElement>(null);
   const settings = documentSettings ?? defaultDocumentSettings();
+  void onEnglishFontChange;
   const ui = useEditorState({
     editor,
     selector: ({ editor: current }) =>
       current ? resolveActiveToolbarFormatting(current, settings, dir) : null,
   });
-  useEffect(() => {
-    if (!editor || !ui) return;
-    const family = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
-    if (family === "Arial Unicode MS" || STUDIO_FONT_GROUPS.some((group) => group.category === "latin" && group.fonts.some((font) => font.value === family))) onEnglishFontChange?.(family);
-  }, [editor, ui, onEnglishFontChange]);
   if (!editor || !ui) return null;
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
@@ -919,7 +938,7 @@ export default function DocumentToolbar({
             data-latin-control="true"
             className={selectCls} width={202} gap={2}
             value={englishValue}
-            onChange={(event) => onEnglishFontChange?.(event.target.value)}
+            onChange={(event) => applyEnglishFont(editor, event.target.value)}
           >
             <option value="Arial Unicode MS">Arial Unicode MS</option>
             {latinFonts.map((font) => (

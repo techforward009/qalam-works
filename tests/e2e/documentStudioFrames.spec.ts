@@ -187,9 +187,17 @@ test("Latin runs in Urdu paragraphs follow the English font without changing Urd
   await expect(latin).toContainText("Hello Qalam 2026");
   await expect(latin).toHaveCSS("font-family", /Arial/);
   await expect(paragraph).toHaveCSS("font-family", /^"Mehr Nastaliq Web"/);
+  await page.keyboard.press("Control+A");
   await page.locator('[data-studio-latin-font]').selectOption("Inter");
   await expect(latin).toHaveCSS("font-family", /Inter/);
   await expect(paragraph).toHaveCSS("font-family", /^"Mehr Nastaliq Web"/);
+  await expect.poll(() => editor.evaluate((root) => {
+    const spans = [...root.querySelectorAll("span")];
+    const latinMarked = spans.some((element) => /Inter/i.test(element.getAttribute("style") ?? "") && (element.textContent ?? "").includes("Hello"));
+    const urduMarked = spans.some((element) => /Inter/i.test(element.style.fontFamily) && /\p{Script=Arabic}/u.test(element.textContent ?? ""));
+    return latinMarked && !urduMarked;
+  })).toBe(true);
+  await page.keyboard.press("Control+A");
   await page.locator('[data-studio-latin-font]').selectOption("Arial Unicode MS");
   await expect(latin).toHaveCSS("font-family", /Arial/);
   await expect(latin).not.toHaveCSS("font-family", /Jameel/);

@@ -53,6 +53,9 @@ test("size, colour, text style, gap, direction and language controls", async ({ 
   await size.fill("13.5");
   await size.press("Enter");
   await expect(size).toHaveValue("13.5pt");
+  await expect(page.locator(".ProseMirror")).toBeFocused();
+  await size.click();
+  await expect(size).toBeFocused();
   await size.fill("abc");
   await size.press("Enter");
   await expect(page.locator("[data-studio-size-error]")).toHaveText("Value not typed properly.");

@@ -192,6 +192,48 @@ export function applyFontFamily(editor: Editor, family: string): void {
   }
 }
 
+const LATIN_FONT_RUN = /\p{Script=Latin}[\p{Script=Latin}\p{M}\p{N}\s.,:;!?'"()/_+%=@#&-]*/gu;
+
+/** English font box: mark selected Latin, or the next characters at a caret. Urdu is left alone. */
+export function applyEnglishFont(editor: Editor, family: string): void {
+  const clear = family === "Arial Unicode MS";
+  const quoted = clear ? "" : quoteEditorFontFamily(family);
+  const { state } = editor;
+  const type = state.schema.marks.textStyle;
+  if (!type) return;
+  const { empty, from, to } = state.selection;
+  if (empty) {
+    const chain = editor.chain().focus();
+    if (clear || !quoted) chain.unsetFontFamily().run();
+    else chain.setFontFamily(quoted).run();
+    return;
+  }
+  let tr = state.tr;
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText || !node.text) return;
+    const localFrom = Math.max(0, from - pos);
+    const localTo = Math.min(node.text.length, to - pos);
+    const slice = node.text.slice(localFrom, localTo);
+    for (const match of slice.matchAll(LATIN_FONT_RUN)) {
+      const start = pos + localFrom + (match.index ?? 0);
+      const end = start + match[0].length;
+      if (end <= start) continue;
+      const current = node.marks.find((mark) => mark.type === type);
+      if (clear || !quoted) {
+        if (!current?.attrs?.fontFamily) continue;
+        const attrs = { ...current.attrs, fontFamily: null };
+        tr = tr.removeMark(start, end, type);
+        if (Object.values(attrs).some((value) => value != null && value !== false && value !== "")) {
+          tr = tr.addMark(start, end, type.create(attrs));
+        }
+      } else {
+        tr = tr.addMark(start, end, type.create({ ...(current?.attrs ?? {}), fontFamily: quoted }));
+      }
+    }
+  });
+  if (tr.docChanged) editor.view.dispatch(tr);
+}
+
 export function activeToolbarFontFamily(editor: Editor): string {
   return normalizeEditorFontFamily(editor.getAttributes("textStyle").fontFamily);
 }

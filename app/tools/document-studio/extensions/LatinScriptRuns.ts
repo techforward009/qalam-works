@@ -20,13 +20,22 @@ function decorations(doc: Node) {
     block.descendants((node, offset) => {
       if (!node.isText || !node.text) return;
       const family = node.marks.find(mark => mark.type.name === "textStyle")?.attrs?.fontFamily;
+      const explicitLatin = latinFamily(family) ? String(family).replace(/["']/g, "").split(",")[0].trim() : "";
       const arabicNeedsFace = latinFamily(family);
       for (const match of node.text.matchAll(/\p{Script=Latin}[\p{Script=Latin}\p{M}\p{N}\s.,:;!?'"()/_+%=@#&-]*/gu)) {
         const start = pos + 1 + offset + (match.index ?? 0);
-        spans.push(Decoration.inline(start, start + match[0].length, {
-          "data-studio-latin-run": "true",
-          style: "font-family:var(--qalam-ltr-font, Arial, sans-serif)",
-        }));
+        if (explicitLatin) {
+          spans.push(Decoration.inline(start, start + match[0].length, {
+            "data-studio-latin-run": "true",
+            style: `font-family:"${explicitLatin}", Arial, sans-serif`,
+          }));
+        } else {
+          spans.push(Decoration.inline(start, start + match[0].length, {
+            "data-studio-latin-run": "true",
+            "data-studio-latin-default": "true",
+            style: "font-family:var(--qalam-ltr-font, Arial, sans-serif)",
+          }));
+        }
       }
       if (!arabicNeedsFace) return;
       for (const match of node.text.matchAll(/\p{Script=Arabic}+/gu)) {

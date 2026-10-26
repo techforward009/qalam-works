@@ -707,8 +707,8 @@ export default function DocumentCanvas({
             padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
           }
         }
-        .qalam-editor-content [data-studio-latin-run],
-        .qalam-editor-content [data-studio-latin-run] * {
+        .qalam-editor-content [data-studio-latin-default],
+        .qalam-editor-content [data-studio-latin-default] * {
           font-family: var(--qalam-ltr-font, Arial, sans-serif) !important;
         }
         .qalam-editor-content .ProseMirror p[dir="rtl"],

@@ -5,11 +5,12 @@ import { cleanup, fireEvent, render } from "@testing-library/react";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
 import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
-import { applyLineGap, applyLineHeight, applyParagraphDirection, applyTextEffect, setAlign, toggleTextOutline } from "../app/tools/document-studio/utils/documentCommands";
+import { applyEnglishFont, applyLineGap, applyLineHeight, applyParagraphDirection, applyTextEffect, setAlign, toggleTextOutline } from "../app/tools/document-studio/utils/documentCommands";
 import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { blockLeadingPt } from "../app/tools/document-studio/utils/autoLeading";
-import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, insertKashida, mapToolbarLanguage, parseToolbarFontSize, studioOverlayRoot } from "../app/tools/document-studio/utils/inpageToolbar";
+import { parseLeading } from "../app/tools/document-studio/utils/leading";
+import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, insertKashida, mapToolbarLanguage, parseLineGap, parseToolbarFontSize, studioOverlayRoot } from "../app/tools/document-studio/utils/inpageToolbar";
 
 const editors: Editor[] = [];
 function make(content = "<p>یہ ایک لمبی عبارت ہے</p>") {
@@ -27,6 +28,14 @@ describe("InPage toolbar values", () => {
     expect(parseToolbarFontSize("abc")).toMatchObject({ ok: false, message: "Value not typed properly." });
     expect(parseToolbarFontSize("1000").ok).toBe(false);
     expect(parseToolbarFontSize("1000").ok ? "" : (parseToolbarFontSize("1000") as { message: string }).message).toContain("Minimum allowed is 6");
+    expect(parseLineGap("0")).toBe(0);
+    expect(parseLineGap("100")).toBe(100);
+    expect(parseLineGap("6")).toBe(6);
+    expect(parseLineGap("6pt")).toBe(6);
+    expect(parseLineGap("6p")).toBeNull();
+    expect(parseLeading("12")).toEqual({ mode: "points", value: 12 });
+    expect(parseLeading("100")).toEqual({ mode: "points", value: 100 });
+    expect(parseLeading("6p")).toBeNull();
     expect(mapToolbarLanguage("ar")).toBe("ur");
     expect(mapToolbarLanguage("fa")).toBe("ur");
     expect(mapToolbarLanguage("auto")).toBe("ur");
@@ -47,6 +56,32 @@ describe("InPage toolbar values", () => {
     fireEvent.keyDown(input, { key: "Enter" });
     expect(document.querySelector("[data-studio-size-error]")?.textContent).toBe("Value not typed properly.");
     expect(editor.getAttributes("textStyle").fontSize).toBe("13.5pt");
+  });
+
+  it("does not report an error when a mixed size box is focused and left", () => {
+    const editor = make('<p><span style="font-size:12pt">ab</span><span style="font-size:18pt">cd</span></p>');
+    editor.commands.selectAll();
+    render(<DocumentToolbar editor={editor} dir="rtl" setDir={() => {}} isUr={false} />);
+    const input = document.querySelector("[data-studio-font-size]") as HTMLInputElement;
+    expect(input.value).toBe("");
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(document.querySelector("[role='alert']")).toBeNull();
+  });
+
+  it("saves the English font on selected Latin and not on Urdu", () => {
+    const editor = make("<p>اردو Hello عبارت</p>");
+    editor.commands.selectAll();
+    applyEnglishFont(editor, "Inter");
+    const parts = (editor.getJSON().content?.[0]?.content ?? []) as { text?: string; marks?: { type?: string; attrs?: { fontFamily?: string } }[] }[];
+    const hello = parts.find((node) => node.text?.includes("Hello"));
+    const urdu = parts.find((node) => node.text && /\p{Script=Arabic}/u.test(node.text));
+    expect(String(hello?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily ?? "")).toContain("Inter");
+    expect(String(urdu?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily ?? "")).not.toContain("Inter");
+    editor.commands.focus("end");
+    applyEnglishFont(editor, "Inter");
+    const stored = editor.state.storedMarks ?? editor.state.selection.$from.marks();
+    expect(stored.some((mark) => String(mark.attrs.fontFamily ?? "").includes("Inter"))).toBe(true);
   });
 
   it("lists the InPage colours and text styles in order", () => {
