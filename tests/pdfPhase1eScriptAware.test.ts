@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { execFileSync } from "node:child_process";
+import { urduAyat } from "./fixtures/digitalKhatt/aalImran";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -27,8 +29,12 @@ const originalDoc = doc([
 ]);
 type Case = { id: string; document: ReturnType<typeof doc>; expected: number; periods?: number; pages?: number; fault?: boolean };
 const cases: Case[] = [
+ { id: "punctuation-only-digital", document: doc([para("، ؛ ؟", "Digital Khatt Indo-Pak")]), expected: 200 },
+ { id: "aal-imran-urdu-markers-punctuation", document: doc(urduAyat.map((value, i) => para(value + (i === 0 ? " ۝۲۶۔" : " ۝۲۷۔"), "Digital Khatt Indo-Pak"))), expected: 200 },
+ { id: "naskh-punctuation-and-mark", document: doc([para("ا۔ ، ؛ ؟ ا۫", "Digital Khatt Indo-Pak")]), expected: 200 },
+ { id: "unsupported-list", document: doc([para("ا😀🚀", "Digital Khatt Indo-Pak")]), expected: 500 },
  { id: "urdu-digital-aliases", document: doc([para("ی ہ ھ ک", "Digital Khatt Indo-Pak")]), expected: 200 },
- { id: "urdu-digits-unmapped", document: doc([para("۰۱۲۳۴۵۶۷۸۹", "Digital Khatt Indo-Pak")]), expected: 500 },
+ { id: "urdu-digits-aliased", document: doc([para("۰۱۲۳۴۵۶۷۸۹", "Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "original-23-periods", document: originalDoc, expected: 200, periods: 23, pages: 3 },
  { id: "multiple-digital-paragraphs", document: doc([para(baseArabic,"Digital Khatt Indo-Pak"),para(baseArabic,"Digital Khatt Indo-Pak"),para(baseArabic,"Digital Khatt Indo-Pak")]), expected: 200, periods: 3 },
  { id: "nested-alternating-runs", document: doc([{ type: "paragraph", attrs: { dir: "rtl" }, content: [
@@ -39,8 +45,8 @@ const cases: Case[] = [
    text("وَالْحَمْدُ لِلّٰهِ. ","Digital Khatt Indo-Pak","16pt",[{type:"italic"}])
  ]}]), expected: 200, periods: 3 },
  { id: "later-arabic-substitution", document: doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak")]), expected: 500, fault: true },
- { id: "quranic-unsupported-later-run", document: doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("ا\u06D7 ","Digital Khatt Indo-Pak")]), expected: 500 },
- { id: "joining-control", document: doc([para("ا\u200Dب ","Digital Khatt Indo-Pak")]), expected: 500 },
+ { id: "quranic-naskh-later-run", document: doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("ا\u06D7 ","Digital Khatt Indo-Pak")]), expected: 200 },
+ { id: "joining-control", document: doc([para("ا\u200Dب ","Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "unapproved-question-mark", document: doc([para("ا? ","Digital Khatt Indo-Pak")]), expected: 500 },
  { id: "period-wrong-context", document: doc([para("ا.ا ","Digital Khatt Indo-Pak")]), expected: 500 },
  { id: "arabic-12pt", document: doc([para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak","12pt")]), expected: 200, periods: 1 },
@@ -75,9 +81,9 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
        });
        const nativePdf = page.pdf.bind(page);
        vi.spyOn(page, "pdf").mockImplementation(async options => {
-         if (active === "original-23-periods") {
-           writeFileSync(join(DIR, "original-final-dom.html"), await page.content());
-           await page.screenshot({ path: join(DIR, "original-chromium.png"), fullPage: true });
+         if (active === "original-23-periods" || active === "aal-imran-urdu-markers-punctuation") {
+           writeFileSync(join(DIR, active + "-final-dom.html"), await page.content());
+           await page.screenshot({ path: join(DIR, active + "-chromium.png"), fullPage: true });
          }
          return nativePdf(options);
        });
@@ -96,6 +102,19 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
    expect(response.status, fixture.id).toBe(fixture.expected);
    if (response.status === 200) {
      const bytes = new Uint8Array(await response.arrayBuffer());
+     if (fixture.id === "aal-imran-urdu-markers-punctuation") {
+       const extracted = execFileSync("pdftotext", ["-", "-"], { input: bytes }).toString("utf8");
+       writeFileSync(join(DIR, "aal-imran-text-layer.txt"), extracted);
+       for (const char of ["ی", "ھ", "ہ", "ک", "۝", "۲", "۶", "۷", "۔"]) expect(extracted).toContain(char);
+     }
+     if (fixture.id === "urdu-digits-aliased") {
+       const extracted = execFileSync("pdftotext", ["-", "-"], { input: bytes }).toString("utf8");
+       for (const char of "۰۱۲۳۴۵۶۷۸۹") expect(extracted).toContain(char);
+     }
+     if (fixture.id === "naskh-punctuation-and-mark") {
+       const extracted = execFileSync("pdftotext", ["-", "-"], { input: bytes }).toString("utf8");
+       for (const char of ["۔", "،", "؛", "؟", "۫"]) expect(extracted).toContain(char);
+     }
      const pdf = await PDFDocument.load(bytes);
      expect(pdf.getPageCount()).toBeGreaterThan(0);
      if (fixture.pages) expect(pdf.getPageCount()).toBe(fixture.pages);
@@ -118,6 +137,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
    } else {
      const body = await response.json() as { error?: string };
      expect(body.error).toMatch(/blocked/i);
+     if (fixture.id === "unsupported-list") expect(body.error).toContain("U+1F600, U+1F680");
    }
    fault = false;
  }, 150000);

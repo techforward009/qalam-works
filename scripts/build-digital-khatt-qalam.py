@@ -15,7 +15,7 @@ SOURCE = FONTS / "DigitalKhattIndoPakRegular.woff2"
 OUTPUT = FONTS / "DigitalKhattIndoPakQalam.woff2"
 NOTICE = (
     "Modified by Qalam Works: Urdu character cmap aliases for Qalam Page; "
-    "original outlines, GSUB and GPOS unchanged. "
+    "Arabic-use Urdu codepoint/digit aliases; original outlines, GSUB and GPOS unchanged. "
     "Copyright (c) 2024 Amine Anane; Copyright (c) 2024 Tarteel Inc. "
     "Licensed under SIL Open Font License 1.1."
 )
@@ -33,6 +33,7 @@ def main():
         0x06C3: original_cmap[0x0629],
         0x06A9: original_cmap[0x0643],
     }
+    aliases.update({0x06F0 + digit: original_cmap[0x0660 + digit] for digit in range(10)})
     optional = "alefmaksura.hamzaabove.isol"
     if optional in font.getGlyphOrder():
         aliases[0x06D3] = optional
@@ -41,12 +42,13 @@ def main():
             table.cmap.update(aliases)
     names = {
         1: "DigitalKhatt IndoPak Qalam",
-        3: "DigitalKhattIndoPakQalam-Regular-0.1-Qalam1",
+        3: "DigitalKhattIndoPakQalam-Regular-0.1-Qalam2",
         4: "DigitalKhatt IndoPak Qalam Regular",
-        5: "Version 0.1; Qalam Urdu cmap modification 1",
+        5: "Version 0.1; Qalam Urdu cmap modification 2",
         6: "DigitalKhattIndoPakQalam-Regular",
         10: NOTICE,
         16: "DigitalKhatt IndoPak Qalam",
+        21: "DigitalKhatt IndoPak Qalam",
     }
     for name_id, value in names.items():
         records = [record for record in font["name"].names if record.nameID == name_id]
@@ -58,9 +60,14 @@ def main():
     for tag, data in layout.items():
         assert rebuilt.getTableData(tag) == data, f"Unexpected {tag} change"
     assert rebuilt.getGlyphOrder() == font.getGlyphOrder()
+    assert rebuilt["name"].getDebugName(21) == "DigitalKhatt IndoPak Qalam"
     cmap = rebuilt.getBestCmap()
     assert {cp: cmap[cp] for cp in aliases} == aliases
-    assert not any(cp in cmap for cp in range(0x06F0, 0x06FA))
+    assert all(cmap[0x06F0 + digit] == original_cmap[0x0660 + digit] for digit in range(10))
+    fallback = TTFont(FONTS / "naskh-400.woff2").getBestCmap()
+    (ROOT / "app/tools/document-studio/utils/naskhCmap.json").write_text(
+        json.dumps(sorted(fallback), separators=(",", ":")) + "\n", encoding="utf-8"
+    )
     (ROOT / "app/tools/document-studio/utils/digitalKhattCmap.json").write_text(
         json.dumps(sorted(cmap), separators=(",", ":")) + "\n", encoding="utf-8"
     )

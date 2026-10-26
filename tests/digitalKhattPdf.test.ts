@@ -144,7 +144,7 @@ describe("Digital Khatt PDF font", () => {
         expect(arabic).toMatch(/Tj|TJ/);
         expect(await print(urduAyat[index])).toBe(arabic);
       }
-      for (const [urdu, arabic] of [["ی بی یب بیب", "ي بي يب بيب"], ["ہ بہ ہب بہب", "ه به هب بهب"], ["ھ بھ ھب بھب", "ه به هب بهب"], ["ک بک کب بکب", "ك بك كب بكب"], ["ۃ بۃ ے بے ۓ بۓ", "ة بة ي بي ئ بئ"]]) {
+      for (const [urdu, arabic] of [["۝۲۶ ۝۲۷ ۰۱۲۳۴۵۶۷۸۹", "۝٢٦ ۝٢٧ ٠١٢٣٤٥٦٧٨٩"], ["ی بی یب بیب", "ي بي يب بيب"], ["ہ بہ ہب بہب", "ه به هب بهب"], ["ھ بھ ھب بھب", "ه به هب بهب"], ["ک بک کب بکب", "ك بك كب بكب"], ["ۃ بۃ ے بے ۓ بۓ", "ة بة ي بي ئ بئ"]]) {
         expect(await print(urdu)).toBe(await print(arabic));
       }
     } finally {

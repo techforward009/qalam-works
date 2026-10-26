@@ -1,5 +1,7 @@
 # Qalam Page: Digital Khatt Urdu aliases
 
+Historical validation at commit `6a2020e82e1d4318ade172266a248b995ca1d459`. The [current follow-up report](r2/README.md) adds digit aliases, PDF Naskh fallback and font-load layout fixes.
+
 Qalam Page keeps imported/stored Unicode unchanged and loads `DigitalKhattIndoPakQalam.woff2` for the existing `digital-khatt-indo-pak` font ID. The Quran reader and Khateeb font declarations still load their original files.
 
 ## Added cmap entries

@@ -5,6 +5,8 @@ export type Leading = { mode: "auto" } | { mode: "points"; value: number };
 export const AUTO_LEADING: Leading = { mode: "auto" };
 export const AUTO_FONT_RATIOS: Readonly<Record<string,number>> = {
   "Mehr Nastaliq Web": 1.65, "Jameel Noori Nastaleeq": 1.65, "Noto Nastaliq Urdu": 1.65,
+  // Digital Khatt hhea: (1500 ascender + 700 descender + 200 gap) / 1000 UPM.
+  "Digital Khatt Indo-Pak": 2.4,
   Gulzar: 1.65, Arial: 1.25, Inter: 1.25, Amiri: 1.25, "Scheherazade New": 1.25,
 };
 export function parseLeading(raw: unknown): Leading | null {
