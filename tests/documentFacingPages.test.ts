@@ -1,9 +1,12 @@
 // @vitest-environment happy-dom
 import {describe,it,expect,vi} from 'vitest';
-import {facingSlot,facingExtent,facingPadding,projectPoint,unprojectPoint,setPageProjection,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalHit,adjacentVisualPosition} from '../app/tools/document-studio/utils/facingPages';
+import {facingSlot,facingExtent,facingPadding,projectPoint,unprojectPoint,setPageProjection,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalHit,adjacentVisualPosition,keepFacingInputPaint,facingLineTop,facingArrowKey,createFacingArrowTracking} from '../app/tools/document-studio/utils/facingPages';
 import {parseStoredViewMode} from '../app/tools/document-studio/utils/documentView';
 import {paginationGeometryFromLayout} from '../app/tools/document-studio/extensions/QalamPagination';
 import {resolvePageLayout} from '../app/tools/document-studio/utils/pageLayout';
+import {Schema} from '@tiptap/pm/model';
+import {EditorState,TextSelection} from '@tiptap/pm/state';
+import {Decoration,DecorationSet} from '@tiptap/pm/view';
 const g={width:210*96/25.4,height:297*96/25.4,gap:12,count:5};
 describe('view-only RTL facing slots',()=>{
  it('centres 1 alone, then 2 right/3 left and 4 right/5 left',()=>{
@@ -57,4 +60,42 @@ it('finds precisely the adjacent visual line, including hard breaks and page gap
  expect(adjacentVisualPosition(0,8,3,-1,p=>tops[p],12)).toBe(2);
  expect(adjacentVisualPosition(0,8,0,-1,p=>tops[p],12)).toBeNull();
  expect(adjacentVisualPosition(0,8,8,1,p=>tops[p],12)).toBeNull();
+});
+
+it('paints a split input paragraph synchronously without replacing its selection',()=>{
+ const schema=new Schema({nodes:{doc:{content:'paragraph+'},paragraph:{content:'text*'},text:{}}});
+ const doc=schema.node('doc',null,[schema.node('paragraph',null,schema.text('پہلی عبارت'))]);
+ const state=EditorState.create({doc,selection:TextSelection.create(doc,doc.content.size-1)});
+ const attrs={'data-facing-projected':'true','data-facing-block':'true',style:'position:relative;left:510px;top:113px'};
+ const old=DecorationSet.create(doc,[Decoration.node(0,doc.content.size,attrs,{paint:JSON.stringify(attrs)})]);
+ const tr=state.tr.split(state.selection.head),next=state.apply(tr),mapped=old.map(tr.mapping,tr.doc),head=next.selection.$head;
+ expect(head.parent.content.size).toBe(0);
+ const result=keepFacingInputPaint(old,mapped,next,state,attrs),input=result.find(head.before(),head.after()).find(d=>d.from===head.before()&&d.to===head.after());
+ expect(JSON.parse(input!.spec.paint)).toMatchObject({...attrs,'data-facing-input':'true'});
+ expect(next.selection.eq(tr.selection)).toBe(true);
+});
+it.each([.5,1,2])('resolves a text line after the pagination gap at zoom %s',scale=>{
+ const geometry={pageHeightPx:1122,gapPx:12,marginTopPx:48,marginBottomPx:48},origin=30;
+ const top=facingLineTop(origin+1056*scale,origin+1181*scale,origin+1208*scale,26.4*scale,origin,scale,geometry);
+ expect(top).toBeCloseTo(origin+1182*scale);
+ const ordinary=origin+500*scale;
+ expect(facingLineTop(ordinary,ordinary,ordinary+27*scale,26.4*scale,origin,scale,geometry)).toBe(ordinary);
+});
+
+it('inherits input paint from the selected block, not a neighbour touching its boundary',()=>{
+ const schema=new Schema({nodes:{doc:{content:'paragraph+'},paragraph:{content:'text*'},text:{}}}),p=schema.node('paragraph',null,schema.text('عبارت'));
+ const doc=schema.node('doc',null,[p,p]),state=EditorState.create({doc,selection:TextSelection.create(doc,doc.content.size-1)});
+ const first={'data-facing-projected':'true','data-facing-block':'true',style:'position:relative;left:500px;top:113px'},second={...first,style:'position:relative;left:900px;top:339px'};
+ const old=DecorationSet.create(doc,[Decoration.node(0,p.nodeSize,first,{paint:JSON.stringify(first)}),Decoration.node(p.nodeSize,doc.content.size,second,{paint:JSON.stringify(second)})]);
+ const tr=state.tr.split(state.selection.head),next=state.apply(tr),head=next.selection.$head,result=keepFacingInputPaint(old,old.map(tr.mapping,tr.doc),next,state,first);
+ expect(JSON.parse(result.find(head.before(),head.after()).find(d=>d.from===head.before()&&d.to===head.after())!.spec.paint).style).toBe(second.style);
+});
+
+it('drops arrow affinity on newer edits and direct selections, retaining it only for paint metadata',()=>{
+ const schema=new Schema({nodes:{doc:{content:'paragraph+'},paragraph:{content:'text*'},text:{}}}),doc=schema.node('doc',null,[schema.node('paragraph',null,schema.text('عبارت'))]);
+ const original=EditorState.create({doc,plugins:[createFacingArrowTracking()]}),arrow=original.apply(original.tr.setSelection(TextSelection.create(doc,1)).setMeta(facingArrowKey,{head:1,page:1}));
+ expect(facingArrowKey.getState(arrow)).toEqual({head:1,page:1});
+ expect(facingArrowKey.getState(arrow.apply(arrow.tr.setMeta('paint-only',true)))).toEqual({head:1,page:1});
+ expect(facingArrowKey.getState(arrow.apply(arrow.tr.insertText('ا')))).toBeNull();
+ expect(facingArrowKey.getState(arrow.apply(arrow.tr.setSelection(TextSelection.create(doc,1))))).toBeNull();
 });

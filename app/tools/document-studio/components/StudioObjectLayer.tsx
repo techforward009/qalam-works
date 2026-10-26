@@ -1,5 +1,5 @@
 "use client";
-import {pageProjection,projectPoint,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
+import {pageProjection,projectPoint,facingArrowKey,facingTextRect,facingLineTop,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
 import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
@@ -496,17 +496,26 @@ function StudioCaret({
       }
       const host = hostRef.current;
       if (!host) return;
+      const facing=pageProjection(editor.view.dom);
+      const resolvedDom=facing?editor.view.domAtPos(editor.state.selection.head):null;
+      const selectionHead=editor.state.selection.$head;
+      const facingLeaf=facing?(selectionHead.nodeAfter?.isText?editor.view.nodeDOM(selectionHead.pos):selectionHead.nodeBefore?.isText?editor.view.nodeDOM(selectionHead.pos-1):null):null;
+      // Resolve the model's text leaf, not a pagination widget adjacent to it.
+      const facingAnchor=facingLeaf??resolvedDom?.node;
       const domSelection = window.getSelection();
       let selectionRect: DOMRect | null = null;
       if (domSelection?.rangeCount && domSelection.isCollapsed && editor.view.dom.contains(domSelection.anchorNode)) {
-        const rects = domSelection.getRangeAt(0).getClientRects();
-        selectionRect = rects.length ? rects[rects.length - 1] : null;
+        // Facing decorations can update after the model selection. Do not use
+        // an old native anchor from the other side of a pagination strut.
+        const matches=!facing||editor.view.posAtDOM(domSelection.anchorNode!,domSelection.anchorOffset)===editor.state.selection.head;
+        if(matches){const rects=[...domSelection.getRangeAt(0).getClientRects()].filter(r=>!facing||r.height>0);selectionRect=rects.length?rects[rects.length-1]:null;}
       }
       const coords = selectionRect ?? editor.view.coordsAtPos(editor.state.selection.head);
-      const firstLine = firstLineRunAt(editor.state, editor.state.selection.head);
+      const measuredRun = firstLineRunAt(editor.state, editor.state.selection.head);
+      const firstLine = facing&&measuredRun&&!measuredRun.empty&&selectionHead.pos===measuredRun.to&&selectionHead.pos<selectionHead.end()?undefined:measuredRun;
       const rect = host.getBoundingClientRect();
       const scale = host.closest<HTMLElement>("[data-studio-zoom-surface]")!.getBoundingClientRect().width/pageWidthPx;
-      const anchor = window.getSelection()?.anchorNode;
+      const anchor = facingAnchor??window.getSelection()?.anchorNode;
       const owner = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor instanceof HTMLElement ? anchor : editor.view.dom;
       const leading = parseFloat(getComputedStyle(owner?.closest("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom).lineHeight) * scale;
       const block = owner?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom;
@@ -514,7 +523,12 @@ function StudioCaret({
       let top = firstLine?.lineBoxTop !== undefined ? rect.top+firstLine.lineBoxTop*scale : firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
         : renderedLineBoxTop(owner ?? editor.view.dom,{top:coords.top,height:coords.bottom-coords.top},Number.isFinite(leading) ? leading : coords.bottom-coords.top,scale);
       const geometry = getQalamPaginationState(editor)?.geometry;
-      top=hardBreakLineTop(editor.view.dom,owner??editor.view.dom,coords,leading,scale)??top;
+      const hardBreakTop=hardBreakLineTop(editor.view.dom,owner??editor.view.dom,coords,leading,scale);
+      top=hardBreakTop??top;
+      const arrow=facing?facingArrowKey.getState(editor.state):null;
+      const arrowText=arrow?.head===selectionHead.pos?facingTextRect(editor.view,selectionHead.pos):null;
+      if(facing&&geometry?.enabled&&(selectionHead.nodeAfter?.isText||selectionHead.nodeBefore?.isText)&&hardBreakTop===undefined)
+        top=facingLineTop(top,arrowText?.top??coords.top,arrowText?.bottom??coords.bottom,leading,rect.top,scale,geometry,arrow?.head===selectionHead.pos?arrow.page:undefined,arrow?.head===selectionHead.pos&&arrow.lineTop!==undefined?rect.top+arrow.lineTop*scale:undefined);
       const page = geometry?.enabled ? Math.max(0,Math.floor(((top-rect.top)/scale-marginTopPx+1)/(geometry.pageHeightPx+geometry.gapPx))) : 0;
       const { nodeBefore, nodeAfter } = editor.state.selection.$head;
       const emptyLine = (!nodeBefore || nodeBefore.type.name === "hardBreak") && (!nodeAfter || nodeAfter.type.name === "hardBreak");
