@@ -214,5 +214,5 @@ test("everyday writing, undo, menus, zoom and pages", async ({ page }) => {
   await expect(page.locator("[data-studio-page-label]")).toHaveText(/\/[2-9]\d*$/, { timeout: 15_000 });
   await page.locator("[data-menu-root='file']").click();
   await page.locator("[data-menu-action='file.new']").click();
-  await expect(page.getByLabel("Facing Pages")).toBeDisabled();
+  await expect(page.getByLabel("Facing Pages")).toBeEnabled();
 });

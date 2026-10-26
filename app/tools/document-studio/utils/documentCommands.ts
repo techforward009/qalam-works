@@ -18,7 +18,7 @@ import { detectBlockDirection } from "./plainTextToDocNode";
 import { normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
 import type { TextEffect } from "./inpageToolbar";
-import { isLatinFamilyName, scriptRanges } from "../extensions/LatinScriptRuns";
+import { isLatinFamilyName, hasScript, scriptRanges } from "../extensions/LatinScriptRuns";
 import {
   defaultDocumentSettings,
   resolveAddSpaceAfterPt,
@@ -110,12 +110,12 @@ export function activeBlockStyleId(editor: Editor): BlockStyleId {
   return attr && isBlockStyleId(attr) ? attr : "normal";
 }
 
-export function applyLineHeight(editor: Editor, value: number | null): void {
-  applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } });
+export function applyLineHeight(editor: Editor, value: number | null, focus = true): void {
+  applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } }, focus);
 }
 
-export function applyLineGap(editor: Editor, value: number): void {
-  applyParagraphAttrs(editor, { lineGapPt: value });
+export function applyLineGap(editor: Editor, value: number, focus = true): void {
+  applyParagraphAttrs(editor, { lineGapPt: value }, focus);
 }
 
 const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
@@ -131,12 +131,14 @@ export type ParagraphSpacingAttrs = {
   indentEndMm?: number | null;
 };
 
-export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs): void {
+export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs, focus = true): void {
   if (typeof attrs.lineHeight === "number" && attrs.leading == null) attrs = { ...attrs, leading: { mode: "points", value: attrs.lineHeight }, lineHeight: null };
   const { state } = editor;
   if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
     const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
-    editor.chain().focus().updateAttributes(nodeType, attrs).run();
+    const chain = editor.chain();
+    if (focus) chain.focus();
+    chain.updateAttributes(nodeType, attrs).run();
     return;
   }
   const { from, to } = state.selection;
@@ -161,6 +163,7 @@ export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs
     return false;
   });
   if (changed) editor.view.dispatch(tr);
+  if (!focus) return;
   editor.commands.setTextSelection({ from, to });
   editor.chain().focus().run();
 }
@@ -443,18 +446,51 @@ export function findBlockStartPosition(editor: Editor, blockIndex: number): numb
   return foundPos;
 }
 
+function cleanTextStyle(mark: Mark): Mark | null {
+  if (mark.type.name !== "textStyle") return mark;
+  const attrs: Record<string, unknown> = { ...mark.attrs };
+  let live = false;
+  for (const key of Object.keys(attrs)) {
+    const value = attrs[key];
+    if (value == null || value === "" || value === false) delete attrs[key];
+    else live = true;
+  }
+  return live ? mark.type.create(attrs) : null;
+}
+
+function pastedDirection(text: string, fallbackDir: "rtl" | "ltr"): "rtl" | "ltr" {
+  if (hasScript(text, "arabic") && !hasScript(text, "latin")) return "rtl";
+  return detectParagraphDirection(text, fallbackDir);
+}
+
 export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
   if (!slice.content.size) return slice;
   function assignDir(node: PMNode): PMNode {
-    if (!node.isTextblock) {
-      const mapped = node.content.content.map(assignDir);
-      return node.copy(pmFragment.from(mapped));
+    if (node.isText) {
+      const marks = node.marks.flatMap((mark) => {
+        const cleaned = cleanTextStyle(mark);
+        return cleaned ? [cleaned] : [];
+      });
+      const same = marks.length === node.marks.length && marks.every((mark, index) => mark.eq(node.marks[index]));
+      return same ? node : node.mark(marks);
     }
+    const children: PMNode[] = [];
+    let changed = false;
+    node.forEach((child) => {
+      const next = assignDir(child);
+      if (next !== child) changed = true;
+      children.push(next);
+    });
+    const content = changed ? pmFragment.from(children) : node.content;
+    if (!node.isTextblock) return changed ? node.copy(content) : node;
     const text = node.textContent;
-    if (!text.trim()) return node;
-    if (node.attrs.directionMode === "rtl" || node.attrs.directionMode === "ltr") return node;
-    const detectedDir = detectParagraphDirection(text, node.attrs.dir ?? fallbackDir);
-    return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
+    if (!text.trim()) return changed ? node.copy(content) : node;
+    if (node.attrs.directionMode === "rtl" || node.attrs.directionMode === "ltr") {
+      return changed ? node.type.create(node.attrs, content, node.marks) : node;
+    }
+    const detectedDir = pastedDirection(text, fallbackDir);
+    if (!changed && detectedDir === node.attrs.dir) return node;
+    return node.type.create({ ...node.attrs, dir: detectedDir }, content, node.marks);
   }
   const nodes = slice.content.content.map(assignDir);
   return new Slice(pmFragment.from(nodes), slice.openStart, slice.openEnd);

@@ -22,7 +22,7 @@ import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
-import { bareFamily, hasScript, isLatinFamilyName, latinScaleCss } from "../extensions/LatinScriptRuns";
+import { bareFamily, hasScript, isLatinFamilyName, latinScaleCss, latinScaleFactor, latinScaleTokens } from "../extensions/LatinScriptRuns";
 
 export interface PdfFontFace {
   familyName: string;
@@ -173,13 +173,13 @@ function noteEffective(
   }
 }
 
-function runMetrics(attrs: Record<string, unknown> | undefined, text: string, latin: boolean): string {
+function runMetrics(attrs: Record<string, unknown> | undefined, latin: boolean, sample = ""): string {
   if (!latin || !attrs) return "";
   const parts: string[] = [];
   const tracking = attrs.trackingPercent;
   const scale = attrs.scalePercent;
   if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em;`);
-  if (typeof scale === "number" && scale !== 100) parts.push(`${latinScaleCss(scale, text)};`);
+  if (typeof scale === "number" && scale !== 100) parts.push(`${latinScaleCss(scale, sample)};`);
   return parts.join("");
 }
 
@@ -234,26 +234,33 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 
     for (const piece of pieces) {
       if (!piece.text) continue;
-      let inner = escapeHtml(piece.text);
       const picked = familyForPiece(styleMark?.attrs as Record<string, unknown> | undefined, piece.text);
-      const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
-      const effective = resolveEffectivePdfFont(choice.family, picked.latin ? "ltr" : choice.fontDir, ctx.available, ctx.typography);
-      noteEffective(ctx, effective);
-      if (bold) inner = `<strong>${inner}</strong>`;
-      if (italics) inner = `<em>${inner}</em>`;
-      if (underline) inner = `<u>${inner}</u>`;
-      if (typeof href === "string" && href.trim().length > 0) {
-        inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
+      const scale = styleMark?.attrs?.scalePercent;
+      const scaled = picked.latin && typeof scale === "number" && scale !== 100;
+      const tokens = scaled ? latinScaleTokens(piece.text).map((token) => token.text) : [piece.text];
+      for (const token of tokens) {
+        if (!token) continue;
+        let inner = escapeHtml(token);
+        const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
+        const effective = resolveEffectivePdfFont(choice.family, picked.latin ? "ltr" : choice.fontDir, ctx.available, ctx.typography);
+        noteEffective(ctx, effective);
+        if (bold) inner = `<strong>${inner}</strong>`;
+        if (italics) inner = `<em>${inner}</em>`;
+        if (underline) inner = `<u>${inner}</u>`;
+        if (typeof href === "string" && href.trim().length > 0) {
+          inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
+        }
+        const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
+          ? ` data-pdf-font="${escapeAttr(effective.family)}"`
+          : "";
+        const urduMarker = hasScript(token, "arabic") ? ' data-pdf-urdu="true"' : "";
+        const isolate = !scaled && piece.dir !== blockDir;
+        const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, picked.latin, token)}`;
+        const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
+        const scaleAttr = scaled ? ` data-pdf-scale="${latinScaleFactor(Number(scale))}"` : "";
+        inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${scaleAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
+        html += inner;
       }
-      const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
-        ? ` data-pdf-font="${escapeAttr(effective.family)}"`
-        : "";
-      const urduMarker = hasScript(piece.text, "arabic") ? ' data-pdf-urdu="true"' : "";
-      const isolate = piece.dir !== blockDir;
-      const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, piece.text, picked.latin)}`;
-      const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
-      inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
-      html += inner;
     }
   }
 
@@ -525,6 +532,7 @@ ${classRulesCss()}
 </head>
 <body dir="${dir}">
 ${bodyHtml}
+<script>(function(){function measure(){document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=el.offsetWidth;if(width<=0)return;el.style.marginRight=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
 </body>
 </html>`;
 

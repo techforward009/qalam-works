@@ -45,6 +45,23 @@ describe("documentCommands — extracted from editor", () => {
     expect(result.content.child(1).attrs.dir).toBe("ltr");
     expect(result.content.child(2).attrs.dir).toBe("rtl");
   });
+
+  it("drops empty text styles and keeps pasted Urdu rtl", () => {
+    const textStyle = schema.marks.textStyle.create({ fontSize: "", color: "" });
+    const kept = schema.marks.textStyle.create({ fontSize: "12pt", color: "" });
+    const paragraphType = schema.nodes.paragraph;
+    const nodes = [
+      paragraphType.create({ dir: "ltr" }, schema.text("یہ اردو متن ہے۔", [textStyle])),
+      paragraphType.create({ dir: "ltr" }, schema.text("Hello", [kept])),
+    ];
+    const result = transformPastedSlice(new Slice(Fragment.from(nodes), 0, 0), "rtl");
+    expect(result.content.child(0).attrs.dir).toBe("rtl");
+    expect(result.content.child(0).content.child(0).marks).toEqual([]);
+    const english = result.content.child(1);
+    expect(english.attrs.dir).toBe("ltr");
+    expect(english.content.child(0).marks[0].attrs.fontSize).toBe("12pt");
+    expect(english.content.child(0).marks[0].attrs.color).toBeFalsy();
+  });
 });
 
 describe("documentSchema production extensions", () => {

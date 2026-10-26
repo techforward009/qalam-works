@@ -1,10 +1,13 @@
 import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Plugin, PluginKey, type Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import type { EditorView } from "@tiptap/pm/view";
 import type { Node } from "@tiptap/pm/model";
 
-const key = new PluginKey<DecorationSet>("studioLatinScriptRuns");
+interface LatinRunState { decorations: DecorationSet; widths: Map<string, number> }
+const key = new PluginKey<LatinRunState>("studioLatinScriptRuns");
 const stripKey = "studioLatinFaceStrip";
+const scaleMeasureKey = "studioLatinScaleMeasure";
 const LATIN = /^(inter|arial|arial unicode ms|times|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
 
 export function bareFamily(family: unknown): string {
@@ -79,49 +82,98 @@ export function hasScript(text: string, script: "arabic" | "latin"): boolean {
   return scriptRanges(text, script).length > 0;
 }
 
-/**
- * scaleX is ignored on a plain inline span. inline-block makes it paint, and the
- * inline-end margin pulls the layout box toward the visual width so neighbours
- * do not sit under the glyphs. The caret still follows the unscaled advances
- * inside the transformed box.
- */
-export function latinScaleCss(scale: number, sample: string): string {
-  const factor = scale / 100;
-  const em = Math.max(sample.length, 1) * 0.5;
-  const margin = (factor - 1) * em;
-  return `display:inline-block;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline;margin-inline-end:${margin.toFixed(3)}em`;
+/** Words and the spaces between them. Spaces stay their own tokens so a line can break. */
+export function latinScaleTokens(text: string): Array<{ text: string; start: number; end: number }> {
+  const tokens: Array<{ text: string; start: number; end: number }> = [];
+  for (const match of text.matchAll(/\s+|\S+/g)) {
+    const token = match[0];
+    const start = match.index ?? 0;
+    tokens.push({ text: token, start, end: start + token.length });
+  }
+  return tokens;
 }
 
-function latinVisual(attrs: Record<string, unknown>, sample: string): string {
+/**
+ * scaleX does not change layout width. Each word and each space is its own
+ * inline box so the line can break on the spaces and RTL order stays natural.
+ * The measured extra width is margin-right on that decoration. 100% omits
+ * this entirely. The caret inside a transformed word still follows the
+ * unscaled advances.
+ */
+export function latinScaleCss(scale: number, sample = ""): string {
+  const factor = scale / 100;
+  // Inline, not inline-block: an atomic box is ordered by the paragraph
+  // direction and would reverse "Hello Qalam" inside Urdu. A space token stays
+  // a wrap opportunity; a word does not break.
+  const wrap = /^\s+$/.test(sample) ? "pre-wrap" : "nowrap";
+  return `display:inline;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline;white-space:${wrap};line-height:inherit`;
+}
+
+export function latinScaleFactor(scale: number): number {
+  return scale / 100;
+}
+
+function scaleWidthKey(pos: number, factor: number, text: string): string {
+  return `${pos}\u0000${factor}\u0000${text}`;
+}
+
+function remapScaleWidths(widths: Map<string, number>, tr: Transaction): Map<string, number> {
+  if (!tr.docChanged || widths.size === 0) return widths;
+  const next = new Map<string, number>();
+  widths.forEach((px, id) => {
+    const sep = id.indexOf("\u0000");
+    const pos = Number(id.slice(0, sep));
+    const mapped = tr.mapping.mapResult(pos, 1);
+    if (!mapped.deleted) next.set(`${mapped.pos}${id.slice(sep)}`, px);
+  });
+  return next;
+}
+
+function latinFaceStyle(attrs: Record<string, unknown>): string {
   const face = bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : "");
   const parts = [face ? `font-family:"${face}", Arial, sans-serif` : "font-family:var(--qalam-ltr-font, Arial, sans-serif)"];
   const tracking = attrs.trackingPercent;
-  const scale = attrs.scalePercent;
   if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em`);
-  if (typeof scale === "number" && scale !== 100) parts.push(latinScaleCss(scale, sample));
   return parts.join(";");
+}
+
+function latinRunAttrs(explicitLatin: boolean, style: string, scale: number | null): Record<string, string> {
+  const attrs: Record<string, string> = explicitLatin
+    ? { "data-studio-latin-run": "true", style }
+    : { "data-studio-latin-run": "true", "data-studio-latin-default": "true", style };
+  if (scale != null) attrs["data-studio-latin-scale"] = String(latinScaleFactor(scale));
+  return attrs;
 }
 
 function liveAttrs(attrs: Record<string, unknown>): boolean {
   return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
 }
 
-function decorations(doc: Node) {
+function decorations(doc: Node, widths: Map<string, number>) {
   const spans: Decoration[] = [];
   doc.descendants((block, pos) => {
     if (!block.isTextblock) return;
     block.descendants((node, offset) => {
       if (!node.isText || !node.text) return;
       const attrs = (node.marks.find((mark) => mark.type.name === "textStyle")?.attrs ?? {}) as Record<string, unknown>;
-      const explicitLatin = bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : "");
+      const explicitLatin = Boolean(bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : ""));
       const arabicNeedsFace = isLatinFamilyName(attrs.fontFamily);
+      const scale = typeof attrs.scalePercent === "number" && attrs.scalePercent !== 100 ? attrs.scalePercent : null;
+      const face = latinFaceStyle(attrs);
       for (const range of scriptRanges(node.text, "latin")) {
-        const start = pos + 1 + offset + range.start;
+        const origin = pos + 1 + offset + range.start;
         const sample = node.text.slice(range.start, range.end);
-        const style = latinVisual(attrs, sample);
-        spans.push(Decoration.inline(start, start + sample.length, explicitLatin
-          ? { "data-studio-latin-run": "true", style }
-          : { "data-studio-latin-run": "true", "data-studio-latin-default": "true", style }));
+        if (scale == null) {
+          spans.push(Decoration.inline(origin, origin + sample.length, latinRunAttrs(explicitLatin, face, null)));
+          continue;
+        }
+        for (const token of latinScaleTokens(sample)) {
+          const from = origin + token.start;
+          const factor = latinScaleFactor(scale);
+          const margin = widths.get(scaleWidthKey(from, factor, token.text));
+          const tokenStyle = `${face};${latinScaleCss(scale, token.text)}${margin == null ? "" : `;margin-right:${margin.toFixed(2)}px`}`;
+          spans.push(Decoration.inline(from, origin + token.end, latinRunAttrs(explicitLatin, tokenStyle, scale)));
+        }
       }
       if (!arabicNeedsFace) return;
       for (const range of scriptRanges(node.text, "arabic")) {
@@ -136,6 +188,45 @@ function decorations(doc: Node) {
     return false;
   });
   return DecorationSet.create(doc, spans);
+}
+
+function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: EditorView }) {
+  if (timer.raf) return;
+  timer.raf = requestAnimationFrame(() => {
+    timer.raf = 0;
+    const view = timer.view;
+    if (!view.dom.isConnected) return;
+    const current = key.getState(view.state);
+    if (!current) return;
+    const next = new Map(current.widths);
+    let changed = false;
+    let pending = false;
+    view.dom.querySelectorAll<HTMLElement>("[data-studio-latin-scale]").forEach((el) => {
+      const factor = Number(el.getAttribute("data-studio-latin-scale"));
+      if (!Number.isFinite(factor) || factor === 1) return;
+      const width = el.offsetWidth;
+      if (width <= 0) { pending = true; return; }
+      const px = Number((width * (factor - 1)).toFixed(2));
+      let pos = -1;
+      try { pos = view.posAtDOM(el, 0); } catch { return; }
+      const id = scaleWidthKey(pos, factor, el.textContent ?? "");
+      const prev = next.get(id);
+      // A matching cache entry means this width is already in the decoration.
+      // Writing it again just rebuilds the span and restarts line measurement.
+      if (prev != null && Math.abs(prev - px) < 0.5) return;
+      next.set(id, px);
+      changed = true;
+    });
+    if (changed) {
+      timer.attempts = 0;
+      view.dispatch(view.state.tr.setMeta(scaleMeasureKey, next).setMeta("addToHistory", false));
+      return;
+    }
+    if (pending && timer.attempts < 8) {
+      timer.attempts += 1;
+      scheduleScaleMeasure(timer);
+    }
+  });
 }
 
 export const LatinScriptRuns = Extension.create({
@@ -179,13 +270,40 @@ export const LatinScriptRuns = Extension.create({
     }];
   },
   addProseMirrorPlugins() {
-    return [new Plugin<DecorationSet>({
+    return [new Plugin<LatinRunState>({
       key,
       state: {
-        init: (_, state) => decorations(state.doc),
-        apply: (transaction, previous) => transaction.docChanged ? decorations(transaction.doc) : previous,
+        init: (_, state) => ({ decorations: decorations(state.doc, new Map()), widths: new Map() }),
+        apply: (transaction, previous) => {
+          const incoming = transaction.getMeta(scaleMeasureKey) as Map<string, number> | undefined;
+          if (!transaction.docChanged && !incoming) return previous;
+          const widths = incoming ?? remapScaleWidths(previous.widths, transaction);
+          return { decorations: decorations(transaction.doc, widths), widths };
+        },
       },
-      props: { decorations: (state) => key.getState(state) },
+      props: { decorations: (state) => key.getState(state)?.decorations ?? DecorationSet.empty },
+      view(editorView) {
+        const timer = { raf: 0, attempts: 0, view: editorView };
+        const schedule = () => scheduleScaleMeasure(timer);
+        let observer: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+          observer = new ResizeObserver(schedule);
+          observer.observe(editorView.dom);
+        }
+        document.fonts?.ready?.then(schedule).catch(() => {});
+        schedule();
+        return {
+          update(view) {
+            timer.view = view;
+            timer.attempts = 0;
+            schedule();
+          },
+          destroy() {
+            if (timer.raf) cancelAnimationFrame(timer.raf);
+            observer?.disconnect();
+          },
+        };
+      },
       appendTransaction(transactions, _old, state) {
         if (!transactions.some((tr) => tr.docChanged)) return null;
         if (transactions.some((tr) => tr.getMeta(stripKey))) return null;

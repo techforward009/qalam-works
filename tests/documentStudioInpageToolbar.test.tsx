@@ -380,6 +380,8 @@ describe("InPage toolbar values", () => {
     expect(pdf.fontsUsed).toContain("Gulzar");
     expect(pdf.html).toContain("letter-spacing:0.2em");
     expect(pdf.html).toContain("scaleX(0.5)");
+    expect(pdf.html).not.toContain("margin-inline-end");
+    expect(pdf.html).toContain('data-pdf-scale="0.5"');
     const spans = [...pdf.html.matchAll(/<span\b[^>]*>[\s\S]*?<\/span>/g)].map((match) => match[0]);
     expect(spans.find((span) => span.includes("Hello"))).toContain("scaleX(0.5)");
     expect(spans.find((span) => span.includes("data-pdf-urdu")) ?? "").not.toContain("scaleX");
@@ -390,6 +392,16 @@ describe("InPage toolbar values", () => {
     applyScale(editor, 100);
     expect(editor.view.dom.querySelector("[data-studio-latin-run]")?.getAttribute("style") ?? "").not.toContain("scaleX");
     expect(latinScaleCss(25, "Hello")).not.toBe(latinScaleCss(400, "Hello"));
+    const wrapped = make("<p dir=\"ltr\">Hello Qalam 2026</p>");
+    wrapped.commands.selectAll();
+    applyScale(wrapped, 400);
+    const runs = [...wrapped.view.dom.querySelectorAll("[data-studio-latin-scale]")];
+    expect(runs.map((run) => run.textContent)).toEqual(["Hello", " ", "Qalam", " ", "2026"]);
+    for (const run of runs) {
+      expect(run.getAttribute("style")).toContain("scaleX(4)");
+      expect(run.getAttribute("style")).not.toContain("margin-inline-end");
+      expect((run as HTMLElement).style.display).toBe("inline");
+    }
   });
 
   it("shows Times for a legacy Latin run", () => {

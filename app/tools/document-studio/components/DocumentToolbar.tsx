@@ -102,11 +102,11 @@ function art(rows: string[], ox = 0, oy = 0): Array<[number, number]> {
 function raisedColor(x: number, y: number, w: number, h: number): string | null {
   const right = w - 1;
   const bottom = h - 1;
-  if ((y === 0 && x === right) || (y === bottom && (x === 0 || x === right))) return null;
+  if ((y === 0 && (x === 0 || x === right)) || (y === bottom && (x === 0 || x === right))) return null;
   if (y === 0) return x <= right - 3 ? "#000000" : "#646464";
   if (x === 0) return y >= bottom - 2 ? "#646464" : "#000000";
   if (x === right || y === bottom) return "#646464";
-  if ((y === 1 && x < right - 2) || (x === 1 && y <= bottom - 2)) return "#ffffff";
+  if ((y === 1 && x < right - 1) || (x === 1 && y <= bottom - 2)) return "#ffffff";
   if (x >= right - 2 || y >= bottom - 2) return "#a0a0a0";
   return "#f0f0f0";
 }
@@ -114,10 +114,14 @@ function raisedColor(x: number, y: number, w: number, h: number): string | null 
 function pressedColor(x: number, y: number, w: number, h: number): string | null {
   const right = w - 1;
   const bottom = h - 1;
-  if ((y === 0 && x === right) || (y === bottom && (x === 0 || x === right))) return null;
+  if ((y === 0 && (x === 0 || x === right)) || (y === bottom && (x === 0 || x === right))) return null;
   if (x === 0 || y === 0 || x === right || y === bottom) return "#646464";
+  if (y === 1 && x === 1) return "#f0f0f0";
+  if (y === 1 && x >= 2 && x <= right - 2) return "#000000";
+  if (y === 1 && x === right - 1) return "#a0a0a0";
   if (x === 1 && y === bottom - 1) return "#a0a0a0";
-  if (x === 1 || y === 1) return "#000000";
+  if (x === 1) return "#000000";
+  if (x === right - 1 || y >= bottom - 1) return "#f0f0f0";
   return (x + y) % 2 === 0 ? "#f0f0f0" : "#ffffff";
 }
 
@@ -132,12 +136,13 @@ function tileColor(x: number, y: number): string | null {
 }
 
 function PixelFace({
-  w, h, colorAt, glyph, shift = 0,
+  w, h, colorAt, glyph, light = [], shift = 0,
 }: {
   w: number;
   h: number;
   colorAt: (x: number, y: number) => string | null;
   glyph: Array<[number, number]>;
+  light?: Array<[number, number]>;
   shift?: number;
 }) {
   const groups = new Map<string, string[]>();
@@ -150,10 +155,12 @@ function PixelFace({
       groups.set(color, bucket);
     }
   }
+  const paper = light.map(([x, y]) => `M${x + shift} ${y + shift}h1v1H${x + shift}z`).join("");
   const ink = glyph.map(([x, y]) => `M${x + shift} ${y + shift}h1v1H${x + shift}z`).join("");
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges" aria-hidden="true" style={{ display: "block" }}>
       {[...groups].map(([color, parts]) => <path key={color} d={parts.join("")} fill={color} />)}
+      {paper ? <path d={paper} fill="#ffffff" /> : null}
       {ink ? <path d={ink} fill="#000" /> : null}
     </svg>
   );
@@ -197,11 +204,12 @@ function RaisedButton({
 }
 
 function FlatTile({
-  x, y = 0, glyph, label, onClick, geom,
+  x, y = 0, glyph, light = [], label, onClick, geom,
 }: {
   x: number;
   y?: number;
   glyph: Array<[number, number]>;
+  light?: Array<[number, number]>;
   label: string;
   onClick?: () => void;
   geom: string;
@@ -216,82 +224,89 @@ function FlatTile({
       onClick={onClick}
       style={{ ...BUTTON_BOX, left: x, top: y, width: 19, height: 19, minHeight: 19, maxHeight: 19 }}
     >
-      <PixelFace w={19} h={19} colorAt={tileColor} glyph={glyph} />
+      <PixelFace w={19} h={19} colorAt={tileColor} glyph={glyph} light={light} />
     </button>
   );
 }
 
 const LEADING_GLYPH = [
-  ...art(["#"], 9, 1), ...art(["#"], 9, 2), ...art(["#"], 9, 3),
-  ...art(["#####"], 7, 4), ...art(["###"], 8, 5), ...art(["#"], 9, 6),
-  ...art(["#############"], 3, 7), ...art(["#           #"], 3, 8), ...art(["#############"], 3, 9),
-  ...art(["#"], 9, 10), ...art(["###"], 8, 11), ...art(["#####"], 7, 12),
-  ...art(["#"], 9, 13), ...art(["#"], 9, 14), ...art(["#"], 9, 15),
+  ...art(["#"], 9, 2), ...art(["#"], 9, 3), ...art(["#"], 9, 4),
+  ...art(["#.#.#"], 7, 5), ...art(["###"], 8, 6), ...art(["#"], 9, 7),
+  ...art(["#############"], 3, 8), ...art(["#"], 3, 9), ...art(["#"], 15, 9), ...art(["#############"], 3, 10),
+  ...art(["#"], 9, 11), ...art(["###"], 8, 12), ...art(["#.#.#"], 7, 13),
+  ...art(["#"], 9, 14), ...art(["#"], 9, 15),
 ];
+const LEADING_LIGHT = art(["###########"], 4, 9);
 const INTERLINE_GLYPH = [
   ...art(["#############", "#           #", "#############"], 3, 3),
-  ...art(["#"], 9, 6), ...art(["###"], 8, 7), ...art(["#####"], 7, 8),
-  ...art(["#####"], 7, 10), ...art(["###"], 8, 11), ...art(["#"], 9, 12),
+  ...art(["#"], 9, 6), ...art(["###"], 8, 7), ...art(["#.#.#"], 7, 8),
+  ...art(["#"], 9, 9),
+  ...art(["#.#.#"], 7, 10), ...art(["###"], 8, 11), ...art(["#"], 9, 12),
   ...art(["#############", "#           #", "#############"], 3, 13),
 ];
+const INTERLINE_LIGHT = [...art(["###########"], 4, 4), ...art(["###########"], 4, 14)];
 const TRACKING_GLYPH = [
-  ...art(["#####", "#   #", "#   #", "#   #", "#####"], 2, 3),
-  ...art(["#####", "#   #", "#   #", "#   #", "#####"], 12, 3),
-  ...art(["..#", "###", "..#"], 3, 10),
-  ...art(["#..", "###", "#.."], 12, 10),
+  ...art(["#####", "#   #", "#   #", "#   #", "#####"], 3, 5),
+  ...art(["#####", "#   #", "#   #", "#   #", "#####"], 11, 5),
+  ...art(["#"], 6, 11), ...art(["####"], 4, 12), ...art(["#"], 6, 13),
+  ...art(["#"], 12, 11), ...art(["####"], 11, 12), ...art(["#"], 12, 13),
 ];
 const SCALE_GLYPH = [
-  ...art(["#####", "#   #", "#   #", "#####"], 7, 3),
-  ...art(["..#.#", ".##.#", "###.#", ".##.#", "..#.#"], 3, 9),
-  ...art(["#.#..", "#.##.", "#.###", "#.##.", "#.#.."], 10, 9),
+  ...art(["#####", "#   #", "#   #", "#####"], 7, 5),
+  ...art(["#"], 4, 9), ...art(["#"], 14, 9),
+  ...art(["#.#"], 5, 10), ...art(["#.#"], 11, 10),
+  ...art(["######"], 2, 11), ...art(["#####"], 11, 11),
+  ...art(["#.#"], 5, 12), ...art(["#.#"], 11, 12),
+  ...art(["#"], 4, 13), ...art(["#"], 14, 13),
 ];
 const BOLD_GLYPH = art([
-  "######.",
-  "##...#.",
-  "##...#.",
-  "##..##.",
-  "#####..",
-  "##...#.",
-  "##...#.",
-  "##..##.",
-  "######.",
-], 6, 0);
+  "",
+  "     #######",
+  "      ##   ##",
+  "      ##   ##",
+  "      ##  ##",
+  "      ######",
+  "      ##   ##",
+  "      ##   ##",
+  "      ##   ##",
+  "     #######",
+], 0, 0);
 const ITALIC_GLYPH = art([
   "..####",
   "...##.",
   "..##..",
   "..##..",
   "..##..",
+  "..##..",
   ".##...",
   ".##...",
-  "##....",
   "####..",
-], 7, 0);
+], 7, 1);
 function directionArrow(dir: "ltr" | "rtl"): Array<[number, number]> {
-  const head = [[9], [9, 10], [9, 10, 11], [9, 10, 11, 12], [9, 10, 11], [9, 10], [9]];
+  const rows = dir === "ltr"
+    ? [[12], [5, 6, 7, 8, 9, 10, 11, 12, 13], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], [5, 6, 7, 8, 9, 10, 11, 12, 13], [12]]
+    : [[6], [6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [6]];
   const points: Array<[number, number]> = [];
-  const xOf = (x: number) => (dir === "ltr" ? x : 15 - x);
-  head.forEach((xs, index) => xs.forEach((x) => points.push([xOf(x), 2 + index])));
-  for (let y = 3; y <= 7; y += 1) for (let x = 3; x <= 8; x += 1) points.push([xOf(x), y]);
+  rows.forEach((xs, index) => xs.forEach((x) => points.push([x, 2 + index])));
   return points;
 }
 const LTR_GLYPH = directionArrow("ltr");
 const RTL_GLYPH = directionArrow("rtl");
 const OUTLINE_GLYPH = [
-  ...art(["###"], 8, 0),
-  ...art(["#"], 7, 1), ...art(["#"], 11, 1),
-  ...art(["#"], 6, 2), ...art(["#"], 12, 2),
-  ...art(["#"], 5, 3), ...art(["#"], 13, 3),
+  ...art(["###"], 8, 1),
+  ...art(["##"], 6, 2), ...art(["##"], 11, 2),
+  ...art(["#"], 6, 3), ...art(["#"], 12, 3),
   ...art(["#"], 5, 4), ...art(["#"], 13, 4),
   ...art(["#"], 5, 5), ...art(["#"], 13, 5),
-  ...art(["#"], 6, 6), ...art(["#"], 12, 6),
-  ...art(["#"], 7, 7), ...art(["#"], 11, 7),
-  ...art(["###"], 8, 8),
+  ...art(["#"], 5, 6), ...art(["#"], 13, 6),
+  ...art(["#"], 6, 7), ...art(["#"], 12, 7),
+  ...art(["##"], 6, 8), ...art(["##"], 11, 8),
+  ...art(["###"], 8, 9),
 ];
 const TABS_GLYPH = [
   ...art(["#"], 9, 1),
-  ...art(["#"], 8, 2), ...art(["#"], 10, 2),
-  ...art(["#"], 7, 3), ...art(["#"], 11, 3),
+  ...art(["###"], 8, 2),
+  ...art(["#.#.#"], 7, 3),
   ...art(["#"], 9, 4), ...art(["#"], 9, 5), ...art(["#"], 9, 6), ...art(["#"], 9, 7), ...art(["#"], 9, 8), ...art(["#"], 9, 9),
   ...art(["###"], 9, 10),
 ];
@@ -308,7 +323,7 @@ function alignGlyph(kind: "left" | "right" | "center" | "justify" | "full"): Arr
       : [12, 11, 13, 8, 11, 13];
   const points: Array<[number, number]> = [];
   widths.forEach((width, index) => {
-    const y = 1 + index * 2;
+    const y = index * 2;
     const x0 = kind === "right" ? 16 - width : kind === "center" ? 3 + Math.floor((13 - width) / 2) : 3;
     for (let x = 0; x < width; x += 1) points.push([x0 + x, y]);
   });
@@ -623,20 +638,32 @@ function isLightHex(hex: string): boolean {
 
 function LineGapField({ editor, value }: { editor: Editor; value: number }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const tabbing = useRef(false);
   const label = `${value}pt`;
   const [text, setText] = useState(label);
   useEffect(() => {
     if (document.activeElement === inputRef.current) return;
     setText(label);
   }, [label]);
-  const commit = (raw: string) => {
+  const commit = (raw: string, focus = true) => {
     const next = parseLineGap(raw);
     if (next === null) { setText(label); return; }
     setText(`${next}pt`);
-    applyLineGap(editor, next);
+    applyLineGap(editor, next, focus);
   };
   return <SunkenBox geom="gap" x={122} w={60} h={19}>
-    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => { commit(event.currentTarget.value); refocusRibbon(event); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } }} style={EDIT_TEXT} />
+    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => {
+      const next = event.relatedTarget;
+      const toolbar = event.currentTarget.closest("[data-studio-toolbar]");
+      const inToolbar = next instanceof HTMLElement && !!toolbar?.contains(next);
+      commit(event.currentTarget.value, !(inToolbar || tabbing.current));
+      tabbing.current = false;
+      if (inToolbar) next.focus();
+    }} onKeyDown={(event) => {
+      if (event.key === "Tab") tabbing.current = true;
+      if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+      if (event.key === "Escape") { event.preventDefault(); setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+    }} style={EDIT_TEXT} />
   </SunkenBox>;
 }
 
@@ -894,7 +921,7 @@ function ParagraphSpacingMenu({
   return (
     <div ref={rootRef} data-studio-geom="interline-icon" style={{ position: "absolute", left: 103, top: 0, width: 19, height: 19 }}>
       <button type="button" data-studio-spacing-button="true" aria-label={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} title={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} onMouseDown={(event) => event.preventDefault()} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} style={{ ...BUTTON_BOX, left: 0, top: 0, width: 19, height: 19, minHeight: 19, maxHeight: 19 }}>
-        <PixelFace w={19} h={19} colorAt={tileColor} glyph={INTERLINE_GLYPH} />
+        <PixelFace w={19} h={19} colorAt={tileColor} glyph={INTERLINE_GLYPH} light={INTERLINE_LIGHT} />
       </button>
       {open ? (
         <div
@@ -1192,7 +1219,7 @@ export default function DocumentToolbar({
           [data-studio-toolbar],[data-studio-toolbar] *{touch-action:pan-x;}
           [data-studio-toolbar]{height:auto !important;}
           [data-studio-toolbar] [data-studio-toolbar-row]{height:32px !important;min-height:32px !important;max-height:32px !important;flex-wrap:nowrap !important;overflow:hidden !important;}
-          [data-studio-toolbar] [data-studio-geom],[data-studio-toolbar] [data-studio-geom] > button,[data-studio-toolbar] button,[data-studio-toolbar] select,[data-studio-toolbar] input{min-height:24px !important;max-height:none !important;}
+          [data-studio-toolbar] [data-studio-geom],[data-studio-toolbar] [data-studio-geom] > button,[data-studio-toolbar] button,[data-studio-toolbar] select,[data-studio-toolbar] input{min-width:24px !important;min-height:24px !important;max-height:none !important;}
           [data-studio-toolbar] [data-studio-geom]{height:26px !important;}
         }`}</style>
         <div aria-hidden="true" data-studio-toolbar-etched="true" className="h-[3px] shrink-0" style={{ background: "linear-gradient(to bottom, #f0f0f0 0 1px, #a0a0a0 1px 2px, #ffffff 2px 3px)" }} />
@@ -1203,15 +1230,15 @@ export default function DocumentToolbar({
             </select>
             <ComboArrow />
           </SunkenBox>
-          <FlatTile geom="leading-icon" x={103} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} glyph={LEADING_GLYPH} onClick={() => leadingRef.current?.focus()} />
+          <FlatTile geom="leading-icon" x={103} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} glyph={LEADING_GLYPH} light={LEADING_LIGHT} onClick={() => leadingRef.current?.focus()} />
           <SunkenBox geom="leading" x={122} w={60} h={19}>
-            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} onChange={(value) => applyLineHeight(editor, value.mode === "points" ? value.value : null)} style={EDIT_TEXT} />
+            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} onChange={(value, meta) => applyLineHeight(editor, value.mode === "points" ? value.value : null, meta?.focus !== false)} style={EDIT_TEXT} />
           </SunkenBox>
           <SunkenBox geom="english-font" x={184} w={202} h={20}>
             <span aria-hidden="true" style={{ position: "absolute", left: 7, top: 5, zIndex: 2, width: 13, height: 12, pointerEvents: "none" }}>
               <svg width="13" height="12" viewBox="0 0 13 12" shapeRendering="crispEdges">
-                <path fill="#808080" d={["###########", "....##.....", "....##.....", "....##.....", "....##.....", "....##.....", "....##.....", "....##.....", "....##.....", "...####....", "...####...."].map((row, y) => [...row].map((cell, x) => cell === "#" ? `M${x} ${y}h1v1H${x}z` : "").join("")).join("")} />
-                <path fill="#000" d={["", "", "", "", "######", "..##..", "..##..", "..##..", "..##..", ".####.", ".####."].map((row, y) => [...row].map((cell, x) => cell === "#" ? `M${x + 4} ${y}h1v1H${x + 4}z` : "").join("")).join("")} />
+                <path fill="#808080" d={["gggggggg", "gg.gg.gg", "g..gg..g", "g..g", "...g", "...g", "...g", "...gg", ".gggggg"].map((row, y) => [...row].map((cell, x) => cell === "g" ? `M${x} ${y}h1v1H${x}z` : "").join("")).join("")} />
+                <path fill="#000" d={["", "", "", "....########", "....##.##.##", "....#..##..#", "....#..##..#", ".......##", ".......##", ".......##", ".......##", ".....######"].map((row, y) => [...row].map((cell, x) => cell === "#" ? `M${x} ${y}h1v1H${x}z` : "").join("")).join("")} />
               </svg>
             </span>
             <select aria-label={isUr ? "انگریزی فونٹ" : "English font"} data-studio-latin-font="true" data-latin-control="true" value={englishValue} onChange={(event) => { if (event.target.value !== MIXED_TOOLBAR_VALUE) applyEnglishFont(editor, event.target.value); }} style={{ ...COMBO_TEXT, paddingLeft: 22 }}>
@@ -1273,7 +1300,7 @@ export default function DocumentToolbar({
             <ComboArrow />
           </SunkenBox>
         </div>
-        <div aria-hidden="true" data-studio-toolbar-edge="true" className="h-[2px] shrink-0" style={{ background: "linear-gradient(to bottom, #a0a0a0 0 1px, #696969 1px 2px)" }} />
+        <div aria-hidden="true" data-studio-toolbar-edge="true" className="h-[2px] shrink-0" style={{ background: "#a0a0a0" }} />
       </div>
       <div className="sr-only" aria-hidden="true" ref={untabbableTools}>
         <ColorPaletteControl editor={editor} kind="text" colors={STUDIO_TEXT_COLORS} value={ui.color} mixed={ui.mixed.color} isUr={isUr} />
