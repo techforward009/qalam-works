@@ -316,6 +316,11 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",
     spaceBeforePt !== null ? `margin-block-start:${spaceBeforePt}pt` : "",
     spaceAfterPt !== null ? `margin-block-end:${spaceAfterPt}pt` : "",
+    node.attrs?.breakBefore === "column" ? "break-before:column" : node.attrs?.breakBefore === "page" || node.attrs?.breakBefore === "odd-page" || node.attrs?.breakBefore === "even-page" ? "break-before:page" : "",
+    node.attrs?.keepTogether === true ? "break-inside:avoid;page-break-inside:avoid" : "",
+    node.attrs?.keepWithNext === true ? "break-after:avoid;page-break-after:avoid" : "",
+    typeof node.attrs?.widows === "number" ? `widows:${node.attrs.widows}` : "",
+    typeof node.attrs?.orphans === "number" ? `orphans:${node.attrs.orphans}` : "",
   ]
     .filter(Boolean)
     .join(";");

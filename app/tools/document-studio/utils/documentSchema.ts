@@ -142,6 +142,91 @@ const PARAGRAPH_STYLE_ATTRS = {
       return v !== null ? { "data-line-gap-pt": String(v) } : {};
     },
   },
+  breakBefore: {
+    default: null as string | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-break-before");
+      return v === "none" || v === "column" || v === "page" || v === "odd-page" || v === "even-page" ? v : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = attributes.breakBefore;
+      if (v !== "none" && v !== "column" && v !== "page" && v !== "odd-page" && v !== "even-page") return {};
+      const style = v === "column" ? "break-before:column" : v === "none" ? "" : "break-before:page";
+      return { "data-break-before": v, ...(style ? { style } : {}) };
+    },
+  },
+  keepTogether: {
+    default: null as boolean | null,
+    parseHTML: (element: HTMLElement) => (element.hasAttribute("data-keep-together") ? element.getAttribute("data-keep-together") === "true" : null),
+    renderHTML: (attributes: Record<string, unknown>) => (
+      attributes.keepTogether === true
+        ? { "data-keep-together": "true", style: "break-inside:avoid;page-break-inside:avoid" }
+        : attributes.keepTogether === false ? { "data-keep-together": "false" } : {}
+    ),
+  },
+  keepWithNext: {
+    default: null as boolean | null,
+    parseHTML: (element: HTMLElement) => (element.hasAttribute("data-keep-with-next") ? element.getAttribute("data-keep-with-next") === "true" : null),
+    renderHTML: (attributes: Record<string, unknown>) => (
+      attributes.keepWithNext === true
+        ? { "data-keep-with-next": "true", style: "break-after:avoid;page-break-after:avoid" }
+        : attributes.keepWithNext === false ? { "data-keep-with-next": "false" } : {}
+    ),
+  },
+  widows: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const n = Number(element.getAttribute("data-widows"));
+      return Number.isInteger(n) && n >= 0 && n <= 20 ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => (
+      typeof attributes.widows === "number" ? { "data-widows": String(attributes.widows), style: `widows:${attributes.widows}` } : {}
+    ),
+  },
+  orphans: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const n = Number(element.getAttribute("data-orphans"));
+      return Number.isInteger(n) && n >= 0 && n <= 20 ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => (
+      typeof attributes.orphans === "number" ? { "data-orphans": String(attributes.orphans), style: `orphans:${attributes.orphans}` } : {}
+    ),
+  },
+  tabStopMm: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => validateIndentMm(element.getAttribute("data-tab-stop-mm") ? Number(element.getAttribute("data-tab-stop-mm")) : NaN),
+    renderHTML: (attributes: Record<string, unknown>) => (
+      typeof attributes.tabStopMm === "number" && validateIndentMm(attributes.tabStopMm) !== null
+        ? { "data-tab-stop-mm": String(attributes.tabStopMm) } : {}
+    ),
+  },
+  tabStopDefault: {
+    default: null as boolean | null,
+    parseHTML: (element: HTMLElement) => (element.hasAttribute("data-tab-stop-default") ? element.getAttribute("data-tab-stop-default") === "true" : null),
+    renderHTML: (attributes: Record<string, unknown>) => (
+      attributes.tabStopDefault === true || attributes.tabStopDefault === false
+        ? { "data-tab-stop-default": attributes.tabStopDefault ? "true" : "false" } : {}
+    ),
+  },
+  characterAlign: {
+    default: null as string | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-character-align");
+      return v === "latin" || v === "arabic" ? v : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => (
+      attributes.characterAlign === "latin" || attributes.characterAlign === "arabic"
+        ? { "data-character-align": String(attributes.characterAlign) } : {}
+    ),
+  },
+  toc: {
+    default: null as boolean | null,
+    parseHTML: (element: HTMLElement) => (element.hasAttribute("data-toc") ? element.getAttribute("data-toc") === "true" : null),
+    renderHTML: (attributes: Record<string, unknown>) => (
+      attributes.toc === true || attributes.toc === false ? { "data-toc": attributes.toc ? "true" : "false" } : {}
+    ),
+  },
 };
 
 export const BLOCK_STYLE_EDITOR_CSS = (Object.values(BLOCK_STYLES) as typeof BLOCK_STYLES[BlockStyleId][])
@@ -202,6 +287,15 @@ export const HeadingWithDir = Heading.extend({
       lineGapPt: PARAGRAPH_STYLE_ATTRS.lineGapPt,
       spaceBeforePt: PARAGRAPH_STYLE_ATTRS.spaceBeforePt,
       spaceAfterPt: PARAGRAPH_STYLE_ATTRS.spaceAfterPt,
+      breakBefore: PARAGRAPH_STYLE_ATTRS.breakBefore,
+      keepTogether: PARAGRAPH_STYLE_ATTRS.keepTogether,
+      keepWithNext: PARAGRAPH_STYLE_ATTRS.keepWithNext,
+      widows: PARAGRAPH_STYLE_ATTRS.widows,
+      orphans: PARAGRAPH_STYLE_ATTRS.orphans,
+      tabStopMm: PARAGRAPH_STYLE_ATTRS.tabStopMm,
+      tabStopDefault: PARAGRAPH_STYLE_ATTRS.tabStopDefault,
+      characterAlign: PARAGRAPH_STYLE_ATTRS.characterAlign,
+      toc: PARAGRAPH_STYLE_ATTRS.toc,
     };
   },
 });

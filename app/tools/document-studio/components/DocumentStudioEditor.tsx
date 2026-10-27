@@ -137,6 +137,7 @@ import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
 import { StudioTextContextMenu } from "./StudioTextContextMenu";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
+import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { functionKeyZoom } from "../utils/documentView";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
@@ -271,7 +272,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
   const [characterOpen,setCharacterOpen] = useState(false);
-  const [paragraphRequest,setParagraphRequest] = useState(0);
+  const [paragraphOpen,setParagraphOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
@@ -1924,8 +1925,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
-        onCharacter={()=>setCharacterOpen(true)} onParagraph={()=>setParagraphRequest(value=>value+1)} />
+        onCharacter={()=>setCharacterOpen(true)} onParagraph={()=>setParagraphOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
+      {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
       {imageMenu && editor ? (
         <div
           role="menu"
@@ -2081,7 +2083,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             documentSettings={documentSettings}
             englishFont={englishFont}
             onEnglishFontChange={setEnglishFont}
-            paragraphRequest={paragraphRequest}
           />
         }
         findBar={
