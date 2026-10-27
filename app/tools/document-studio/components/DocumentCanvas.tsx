@@ -10,6 +10,7 @@ import {facingSlot,facingRow,facingPadding,facingExtent,projectPoint,withCanonic
 import { StudioLineLayout } from "./StudioLineLayout";
 import { useStudioZoomVisibility } from "./useStudioZoomVisibility";
 import { StudioTextSelection } from "./StudioTextSelection";
+import { StudioTextEffects } from "./StudioTextEffects";
 import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
@@ -665,6 +666,7 @@ export default function DocumentCanvas({
       </div> : null}
       <StudioFacingLayout editor={editor} geometry={projection??null} zoom={zoomFactor}/><StudioLineLayout editor={editor} />
       <StudioTextSelection editor={editor} zoom={zoomFactor} revision={viewMode} />
+      <StudioTextEffects editor={editor} zoom={zoomFactor} revision={viewMode} />
       <style jsx global>{`
         .qalam-editor-content .ProseMirror {
           font-variant-ligatures: normal;
@@ -758,6 +760,13 @@ export default function DocumentCanvas({
         ${BLOCK_STYLE_EDITOR_CSS}
         /* Inline font marks paint ink without enlarging the paragraph's point grid. */
         .qalam-editor-content .ProseMirror :is(p,h1,h2,h3,h4,h5,h6) span { line-height: 0; }
+        @media screen {
+          .qalam-editor-content .ProseMirror[data-studio-effects-painted] { position: relative; z-index: 1; background: transparent !important; }
+          .qalam-editor-content .ProseMirror[data-studio-effects-painted] [data-text-effect="box"] { border: 0 !important; padding: 0 !important; }
+          .qalam-editor-content .ProseMirror[data-studio-effects-painted] [data-text-effect="overline"] { text-decoration: none !important; }
+          .qalam-editor-content .ProseMirror[data-studio-effects-painted] [data-text-effect="pattern"] { background: transparent !important; }
+          .qalam-editor-content .ProseMirror[data-studio-effects-painted] [data-text-effect="reverse"] { background: transparent !important; color: #fff !important; }
+        }
         .qalam-editor-content p {
           margin-block-start: var(--qalam-paragraph-before, 0);
           margin-block-end: var(--qalam-paragraph-after, 0.55rem);

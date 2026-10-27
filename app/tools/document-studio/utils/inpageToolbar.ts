@@ -57,11 +57,11 @@ export const TEXT_EFFECT_LABELS: Record<TextEffect, string> = {
 
 export function textEffectDeclarations(effect: unknown): string {
   switch (effect) {
-    case "single": return "text-decoration-line:underline;text-decoration-style:solid;";
-    case "double": return "text-decoration-line:underline;text-decoration-style:double;";
+    case "single": return "text-decoration-line:underline;text-decoration-style:solid;text-decoration-skip-ink:none;text-underline-offset:0.25em;text-decoration-thickness:0.05em;";
+    case "double": return "text-decoration-line:underline;text-decoration-style:double;text-decoration-skip-ink:none;text-underline-offset:0.25em;text-decoration-thickness:0.05em;";
     case "overline": return "text-decoration-line:overline;text-decoration-style:solid;";
     case "box": return "border:0.6pt solid currentColor;padding:0 0.5px;";
-    case "pattern": return "background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.12) 0 1px,transparent 1px 4px);";
+    case "pattern": return "background-color:#d9d9d9;";
     case "reverse": return "color:#fff;background-color:#000;";
     default: return "";
   }
