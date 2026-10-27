@@ -101,18 +101,45 @@ export function latinScaleTokens(text: string): Array<{ text: string; start: num
  * Spaces stay ordinary inline text so the line can break, and only their
  * gap is scaled. 100% omits this entirely. The mark span around the Latin
  * run is an LTR isolate, so the atomic word boxes stay in reading order
- * inside an Urdu paragraph. Urdu never receives this decoration.
+ * inside an Urdu paragraph. Character-dialog scaling uses the same word boxes
+ * for Arabic script, anchored at the right edge so joining and layout agree.
  */
-export function latinScaleCss(scale: number, sample = ""): string {
+export function latinScaleCss(scale: number, sample = "", rtl = false): string {
   const factor = scale / 100;
   if (/^\s+$/.test(sample)) {
     return "display:inline;white-space:pre-wrap;vertical-align:baseline;line-height:inherit";
   }
-  return `display:inline-block;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline;white-space:nowrap;line-height:inherit`;
+  return `display:inline-block;transform:scaleX(${factor});transform-origin:${rtl ? "right" : "left"} center;vertical-align:baseline;white-space:nowrap;line-height:inherit`;
 }
 
 export function latinScaleFactor(scale: number): number {
   return scale / 100;
+}
+
+/** Measure spaces off the line: a trailing/hanging space has no reliable DOM
+ * width. The same routine runs before PDF pagination, so initial wrap positions
+ * cannot change the scale compensation or the resulting line ends. */
+export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, cache: Map<string, number>): number {
+  if (el.textContent?.trim()) return el.getBoundingClientRect().width / (factor * zoom);
+  const style = getComputedStyle(el);
+  const values = [style.font, style.letterSpacing, style.wordSpacing, style.fontKerning, style.fontFeatureSettings, style.direction, el.textContent ?? ""];
+  const id = JSON.stringify(values);
+  const cached = cache.get(id);
+  if (cached != null) return cached;
+  const probe = document.createElement("span");
+  probe.style.cssText = "position:absolute;visibility:hidden;display:inline-block;white-space:pre;transform:none;margin:0;padding:0;border:0;width:auto;left:0;top:0";
+  probe.style.font = style.font;
+  probe.style.letterSpacing = style.letterSpacing;
+  probe.style.wordSpacing = style.wordSpacing;
+  probe.style.fontKerning = style.fontKerning;
+  probe.style.fontFeatureSettings = style.fontFeatureSettings;
+  probe.style.direction = style.direction;
+  probe.textContent = el.textContent;
+  document.body.append(probe);
+  const width = probe.getBoundingClientRect().width;
+  probe.remove();
+  cache.set(id, width);
+  return width;
 }
 
 function scaleWidthKey(pos: number, factor: number, text: string): string {
@@ -135,7 +162,7 @@ function latinFaceStyle(attrs: Record<string, unknown>): string {
   const face = bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : "");
   const parts = [face ? `font-family:"${face}", Arial, sans-serif` : "font-family:var(--qalam-ltr-font, Arial, sans-serif)"];
   const tracking = attrs.trackingPercent;
-  if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em`);
+  if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em;word-spacing:0`);
   return parts.join(";");
 }
 
@@ -166,7 +193,7 @@ function decorations(doc: Node, widths: Map<string, number>) {
         const origin = pos + 1 + offset + range.start;
         const sample = node.text.slice(range.start, range.end);
         if (scale != null && typeof attrs.charScale === "number") {
-          spans.push(Decoration.inline(origin, origin + sample.length, { dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" }));
+          spans.push(Decoration.inline(origin, origin + sample.length, { dir: "ltr", style: `${face};unicode-bidi:isolate;direction:ltr` }));
           continue;
         }
         if (scale == null) {
@@ -181,17 +208,19 @@ function decorations(doc: Node, widths: Map<string, number>) {
           spans.push(Decoration.inline(from, origin + token.end, latinRunAttrs(explicitLatin, tokenStyle, scale)));
         }
       }
-      const tracking = typeof attrs.trackingPercent === "number" && attrs.trackingPercent !== 0 ? attrs.trackingPercent : 0;
-      if (tracking) {
-        const gap = `${tracking / 100}em`;
-        for (const range of scriptRanges(node.text, "arabic")) {
-          for (let index = range.start; index < range.end;) {
-            const point = node.text.codePointAt(index) ?? 0;
-            const length = point > 0xffff ? 2 : 1;
-            const from = pos + 1 + offset + index;
-            spans.push(Decoration.inline(from, from + length, { style: `margin-inline-end:${gap}` }));
-            index += length;
-          }
+      // Character scale applies to whole shaped words, never a mark-sized box
+      // or individual Arabic letters. Spaces remain break opportunities.
+      if (scale != null && typeof attrs.charScale === "number") {
+        let rtl = block.attrs.dir !== "ltr";
+        for (const token of latinScaleTokens(node.text)) {
+          const from = pos + 1 + offset + token.start;
+          if (token.text.trim()) rtl = hasScript(token.text, "arabic");
+          const factor = latinScaleFactor(scale);
+          const margin = widths.get(scaleWidthKey(from, factor, token.text));
+          const style = `${latinScaleCss(scale, token.text, rtl)};direction:${rtl ? "rtl" : "ltr"}${margin == null ? "" : `;margin-inline-end:${margin}px`}`;
+          spans.push(Decoration.inline(from, pos + 1 + offset + token.end, {
+            "data-studio-latin-scale": String(factor), style,
+          }));
         }
       }
       if (!arabicNeedsFace) return;
@@ -238,28 +267,20 @@ function offsetInWord(el: HTMLElement, clientX: number): number {
   const text = textNode?.data ?? "";
   if (!text) return 0;
   const rect = el.getBoundingClientRect();
-  const fraction = rect.width > 0 ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
-  const style = getComputedStyle(el);
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return Math.round(fraction * text.length);
-  ctx.font = style.font;
-  const extra = style.letterSpacing.endsWith("px") ? parseFloat(style.letterSpacing) || 0 : 0;
-  let total = 0;
-  const widths: number[] = [];
-  for (let i = 0; i < text.length; i += 1) {
-    const width = ctx.measureText(text[i]).width + (i < text.length - 1 ? extra : 0);
-    widths.push(width);
-    total += width;
+  const rtl = getComputedStyle(el).direction === "rtl";
+  const x = rtl ? rect.right - clientX : clientX - rect.left;
+  const fraction = rect.width > 0 ? Math.min(1, Math.max(0, x / rect.width)) : 0;
+  const range = document.createRange();
+  range.selectNodeContents(textNode!);
+  const full = range.getBoundingClientRect();
+  let best = 0, distance = Infinity;
+  for (let i = 0; i <= text.length; i++) {
+    range.setEnd(textNode!, i);
+    const part = range.getBoundingClientRect();
+    const advance = full.width > 0 ? part.width / full.width : 0;
+    if (Math.abs(advance - fraction) < distance) { distance = Math.abs(advance - fraction); best = i; }
   }
-  if (total <= 0) return Math.round(fraction * text.length);
-  let cursor = 0;
-  const target = fraction * total;
-  for (let i = 0; i < widths.length; i += 1) {
-    if (cursor + widths[i] / 2 >= target) return i;
-    cursor += widths[i];
-  }
-  return text.length;
+  return best;
 }
 
 function posInWord(view: EditorView, el: HTMLElement, clientX: number): number | null {
@@ -286,10 +307,12 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
     const next = new Map(current.widths);
     let changed = false;
     let pending = false;
+    const measurements = new Map<string, number>();
     view.dom.querySelectorAll<HTMLElement>("[data-studio-latin-scale]").forEach((el) => {
       const factor = Number(el.getAttribute("data-studio-latin-scale"));
       if (!Number.isFinite(factor) || factor === 1) return;
-      const width = el.offsetWidth;
+      const zoom = view.dom.getBoundingClientRect().width / parseFloat(getComputedStyle(view.dom).width) || 1;
+      const width = scaleTokenWidth(el, factor, zoom, measurements);
       if (width <= 0) { pending = true; return; }
       const px = Number((width * (factor - 1)).toFixed(2));
       let pos = -1;
@@ -298,7 +321,7 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
       const prev = next.get(id);
       // A matching cache entry means this width is already in the decoration.
       // Writing it again just rebuilds the span and restarts line measurement.
-      if (prev != null && Math.abs(prev - px) < 0.5) return;
+      if (prev === px) return;
       next.set(id, px);
       changed = true;
     });
@@ -338,7 +361,7 @@ export const LatinScriptRuns = Extension.create({
           renderHTML: (attributes: { trackingPercent?: number | null }) => {
             if (typeof attributes.trackingPercent !== "number") return {};
             if (attributes.trackingPercent === 0) return { "data-tracking": "0" };
-            return { "data-tracking": String(attributes.trackingPercent), style: `letter-spacing:${attributes.trackingPercent / 100}em` };
+            return { "data-tracking": String(attributes.trackingPercent), style: `word-spacing:${attributes.trackingPercent / 100}em;letter-spacing:0` };
           },
         },
         scalePercent: {
@@ -355,8 +378,7 @@ export const LatinScriptRuns = Extension.create({
             const data = { "data-scale": String(attributes.scalePercent) };
             // Character scaling is a real width change on every script, not an LTR isolate.
             if (typeof attributes.charScale === "number") {
-              const factor = attributes.scalePercent / 100;
-              return { ...data, style: `display:inline-block;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline` };
+              return data;
             }
             return { ...data, dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" };
           },
@@ -376,7 +398,31 @@ export const LatinScriptRuns = Extension.create({
           return { decorations: decorations(transaction.doc, widths), widths };
         },
       },
-      props: { decorations: (state) => key.getState(state)?.decorations ?? DecorationSet.empty },
+      props: {
+        decorations: (state) => key.getState(state)?.decorations ?? DecorationSet.empty,
+        handleKeyDown(view, event) {
+          if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || !["ArrowLeft", "ArrowRight"].includes(event.key)) return false;
+          const { $head, anchor, head } = view.state.selection;
+          if (!$head.parent.isTextblock) return false;
+          const marks = [...$head.marks(), ...($head.nodeAfter?.marks ?? []), ...($head.nodeBefore?.marks ?? [])];
+          if (!marks.some(mark => mark.type.name === "textStyle" && typeof mark.attrs.scalePercent === "number" && mark.attrs.scalePercent !== 100)) return false;
+          // Native extension across atomic inline-block words can collapse back
+          // to their edge. Extend the logical grapheme selection, keeping anchor.
+          const caretNode = view.domAtPos(head).node;
+          const caretElement = caretNode instanceof HTMLElement ? caretNode : caretNode.parentElement;
+          const rtl = caretElement ? getComputedStyle(caretElement).direction === "rtl" : $head.parent.attrs.dir === "rtl";
+          const backward = (event.key === "ArrowLeft") !== rtl;
+          const text = $head.parent.textBetween(0, $head.parent.content.size, "\n", "\ufffc");
+          const boundaries = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)].map(part => part.index);
+          boundaries.push(text.length);
+          const offset = backward ? boundaries.filter(i => i < $head.parentOffset).pop() : boundaries.find(i => i > $head.parentOffset);
+          if (offset == null) return false;
+          const next = $head.start() + offset;
+          if (next === head) return true;
+          view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, anchor, next)).scrollIntoView());
+          return true;
+        },
+      },
       view(editorView) {
         const timer = { raf: 0, attempts: 0, view: editorView };
         const schedule = () => scheduleScaleMeasure(timer);

@@ -347,8 +347,9 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         frame = { left: box.left - origin.left, width: box.width };
       }
       element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:nowrap;`;
-      if (element.querySelector('[data-pdf-font="Digital Khatt Indo-Pak"]')) {
-        // Give shaped ink real inline paint room without shifting its text box.
+      if (element.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-pdf-scale],[data-tracking]:not([data-tracking="0"]))')) {
+        // Match the editor's wrap column for character-spaced/scaled text.
+        // Give shaped ink paint room without shifting or narrowing its text box.
         // Negative margins cancel the padding; wrapping was already captured.
         element.style.boxSizing = "content-box";
         element.style.paddingInline = "64px";
@@ -478,7 +479,7 @@ export async function paginatePdfInk(
           if ([...sample].length <= 64 && inkSpan > blockWidth - 2) needsEmergencyWrap = true;
         }
       }
-      if ((leftInset || rightInset) && !block.querySelector('[data-pdf-font="Digital Khatt Indo-Pak"]')) {
+      if ((leftInset || rightInset) && !block.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-pdf-scale],[data-tracking]:not([data-tracking="0"]))')) {
         const style = getComputedStyle(block);
         block.style.boxSizing = "border-box";
         block.style.paddingLeft = `${parseFloat(style.paddingLeft) + leftInset}px`;
@@ -567,7 +568,7 @@ export async function paginatePdfInk(
     document.body.style.left = "";
     document.body.style.top = "";
     document.body.style.marginLeft = "0px";
-    if (elements.some(line => line.querySelector('[data-pdf-font="Digital Khatt Indo-Pak"]'))) document.body.style.overflow = "visible";
+    if (elements.some(line => line.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-pdf-scale],[data-tracking]:not([data-tracking="0"]))'))) document.body.style.overflow = "visible";
     const pages: HTMLElement[] = [];
     const quoteSegments = new Map<string, HTMLElement>();
     const semanticLists = new Map<string, HTMLElement>();
@@ -579,7 +580,7 @@ export async function paginatePdfInk(
         // Only Puppeteer owns paper geometry. These anchors impose page breaks,
         // without a second rounded paper height or any overflow clipping.
         sheet.style.cssText = `position:relative;width:100%;height:${height}px;box-sizing:border-box;break-after:page;`;
-        if (elements.some(line => line.querySelector('[data-pdf-font="Digital Khatt Indo-Pak"]'))) {
+        if (elements.some(line => line.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-pdf-scale],[data-tracking]:not([data-tracking="0"]))'))) {
           // Clip layout overflow (prevent print shrink-to-fit), while allowing
           // glyph paint to bleed into the physical page margins.
           sheet.style.overflow = "clip";

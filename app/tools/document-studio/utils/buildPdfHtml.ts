@@ -23,7 +23,7 @@ import { characterPdfExtras } from "./characterPreferences";
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
-import { bareFamily, hasScript, isLatinFamilyName, latinScaleCss, latinScaleFactor, latinScaleTokens } from "../extensions/LatinScriptRuns";
+import { bareFamily, hasScript, isLatinFamilyName, latinScaleCss, latinScaleFactor, latinScaleTokens, scaleTokenWidth } from "../extensions/LatinScriptRuns";
 
 export interface PdfFontFace {
   familyName: string;
@@ -177,12 +177,15 @@ function noteEffective(
 }
 
 function runMetrics(attrs: Record<string, unknown> | undefined, latin: boolean, sample = ""): string {
-  if (!latin || !attrs) return "";
+  if (!attrs) return "";
   const parts: string[] = [];
   const tracking = attrs.trackingPercent;
   const scale = attrs.scalePercent;
-  if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em;`);
-  if (typeof scale === "number" && scale !== 100) parts.push(`${latinScaleCss(scale, sample)};`);
+  // ProseMirror preserves spaces at wrap boundaries; normal whitespace in the
+  // export changes line ends once character spacing is applied.
+  if ((typeof tracking === "number" && tracking !== 0) || typeof attrs.charScale === "number") parts.push("white-space:break-spaces;");
+  if (typeof tracking === "number" && tracking !== 0) parts.push(`${latin ? "letter-spacing" : "word-spacing"}:${tracking / 100}em;${latin ? "word-spacing:0;" : "letter-spacing:0;"}`);
+  if ((latin || typeof attrs.charScale === "number") && typeof scale === "number" && scale !== 100) parts.push(`${latinScaleCss(scale, sample, hasScript(sample, "arabic"))};`);
   return parts.join("");
 }
 
@@ -239,7 +242,7 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       if (!piece.text) continue;
       const picked = familyForPiece(styleMark?.attrs as Record<string, unknown> | undefined, piece.text);
       const scale = styleMark?.attrs?.scalePercent;
-      const scaled = picked.latin && typeof scale === "number" && scale !== 100;
+      const scaled = (picked.latin || typeof styleMark?.attrs?.charScale === "number") && typeof scale === "number" && scale !== 100;
       const tokens = scaled ? latinScaleTokens(piece.text).map((token) => token.text) : [piece.text];
       let chunk = "";
       for (const token of tokens) {
@@ -262,13 +265,13 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
         const isolate = !scaled && piece.dir !== blockDir;
         const extra = characterPdfExtras(styleMark?.attrs as Record<string, unknown> | undefined);
         const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, picked.latin, token)}${extra.style}`;
-        const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
+        const dirAttr = isolate || scaled ? ` dir="${piece.dir}"` : "";
         const scaleAttr = scaled ? ` data-pdf-scale="${latinScaleFactor(Number(scale))}"` : "";
         inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${scaleAttr}${extra.attrs}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
         chunk += inner;
       }
       // One LTR isolate around the whole run. A per-token isolate would reverse the words.
-      if (scaled && blockDir === "rtl") html += `<span dir="ltr" style="unicode-bidi:isolate">${chunk}</span>`;
+      if (scaled && picked.latin && blockDir === "rtl") html += `<span dir="ltr" style="unicode-bidi:isolate">${chunk}</span>`;
       else html += chunk;
     }
   }
@@ -547,7 +550,7 @@ ${classRulesCss()}
 </head>
 <body dir="${dir}">
 ${bodyHtml}
-<script>(function(){function measure(){document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=el.offsetWidth;if(width<=0)return;el.style.marginInlineEnd=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
+<script>(function(){var tokenWidth=${scaleTokenWidth.toString()};function measure(){var widths=new Map();document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=tokenWidth(el,factor,1,widths);if(width<=0)return;el.style.marginInlineEnd=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
 </body>
 </html>`;
 

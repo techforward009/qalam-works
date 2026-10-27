@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Editor } from "@tiptap/core";
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
+import puppeteer from "puppeteer-core";
+import sharp from "sharp";
+import { NextRequest } from "next/server";
+import { POST as exportPdf } from "../../app/api/export-pdf/route";
+import { defaultDocumentSettings } from "../../app/tools/document-studio/utils/documentSettings";
 
 const story = ".ProseMirror";
 
@@ -9,6 +15,9 @@ async function open(page: Page) {
   await page.addInitScript(() => localStorage.setItem("qalam-site-language", "en"));
   await page.goto("/tools/document-studio");
   await expect(page.locator(story)).toBeEditable();
+  // The local library applies the opening record asynchronously after TipTap mounts.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
+  await expect(page.locator(story)).toHaveAttribute("data-studio-font-layout", "ready");
 }
 
 async function openCharacter(page: Page) {
@@ -210,8 +219,8 @@ test("scaling and spacing change the width of Urdu, Arabic and English", async (
   test.skip(info.project.name !== "desktop-chrome", "character dialog is covered on desktop");
   await open(page);
   const samples = [
-    { text: "سلام", dir: "rtl", font: "Mehr Nastaliq Web", attr: "fontFamily" },
-    { text: "كتاب", dir: "rtl", font: "Digital Khatt Indo-Pak", attr: "fontFamily" },
+    { text: "سلام دنیا", dir: "rtl", font: "Mehr Nastaliq Web", attr: "fontFamily" },
+    { text: "كتاب كتاب", dir: "rtl", font: "Digital Khatt Indo-Pak", attr: "fontFamily" },
     { text: "Width", dir: "ltr", font: "Arial", attr: "latinFontFamily" },
   ];
   for (const sample of samples) {
@@ -241,8 +250,150 @@ test("scaling and spacing change the width of Urdu, Arabic and English", async (
     await dialog.getByLabel("Spacing", { exact: true }).fill("80%");
     await dialog.getByRole("button", { name: "OK", exact: true }).click();
     await expect(page.locator(`${story} [data-tracking="80"]`)).toHaveCount(1);
-    expect(await textWidth(page), `${sample.font} spacing`).toBeGreaterThan(restored * 1.15);
+    expect(await textWidth(page), `${sample.font} spacing between words`).toBeGreaterThan(restored + 1);
   }
 });
 
 
+
+// Register the ink to its own bounds; a subpixel first-line paint adjustment
+// must not masquerade as a shaping change. Missing joins change this mask.
+async function glyphMask(png: Buffer) {
+  const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pixels: { x: number; y: number }[] = [];
+  for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
+    const i = (y * info.width + x) * info.channels;
+    if (data[i] < 100 && data[i + 1] < 100 && data[i + 2] < 100) pixels.push({ x, y });
+  }
+  const left = Math.min(...pixels.map(p => p.x)), top = Math.min(...pixels.map(p => p.y));
+  return { width: Math.max(...pixels.map(p => p.x)) - left, height: Math.max(...pixels.map(p => p.y)) - top,
+    pixels: pixels.map(p => ({ x: p.x - left, y: p.y - top })) };
+}
+
+// These exercise shaped words and actual wrapping, not just a run's total width.
+for (const sample of [
+  { font: "Mehr Nastaliq Web", dir: "rtl", word: "السلام", text: "پہلا حصہ درمیانی آخری حصہ اردو عبارت السلام علیکم " },
+  { font: "Digital Khatt Indo-Pak", dir: "rtl", word: "اللّٰهُمَّ", text: "قُلِ اللّٰهُمَّ مَالِكَ الْمُلْكِ لَا إِلٰهَ إِلَّا اللّٰهُ " },
+  { font: "Inter", dir: "ltr", word: "running", text: "The quick brown fox keeps running across the green field " },
+]) {
+  test(`${sample.font}: joined spacing, wrapping scale and keyboard selection`, async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop-chrome", "character layout pixel checks use desktop");
+    test.setTimeout(120_000);
+    await open(page);
+    await page.addStyleTag({ content: "[data-studio-caret]{visibility:hidden!important}" });
+    const setText = async (text: string, trackingPercent: number, scalePercent: number) => {
+      await page.locator(story).evaluate((el, data) => {
+        (el as HTMLElement & { editor: Editor }).editor.commands.setContent({ type: "doc", content: [{
+          type: "paragraph", attrs: { dir: data.dir }, content: [{ type: "text", text: data.text,
+            marks: [{ type: "textStyle", attrs: { fontFamily: data.font, fontSize: "18pt", trackingPercent: data.trackingPercent,
+              scalePercent: data.scalePercent, charScale: data.scalePercent } }],
+          }],
+        }] });
+      }, { ...sample, text, trackingPercent, scalePercent });
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(200);
+    };
+    await setText(sample.word, 0, 100);
+    const word = page.locator(`${story} p`);
+    const plain = await word.screenshot({ scale: "css" });
+    await setText(sample.word, 20, 100);
+    if (sample.dir === "rtl") {
+      const a = await glyphMask(plain), b = await glyphMask(await word.screenshot({ scale: "css" }));
+      expect(Math.abs(a.width - b.width), "joined word ink width").toBeLessThanOrEqual(1);
+      expect(Math.abs(a.height - b.height), "joined word ink height").toBeLessThanOrEqual(1);
+      for (const [source, target] of [[a, b], [b, a]]) {
+        const mask = new Set(target.pixels.map(p => `${p.x},${p.y}`));
+        const matches = source.pixels.filter(p => [-1, 0, 1].some(dx => [-1, 0, 1].some(dy => mask.has(`${p.x + dx},${p.y + dy}`)))).length;
+        expect(source.pixels.length).toBeGreaterThan(100);
+        expect(matches / source.pixels.length, "spacing preserves joined glyph shapes").toBeGreaterThan(.98);
+      }
+    }
+    for (const scale of [100, 80, 130]) {
+      await setText(sample.text.repeat(8), 20, scale);
+      const geometry = await word.evaluate(node => {
+        const box = node.getBoundingClientRect();
+        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+        const lines: { top: number; left: number; right: number; text: string }[] = [];
+        while (walker.nextNode()) {
+          const text = walker.currentNode as Text;
+          for (let i = 0; i < text.length; i++) {
+            const range = document.createRange(); range.setStart(text, i); range.setEnd(text, i + 1);
+            const r = range.getBoundingClientRect();
+            let line = lines.find(line => Math.abs(line.top - r.top) < 2);
+            if (!line) { line = { top: r.top, left: Infinity, right: -Infinity, text: "" }; lines.push(line); }
+            line.text += text.data[i]; if (text.data[i].trim()) { line.left = Math.min(line.left, r.left); line.right = Math.max(line.right, r.right); }
+          }
+        }
+        const words = Array.from(node.querySelectorAll<HTMLElement>("[data-studio-latin-scale]"))
+          .filter(word => word.style.display === "inline-block")
+          .map(word => { const r = word.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top }; });
+        return { left: box.left, right: box.right, lines, words };
+      });
+      expect(geometry.lines.length, "scaled text wraps").toBeGreaterThan(2);
+      for (const line of geometry.lines) {
+        expect(line.left).toBeGreaterThanOrEqual(geometry.left - 1);
+        expect(line.right).toBeLessThanOrEqual(geometry.right + 1);
+      }
+      for (const word of geometry.words) {
+        const next = geometry.words.filter(other => other.left > word.left && Math.abs(other.top - word.top) < 2).sort((a,b) => a.left - b.left)[0];
+        if (next) expect(word.right, "scaled words must not overlap").toBeLessThanOrEqual(next.left + 1);
+      }
+      await page.locator(story).evaluate(el => {
+        const editor = (el as HTMLElement & { editor: Editor }).editor;
+        editor.commands.focus(); editor.commands.setTextSelection(5);
+      });
+      let previousSelection = 0;
+      for (let count = 1; count <= (scale === 100 ? 0 : 3); count++) {
+        await page.keyboard.press(sample.dir === "rtl" ? "Shift+ArrowLeft" : "Shift+ArrowRight");
+        const selectedLength = await page.locator(story).evaluate(el => {
+          const { from, to } = (el as HTMLElement & { editor: Editor }).editor.state.selection;
+          return to - from;
+        });
+        expect(selectedLength, "Shift+Arrow extends selection by a grapheme").toBeGreaterThan(previousSelection);
+        previousSelection = selectedLength;
+      }
+      // Capture measured lines at the real API handler's final PDF paint step.
+      // PDF text extraction reorders Arabic GPOS glyphs and inserts Latin spaces,
+      // so it cannot reliably recover source word boundaries on these fonts.
+      const payload = await page.locator(story).evaluate(el => (el as HTMLElement & { editor: Editor }).editor.getJSON());
+      const settings = defaultDocumentSettings();
+      settings.page.margins = { preset: "custom", topMm: 12.7, bottomMm: 12.7, startMm: 12.7, endMm: 12.7 };
+      let pdfLines: string[] = [];
+      const launch = puppeteer.launch.bind(puppeteer);
+      puppeteer.launch = async options => {
+        const browser = await launch(options), newPage = browser.newPage.bind(browser);
+        browser.newPage = async () => {
+          const pdfPage = await newPage(), print = pdfPage.pdf.bind(pdfPage);
+          pdfPage.pdf = async options => {
+            pdfLines = await pdfPage.$$eval("[data-pdf-ink-line]", lines => lines.map(line => line.textContent ?? ""));
+            return print(options);
+          };
+          return pdfPage;
+        };
+        return browser;
+      };
+      try {
+        const response = await exportPdf(new NextRequest("http://localhost/api/export-pdf", {
+          method: "POST", body: JSON.stringify({ doc: payload, dir: sample.dir, settings }),
+        }));
+        expect(response.status, response.status === 200 ? "PDF exported" : await response.text()).toBe(200);
+        const compact = (text: string) => text.replace(/\s/g, "");
+        expect(pdfLines.filter(line => line.trim()).map(compact), "PDF and editor line ends").toEqual(geometry.lines.filter(line => line.text.trim()).map(line => compact(line.text)));
+        if (process.env.QALAM_CHARACTER_CAPTURE && scale === 130 && sample.dir === "rtl") {
+          const pdf = info.outputPath("scaled.pdf"), prefix = info.outputPath("pdf-page");
+          writeFileSync(pdf, Buffer.from(await response.arrayBuffer()));
+          execFileSync("pdftoppm", ["-f", "1", "-singlefile", "-r", "96", "-png", pdf, prefix]);
+          await page.locator(story).evaluate(el => (el as HTMLElement & { editor: Editor }).editor.commands.setTextSelection(1));
+          const editorImage = await word.screenshot({ scale: "css" });
+          const { width, height } = await sharp(editorImage).metadata();
+          const pdfImage = await sharp(`${prefix}.png`).extract({ left: 48, top: 48, width: width!, height: height! }).toBuffer();
+          const labels = Buffer.from(`<svg width="${width! * 2 + 12}" height="24"><text x="8" y="17" font-size="14">Editor — Spacing 20 / Scaling 130</text><text x="${width! + 20}" y="17" font-size="14">Downloaded PDF — same settings</text></svg>`);
+          await sharp({ create: { width: width! * 2 + 12, height: height! + 24, channels: 3, background: "#fff" } })
+            .composite([{ input: labels, top: 0, left: 0 }, { input: editorImage, top: 24, left: 0 }, { input: pdfImage, top: 24, left: width! + 12 }])
+            .png().toFile(info.outputPath("editor-pdf-comparison.png"));
+        }
+      } finally { puppeteer.launch = launch; }
+
+    }
+  });
+}
