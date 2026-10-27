@@ -323,7 +323,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         marker.style.display = "none";
         br.replaceWith(marker);
       });
-      for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "letter-spacing", "word-spacing", "text-decoration"]) element.style.setProperty(property, style.getPropertyValue(property));
+      for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "text-align-last", "letter-spacing", "word-spacing", "text-decoration", "-webkit-text-stroke", "-webkit-text-fill-color"]) element.style.setProperty(property, style.getPropertyValue(property));
       const box = lineBox(group);
       let frame = { left: rect.left - origin.left, width: rect.width };
       let besideFloat = false;
@@ -340,7 +340,8 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       }
       element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:nowrap;`;
       element.style.textIndent = index === 0 ? style.textIndent : "0px";
-      if (style.textAlign === "justify" && index < groups.length - 1) element.style.textAlignLast = "justify";
+      const fullJustify = style.textAlignLast === "justify" || element.getAttribute("data-text-align") === "justify-all";
+      if (style.textAlign === "justify" && (fullJustify || index < groups.length - 1)) element.style.textAlignLast = "justify";
       const quote = block.closest("blockquote");
       if (quote) {
         const q = quote.getBoundingClientRect(), qs = getComputedStyle(quote);

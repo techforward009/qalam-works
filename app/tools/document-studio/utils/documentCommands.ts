@@ -17,6 +17,8 @@ import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
 import { normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
+import type { TextEffect } from "./inpageToolbar";
+import { isLatinFamilyName, hasScript, scriptRanges } from "../extensions/LatinScriptRuns";
 import {
   defaultDocumentSettings,
   resolveAddSpaceAfterPt,
@@ -108,8 +110,12 @@ export function activeBlockStyleId(editor: Editor): BlockStyleId {
   return attr && isBlockStyleId(attr) ? attr : "normal";
 }
 
-export function applyLineHeight(editor: Editor, value: number | null): void {
-  applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } });
+export function applyLineHeight(editor: Editor, value: number | null, focus = true): void {
+  applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } }, focus);
+}
+
+export function applyLineGap(editor: Editor, value: number, focus = true): void {
+  applyParagraphAttrs(editor, { lineGapPt: value }, focus);
 }
 
 const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
@@ -117,6 +123,7 @@ const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "inde
 export type ParagraphSpacingAttrs = {
   leading?: Leading | null;
   lineHeight?: number | null;
+  lineGapPt?: number | null;
   spaceBeforePt?: number | null;
   spaceAfterPt?: number | null;
   firstLineIndentMm?: number | null;
@@ -124,12 +131,14 @@ export type ParagraphSpacingAttrs = {
   indentEndMm?: number | null;
 };
 
-export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs): void {
+export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs, focus = true): void {
   if (typeof attrs.lineHeight === "number" && attrs.leading == null) attrs = { ...attrs, leading: { mode: "points", value: attrs.lineHeight }, lineHeight: null };
   const { state } = editor;
   if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
     const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
-    editor.chain().focus().updateAttributes(nodeType, attrs).run();
+    const chain = editor.chain();
+    if (focus) chain.focus();
+    chain.updateAttributes(nodeType, attrs).run();
     return;
   }
   const { from, to } = state.selection;
@@ -154,6 +163,7 @@ export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs
     return false;
   });
   if (changed) editor.view.dispatch(tr);
+  if (!focus) return;
   editor.commands.setTextSelection({ from, to });
   editor.chain().focus().run();
 }
@@ -178,12 +188,133 @@ export function applyCustomParagraphSpacing(editor: Editor, attrs: ParagraphSpac
   applyParagraphAttrs(editor, attrs);
 }
 
-export function applyFontFamily(editor: Editor, family: string): void {
-  if (!family) {
-    editor.chain().focus().unsetFontFamily().run();
-  } else {
-    editor.chain().focus().setFontFamily(quoteEditorFontFamily(family)).run();
+function isLatinFace(value: unknown): boolean {
+  return isLatinFamilyName(value);
+}
+
+function runStyleLive(attrs: Record<string, unknown>): boolean {
+  return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
+}
+
+/** Empty selection: change stored textStyle without dropping the other script's face. */
+function patchStoredMark(editor: Editor, update: (attrs: Record<string, unknown>) => void): void {
+  editor.chain().focus().command(({ tr, state }) => {
+    const type = state.schema.marks.textStyle;
+    if (!type) return false;
+    const marks = state.storedMarks ?? state.selection.$from.marks();
+    const current = marks.find((mark) => mark.type === type);
+    const attrs: Record<string, unknown> = { ...(current?.attrs ?? {}) };
+    update(attrs);
+    tr.removeStoredMark(type);
+    if (runStyleLive(attrs)) tr.addStoredMark(type.create(attrs));
+    return true;
+  }).run();
+}
+
+function patchTextRanges(
+  editor: Editor,
+  script: "arabic" | "latin",
+  update: (attrs: Record<string, unknown>) => void,
+): void {
+  const { state } = editor;
+  const type = state.schema.marks.textStyle;
+  if (!type) return;
+  const { from, to } = state.selection;
+  const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText || !node.text) return;
+    const localFrom = Math.max(0, from - pos);
+    const localTo = Math.min(node.text.length, to - pos);
+    const slice = node.text.slice(localFrom, localTo);
+    const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
+    for (const range of scriptRanges(slice, script)) {
+      const start = pos + localFrom + range.start;
+      const end = pos + localFrom + range.end;
+      if (end <= start) continue;
+      const attrs = { ...base };
+      update(attrs);
+      jobs.push({ from: start, to: end, attrs });
+    }
+  });
+  if (jobs.length === 0) {
+    editor.chain().focus().run();
+    return;
   }
+  jobs.sort((a, b) => b.from - a.from);
+  let tr = state.tr;
+  for (const job of jobs) {
+    tr = tr.removeMark(job.from, job.to, type);
+    if (runStyleLive(job.attrs)) tr = tr.addMark(job.from, job.to, type.create(job.attrs));
+  }
+  editor.view.dispatch(tr);
+  editor.chain().focus().run();
+}
+
+/** Urdu face only. Latin runs keep latinFontFamily (and a legacy Latin fontFamily). */
+export function applyFontFamily(editor: Editor, family: string): void {
+  const quoted = family ? quoteEditorFontFamily(family) : null;
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, (attrs) => { attrs.fontFamily = quoted; });
+    return;
+  }
+  patchTextRanges(editor, "arabic", (attrs) => { attrs.fontFamily = quoted; });
+}
+
+/** Latin face only. Never written onto Urdu, and never clears the Urdu face. */
+export function applyEnglishFont(editor: Editor, family: string): void {
+  const clear = !family || family === "Arial Unicode MS";
+  const quoted = clear ? null : quoteEditorFontFamily(family);
+  const apply = (attrs: Record<string, unknown>) => {
+    attrs.latinFontFamily = quoted;
+    if (clear && isLatinFace(attrs.fontFamily)) attrs.fontFamily = null;
+  };
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, apply);
+    return;
+  }
+  patchTextRanges(editor, "latin", apply);
+}
+
+function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", value: number): void {
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    return;
+  }
+  const { state } = editor;
+  const type = state.schema.marks.textStyle;
+  if (!type) return;
+  const { from, to } = state.selection;
+  const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText || !node.text) return;
+    const start = Math.max(pos, from);
+    const end = Math.min(pos + node.text.length, to);
+    if (end <= start) return;
+    const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value };
+    jobs.push({ from: start, to: end, attrs });
+  });
+  if (jobs.length === 0) {
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    return;
+  }
+  jobs.sort((a, b) => b.from - a.from);
+  let tr = state.tr;
+  for (const job of jobs) {
+    tr = tr.removeMark(job.from, job.to, type);
+    if (runStyleLive(job.attrs)) tr = tr.addMark(job.from, job.to, type.create(job.attrs));
+  }
+  editor.view.dispatch(tr);
+  editor.chain().focus().run();
+}
+
+/** Letter spacing in percent of an em. Stored on the selection; painted on Latin only. */
+export function applyTracking(editor: Editor, percent: number): void {
+  applyMetric(editor, "trackingPercent", percent);
+}
+
+/** Horizontal scale in percent. Stored on the selection; painted on Latin only. */
+export function applyScale(editor: Editor, percent: number): void {
+  applyMetric(editor, "scalePercent", percent);
 }
 
 export function activeToolbarFontFamily(editor: Editor): string {
@@ -223,7 +354,8 @@ export function setLinkHref(editor: Editor, url: string | null): void {
   if (url) editor.chain().focus().setLink({ href: url }).run();
   else editor.chain().focus().unsetLink().run();
 }
-export function setAlign(editor: Editor, align: "left" | "center" | "right" | "justify"): void {
+export type StudioTextAlign = "left" | "center" | "right" | "justify" | "justify-all";
+export function setAlign(editor: Editor, align: StudioTextAlign): void {
   editor.chain().focus().setTextAlign(align).run();
 }
 export function undo(editor: Editor): void {
@@ -314,18 +446,51 @@ export function findBlockStartPosition(editor: Editor, blockIndex: number): numb
   return foundPos;
 }
 
+function cleanTextStyle(mark: Mark): Mark | null {
+  if (mark.type.name !== "textStyle") return mark;
+  const attrs: Record<string, unknown> = { ...mark.attrs };
+  let live = false;
+  for (const key of Object.keys(attrs)) {
+    const value = attrs[key];
+    if (value == null || value === "" || value === false) delete attrs[key];
+    else live = true;
+  }
+  return live ? mark.type.create(attrs) : null;
+}
+
+function pastedDirection(text: string, fallbackDir: "rtl" | "ltr"): "rtl" | "ltr" {
+  if (hasScript(text, "arabic") && !hasScript(text, "latin")) return "rtl";
+  return detectParagraphDirection(text, fallbackDir);
+}
+
 export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
   if (!slice.content.size) return slice;
   function assignDir(node: PMNode): PMNode {
-    if (!node.isTextblock) {
-      const mapped = node.content.content.map(assignDir);
-      return node.copy(pmFragment.from(mapped));
+    if (node.isText) {
+      const marks = node.marks.flatMap((mark) => {
+        const cleaned = cleanTextStyle(mark);
+        return cleaned ? [cleaned] : [];
+      });
+      const same = marks.length === node.marks.length && marks.every((mark, index) => mark.eq(node.marks[index]));
+      return same ? node : node.mark(marks);
     }
+    const children: PMNode[] = [];
+    let changed = false;
+    node.forEach((child) => {
+      const next = assignDir(child);
+      if (next !== child) changed = true;
+      children.push(next);
+    });
+    const content = changed ? pmFragment.from(children) : node.content;
+    if (!node.isTextblock) return changed ? node.copy(content) : node;
     const text = node.textContent;
-    if (!text.trim()) return node;
-    if (node.attrs.directionMode === "rtl" || node.attrs.directionMode === "ltr") return node;
-    const detectedDir = detectParagraphDirection(text, node.attrs.dir ?? fallbackDir);
-    return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
+    if (!text.trim()) return changed ? node.copy(content) : node;
+    if (node.attrs.directionMode === "rtl" || node.attrs.directionMode === "ltr") {
+      return changed ? node.type.create(node.attrs, content, node.marks) : node;
+    }
+    const detectedDir = pastedDirection(text, fallbackDir);
+    if (!changed && detectedDir === node.attrs.dir) return node;
+    return node.type.create({ ...node.attrs, dir: detectedDir }, content, node.marks);
   }
   const nodes = slice.content.content.map(assignDir);
   return new Slice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
@@ -354,6 +519,16 @@ export function applyTextColor(editor: Editor, hex: string): void {
     return;
   }
   editor.chain().focus().setColor(safe).run();
+}
+
+export function applyTextEffect(editor: Editor, effect: TextEffect): void {
+  editor.chain().focus().setMark("textStyle", { textEffect: effect === "none" ? null : effect }).run();
+}
+
+export function toggleTextOutline(editor: Editor): void {
+  const current = editor.getAttributes("textStyle").textOutline;
+  const on = current === true || current === "true";
+  editor.chain().focus().setMark("textStyle", { textOutline: on ? null : true }).run();
 }
 
 export function applyHighlight(editor: Editor, hex: string): void {

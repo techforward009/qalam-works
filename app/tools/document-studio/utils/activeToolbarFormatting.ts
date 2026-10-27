@@ -14,12 +14,14 @@ import {
   type DocumentStudioSettings,
 } from "./documentSettings";
 import { getFontById, normalizeEditorFontFamily } from "./fontRegistry";
+import { isLatinFamilyName, hasScript } from "../extensions/LatinScriptRuns";
 import { normalizeSafeHex } from "./studioColors";
 
 export const MIXED_TOOLBAR_VALUE = "__mixed__";
 
 export interface ActiveToolbarFormatting {
   fontFamily: string;
+  latinFontFamily: string;
   fontSizePt: number | null;
   lineHeight: number | null;
   blockStyle: BlockStyleId;
@@ -27,18 +29,24 @@ export interface ActiveToolbarFormatting {
   bold: boolean;
   italic: boolean;
   underline: boolean;
-  textAlign: "left" | "center" | "right" | "justify" | "start" | null;
+  textEffect: string;
+  textOutline: boolean;
+  textAlign: "left" | "center" | "right" | "justify" | "justify-all" | "start" | null;
   bullet: boolean;
   ordered: boolean;
   color: string | null;
   highlight: string | null;
   spaceBeforePt: number | null;
   spaceAfterPt: number | null;
+  lineGapPt: number | null;
+  trackingPercent: number | null;
+  scalePercent: number | null;
   firstLineIndentMm: number | null;
   indentStartMm: number | null;
   indentEndMm: number | null;
   mixed: {
     fontFamily: boolean;
+    latinFontFamily: boolean;
     fontSize: boolean;
     lineHeight: boolean;
     color: boolean;
@@ -48,6 +56,8 @@ export interface ActiveToolbarFormatting {
     firstLineIndent: boolean;
     indentStart: boolean;
     indentEnd: boolean;
+    tracking: boolean;
+    scale: boolean;
   };
 }
 
@@ -107,14 +117,34 @@ function blockStyleAt(editor: Editor, pos: number): BlockStyleId {
   return "normal";
 }
 
+function isLatinToolbarFamily(family: string): boolean {
+  return isLatinFamilyName(family);
+}
+
+function latinFaceFromAttrs(attrs: Record<string, unknown> | null | undefined): string {
+  const direct = normalizeEditorFontFamily(attrs?.latinFontFamily);
+  if (direct && isLatinToolbarFamily(direct)) return direct;
+  const raw = String(attrs?.latinFontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
+  if (raw && isLatinToolbarFamily(raw)) return raw;
+  const legacy = normalizeEditorFontFamily(attrs?.fontFamily);
+  if (legacy && isLatinToolbarFamily(legacy)) return legacy;
+  const legacyRaw = String(attrs?.fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
+  if (legacyRaw && isLatinToolbarFamily(legacyRaw)) return legacyRaw;
+  return "Arial Unicode MS";
+}
+
+function metricOf(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
 function effectiveFamily(
   explicit: string,
-  dir: "rtl" | "ltr",
+  _dir: "rtl" | "ltr",
   settings: DocumentStudioSettings,
 ): string {
-  if (explicit) return explicit;
-  const id = dir === "ltr" ? settings.typography.defaultLtrFontId : settings.typography.defaultRtlFontId;
-  return getFontById(id).editorFamily || (dir === "ltr" ? "Inter" : "Mehr Nastaliq Web");
+  if (explicit && !isLatinToolbarFamily(explicit)) return explicit;
+  const id = settings.typography.defaultRtlFontId;
+  return getFontById(id).editorFamily || "Mehr Nastaliq Web";
 }
 
 function effectiveSize(explicit: number | null, blockStyle: BlockStyleId, settings: DocumentStudioSettings): number {
@@ -131,6 +161,7 @@ export function resolveActiveToolbarFormatting(
   const style = BLOCK_STYLES[blockStyle];
   const { from, to, empty } = editor.state.selection;
   const families = new Set<string>();
+  const latinFamilies = new Set<string>();
   const sizes = new Set<number>();
   const lineHeights = new Set<number | null>();
   const colors = new Set<string>();
@@ -140,6 +171,8 @@ export function resolveActiveToolbarFormatting(
   const firstIndents = new Set<number>();
   const startIndents = new Set<number>();
   const endIndents = new Set<number>();
+  const trackings = new Set<number>();
+  const scales = new Set<number>();
 
   const addSpacingFromPos = (pos: number) => {
     const spacing = spacingFromNode(textblockAt(editor, pos), settings);
@@ -150,20 +183,25 @@ export function resolveActiveToolbarFormatting(
     endIndents.add(spacing.indentEndMm);
   };
 
-  const addFromText = (pos: number, explicitFamily: string, explicitSize: number | null) => {
+  const addFromText = (pos: number, explicitFamily: string, explicitSize: number | null, attrs?: Record<string, unknown>) => {
     const dir = blockDirAt(editor, pos, globalDir);
     const localStyle = blockStyleAt(editor, pos);
     families.add(effectiveFamily(explicitFamily, dir, settings));
+    latinFamilies.add(latinFaceFromAttrs(attrs));
     sizes.add(effectiveSize(explicitSize, localStyle, settings));
     lineHeights.add(lineHeightAt(editor, pos, settings));
+    trackings.add(metricOf(attrs?.trackingPercent, 0));
+    scales.add(metricOf(attrs?.scalePercent, 100));
     addSpacingFromPos(pos);
   };
 
   if (empty) {
+    const stored = editor.getAttributes("textStyle") as Record<string, unknown>;
     addFromText(
       from,
       activeToolbarFontFamily(editor),
-      resolveFontSizePt(editor.getAttributes("textStyle").fontSize),
+      resolveFontSizePt(stored.fontSize),
+      stored,
     );
     const storedColor = normalizeSafeHex(editor.getAttributes("textStyle").color);
     colors.add(storedColor ?? "");
@@ -175,20 +213,33 @@ export function resolveActiveToolbarFormatting(
       if (!node.isText) return;
       sawText = true;
       const mark = node.marks.find((item) => item.type.name === "textStyle");
-      addFromText(
-        pos,
-        normalizeEditorFontFamily(mark?.attrs?.fontFamily),
-        resolveFontSizePt(mark?.attrs?.fontSize),
-      );
-      colors.add(normalizeSafeHex(mark?.attrs?.color) ?? "");
+      const attrs = (mark?.attrs ?? {}) as Record<string, unknown>;
+      const sliceFrom = Math.max(0, from - pos);
+      const sliceTo = Math.min(node.text?.length ?? 0, to - pos);
+      const slice = node.text?.slice(sliceFrom, sliceTo) ?? "";
+      const hasArabic = hasScript(slice, "arabic");
+      const hasLatin = hasScript(slice, "latin");
+      const dir = blockDirAt(editor, pos, globalDir);
+      const localStyle = blockStyleAt(editor, pos);
+      if (hasArabic) {
+        families.add(effectiveFamily(normalizeEditorFontFamily(attrs.fontFamily), dir, settings));
+      }
+      if (hasLatin) latinFamilies.add(latinFaceFromAttrs(attrs));
+      sizes.add(effectiveSize(resolveFontSizePt(attrs.fontSize), localStyle, settings));
+      lineHeights.add(lineHeightAt(editor, pos, settings));
+      trackings.add(metricOf(attrs.trackingPercent, 0));
+      scales.add(metricOf(attrs.scalePercent, 100));
+      colors.add(normalizeSafeHex(attrs.color) ?? "");
       const hi = node.marks.find((item) => item.type.name === "highlight");
       highlights.add(normalizeSafeHex(hi?.attrs?.color) ?? "");
     });
     if (!sawText) {
+      const stored = editor.getAttributes("textStyle") as Record<string, unknown>;
       addFromText(
         from,
         activeToolbarFontFamily(editor),
-        resolveFontSizePt(editor.getAttributes("textStyle").fontSize),
+        resolveFontSizePt(stored.fontSize),
+        stored,
       );
     } else {
       editor.state.doc.nodesBetween(from, to, (node, pos) => {
@@ -202,6 +253,7 @@ export function resolveActiveToolbarFormatting(
 
   const mixed = {
     fontFamily: families.size > 1,
+    latinFontFamily: latinFamilies.size > 1,
     fontSize: sizes.size > 1,
     lineHeight: lineHeights.size > 1,
     color: colors.size > 1,
@@ -211,9 +263,13 @@ export function resolveActiveToolbarFormatting(
     firstLineIndent: firstIndents.size > 1,
     indentStart: startIndents.size > 1,
     indentEnd: endIndents.size > 1,
+    tracking: trackings.size > 1,
+    scale: scales.size > 1,
   };
 
-  const explicitAlign = editor.isActive({ textAlign: "justify" })
+  const explicitAlign = editor.isActive({ textAlign: "justify-all" })
+    ? "justify-all"
+    : editor.isActive({ textAlign: "justify" })
     ? "justify"
     : editor.isActive({ textAlign: "center" })
       ? "center"
@@ -225,18 +281,27 @@ export function resolveActiveToolbarFormatting(
 
   return {
     fontFamily: mixed.fontFamily ? MIXED_TOOLBAR_VALUE : [...families][0] ?? effectiveFamily("", globalDir, settings),
+    latinFontFamily: mixed.latinFontFamily ? MIXED_TOOLBAR_VALUE : [...latinFamilies][0] ?? "Arial Unicode MS",
     fontSizePt: mixed.fontSize ? null : [...sizes][0] ?? settings.typography.bodyFontSizePt,
     lineHeight: mixed.lineHeight ? null : [...lineHeights][0] ?? null,
     blockStyle,
     bold: editor.isActive("bold") || Boolean(style.bold),
     italic: editor.isActive("italic"),
     underline: editor.isActive("underline"),
+    textEffect: String(editor.getAttributes("textStyle").textEffect || "none"),
+    textOutline: editor.getAttributes("textStyle").textOutline === true || editor.getAttributes("textStyle").textOutline === "true",
     textAlign: explicitAlign ?? style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left"),
     directionMode: textblockAt(editor, from)?.attrs.directionMode ?? "auto",
     color: mixed.color ? null : ([...colors][0] || null),
     highlight: mixed.highlight ? null : ([...highlights][0] || null),
     spaceBeforePt: mixed.spaceBefore ? null : [...spaceBefores][0] ?? settings.typography.paragraphBeforePt,
     spaceAfterPt: mixed.spaceAfter ? null : [...spaceAfters][0] ?? settings.typography.paragraphAfterPt,
+    lineGapPt: (() => {
+      const raw = textblockAt(editor, from)?.attrs.lineGapPt;
+      return typeof raw === "number" ? raw : 0;
+    })(),
+    trackingPercent: mixed.tracking ? null : [...trackings][0] ?? 0,
+    scalePercent: mixed.scale ? null : [...scales][0] ?? 100,
     firstLineIndentMm: mixed.firstLineIndent ? null : [...firstIndents][0] ?? settings.typography.firstLineIndentMm,
     indentStartMm: mixed.indentStart ? null : [...startIndents][0] ?? 0,
     indentEndMm: mixed.indentEnd ? null : [...endIndents][0] ?? 0,

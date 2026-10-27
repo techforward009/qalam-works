@@ -143,7 +143,7 @@ describe("toolbar font selection sync", () => {
     cleanup();
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
     expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Mehr Nastaliq Web");
-    expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
+    expect((document.querySelector("[data-studio-font-size]") as HTMLInputElement).value).toBe("12pt");
     expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();
     expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").lineHeight).toBeNull();

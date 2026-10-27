@@ -18,9 +18,11 @@ import {
   type StudioFontDefinition,
 } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
+import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
+import { bareFamily, hasScript, isLatinFamilyName, latinScaleCss, latinScaleFactor, latinScaleTokens } from "../extensions/LatinScriptRuns";
 
 export interface PdfFontFace {
   familyName: string;
@@ -65,6 +67,7 @@ const ALIGN_STYLE: Record<string, string> = {
 
 function alignStyleFor(node: DocNode): string {
   const textAlign = node.attrs?.textAlign;
+  if (textAlign === "justify-all") return "text-align:justify;text-align-last:justify;text-justify:inter-word;";
   return typeof textAlign === "string" && ALIGN_STYLE[textAlign]
     ? `text-align:${ALIGN_STYLE[textAlign]};`
     : "";
@@ -170,6 +173,32 @@ function noteEffective(
   }
 }
 
+function runMetrics(attrs: Record<string, unknown> | undefined, latin: boolean, sample = ""): string {
+  if (!latin || !attrs) return "";
+  const parts: string[] = [];
+  const tracking = attrs.trackingPercent;
+  const scale = attrs.scalePercent;
+  if (typeof tracking === "number" && tracking !== 0) parts.push(`letter-spacing:${tracking / 100}em;`);
+  if (typeof scale === "number" && scale !== 100) parts.push(`${latinScaleCss(scale, sample)};`);
+  return parts.join("");
+}
+
+function familyForPiece(
+  attrs: Record<string, unknown> | undefined,
+  text: string,
+): { family: string | null; latin: boolean } {
+  const arabic = hasScript(text, "arabic");
+  const latin = hasScript(text, "latin");
+  const explicit = typeof attrs?.fontFamily === "string" && attrs.fontFamily.trim().length > 0 ? attrs.fontFamily : null;
+  const latinFace = bareFamily(attrs?.latinFontFamily);
+  if (latin && !arabic) {
+    const chosen = latinFace || (isLatinFamilyName(explicit) ? bareFamily(explicit) : "");
+    return { family: chosen || null, latin: true };
+  }
+  if (arabic && isLatinFamilyName(explicit)) return { family: null, latin: false };
+  return { family: explicit, latin: false };
+}
+
 function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Direction): string {
   if (!nodes) return "";
   let html = "";
@@ -189,42 +218,53 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
     const styleMark = node.marks?.find((m) => m.type === "textStyle");
-    const explicitFamily = typeof styleMark?.attrs?.fontFamily === "string" && styleMark.attrs.fontFamily.trim().length > 0
-      ? styleMark.attrs.fontFamily
-      : null;
     const explicitSizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
     const safeColor = normalizeSafeHex(styleMark?.attrs?.color);
     const highlightMark = node.marks?.find((m) => m.type === "highlight");
     const safeHighlight = normalizeSafeHex(highlightMark?.attrs?.color);
+    const effectStyle = `${textEffectDeclarations(styleMark?.attrs?.textEffect)}${textOutlineDeclarations(styleMark?.attrs?.textOutline)}`;
     const sizeStyle = [
       explicitSizePt ? `font-size:${explicitSizePt}pt;` : "",
-      safeColor ? `color:${safeColor};` : "",
+      safeColor && !String(effectStyle).includes("color:#fff") ? `color:${safeColor};` : "",
       safeHighlight ? `background-color:${safeHighlight};` : "",
+      effectStyle,
     ].join("");
     const segments = segmentLine(node.text, blockDir);
     const pieces = segments.length > 0 ? segments : [{ text: node.text, dir: blockDir }];
 
     for (const piece of pieces) {
       if (!piece.text) continue;
-      let inner = escapeHtml(piece.text);
-      const choice = exportFamilyForSegment(explicitFamily, piece.dir, blockDir);
-      const effective = resolveEffectivePdfFont(choice.family, choice.fontDir, ctx.available, ctx.typography);
-      noteEffective(ctx, effective);
-      if (bold) inner = `<strong>${inner}</strong>`;
-      if (italics) inner = `<em>${inner}</em>`;
-      if (underline) inner = `<u>${inner}</u>`;
-      if (typeof href === "string" && href.trim().length > 0) {
-        inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
+      const picked = familyForPiece(styleMark?.attrs as Record<string, unknown> | undefined, piece.text);
+      const scale = styleMark?.attrs?.scalePercent;
+      const scaled = picked.latin && typeof scale === "number" && scale !== 100;
+      const tokens = scaled ? latinScaleTokens(piece.text).map((token) => token.text) : [piece.text];
+      let chunk = "";
+      for (const token of tokens) {
+        if (!token) continue;
+        let inner = escapeHtml(token);
+        const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
+        const effective = resolveEffectivePdfFont(choice.family, picked.latin ? "ltr" : choice.fontDir, ctx.available, ctx.typography);
+        noteEffective(ctx, effective);
+        if (bold) inner = `<strong>${inner}</strong>`;
+        if (italics) inner = `<em>${inner}</em>`;
+        if (underline) inner = `<u>${inner}</u>`;
+        if (typeof href === "string" && href.trim().length > 0) {
+          inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
+        }
+        const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
+          ? ` data-pdf-font="${escapeAttr(effective.family)}"`
+          : "";
+        const urduMarker = hasScript(token, "arabic") ? ' data-pdf-urdu="true"' : "";
+        const isolate = !scaled && piece.dir !== blockDir;
+        const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, picked.latin, token)}`;
+        const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
+        const scaleAttr = scaled ? ` data-pdf-scale="${latinScaleFactor(Number(scale))}"` : "";
+        inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${scaleAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
+        chunk += inner;
       }
-      const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
-        ? ` data-pdf-font="${escapeAttr(effective.family)}"`
-        : "";
-      const urduMarker = /\p{Script=Arabic}/u.test(piece.text) ? ' data-pdf-urdu="true"' : "";
-      const isolate = piece.dir !== blockDir;
-      const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}`;
-      const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
-      inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
-      html += inner;
+      // One LTR isolate around the whole run. A per-token isolate would reverse the words.
+      if (scaled && blockDir === "rtl") html += `<span dir="ltr" style="unicode-bidi:isolate">${chunk}</span>`;
+      else html += chunk;
     }
   }
 
@@ -249,6 +289,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
         : null;
   const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? validateIndentMm(node.attrs.indentStartMm) : null;
   const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? validateIndentMm(node.attrs.indentEndMm) : null;
+  const lineGapPt = typeof node.attrs?.lineGapPt === "number" ? validateSpacingPt(node.attrs.lineGapPt) ?? 0 : 0;
   const spaceBeforePt =
     typeof node.attrs?.spaceBeforePt === "number"
       ? validateSpacingPt(node.attrs.spaceBeforePt)
@@ -269,7 +310,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     alignStyleFor(node) || (styleDef?.align ? `text-align:${styleDef.align}` : ""),
     styleDef?.defaultFontSizePt ? `font-size:${styleDef.defaultFontSizePt}pt` : "",
     styleDef?.bold ? "font-weight:bold" : "",
-    lh !== null ? `line-height:${lh}pt` : "",
+    lh !== null ? `line-height:${lh + lineGapPt}pt` : "",
     firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
     indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
     indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",
@@ -495,6 +536,7 @@ ${classRulesCss()}
 </head>
 <body dir="${dir}">
 ${bodyHtml}
+<script>(function(){function measure(){document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=el.offsetWidth;if(width<=0)return;el.style.marginInlineEnd=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
 </body>
 </html>`;
 
@@ -529,15 +571,13 @@ export function requiredPdfEmbedFonts(
   const noteText = (node: DocNode, blockDir: Direction) => {
     if (typeof node.text !== "string" || node.text.length === 0) return;
     const styleMark = node.marks?.find((mark) => mark.type === "textStyle");
-    const explicitFamily = typeof styleMark?.attrs?.fontFamily === "string" && styleMark.attrs.fontFamily.trim().length > 0
-      ? styleMark.attrs.fontFamily
-      : null;
     const segments = segmentLine(node.text, blockDir);
     const pieces = segments.length > 0 ? segments : [{ text: node.text, dir: blockDir }];
     for (const piece of pieces) {
       if (!piece.text) continue;
-      const choice = exportFamilyForSegment(explicitFamily, piece.dir, blockDir);
-      used.add(preferredPdfFamily(choice.family, choice.fontDir, typography));
+      const picked = familyForPiece(styleMark?.attrs as Record<string, unknown> | undefined, piece.text);
+      const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
+      used.add(preferredPdfFamily(choice.family, picked.latin ? "ltr" : choice.fontDir, typography));
     }
   };
   const walk = (nodes: DocNode[] | undefined, blockDir: Direction) => {

@@ -266,6 +266,7 @@ const ALIGNMENT_MAP: Record<string, (typeof AlignmentType)[keyof typeof Alignmen
   center: AlignmentType.CENTER,
   right: AlignmentType.RIGHT,
   justify: AlignmentType.JUSTIFIED,
+  "justify-all": AlignmentType.DISTRIBUTE,
 };
 
 // In Word, generic "both" justification can produce extreme inter-word gaps

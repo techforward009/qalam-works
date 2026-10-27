@@ -2,13 +2,14 @@
 import { LeadingInput } from "./LeadingInput";
 import { parseLeading } from "../utils/leading";
 
-import { useEffect, useRef, useState, type CSSProperties, type ComponentProps } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ComponentProps } from "react";
+import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
-import { FONT_SIZE_OPTIONS_PT, LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
+import { LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
 import { BLOCK_STYLES, type BlockStyleId } from "../utils/documentStyles";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
@@ -20,13 +21,18 @@ import {
   addSpaceAfterParagraph,
   addSpaceBeforeParagraph,
   applyBlockStyle,
+  applyLineGap,
   applyParagraphDirection,
   applyCustomParagraphSpacing,
   applyFontFamily,
+  applyEnglishFont,
   applyFontSize,
   applyHighlight,
   applyLineHeight,
+  applyScale,
   applyTextColor,
+  applyTextEffect,
+  applyTracking,
   redo,
   removeSpaceAfterParagraph,
   removeSpaceBeforeParagraph,
@@ -35,9 +41,11 @@ import {
   toggleBulletList,
   toggleItalic,
   toggleOrderedList,
+  toggleTextOutline,
   toggleUnderline,
   undo,
 } from "../utils/documentCommands";
+import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, TOOLBAR_FONT_SIZE_PRESETS, mapToolbarLanguage, parseLineGap, parseToolbarFontSize, parseToolbarPercent, studioOverlayRoot, type PercentKind, type TextEffect } from "../utils/inpageToolbar";
 
 function ToolbarButton({
   onClick,
@@ -79,46 +87,298 @@ function ToolbarButton({
   );
 }
 
-function AlignIcon({ kind }: { kind: "left" | "center" | "right" | "justify" | "distribute" }) {
-  const widths = kind === "left" ? [13, 8, 13, 6]
-    : kind === "right" ? [13, 8, 13, 6]
-    : kind === "center" ? [11, 7, 11, 7]
-    : kind === "justify" ? [13, 13, 13, 13]
-    : [13, 9, 13, 9];
+const RIBBON_FONT = 'Arial, "Liberation Sans", sans-serif';
+
+function art(rows: string[], ox = 0, oy = 0): Array<[number, number]> {
+  const points: Array<[number, number]> = [];
+  rows.forEach((row, y) => {
+    [...row].forEach((cell, x) => {
+      if (cell === "#") points.push([ox + x, oy + y]);
+    });
+  });
+  return points;
+}
+
+function raisedColor(x: number, y: number, w: number, h: number): string | null {
+  const right = w - 1;
+  const bottom = h - 1;
+  if ((y === 0 && (x === 0 || x === right)) || (y === bottom && (x === 0 || x === right))) return null;
+  if (y === 0) return x <= right - 3 ? "#000000" : "#646464";
+  if (x === 0) return y >= bottom - 2 ? "#646464" : "#000000";
+  if (x === right || y === bottom) return "#646464";
+  if ((y === 1 && x < right - 1) || (x === 1 && y <= bottom - 2)) return "#ffffff";
+  if (x >= right - 2 || y >= bottom - 2) return "#a0a0a0";
+  return "#f0f0f0";
+}
+
+function pressedColor(x: number, y: number, w: number, h: number): string | null {
+  const right = w - 1;
+  const bottom = h - 1;
+  if ((y === 0 && (x === 0 || x === right)) || (y === bottom && (x === 0 || x === right))) return null;
+  if (x === 0 || y === 0 || x === right || y === bottom) return "#646464";
+  if (y === 1 && x === 1) return "#f0f0f0";
+  if (y === 1 && x >= 2 && x <= right - 2) return "#000000";
+  if (y === 1 && x === right - 1) return "#a0a0a0";
+  if (x === 1 && y === bottom - 1) return "#a0a0a0";
+  if (x === 1) return "#000000";
+  if (x === right - 1 || y >= bottom - 1) return "#f0f0f0";
+  return (x + y) % 2 === 0 ? "#f0f0f0" : "#ffffff";
+}
+
+function tileColor(x: number, y: number): string | null {
+  const last = 18;
+  if (x === last && y === last) return null;
+  if (y === 0) return x >= last - 2 ? "#646464" : "#000000";
+  if (x === last || y === last) return "#646464";
+  if (x === 0 && y >= last - 2) return "#646464";
+  if (x === 0) return "#000000";
+  return "#f0f0f0";
+}
+
+function PixelFace({
+  w, h, colorAt, glyph, light = [], shift = 0,
+}: {
+  w: number;
+  h: number;
+  colorAt: (x: number, y: number) => string | null;
+  glyph: Array<[number, number]>;
+  light?: Array<[number, number]>;
+  shift?: number;
+}) {
+  const groups = new Map<string, string[]>();
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const color = colorAt(x, y);
+      if (!color) continue;
+      const bucket = groups.get(color) ?? [];
+      bucket.push(`M${x} ${y}h1v1H${x}z`);
+      groups.set(color, bucket);
+    }
+  }
+  const paper = light.map(([x, y]) => `M${x + shift} ${y + shift}h1v1H${x + shift}z`).join("");
+  const ink = glyph.map(([x, y]) => `M${x + shift} ${y + shift}h1v1H${x + shift}z`).join("");
   return (
-    <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
-      {widths.map((width, index) => {
-        const y = 1 + index * 3;
-        const x = kind === "right" ? 13 - width : kind === "center" ? (14 - width) / 2 : 0.5;
-        return <path key={index} d={`M${x} ${y} H${x + width}`} stroke="#000" strokeWidth="1.2" />;
-      })}
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges" aria-hidden="true" style={{ display: "block" }}>
+      {[...groups].map(([color, parts]) => <path key={color} d={parts.join("")} fill={color} />)}
+      {paper ? <path d={paper} fill="#ffffff" /> : null}
+      {ink ? <path d={ink} fill="#000" /> : null}
     </svg>
   );
 }
 
-function MetricIcon({ kind }: { kind: "line" | "paragraph" | "kerning" | "scale" }) {
-  return <svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
-    {kind === "line" || kind === "paragraph" ? <>
-      <path d="M3 3V13M1 5L3 3L5 5M1 11L3 13L5 11" />
-      <path d={kind === "line" ? "M7 3H13M7 8H13M7 13H13" : "M7 3H13M10 3V13M7 13H13"} />
-    </> : <>
-      <path d="M1 2H5V6H1ZM9 2H13V6H9Z" />
-      <path d={kind === "kerning" ? "M2 10H12M4 8L2 10L4 12M10 8L12 10L10 12" : "M1 10H13M4 7L1 10L4 13M10 7L13 10L10 13"} />
-    </>}
-  </svg>;
+const BUTTON_BOX: CSSProperties = {
+  position: "absolute", padding: 0, margin: 0, border: "none", borderRadius: 0,
+  background: "transparent", boxShadow: "none", overflow: "hidden", lineHeight: 0, fontSize: 0,
+  minHeight: 0, maxHeight: 18,
+};
+
+function RaisedButton({
+  x, y = 0, w = 20, h = 18, glyph, pressed = false, label, onClick, geom, align,
+}: {
+  x: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  glyph: Array<[number, number]>;
+  pressed?: boolean;
+  label: string;
+  onClick: () => void;
+  geom: string;
+  align?: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-studio-geom={geom}
+      data-studio-align={align}
+      aria-label={label}
+      title={label}
+      aria-pressed={pressed}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+      style={{ ...BUTTON_BOX, left: x, top: y, width: w, height: h, minHeight: h, maxHeight: h }}
+    >
+      <PixelFace w={w} h={h} colorAt={(px, py) => pressed ? pressedColor(px, py, w, h) : raisedColor(px, py, w, h)} glyph={placeGlyph(glyph, pressed)} />
+    </button>
+  );
 }
 
-function BitmapEmphasis({ italic = false }: { italic?: boolean }) {
-  const rows = italic
-    ? ["001111", "000110", "000110", "001100", "001100", "001100", "011000", "011000", "111100"]
-    : ["11111100", "01100110", "01100011", "01100110", "01111100", "01100110", "01100011", "01100110", "11111100"];
-  const pixels = rows.flatMap((row, y) => [...row].flatMap((pixel, x) => pixel === "1" ? [`M${x} ${y}h1v1h-1z`] : []));
-  return <svg data-studio-emphasis={italic ? "italic" : "bold"} width={italic ? 6 : 8} height="9" shapeRendering="crispEdges" aria-hidden="true" style={{ position: "absolute", left: italic ? 6 : 5, top: 4 }}><path d={pixels.join("")} fill="#000" /></svg>;
+function FlatTile({
+  x, y = 0, glyph, light = [], label, onClick, geom,
+}: {
+  x: number;
+  y?: number;
+  glyph: Array<[number, number]>;
+  light?: Array<[number, number]>;
+  label: string;
+  onClick?: () => void;
+  geom: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-studio-geom={geom}
+      aria-label={label}
+      title={label}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+      style={{ ...BUTTON_BOX, left: x, top: y, width: 19, height: 19, minHeight: 19, maxHeight: 19 }}
+    >
+      <PixelFace w={19} h={19} colorAt={tileColor} glyph={glyph} light={light} />
+    </button>
+  );
 }
 
-function DirectionArrow({ left = false }: { left?: boolean }) {
-  return <svg width="12" height="7" viewBox="0 0 12 7" aria-hidden="true" style={{ transform: left ? "scaleX(-1)" : undefined }}><path d="M0 1.5H8V0L12 3.5L8 7V4.5H0Z" fill="#000" /></svg>;
+const LEADING_GLYPH = [
+  ...art(["#"], 9, 2), ...art(["#"], 9, 3), ...art(["#"], 9, 4),
+  ...art(["#.#.#"], 7, 5), ...art(["###"], 8, 6), ...art(["#"], 9, 7),
+  ...art(["#############"], 3, 8), ...art(["#"], 3, 9), ...art(["#"], 15, 9), ...art(["#############"], 3, 10),
+  ...art(["#"], 9, 11), ...art(["###"], 8, 12), ...art(["#.#.#"], 7, 13),
+  ...art(["#"], 9, 14), ...art(["#"], 9, 15),
+];
+const LEADING_LIGHT = art(["###########"], 4, 9);
+const INTERLINE_GLYPH = [
+  ...art(["#############", "#           #", "#############"], 3, 3),
+  ...art(["#"], 9, 6), ...art(["###"], 8, 7), ...art(["#.#.#"], 7, 8),
+  ...art(["#"], 9, 9),
+  ...art(["#.#.#"], 7, 10), ...art(["###"], 8, 11), ...art(["#"], 9, 12),
+  ...art(["#############", "#           #", "#############"], 3, 13),
+];
+const INTERLINE_LIGHT = [...art(["###########"], 4, 4), ...art(["###########"], 4, 14)];
+const TRACKING_GLYPH = [
+  ...art(["#####", "#   #", "#   #", "#   #", "#####"], 3, 5),
+  ...art(["#####", "#   #", "#   #", "#   #", "#####"], 11, 5),
+  ...art(["#"], 6, 11), ...art(["####"], 4, 12), ...art(["#"], 6, 13),
+  ...art(["#"], 12, 11), ...art(["####"], 11, 12), ...art(["#"], 12, 13),
+];
+const SCALE_GLYPH = [
+  ...art(["#####", "#   #", "#   #", "#####"], 7, 5),
+  ...art(["#"], 4, 9), ...art(["#"], 14, 9),
+  ...art(["#.#"], 5, 10), ...art(["#.#"], 11, 10),
+  ...art(["######"], 2, 11), ...art(["#####"], 11, 11),
+  ...art(["#.#"], 5, 12), ...art(["#.#"], 11, 12),
+  ...art(["#"], 4, 13), ...art(["#"], 14, 13),
+];
+const BOLD_GLYPH = art([
+  "",
+  "     #######",
+  "      ##   ##",
+  "      ##   ##",
+  "      ##  ##",
+  "      ######",
+  "      ##   ##",
+  "      ##   ##",
+  "      ##   ##",
+  "     #######",
+], 0, 0);
+const ITALIC_GLYPH = art([
+  "..####",
+  "...##.",
+  "..##..",
+  "..##..",
+  "..##..",
+  "..##..",
+  ".##...",
+  ".##...",
+  "####..",
+], 7, 1);
+function directionArrow(dir: "ltr" | "rtl"): Array<[number, number]> {
+  const rows = dir === "ltr"
+    ? [[12], [5, 6, 7, 8, 9, 10, 11, 12, 13], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], [5, 6, 7, 8, 9, 10, 11, 12, 13], [12]]
+    : [[6], [6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [6, 7, 8, 9, 10, 11, 12, 13, 14, 15], [6]];
+  const points: Array<[number, number]> = [];
+  rows.forEach((xs, index) => xs.forEach((x) => points.push([x, 2 + index])));
+  return points;
 }
+const LTR_GLYPH = directionArrow("ltr");
+const RTL_GLYPH = directionArrow("rtl");
+const OUTLINE_GLYPH = [
+  ...art(["###"], 8, 1),
+  ...art(["##"], 6, 2), ...art(["##"], 11, 2),
+  ...art(["#"], 6, 3), ...art(["#"], 12, 3),
+  ...art(["#"], 5, 4), ...art(["#"], 13, 4),
+  ...art(["#"], 5, 5), ...art(["#"], 13, 5),
+  ...art(["#"], 5, 6), ...art(["#"], 13, 6),
+  ...art(["#"], 6, 7), ...art(["#"], 12, 7),
+  ...art(["##"], 6, 8), ...art(["##"], 11, 8),
+  ...art(["###"], 8, 9),
+];
+const TABS_GLYPH = [
+  ...art(["#"], 9, 1),
+  ...art(["###"], 8, 2),
+  ...art(["#.#.#"], 7, 3),
+  ...art(["#"], 9, 4), ...art(["#"], 9, 5), ...art(["#"], 9, 6), ...art(["#"], 9, 7), ...art(["#"], 9, 8), ...art(["#"], 9, 9),
+  ...art(["###"], 9, 10),
+];
+
+function placeGlyph(glyph: Array<[number, number]>, pressed: boolean): Array<[number, number]> {
+  const dx = pressed ? 1 : 0;
+  const dy = pressed ? 4 : 3;
+  return glyph.map(([x, y]) => [x + dx, y + dy]);
+}
+
+function alignGlyph(kind: "left" | "right" | "center" | "justify" | "full"): Array<[number, number]> {
+  const widths = kind === "justify" ? [13, 13, 13, 13, 13, 8]
+    : kind === "full" ? [13, 13, 13, 13, 13, 13]
+      : [12, 11, 13, 8, 11, 13];
+  const points: Array<[number, number]> = [];
+  widths.forEach((width, index) => {
+    const y = index * 2;
+    const x0 = kind === "right" ? 16 - width : kind === "center" ? 3 + Math.floor((13 - width) / 2) : 3;
+    for (let x = 0; x < width; x += 1) points.push([x0 + x, y]);
+  });
+  return points;
+}
+
+function bevelColor(
+  x: number, y: number, w: number, h: number,
+  outerTL: string, outerBR: string, innerTL: string, innerBR: string, face: string | null,
+): string | null {
+  if ((y === 0 && x < w - 1) || (x === 0 && y < h - 1)) return outerTL;
+  if (x === w - 1 || y === h - 1) return outerBR;
+  if ((y === 1 && x < w - 2) || (x === 1 && y < h - 2)) return innerTL;
+  if (x === w - 2 || y === h - 2) return innerBR;
+  return face;
+}
+
+function SunkenBox({
+  geom, x, y = 0, w, h, children,
+}: {
+  geom: string;
+  x: number;
+  y?: number;
+  w: number;
+  h: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <span data-studio-geom={geom} style={{ position: "absolute", left: x, top: y, width: w, height: h, background: "#fff", boxSizing: "border-box" }}>
+      <span aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <PixelFace w={w} h={h} glyph={[]} colorAt={(px, py) => bevelColor(px, py, w, h, "#a0a0a0", "#ffffff", "#696969", "#e3e3e3", null)} />
+      </span>
+      {children}
+    </span>
+  );
+}
+
+const ARROW_GLYPH = art(["#######", ".#####.", "..###..", "...#..."], 4, 6);
+
+function ComboArrow() {
+  return (
+    <span aria-hidden="true" data-studio-combo-arrow="true" style={{ position: "absolute", right: 2, top: 2, width: 16, height: 16, pointerEvents: "none", zIndex: 2 }}>
+      <PixelFace w={16} h={16} glyph={ARROW_GLYPH} colorAt={(px, py) => bevelColor(px, py, 16, 16, "#e3e3e3", "#696969", "#ffffff", "#a0a0a0", "#f0f0f0")} />
+    </span>
+  );
+}
+
+const COMBO_TEXT: CSSProperties = {
+  position: "absolute", inset: 0, zIndex: 1, boxSizing: "border-box", width: "100%", height: "100%",
+  margin: 0, border: 0, borderRadius: 0, outline: "none", boxShadow: "none", background: "transparent",
+  color: "#000", fontFamily: RIBBON_FONT, fontSize: 9, lineHeight: "9px", padding: "2px 20px 0 4px",
+  transform: "translateY(-1px)", minWidth: 0, minHeight: 0, maxHeight: "100%",
+  appearance: "none", WebkitAppearance: "none", textAlign: "left", direction: "ltr",
+};
+const EDIT_TEXT: CSSProperties = { ...COMBO_TEXT, padding: "0 4px 0 4px" };
 
 function openToolbarCombo(input: HTMLSelectElement | null) {
   if (!input) return;
@@ -376,6 +636,211 @@ function isLightHex(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
+function LineGapField({ editor, value }: { editor: Editor; value: number }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const tabbing = useRef(false);
+  const cancelling = useRef(false);
+  const label = `${value}pt`;
+  const [text, setText] = useState(label);
+  useEffect(() => {
+    if (document.activeElement === inputRef.current) return;
+    setText(label);
+  }, [label]);
+  const commit = (raw: string, focus = true) => {
+    const next = parseLineGap(raw);
+    if (next === null) { setText(label); return; }
+    setText(`${next}pt`);
+    applyLineGap(editor, next, focus);
+  };
+  return <SunkenBox geom="gap" x={122} w={60} h={19}>
+    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => {
+      if (cancelling.current) { cancelling.current = false; tabbing.current = false; setText(label); return; }
+      const next = event.relatedTarget;
+      const toolbar = event.currentTarget.closest("[data-studio-toolbar]");
+      const inToolbar = next instanceof HTMLElement && !!toolbar?.contains(next);
+      commit(event.currentTarget.value, !(inToolbar || tabbing.current));
+      tabbing.current = false;
+      if (inToolbar) next.focus();
+    }} onKeyDown={(event) => {
+      if (event.key === "Tab") tabbing.current = true;
+      if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+      if (event.key === "Escape") { event.preventDefault(); cancelling.current = true; setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+    }} style={EDIT_TEXT} />
+  </SunkenBox>;
+}
+
+/** Fixed list inside the fullscreen element, so ribbon overflow cannot clip it. */
+function StudioList({ anchor, children, onClose, passthrough = false }: { anchor: HTMLElement | null; children: React.ReactNode; onClose?: () => void; passthrough?: boolean }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const [root, setRoot] = useState<HTMLElement | null>(null);
+  const [box, setBox] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      setRoot(studioOverlayRoot());
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      setBox({ top: rect.bottom, left: rect.left });
+    };
+    place();
+    document.addEventListener("fullscreenchange", place);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      document.removeEventListener("fullscreenchange", place);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [anchor]);
+  useEffect(() => {
+    const onPointer = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (anchor?.contains(target) || panelRef.current?.contains(target)) return;
+      closeRef.current?.();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeRef.current?.();
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [anchor]);
+  if (!root || !box) return null;
+  return createPortal(
+    <div ref={panelRef} data-studio-overlay-list="true" style={{ position: "fixed", top: box.top, left: box.left, zIndex: 420, pointerEvents: passthrough ? "none" : "auto" }}>
+      {children}
+    </div>,
+    root,
+  );
+}
+
+function refocusRibbon(event: { currentTarget: EventTarget & Element; relatedTarget: EventTarget | null }) {
+  const next = event.relatedTarget;
+  if (!(next instanceof HTMLElement)) return;
+  if (event.currentTarget.closest("[data-studio-toolbar]")?.contains(next)) next.focus();
+}
+
+function untabbableTools(node: HTMLDivElement | null) {
+  node?.querySelectorAll<HTMLElement>("button, select, input, textarea, a").forEach((el) => {
+    el.tabIndex = -1;
+    el.setAttribute("aria-hidden", "true");
+  });
+}
+
+function SizeField({ editor, value }: { editor: Editor; value: string }) {
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dirtyRef = useRef(false);
+  const messageRef = useRef("");
+  const [text, setText] = useState(value);
+  const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
+  const showError = (next: string) => {
+    messageRef.current = next;
+    setMessage(next);
+  };
+  const clearError = () => {
+    if (!messageRef.current) return;
+    messageRef.current = "";
+    setMessage("");
+  };
+  useEffect(() => {
+    if (dirtyRef.current || document.activeElement === inputRef.current) return;
+    setText(value);
+  }, [value]);
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(clearError, 8000);
+    const onPointer = (event: MouseEvent) => {
+      if (anchorRef.current?.contains(event.target as Node)) return;
+      clearError();
+    };
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [message]);
+  const commit = (raw: string, fromBlur = false) => {
+    if (fromBlur && !dirtyRef.current) {
+      setText(value);
+      return;
+    }
+    if (!dirtyRef.current && raw.trim() === value) return;
+    const parsed = parseToolbarFontSize(raw);
+    if (!parsed.ok) {
+      showError(parsed.message);
+      dirtyRef.current = false;
+      setText(value);
+      return;
+    }
+    clearError();
+    dirtyRef.current = false;
+    setText(parsed.label);
+    applyFontSize(editor, String(parsed.pt));
+    setOpen(false);
+  };
+  return <SunkenBox geom="size" x={430} w={80} h={20}>
+    <span ref={anchorRef} style={{ position: "absolute", inset: 0 }}>
+    <input ref={inputRef} id="studio-font-size" data-studio-font-size="true" aria-label="Size" title="Font size" value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onFocus={clearError} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") { dirtyRef.current = false; setText(value); clearError(); setOpen(false); } }} onBlur={(event) => { const alreadyShowing = messageRef.current !== ""; commit(event.currentTarget.value, true); if (alreadyShowing) clearError(); refocusRibbon(event); }} style={COMBO_TEXT} />
+    <button type="button" tabIndex={-1} aria-label="Size presets" onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ position: "absolute", right: 2, top: 2, width: 16, height: 16, padding: 0, border: 0, background: "transparent", zIndex: 3 }} />
+    <ComboArrow />
+    {open ? <StudioList anchor={anchorRef.current} onClose={() => setOpen(false)}>
+      <div role="listbox" aria-label="Size" data-studio-size-list="true" style={{ background: "#fff", border: "1px solid #808080", width: 72 }}>
+        {TOOLBAR_FONT_SIZE_PRESETS.map((pt) => <button key={pt} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => commit(`${pt}pt`)} style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", border: 0, fontSize: 11, padding: "2px 4px", color: "#000" }}>{pt}pt</button>)}
+      </div>
+    </StudioList> : null}
+    {message ? <StudioList anchor={anchorRef.current} passthrough>
+      <span role="alert" data-studio-size-error="true" style={{ width: 240, background: "#fff", border: "1px solid #000", color: "#000", fontSize: 11, padding: 4 }}>{message}</span>
+    </StudioList> : <span data-studio-size-error="true" className="sr-only" />}
+    </span>
+  </SunkenBox>;
+}
+
+function ColourField({ editor, value }: { editor: Editor; value: string }) {
+  const known = INPAGE_TEXT_COLOURS.find((colour) => colour.hex.toLowerCase() === value.toLowerCase());
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const entries = known || !value ? INPAGE_TEXT_COLOURS : [{ label: value, hex: value }, ...INPAGE_TEXT_COLOURS];
+  return <SunkenBox geom="colour" x={430} w={80} h={20}>
+    <div ref={anchorRef} data-studio-colour="true" style={{ position: "absolute", inset: 0 }}>
+    <button type="button" aria-label="Colour" aria-haspopup="listbox" aria-expanded={open} onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ ...COMBO_TEXT, padding: 0, transform: "none" }}>
+      <span data-studio-colour-swatch="true" style={{ position: "absolute", left: 4, top: 4, width: 12, height: 12, boxSizing: "border-box", background: value || "#000", border: "1px solid #646464" }} />
+      <span style={{ position: "absolute", left: 18, top: 6, fontFamily: RIBBON_FONT, fontSize: 9, lineHeight: "9px", color: "#000" }}>{known?.label ?? (value || "Black")}</span>
+    </button>
+    <ComboArrow />
+    {open ? <StudioList anchor={anchorRef.current} onClose={() => setOpen(false)}>
+      <div role="listbox" aria-label="Colour" data-studio-colour-list="true" style={{ width: 120, background: "#fff", border: "1px solid #808080" }}>
+        {entries.map((colour) => <button key={colour.hex + colour.label} type="button" role="option" data-studio-colour-option={colour.label} onMouseDown={(event) => event.preventDefault()} onClick={() => { applyTextColor(editor, colour.hex); setOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", background: "transparent", border: 0, fontSize: 11, padding: "2px 4px", color: "#000" }}>
+          <span style={{ width: 10, height: 10, background: colour.hex, border: "1px solid #000" }} />{colour.label}
+        </button>)}
+      </div>
+    </StudioList> : null}
+    </div>
+  </SunkenBox>;
+}
+
+function TextStyleField({ editor, value }: { editor: Editor; value: string }) {
+  const effect = (TEXT_EFFECTS as readonly string[]).includes(value) ? value as TextEffect : "none";
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  return <SunkenBox geom="text-style" x={618} w={100} h={20}>
+    <button ref={buttonRef} type="button" aria-label="Text style" aria-haspopup="listbox" aria-expanded={open} data-studio-text-style="true" data-latin-control="true" onMouseDown={(event) => event.preventDefault()} onClick={() => setOpen((next) => !next)} style={{ ...COMBO_TEXT, textAlign: "left" }}>
+      {TEXT_EFFECT_LABELS[effect]}
+    </button>
+    <ComboArrow />
+    {open ? <StudioList anchor={buttonRef.current} onClose={() => setOpen(false)}>
+      <div role="listbox" aria-label="Text style" data-studio-text-style-list="true" style={{ width: 100, background: "#fff", border: "1px solid #808080" }}>
+        {TEXT_EFFECTS.map((item) => <button key={item} type="button" role="option" data-studio-text-style-option={item} onMouseDown={(event) => event.preventDefault()} onClick={() => { applyTextEffect(editor, item); setOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", background: item === effect ? "#d6dff2" : "transparent", border: 0, fontSize: 11, padding: "2px 4px", color: "#000" }}>{TEXT_EFFECT_LABELS[item]}</button>)}
+      </div>
+    </StudioList> : null}
+  </SunkenBox>;
+}
+
 function ParagraphSpacingMenu({
   openRequest = 0,
   editor,
@@ -391,7 +856,7 @@ function ParagraphSpacingMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
-  useEffect(()=>{if(!openRequest)return;setOpen(false);setCustomOpen(true);const raf=requestAnimationFrame(()=>rootRef.current?.querySelector<HTMLInputElement>("input")?.focus());return()=>cancelAnimationFrame(raf);},[openRequest]);
+  useEffect(()=>{if(!openRequest)return;setOpen(false);setCustomOpen(true);const raf=requestAnimationFrame(()=>rootRef.current?.querySelector<HTMLInputElement>("[data-studio-custom-spacing-dialog] input")?.focus());return()=>cancelAnimationFrame(raf);},[openRequest]);
   const rootRef = useRef<HTMLDivElement>(null);
   const label = isUr ? "پیراگراف فاصلہ" : "Paragraph spacing";
 
@@ -456,25 +921,9 @@ function ParagraphSpacingMenu({
   };
 
   return (
-    <div ref={rootRef} className="relative inline-flex shrink-0" style={{ width: 79, marginInlineStart: 2 }}>
-      <ToolbarButton width={18} label={isUr ? "پیراگراف فاصلے کے اختیارات" : "Paragraph spacing options"} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} raised><MetricIcon kind="paragraph" /></ToolbarButton>
-      <button
-        type="button"
-        title={label}
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-expanded={open || customOpen}
-        data-studio-line-height="menu"
-        data-studio-spacing-button="true"
-        onMouseDown={keepFocus}
-        onClick={() => {
-          setCustomOpen(false);
-          setOpen((next) => !next);
-        }}
-        className="inline-flex h-[20px] min-w-0 items-center justify-center bg-white px-1 text-[11px] leading-none text-black"
-        style={{ width: 61, minHeight: 20, justifyContent: "flex-start", boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}
-      >
-        <span className="px-0.5" data-latin-control="true">{ui.mixed.spaceAfter ? "—" : `${ui.spaceAfterPt ?? 0}pt`}</span>
+    <div ref={rootRef} data-studio-geom="interline-icon" style={{ position: "absolute", left: 103, top: 0, width: 19, height: 19 }}>
+      <button type="button" data-studio-spacing-button="true" aria-label={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} title={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} onMouseDown={(event) => event.preventDefault()} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} style={{ ...BUTTON_BOX, left: 0, top: 0, width: 19, height: 19, minHeight: 19, maxHeight: 19 }}>
+        <PixelFace w={19} h={19} colorAt={tileColor} glyph={INTERLINE_GLYPH} light={INTERLINE_LIGHT} />
       </button>
       {open ? (
         <div
@@ -596,9 +1045,14 @@ function ParagraphSpacingMenu({
               {isUr ? "منسوخ" : "Cancel"}
             </button>
             <button
-              type="submit"
+              type="button"
               data-studio-spacing-apply="true"
-              onMouseDown={keepFocus}
+              onPointerDown={(event) => event.preventDefault()}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget.closest("form");
+                if (form) applyCustom(form);
+              }}
               className="h-7 rounded bg-[#1A3A2A] px-2 text-[11px] font-semibold text-white"
             >
               {isUr ? "لاگو کریں" : "Apply"}
@@ -658,6 +1112,47 @@ function ClassicCombo({ className, style, width, gap = 0, leadingIcon, entryFiel
   );
 }
 
+function PercentField({ editor, value, kind, geom, label, attr }: { editor: Editor; value: string; kind: PercentKind; geom: string; label: string; attr: string }) {
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dirtyRef = useRef(false);
+  const messageRef = useRef("");
+  const [text, setText] = useState(value);
+  const [message, setMessage] = useState("");
+  const showError = (next: string) => { messageRef.current = next; setMessage(next); };
+  const clearError = () => { if (!messageRef.current) return; messageRef.current = ""; setMessage(""); };
+  useEffect(() => {
+    if (dirtyRef.current || document.activeElement === inputRef.current) return;
+    setText(value);
+  }, [value]);
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(clearError, 8000);
+    const onPointer = (event: MouseEvent) => { if (anchorRef.current?.contains(event.target as Node)) return; clearError(); };
+    document.addEventListener("mousedown", onPointer);
+    return () => { window.clearTimeout(timer); document.removeEventListener("mousedown", onPointer); };
+  }, [message]);
+  const commit = (raw: string, fromBlur = false) => {
+    if (fromBlur && !dirtyRef.current) { setText(value); return; }
+    if (!dirtyRef.current && raw.trim() === value) return;
+    const parsed = parseToolbarPercent(raw, kind);
+    if (!parsed.ok) { showError(parsed.message); dirtyRef.current = false; setText(value); return; }
+    clearError();
+    dirtyRef.current = false;
+    setText(parsed.label);
+    if (kind === "tracking") applyTracking(editor, parsed.value);
+    else applyScale(editor, parsed.value);
+  };
+  return <SunkenBox geom={geom} x={531} w={60} h={19}>
+    <span ref={anchorRef} style={{ position: "absolute", inset: 0 }}>
+      <input ref={inputRef} aria-label={label} data-studio-metric={attr} data-studio-tracking={kind === "tracking" ? "true" : undefined} data-studio-scale={kind === "scale" ? "true" : undefined} value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onFocus={clearError} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value); } if (event.key === "Escape") { dirtyRef.current = false; setText(value); clearError(); } }} onBlur={(event) => { const already = messageRef.current !== ""; commit(event.currentTarget.value, true); if (already) clearError(); refocusRibbon(event); }} style={EDIT_TEXT} />
+      {message ? <StudioList anchor={anchorRef.current} passthrough>
+        <span role="alert" data-studio-field-error={attr} style={{ width: 280, background: "#fff", border: "1px solid #000", color: "#000", fontSize: 11, padding: 4 }}>{message}</span>
+      </StudioList> : null}
+    </span>
+  </SunkenBox>;
+}
+
 export const DOCUMENT_TOOLBAR_LEADING = ["style", "spacing", "latin-font", "bold"] as const;
 
 export default function DocumentToolbar({
@@ -688,233 +1183,132 @@ export default function DocumentToolbar({
   paragraphRequest?: number;
 }) {
   const leadingRef = useRef<HTMLInputElement>(null);
-  const kerningRef = useRef<HTMLSelectElement>(null);
-  const scaleRef = useRef<HTMLSelectElement>(null);
   const settings = documentSettings ?? defaultDocumentSettings();
+  void zoom;
+  void onZoomChange;
+  void onEnglishFontChange;
+  void englishFont;
   const ui = useEditorState({
     editor,
     selector: ({ editor: current }) =>
       current ? resolveActiveToolbarFormatting(current, settings, dir) : null,
   });
-  useEffect(() => {
-    if (!editor || !ui) return;
-    const family = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
-    if (family === "Arial Unicode MS" || STUDIO_FONT_GROUPS.some((group) => group.category === "latin" && group.fonts.some((font) => font.value === family))) onEnglishFontChange?.(family);
-  }, [editor, ui, onEnglishFontChange]);
   if (!editor || !ui) return null;
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
-  const currentSize = ui.mixed.fontSize ? MIXED_TOOLBAR_VALUE : String(ui.fontSizePt ?? settings.typography.bodyFontSizePt);
-  const sizeOptions = FONT_SIZE_OPTIONS_PT.includes((ui.fontSizePt ?? settings.typography.bodyFontSizePt) as typeof FONT_SIZE_OPTIONS_PT[number])
-    ? FONT_SIZE_OPTIONS_PT
-    : [...FONT_SIZE_OPTIONS_PT, ui.fontSizePt as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
   const latinFonts = STUDIO_FONT_GROUPS.find((group) => group.category === "latin")?.fonts ?? [];
-  const explicitLatin = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
-  const englishValue = explicitLatin === "Arial Unicode MS" || latinFonts.some((font) => font.value === explicitLatin) ? explicitLatin : englishFont;
+  const englishValue = ui.mixed.latinFontFamily ? MIXED_TOOLBAR_VALUE : ui.latinFontFamily;
   const spacingValue = ui.lineHeight == null ? { mode: "auto" as const } : { mode: "points" as const, value: ui.lineHeight };
   const colourValue = !ui.color || ui.color === "#000000" || ui.color === "#111111" ? "#000000" : ui.color;
+  const rowStyle: CSSProperties = { position: "relative", height: 21, overflow: "visible" };
+  const urduKnown = STUDIO_FONT_GROUPS.some((group) => group.fonts.some((font) => font.value === currentFont));
 
   return (
     <>
       <div
         className="flex flex-col"
-        dir={isUr ? "rtl" : "ltr"}
+        dir="ltr"
         role="toolbar"
         aria-label={isUr ? "فارمیٹنگ" : "Formatting"}
         data-studio-toolbar="true"
         data-studio-toolbar-language={isUr ? "ur" : "en"}
         data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
-        style={{ background: "#f0f0f0", color: "#000", fontSize: 11, rowGap: 0 }}
+        style={{ background: "#f0f0f0", color: "#000", fontFamily: RIBBON_FONT, fontSize: 9, height: 47, minWidth: 810, boxSizing: "border-box", position: "relative" }}
       >
+        <style>{`@media (max-width:719px){
+          [data-studio-shell] [data-studio-sticky-chrome]{min-width:0 !important;max-width:100% !important;}
+          [data-studio-shell] [data-studio-chrome="toolbar"]{min-width:0 !important;width:100% !important;max-width:100% !important;overflow-x:auto !important;overflow-y:hidden !important;touch-action:pan-x !important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;}
+          [data-studio-toolbar],[data-studio-toolbar] *{touch-action:pan-x;}
+          [data-studio-toolbar]{height:auto !important;min-width:0 !important;width:max-content !important;}
+          [data-studio-toolbar] [data-studio-toolbar-row]{display:flex !important;align-items:center !important;position:relative !important;height:32px !important;min-height:32px !important;max-height:32px !important;width:max-content !important;flex-wrap:nowrap !important;overflow:visible !important;gap:4px !important;padding:0 4px !important;box-sizing:border-box !important;}
+          [data-studio-toolbar] [data-studio-geom]{position:relative !important;left:auto !important;top:auto !important;right:auto !important;margin:0 !important;flex:0 0 auto !important;min-width:24px !important;min-height:24px !important;height:26px !important;max-height:26px !important;}
+          [data-studio-toolbar] [data-studio-geom] > button{position:relative !important;left:auto !important;top:auto !important;width:100% !important;height:26px !important;min-width:24px !important;min-height:24px !important;max-height:26px !important;}
+          [data-studio-toolbar] button[data-studio-geom]{min-width:24px !important;min-height:24px !important;height:26px !important;max-height:26px !important;}
+          [data-studio-toolbar] button[aria-label="Size presets"]{position:absolute !important;right:1px !important;top:1px !important;width:24px !important;height:24px !important;min-width:24px !important;min-height:24px !important;max-width:24px !important;max-height:24px !important;}
+        }`}</style>
         <div aria-hidden="true" data-studio-toolbar-etched="true" className="h-[3px] shrink-0" style={{ background: "linear-gradient(to bottom, #f0f0f0 0 1px, #a0a0a0 1px 2px, #ffffff 2px 3px)" }} />
-        <div
-          className="flex h-[21px] shrink-0 flex-nowrap items-start gap-0 overflow-x-auto px-[2px]"
-          data-studio-toolbar-row="format"
-        >
-          <ClassicCombo
-            id="studio-block-style"
-            value="normal"
-            onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
-            className={selectCls} width={100}
-            title={isUr ? "انداز" : "Style"}
-            aria-label={isUr ? "انداز" : "Style"}
-            data-studio-style-control="true"
-          >
-            {(["normal"] as const).map((id) => (
-              <option key={id} value={id}>
-                {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
-              </option>
-            ))}
-          </ClassicCombo>
-          <ToolbarButton width={18} gap={1} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} onClick={() => leadingRef.current?.focus()} raised><MetricIcon kind="line" /></ToolbarButton>
-          <LeadingInput ref={leadingRef}
-            aria-label="Line spacing" data-studio-leading="true" value={spacingValue}
-            onChange={value => applyLineHeight(editor,value.mode === "points" ? value.value : null)}
-            style={{ width:61, height:20, minHeight:20, maxHeight:20, flexShrink:0, background:"#fff", color:"#000", fontFamily:"Tahoma, Arial, sans-serif", fontSize:11, padding:"2px 4px", border:0, boxShadow:"inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff" }}
-          />
-          <datalist id="studio-leading-points"><option value="Auto" />{LINE_SPACING_PRESETS.map(preset=><option key={preset.id} value={`${preset.value}pt`} />)}</datalist>
-          <ClassicCombo
-            aria-label={isUr ? "انگریزی فونٹ" : "English font"}
-            leadingIcon={<span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700 }}>Tт</span>}
-            data-studio-latin-font="true"
-            data-latin-control="true"
-            className={selectCls} width={202} gap={2}
-            value={englishValue}
-            onChange={(event) => {
-              onEnglishFontChange?.(event.target.value);
-              if (editor.state.selection.$from.parent.attrs.dir !== "rtl") applyFontFamily(editor, event.target.value === "Arial Unicode MS" ? "" : event.target.value);
-            }}
-          >
-            <option value="Arial Unicode MS">Arial Unicode MS</option>
-            {latinFonts.map((font) => (
-              <option key={font.value} value={font.value}>{font.label}</option>
-            ))}
-          </ClassicCombo>
-          <ToolbarButton width={20} gap={2} label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin raised>
-            <BitmapEmphasis />
-          </ToolbarButton>
-          <ToolbarButton width={19} gap={1} label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin raised>
-            <BitmapEmphasis italic />
-          </ToolbarButton>
-          <ClassicCombo
-            id="studio-font-size"
-            data-studio-font-size="true"
-            value={currentSize}
-            onChange={(e) => {
-              if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-              applyFontSize(editor, e.target.value);
-            }}
-            className={selectCls} width={80} gap={2}
-            title={isUr ? "سائز" : "Font size"}
-            aria-label={isUr ? "سائز" : "Size"}
-            data-latin-control="true"
-          >
-            {ui.mixed.fontSize && (
-              <option value={MIXED_TOOLBAR_VALUE} disabled>
-                {isUr ? "مخلوط" : "Mixed"}
-              </option>
-            )}
-            {sizeOptions.map((pt) => (
-              <option key={pt} value={pt}>{pt}pt</option>
-            ))}
-          </ClassicCombo>
-          <ToolbarButton disabledTip={isUr ? "جلد آ رہا ہے" : "Coming soon"} width={18} gap={2} label={isUr ? "کرننگ کے اختیارات" : "Kerning options"} onClick={() => openToolbarCombo(kerningRef.current)} raised><MetricIcon kind="kerning" /></ToolbarButton>
-          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} entryField ref={kerningRef} aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={selectCls} width={61} defaultValue="0">
-            <option value="0">0%</option>
-            <option value="5">5%</option>
-          </ClassicCombo>
-          <ToolbarButton width={20} gap={3}
-            label={isUr ? "متن کی سمت" : "Text direction"}
-            active={ui.directionMode !== "auto"}
-            onClick={() => applyParagraphDirection(editor, ui.directionMode === "ltr" ? "rtl" : "ltr")}
-            latin
-          >
-            <span aria-hidden="true" style={{ fontFamily: "Arial, sans-serif", fontSize: 14 }}>↑|</span>
-          </ToolbarButton>
-          {setProcessingLanguage ? (
-            <ClassicCombo
-              className={selectCls} width={68} gap={4}
-              aria-label={isUr ? "متن کی زبان" : "Language"}
-              data-studio-document-language="true"
-              data-latin-control="true"
-              value={processingLanguage ?? "ur"}
-              onChange={(event) => setProcessingLanguage(event.target.value as ProcessingLanguage)}
-            >
+        <div className="relative h-[21px] shrink-0 overflow-x-auto flex-nowrap" data-studio-toolbar-row="format" style={rowStyle}>
+          <SunkenBox geom="style" x={2} w={100} h={20}>
+            <select id="studio-block-style" value="normal" onChange={(event) => applyBlockStyle(editor, event.target.value as BlockStyleId)} aria-label={isUr ? "انداز" : "Style"} title={isUr ? "انداز" : "Style"} data-studio-style-control="true" style={COMBO_TEXT}>
+              <option value="normal">{isUr ? BLOCK_STYLES.normal.labelUr : BLOCK_STYLES.normal.label}</option>
+            </select>
+            <ComboArrow />
+          </SunkenBox>
+          <FlatTile geom="leading-icon" x={103} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} glyph={LEADING_GLYPH} light={LEADING_LIGHT} onClick={() => leadingRef.current?.focus()} />
+          <SunkenBox geom="leading" x={122} w={60} h={19}>
+            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} onChange={(value, meta) => applyLineHeight(editor, value.mode === "points" ? value.value : null, meta?.focus !== false)} style={EDIT_TEXT} />
+          </SunkenBox>
+          <SunkenBox geom="english-font" x={184} w={202} h={20}>
+            <span aria-hidden="true" style={{ position: "absolute", left: 7, top: 5, zIndex: 2, width: 13, height: 12, pointerEvents: "none" }}>
+              <svg width="13" height="12" viewBox="0 0 13 12" shapeRendering="crispEdges">
+                <path fill="#808080" d={["gggggggg", "gg.gg.gg", "g..gg..g", "g..g", "...g", "...g", "...g", "...gg", ".gggggg"].map((row, y) => [...row].map((cell, x) => cell === "g" ? `M${x} ${y}h1v1H${x}z` : "").join("")).join("")} />
+                <path fill="#000" d={["", "", "", "....########", "....##.##.##", "....#..##..#", "....#..##..#", ".......##", ".......##", ".......##", ".......##", ".....######"].map((row, y) => [...row].map((cell, x) => cell === "#" ? `M${x} ${y}h1v1H${x}z` : "").join("")).join("")} />
+              </svg>
+            </span>
+            <select aria-label={isUr ? "انگریزی فونٹ" : "English font"} data-studio-latin-font="true" data-latin-control="true" value={englishValue} onChange={(event) => { if (event.target.value !== MIXED_TOOLBAR_VALUE) applyEnglishFont(editor, event.target.value); }} style={{ ...COMBO_TEXT, paddingLeft: 22 }}>
+              {ui.mixed.latinFontFamily ? <option value={MIXED_TOOLBAR_VALUE}>{isUr ? "مخلوط" : "Mixed"}</option> : null}
+              {englishValue && englishValue !== MIXED_TOOLBAR_VALUE && englishValue !== "Arial Unicode MS" && !latinFonts.some((font) => font.value === englishValue) ? <option value={englishValue}>{englishValue}</option> : null}
+              <option value="Arial Unicode MS">Arial Unicode MS</option>
+              {latinFonts.map((font) => <option key={font.value} value={font.value}>{font.label}</option>)}
+            </select>
+            <ComboArrow />
+          </SunkenBox>
+          <RaisedButton geom="bold" x={388} label={isUr ? "موٹا" : "Bold"} pressed={ui.bold} glyph={BOLD_GLYPH} onClick={() => toggleBold(editor)} />
+          <RaisedButton geom="italic" x={408} label={isUr ? "ترچھا" : "Italic"} pressed={ui.italic} glyph={ITALIC_GLYPH} onClick={() => toggleItalic(editor)} />
+          <SizeField editor={editor} value={ui.mixed.fontSize ? "" : `${ui.fontSizePt ?? settings.typography.bodyFontSizePt}pt`} />
+          <FlatTile geom="tracking-icon" x={512} label={isUr ? "ٹریکنگ" : "Tracking"} glyph={TRACKING_GLYPH} />
+          <PercentField editor={editor} kind="tracking" geom="tracking" attr="tracking" label={isUr ? "ٹریکنگ" : "Tracking"} value={ui.mixed.tracking || ui.trackingPercent == null ? "" : `${ui.trackingPercent}%`} />
+          <RaisedButton geom="tabs" x={594} label={isUr ? "ٹیبز اور انڈینٹ" : "Tabs & Indent"} glyph={TABS_GLYPH} onClick={() => {
+            // TODO: toggle the page ruler. rulerVisible lives in DocumentStudioEditor and is not passed into this toolbar.
+          }} />
+          <SunkenBox geom="language" x={618} w={68} h={20}>
+            <select aria-label={isUr ? "متن کی زبان" : "Language"} data-studio-document-language="true" data-latin-control="true" value={mapToolbarLanguage(processingLanguage)} onChange={(event) => setProcessingLanguage?.(mapToolbarLanguage(event.target.value))} style={COMBO_TEXT}>
               <option value="ur">Urdu</option>
-              <option value="ar">Arabic</option>
               <option value="en">English</option>
-              <option value="auto">Auto</option>
-            </ClassicCombo>
-          ) : null}
+            </select>
+            <ComboArrow />
+          </SunkenBox>
         </div>
-        <div
-          className="flex h-[21px] shrink-0 flex-nowrap items-start gap-0 overflow-x-auto px-[2px]"
-          data-studio-toolbar-row="document"
-          data-studio-toolbar-secondary="true"
-        >
-          <div className="flex shrink-0 gap-px" style={{ width: 99 }}>
-          <ToolbarButton width={19} label={isUr ? "بائیں سیدھ" : "Align left"} active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}><AlignIcon kind="left" /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "درمیانی سیدھ" : "Align center"} active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}><AlignIcon kind="center" /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "دائیں سیدھ" : "Align right"} active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}><AlignIcon kind="right" /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="justify" /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "تقسیم" : "Distribute"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="distribute" /></ToolbarButton>
-          </div>
+        <div className="relative h-[21px] shrink-0 overflow-x-auto flex-nowrap" data-studio-toolbar-row="document" data-studio-toolbar-secondary="true" style={rowStyle}>
+          <RaisedButton geom="align-left" align="left" x={2} label={isUr ? "بائیں سیدھ" : "Align left"} pressed={ui.textAlign === "left"} glyph={alignGlyph("left")} onClick={() => setAlign(editor, "left")} />
+          <RaisedButton geom="align-right" align="right" x={22} label={isUr ? "دائیں سیدھ" : "Align right"} pressed={ui.textAlign === "right"} glyph={alignGlyph("right")} onClick={() => setAlign(editor, "right")} />
+          <RaisedButton geom="align-center" align="center" x={42} label={isUr ? "درمیانی سیدھ" : "Align center"} pressed={ui.textAlign === "center"} glyph={alignGlyph("center")} onClick={() => setAlign(editor, "center")} />
+          <RaisedButton geom="align-justify" align="justify" x={62} label={isUr ? "برابر کریں" : "Justify"} pressed={ui.textAlign === "justify"} glyph={alignGlyph("justify")} onClick={() => setAlign(editor, "justify")} />
+          <RaisedButton geom="align-full" align="justify-all" x={82} label={isUr ? "مکمل برابر" : "Full justify"} pressed={ui.textAlign === "justify-all"} glyph={alignGlyph("full")} onClick={() => setAlign(editor, "justify-all")} />
           <ParagraphSpacingMenu openRequest={paragraphRequest} editor={editor} ui={ui} settings={settings} isUr={isUr} />
-          <ClassicCombo
-            id="studio-font-family"
-            data-studio-font-family="true"
-            value={currentFont}
-            onChange={(e) => {
-              if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-              applyFontFamily(editor, e.target.value);
-            }}
-            className={selectCls} width={202} gap={2}
-            title={isUr ? "اردو فونٹ" : "Urdu font"}
-            aria-label={isUr ? "اردو فونٹ" : "Urdu font"}
-          >
-            {ui.mixed.fontFamily && (
-              <option value={MIXED_TOOLBAR_VALUE} disabled>
-                {isUr ? "مخلوط" : "Mixed"}
-              </option>
-            )}
-            <option value="">{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
-            {STUDIO_FONT_GROUPS.map((group) => (
-              <optgroup key={group.category} label={isUr ? group.labelUr : group.labelEn}>
-                {group.fonts.map((font) => (
-                  <option key={font.value} value={font.value}>{font.label}</option>
-                ))}
-              </optgroup>
-            ))}
-          </ClassicCombo>
-          <ToolbarButton width={21} gap={2} label={isUr ? "بائیں سے دائیں" : "Left to right"} active={dir === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin><DirectionArrow /></ToolbarButton>
-          <ToolbarButton width={19} label={isUr ? "دائیں سے بائیں" : "Right to left"} active={dir === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin><DirectionArrow left /></ToolbarButton>
-          <ClassicCombo
-            aria-label={isUr ? "رنگ" : "Colour"}
-            data-latin-control="true"
-            className={selectCls} width={80} gap={2}
-            leadingIcon={<span style={{ width: 8, height: 8, background: colourValue }} />}
-            value={colourValue}
-            onChange={(event) => applyTextColor(editor, event.target.value)}
-          >
-            <option value="#000000">Black</option>
-            <option value="#1A3A2A">Green</option>
-            <option value="#7F1D1D">Maroon</option>
-            <option value="#1D4ED8">Blue</option>
-          </ClassicCombo>
-          <ToolbarButton disabledTip={isUr ? "جلد آ رہا ہے" : "Coming soon"} width={18} gap={2} label={isUr ? "افقی پیمانے کے اختیارات" : "Horizontal scale options"} onClick={() => openToolbarCombo(scaleRef.current)} raised><MetricIcon kind="scale" /></ToolbarButton>
-          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} entryField ref={scaleRef} aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={selectCls} width={61} defaultValue="100">
-            <option value="100">100%</option>
-            <option value="90">90%</option>
-            <option value="110">110%</option>
-          </ClassicCombo>
-          <ColorPaletteControl editor={editor} kind="highlight" colors={STUDIO_HIGHLIGHT_COLORS} value={ui.highlight} mixed={ui.mixed.highlight} isUr={isUr} compact />
-          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="None" data-latin-control="true" className={selectCls} width={100} gap={4} defaultValue="none">
-            <option value="none">None</option>
-          </ClassicCombo>
-          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="K-None" data-latin-control="true" className={selectCls} width={80} gap={3} defaultValue="k">
-            <option value="k">K-None</option>
-          </ClassicCombo>
+          <LineGapField editor={editor} value={ui.lineGapPt ?? 0} />
+          <SunkenBox geom="urdu-font" x={184} w={202} h={20}>
+            <select id="studio-font-family" data-studio-font-family="true" aria-label={isUr ? "اردو فونٹ" : "Urdu font"} title={isUr ? "اردو فونٹ" : "Urdu font"} value={currentFont} onChange={(event) => { if (event.target.value !== MIXED_TOOLBAR_VALUE) applyFontFamily(editor, event.target.value); }} style={COMBO_TEXT}>
+              {ui.mixed.fontFamily ? <option value={MIXED_TOOLBAR_VALUE}>{isUr ? "مخلوط" : "Mixed"}</option> : null}
+              {!urduKnown && currentFont && currentFont !== MIXED_TOOLBAR_VALUE ? <option value={currentFont}>{currentFont}</option> : null}
+              <option value="">{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
+              {STUDIO_FONT_GROUPS.map((group) => (
+                <optgroup key={group.category} label={isUr ? group.labelUr : group.labelEn}>
+                  {group.fonts.map((font) => <option key={font.value} value={font.value}>{font.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+            <ComboArrow />
+          </SunkenBox>
+          <RaisedButton geom="ltr" x={388} label={isUr ? "بائیں سے دائیں" : "Left to right"} pressed={editor.state.selection.$from.parent.attrs.dir === "ltr"} glyph={LTR_GLYPH} onClick={() => applyParagraphDirection(editor, "ltr")} />
+          <RaisedButton geom="rtl" x={408} label={isUr ? "دائیں سے بائیں" : "Right to left"} pressed={editor.state.selection.$from.parent.attrs.dir !== "ltr"} glyph={RTL_GLYPH} onClick={() => applyParagraphDirection(editor, "rtl")} />
+          <ColourField editor={editor} value={colourValue} />
+          <FlatTile geom="scale-icon" x={512} label={isUr ? "افقی پیمانہ" : "Horizontal scale"} glyph={SCALE_GLYPH} />
+          <PercentField editor={editor} kind="scale" geom="scale" attr="scale" label={isUr ? "افقی پیمانہ" : "Horizontal scale"} value={ui.mixed.scale || ui.scalePercent == null ? "" : `${ui.scalePercent}%`} />
+          <RaisedButton geom="outline" x={594} label={isUr ? "خاکہ" : "Outline"} pressed={ui.textOutline} glyph={OUTLINE_GLYPH} onClick={() => toggleTextOutline(editor)} />
+          <TextStyleField editor={editor} value={ui.textEffect} />
+          <SunkenBox geom="kashida" x={721} w={80} h={20}>
+            <select aria-label="K-None" data-studio-kashida="true" data-latin-control="true" value="k" onChange={() => undefined} style={COMBO_TEXT}>
+              <option value="k">K-None</option>
+            </select>
+            <ComboArrow />
+          </SunkenBox>
         </div>
-        <div aria-hidden="true" data-studio-toolbar-edge="true" className="h-[2px] shrink-0" style={{ background: "linear-gradient(to bottom, #a0a0a0 0 1px, #696969 1px 2px)" }} />
+        <div aria-hidden="true" data-studio-toolbar-edge="true" className="h-[2px] shrink-0" style={{ background: "#a0a0a0" }} />
       </div>
-      <style>{`
-        [data-studio-shell] [data-studio-chrome="toolbar"] [data-studio-toolbar] [data-studio-combo] > select {
-          font-size: 11px !important;
-          line-height: 16px !important;
-        }
-      `}</style>
-      <div className="sr-only">
-        <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
-          Auto
-        </ToolbarButton>
-        <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin>
-          RTL
-        </ToolbarButton>
-        <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin>
-          LTR
-        </ToolbarButton>
+      <div className="sr-only" aria-hidden="true" ref={untabbableTools}>
         <ColorPaletteControl editor={editor} kind="text" colors={STUDIO_TEXT_COLORS} value={ui.color} mixed={ui.mixed.color} isUr={isUr} />
-        <ColorPaletteControl editor={editor} kind="highlight" colors={STUDIO_HIGHLIGHT_COLORS} value={ui.highlight} mixed={ui.mixed.highlight} isUr={isUr} />
+        <ColorPaletteControl editor={editor} kind="highlight" colors={STUDIO_HIGHLIGHT_COLORS} value={ui.highlight} mixed={ui.mixed.highlight} isUr={isUr} compact />
         <DictationControl editor={editor} docDir={dir} isUr={isUr} />
       </div>
     </>

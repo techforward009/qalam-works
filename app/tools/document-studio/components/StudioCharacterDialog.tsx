@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import type {Editor} from '@tiptap/react';
 import {createPortal} from 'react-dom';
+import {studioOverlayRoot} from '../utils/inpageToolbar';
 import {listEditorFonts} from '../utils/fontRegistry';
 import {resolveActiveToolbarFormatting} from '../utils/activeToolbarFormatting';
 import {applyFontFamily,applyFontSize} from '../utils/documentCommands';
@@ -18,5 +19,5 @@ export function StudioCharacterDialog({editor,settings,onClose}:{editor:Editor;s
    <label className="block">Size (pt)<input className="mt-1 block w-full border px-2 py-1" type="number" min="6" max="96" step=".5" value={size} onChange={event=>setSize(event.target.value)}/></label>
    <div className="mt-4 flex justify-end gap-2"><button type="button" className="border px-3 py-1" onClick={close}>Cancel</button><button type="submit" className="border px-3 py-1">Apply</button></div>
   </form>
- </div>,document.body);
+ </div>,studioOverlayRoot());
 }

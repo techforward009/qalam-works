@@ -284,7 +284,8 @@ export default function DocumentCanvas({
           const decorations: Decoration[] = [];
           state.doc.descendants((node, pos) => {
             if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
-            const leading = blockLeadingPt(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography, node.attrs.dir ?? dir);
+            const gap = typeof node.attrs.lineGapPt === "number" && node.attrs.lineGapPt > 0 ? node.attrs.lineGapPt : 0;
+            const leading = blockLeadingPt(node.toJSON(), editorFontFamilyStack(typography.defaultRtlFontId), typography, node.attrs.dir ?? dir) + gap;
             decorations.push(Decoration.node(pos, pos + node.nodeSize, { style: `line-height:${leading}pt` }));
             return false;
           });
@@ -706,9 +707,23 @@ export default function DocumentCanvas({
             padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
           }
         }
-        .qalam-editor-content [data-studio-latin-run],
-        .qalam-editor-content [data-studio-latin-run] * {
+        .qalam-editor-content [data-studio-latin-default],
+        .qalam-editor-content [data-studio-latin-default] * {
           font-family: var(--qalam-ltr-font, Arial, sans-serif) !important;
+        }
+        .qalam-editor-content .ProseMirror p[dir="rtl"],
+        .qalam-editor-content .ProseMirror h1[dir="rtl"],
+        .qalam-editor-content .ProseMirror h2[dir="rtl"],
+        .qalam-editor-content .ProseMirror h3[dir="rtl"],
+        .qalam-editor-content .ProseMirror h4[dir="rtl"],
+        .qalam-editor-content .ProseMirror p[dir="ltr"],
+        .qalam-editor-content .ProseMirror h1[dir="ltr"],
+        .qalam-editor-content .ProseMirror h2[dir="ltr"],
+        .qalam-editor-content .ProseMirror h3[dir="ltr"],
+        .qalam-editor-content .ProseMirror h4[dir="ltr"] {
+          unicode-bidi: isolate;
+          text-align: start;
+          font-family: var(--qalam-rtl-font, "Mehr Nastaliq Web"), var(--qalam-ltr-font, Arial, sans-serif);
         }
         .qalam-editor-content .ProseMirror p[dir="rtl"],
         .qalam-editor-content .ProseMirror h1[dir="rtl"],
@@ -716,9 +731,6 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror h3[dir="rtl"],
         .qalam-editor-content .ProseMirror h4[dir="rtl"] {
           direction: rtl;
-          unicode-bidi: isolate;
-          text-align: start;
-          font-family: var(--qalam-rtl-font, "Jameel Noori Nastaleeq"), var(--qalam-ltr-font, Arial);
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
@@ -726,9 +738,14 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror h3[dir="ltr"],
         .qalam-editor-content .ProseMirror h4[dir="ltr"] {
           direction: ltr;
-          unicode-bidi: isolate;
-          text-align: start;
-          font-family: var(--qalam-ltr-font, Arial), var(--qalam-rtl-font, "Jameel Noori Nastaleeq");
+        }
+        .qalam-editor-content .ProseMirror [data-text-align="justify-all"] {
+          text-align: justify !important;
+          text-align-last: justify !important;
+          text-justify: inter-word;
+        }
+        .qalam-editor-content [data-studio-arabic-run] {
+          font-family: var(--qalam-rtl-font, "Mehr Nastaliq Web") !important;
         }
         .qalam-editor-content .ProseMirror p:not([dir]),
         .qalam-editor-content .ProseMirror h1:not([dir]),

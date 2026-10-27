@@ -39,7 +39,7 @@ test('5pt leading overlaps unclipped glyphs and paints a continuous 5pt selectio
 });
 
 for(const size of ['12','28'])test(`Mehr ${size}pt first ink stays below the top guide`,async({page})=>{
- await open(page);await page.keyboard.insertText('السلام علیکم اللہ وبرکاتہ');await page.keyboard.press('Control+A');await page.locator('[data-studio-font-size]').selectOption(size);await page.keyboard.press('ArrowRight');await settle(page);
+ await open(page);await page.keyboard.insertText('السلام علیکم اللہ وبرکاتہ');await page.keyboard.press('Control+A');await page.locator('[data-studio-font-size]').fill(size);await page.locator('[data-studio-font-size]').press('Enter');await page.keyboard.press('ArrowRight');await settle(page);
  // Actual glyph ink, not the font's oversized range rect.
  const ink=await page.locator('.ProseMirror p').first().evaluate(async p=>{
   await document.fonts.ready;const text=p.querySelector('[data-studio-line-run]')?.firstChild??p.firstChild!;

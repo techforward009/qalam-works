@@ -13,7 +13,7 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
-import { Node, getStyleProperty, type Editor } from "@tiptap/core";
+import { Node, Extension, getStyleProperty, type Editor } from "@tiptap/core";
 import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
@@ -21,6 +21,7 @@ import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./docum
 import { quoteEditorFontFamily } from "./fontRegistry";
 import { ParagraphAutoDirection } from "./paragraphDirection";
 import { applyImageFloatDataset, imageFloatsBesideText, imageWrapSize, parseImageAlignment } from "./documentImages";
+import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
 
 const DIRECTION_MODE_ATTR = {
   default: "auto",
@@ -129,6 +130,18 @@ const PARAGRAPH_STYLE_ATTRS = {
       return v !== null ? { "data-space-after-pt": String(v), style: `margin-block-end:${v}pt` } : {};
     },
   },
+  lineGapPt: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-line-gap-pt");
+      const n = v ? parseFloat(v) : NaN;
+      return validateSpacingPt(n);
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.lineGapPt === "number" ? validateSpacingPt(attributes.lineGapPt) : null;
+      return v !== null ? { "data-line-gap-pt": String(v) } : {};
+    },
+  },
 };
 
 export const BLOCK_STYLE_EDITOR_CSS = (Object.values(BLOCK_STYLES) as typeof BLOCK_STYLES[BlockStyleId][])
@@ -186,6 +199,7 @@ export const HeadingWithDir = Heading.extend({
       },
       leading: PARAGRAPH_STYLE_ATTRS.leading,
       lineHeight: PARAGRAPH_STYLE_ATTRS.lineHeight,
+      lineGapPt: PARAGRAPH_STYLE_ATTRS.lineGapPt,
       spaceBeforePt: PARAGRAPH_STYLE_ATTRS.spaceBeforePt,
       spaceAfterPt: PARAGRAPH_STYLE_ATTRS.spaceAfterPt,
     };
@@ -444,6 +458,90 @@ export const DocumentSectionBreak = Node.create({
   },
 });
 
+const ALIGNMENTS = ["left", "center", "right", "justify", "justify-all"] as const;
+
+const StudioTextAlign = TextAlign.extend({
+  addGlobalAttributes() {
+    return [{
+      types: this.options.types,
+      attributes: {
+        textAlign: {
+          default: null,
+          parseHTML: (element: HTMLElement) => {
+            const tagged = element.getAttribute("data-text-align");
+            if (tagged && (ALIGNMENTS as readonly string[]).includes(tagged)) return tagged;
+            const alignment = element.style.textAlign;
+            if (alignment === "justify" && element.style.textAlignLast === "justify") return "justify-all";
+            return (ALIGNMENTS as readonly string[]).includes(alignment) ? alignment : null;
+          },
+          renderHTML: (attributes: { textAlign?: string | null }) => {
+            const align = attributes.textAlign;
+            if (!align) return {};
+            if (align === "justify-all") {
+              return { "data-text-align": "justify-all", style: "text-align:justify;text-align-last:justify;text-justify:inter-word;" };
+            }
+            return { "data-text-align": align, style: `text-align: ${align}` };
+          },
+        },
+      },
+    }];
+  },
+  addKeyboardShortcuts() {
+    const align = (value: string) => () => this.editor.commands.setTextAlign(value);
+    return {
+      ...this.parent?.(),
+      "Mod-Alt-l": align("left"),
+      "Mod-Alt-r": align("right"),
+      "Mod-Alt-c": align("center"),
+      "Mod-Alt-j": align("justify"),
+      "Mod-Alt-f": align("justify-all"),
+    };
+  },
+}).configure({ types: ["heading", "paragraph"], alignments: [...ALIGNMENTS] });
+
+const StudioRunStyle = Extension.create({
+  name: "studioRunStyle",
+  addGlobalAttributes() {
+    return [{
+      types: ["textStyle"],
+      attributes: {
+        textEffect: {
+          default: null,
+          parseHTML: (element: HTMLElement) => {
+            const value = element.getAttribute("data-text-effect");
+            return value && value !== "none" ? value : null;
+          },
+          renderHTML: (attributes: { textEffect?: string | null }) => {
+            const css = textEffectDeclarations(attributes.textEffect);
+            return css ? { "data-text-effect": String(attributes.textEffect), style: css } : {};
+          },
+        },
+        textOutline: {
+          default: null,
+          parseHTML: (element: HTMLElement) => element.getAttribute("data-text-outline") === "true" ? true : null,
+          renderHTML: (attributes: { textOutline?: boolean | null }) => {
+            const css = textOutlineDeclarations(attributes.textOutline);
+            return css ? { "data-text-outline": "true", style: css } : {};
+          },
+        },
+      },
+    }];
+  },
+});
+
+const StudioTextStyle = TextStyle.extend({
+  parseHTML() {
+    return [
+      { tag: "span[style]" },
+      { tag: "span[data-latin-font]" },
+      { tag: "span[data-tracking]" },
+      { tag: "span[data-scale]" },
+      { tag: "span[data-text-effect]" },
+      { tag: "span[data-text-outline]" },
+    ];
+  },
+});
+
 const QuotedFontFamily = FontFamily.extend({
   addGlobalAttributes() {
     return [
@@ -479,11 +577,12 @@ export function createDocumentStudioExtensions() {
     HeadingWithDir,
     ParagraphAutoDirection,
     Link.configure({ openOnClick: false }),
-    TextAlign.configure({ types: ["heading", "paragraph"] }),
-    TextStyle,
+    StudioTextAlign,
+    StudioTextStyle,
     QuotedFontFamily,
     FontSize.configure({ types: ["textStyle"] }),
     Color,
+    StudioRunStyle,
     Highlight.configure({ multicolor: true }),
     // Official TipTap 3 table nodes: table → tableRow → tableHeader/tableCell
     // → normal block content. This stays in the document JSON and therefore

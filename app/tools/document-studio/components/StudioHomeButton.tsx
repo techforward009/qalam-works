@@ -2,6 +2,7 @@
 import Link from "next/link";
 import {useState,useRef,useEffect} from "react";
 import {createPortal} from "react-dom";
+import {studioOverlayRoot} from "../utils/inpageToolbar";
 import {useRouter} from "next/navigation";
 
 export function StudioHomeButton({dirty}:{dirty:boolean}){
@@ -17,6 +18,6 @@ export function StudioHomeButton({dirty}:{dirty:boolean}){
     <p id="studio-leave-title">You have unsaved changes. Leave Qalam Page?</p>
     <div className="mt-4 flex justify-end gap-2"><button type="button" className="border px-3 py-1" onClick={()=>router.push('/')}>Leave</button><button ref={stay} type="button" className="border px-3 py-1" onClick={close}>Stay</button></div>
    </div>
-  </div>,document.body):null}
+  </div>,studioOverlayRoot()):null}
  </>;
 }

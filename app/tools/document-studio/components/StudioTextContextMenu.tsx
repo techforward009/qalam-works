@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
+import {studioOverlayRoot} from '../utils/inpageToolbar';
 import type {Editor} from '@tiptap/react';
 import type {SelectionBookmark} from '@tiptap/pm/state';
 import type {DocumentZoom} from '../utils/documentView';
@@ -77,7 +78,7 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
    {zoom?<div ref={submenu} role="menu" aria-label="Zoom" data-studio-context-zoom dir="ltr" className="fixed z-[111] border border-[#808080] bg-[#f0f0f0] py-1 shadow-md" style={{...subPosition,width:150,maxWidth:'calc(100vw - 8px)',maxHeight:'calc(100vh - 8px)',overflowY:'auto'}} onKeyDown={event=>key(event,true)} onPointerDown={event=>event.preventDefault()}>
     {CONTEXT_ZOOMS.map(item=><button key={item.label} type="button" role="menuitem" style={itemStyle} className="block hover:bg-[#d6dff2] focus:bg-[#d6dff2]" onClick={()=>{close(true);onZoom(item.value);}}>{item.label}</button>)}
    </div>:null}
-  </>,document.body):null}
-  {message?createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[150] grid place-items-center bg-black/30 p-4" onKeyDown={event=>{if(event.key==='Escape'){setMessage(null);restore();}}}><div role="alertdialog" aria-modal="true" aria-label="Clipboard access" dir="ltr" className="max-w-sm border bg-white p-4 text-sm text-black"><p>{message}</p><button autoFocus className="mt-3 border px-3 py-1" onClick={()=>{setMessage(null);restore();}}>Close</button></div></div>,document.body):null}
+  </>,studioOverlayRoot()):null}
+  {message?createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[150] grid place-items-center bg-black/30 p-4" onKeyDown={event=>{if(event.key==='Escape'){setMessage(null);restore();}}}><div role="alertdialog" aria-modal="true" aria-label="Clipboard access" dir="ltr" className="max-w-sm border bg-white p-4 text-sm text-black"><p>{message}</p><button autoFocus className="mt-3 border px-3 py-1" onClick={()=>{setMessage(null);restore();}}>Close</button></div></div>,studioOverlayRoot()):null}
  </>;
 }

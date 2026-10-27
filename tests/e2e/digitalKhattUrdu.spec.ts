@@ -185,10 +185,12 @@ test("everyday editor use and digital PDF export", async ({ page, isMobile }) =>
   await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
   await page.evaluate(() => document.exitFullscreen());
   await editor.focus(); await page.keyboard.press("Control+A");
-  await page.locator('[data-studio-font-size]').selectOption("20");
-  await page.getByLabel("Colour", { exact: true }).selectOption("#1D4ED8");
-  await expect(editor.locator('span[style*="color"]').first()).toHaveCSS("color", "rgb(29, 78, 216)");
-  await page.getByRole("button", { name: "Text direction", exact: true }).click();
+  await page.locator('[data-studio-font-size]').fill("20");
+  await page.locator('[data-studio-font-size]').press("Enter");
+  await page.getByRole("button", { name: "Colour", exact: true }).click();
+  await page.locator('[data-studio-colour-option="Blue"]').click();
+  await expect(editor.locator('span[style*="color"]').first()).toHaveCSS("color", "rgb(0, 0, 255)");
+  await page.getByRole("button", { name: "Left to right", exact: true }).click();
   await expect(editor.locator("p").first()).toHaveAttribute("dir", "ltr");
   await page.getByRole("button", { name: "Right to left", exact: true }).click();
   await expect(editor.locator("p").first()).toHaveAttribute("dir", "rtl");

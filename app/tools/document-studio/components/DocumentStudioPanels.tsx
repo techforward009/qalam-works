@@ -114,18 +114,16 @@ export default function DocumentStudioPanels({
         </label>
         <select
           id="studio-panel-proc-lang"
-          value={quality.processingLanguage}
+          value={quality.processingLanguage === "en" ? "en" : "ur"}
           onChange={(e) => {
-            const next = e.target.value as ProcessingLanguage;
+            const next = e.target.value === "en" ? "en" : "ur";
             quality.setProcessingLanguage(next);
             trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
           }}
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
         >
-          <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
           <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
           <option value="en">{isUr ? "انگریزی" : "English"}</option>
-          <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
         </select>
         <p className="mt-1 text-[11px] text-gray-500 leading-snug">
           {isUr
