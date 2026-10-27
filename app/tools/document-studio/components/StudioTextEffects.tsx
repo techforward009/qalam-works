@@ -38,7 +38,7 @@ export function StudioTextEffects({ editor, zoom, revision }: { editor: Editor |
           const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
           let previousEffect: string | null = null;
           let group = 0;
-          const lines = new Map<string, { left: number; right: number; baseline: number; effect: Effect; color: string }>();
+          const lines: { group: number; left: number; right: number; baseline: number; effect: Effect; color: string }[] = [];
           while (walker.nextNode()) {
             const text = walker.currentNode as Text;
             const element = text.parentElement;
@@ -54,11 +54,11 @@ export function StudioTextEffects({ editor, zoom, revision }: { editor: Editor |
             for (const rect of range.getClientRects()) {
               if (rect.width <= 0 || rect.height <= 0) continue;
               const baseline = rect.top + ascent;
-              const line = Math.round(baseline / Math.max(1, lineHeight));
-              const key = `${group}:${line}`;
-              const entry = lines.get(key);
+              // Compare line positions to each other, never to the viewport's
+              // origin: scrolling must not change which fragments share a line.
+              const entry = lines.find(line => line.group === group && Math.abs(line.baseline - baseline) < lineHeight * 0.45);
               if (entry) { entry.left = Math.min(entry.left, rect.left); entry.right = Math.max(entry.right, rect.right); }
-              else lines.set(key, { left: rect.left, right: rect.right, baseline, effect: supported, color: style.color });
+              else lines.push({ group, left: rect.left, right: rect.right, baseline, effect: supported, color: style.color });
             }
           }
           for (const line of lines.values()) next.push({

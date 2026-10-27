@@ -93,11 +93,37 @@ test("saved split box stays continuous on every wrapped line", async ({ page }) 
   await expect(editor).toHaveAttribute("data-studio-font-layout", "ready");
   const boxes = page.locator('[data-studio-effect-line="box"]');
   await expect.poll(() => boxes.count()).toBeGreaterThan(1);
-  const data = await boxes.evaluateAll(nodes => nodes.map(node => {
-    const rect = node.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
-  }));
-  const tops = data.map(rect => Math.round(rect.top));
-  expect(new Set(tops).size).toBe(data.length);
-  data.sort((a, b) => a.top - b.top);
-  for (let i = 1; i < data.length; i += 1) expect(data[i].top).toBeGreaterThanOrEqual(data[i - 1].bottom - 1);
+  const metrics = await editor.locator("p").first().evaluate(node => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    const baselines: number[] = [];
+    const canvas = document.createElement("canvas").getContext("2d")!;
+    while (walker.nextNode()) {
+      const text = walker.currentNode as Text;
+      const style = getComputedStyle(text.parentElement!); canvas.font = style.font;
+      const ascent = canvas.measureText(text.data).fontBoundingBoxAscent;
+      const range = document.createRange(); range.selectNodeContents(text);
+      for (const rect of range.getClientRects()) if (rect.width > 0 && !baselines.some(value => Math.abs(value - (rect.top + ascent)) < 10)) baselines.push(rect.top + ascent);
+    }
+    baselines.sort((a, b) => a - b);
+    return { baselines, lineHeight: parseFloat(getComputedStyle(node).lineHeight) };
+  });
+  expect(metrics.baselines.length).toBeGreaterThan(1);
+  const collision = Array.from({ length: Math.ceil(metrics.lineHeight * 2) }, (_, i) => i + 1).find(offset =>
+    Math.round((metrics.baselines[0] - offset) / metrics.lineHeight) === Math.round((metrics.baselines[1] - offset) / metrics.lineHeight),
+  );
+  expect(collision).toBeDefined();
+  const scroller = page.locator("[data-studio-scroller]");
+  for (const offset of [0, collision!, collision! + 15]) {
+    await scroller.evaluate((element, y) => { element.scrollTop = y; }, offset);
+    await expect.poll(() => scroller.evaluate(element => element.scrollTop)).toBe(offset);
+    await expect.poll(() => boxes.count()).toBe(metrics.baselines.length);
+    const data = await boxes.evaluateAll(nodes => nodes.map(node => {
+      const rect = node.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom };
+    }));
+    data.sort((a, b) => a.top - b.top);
+    expect(new Set(data.map(rect => Math.round(rect.top))).size).toBe(data.length);
+  }
+  if (process.env.QALAM_EFFECTS_SCROLL_SCREENSHOT_DIR) {
+    await page.screenshot({ path: join(process.env.QALAM_EFFECTS_SCROLL_SCREENSHOT_DIR, "wrapped-effects.png") });
+  }
 });
