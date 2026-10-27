@@ -8,6 +8,7 @@ import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
 import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
 import { useEditor, type Editor } from "@tiptap/react";
+import { closeHistory } from "@tiptap/pm/history";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
@@ -472,6 +473,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
       handleKeyDown: (_view, event) => {
+        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && _view.state.selection.$from.parent.type.name === "paragraph") {
+          if (!event.shiftKey) {
+            _view.dispatch(closeHistory(_view.state.tr.insertText("\t")));
+            _view.dispatch(closeHistory(_view.state.tr));
+          }
+          return true;
+        }
         if (event.key !== "Backspace" && event.key !== "Delete") return false;
         const { from, to } = _view.state.selection;
         const size = _view.state.doc.content.size;
