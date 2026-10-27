@@ -347,6 +347,9 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         frame = { left: box.left - origin.left, width: box.width };
       }
       element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:nowrap;`;
+      // These are already measured visual lines. Nested break-spaces/pre-wrap
+      // spans must not wrap again when the line is painted into the PDF page.
+      element.querySelectorAll<HTMLElement>("span").forEach(span => { span.style.whiteSpace = "pre"; });
       if (element.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-pdf-scale],[data-tracking]:not([data-tracking="0"]))')) {
         // Match the editor's wrap column for character-spaced/scaled text.
         // Give shaped ink paint room without shifting or narrowing its text box.

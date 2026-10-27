@@ -397,3 +397,80 @@ for (const sample of [
     }
   });
 }
+
+for (const sample of [
+  { font: "Mehr Nastaliq Web", text: "یہ ایک آزمائشی اردو عبارت ہے جس میں مختلف الفاظ شامل ہیں اور ہر سطر کا آخری لفظ ایک جیسا رہنا چاہیے۔ " },
+  { font: "Digital Khatt Indo-Pak", text: "قُلِ اللّٰهُمَّ مَالِكَ الْمُلْكِ تُؤْتِي الْمُلْكَ مَنْ تَشَاءُ وَتَنْزِعُ الْمُلْكَ مِمَّنْ تَشَاءُ " },
+]) {
+  test(`${sample.font}: HTTP PDF preserves every spaced/scaled line end`, async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop-chrome", "character PDF checks use desktop");
+    test.setTimeout(120_000);
+    await open(page);
+    // A generous vertical pitch isolates printed glyph bands despite Nastaliq
+    // overhang. Both renderers get the same pitch; horizontal wrapping is unchanged.
+    for (const [scale, spacing] of [[130, 0], [80, 0], [100, 20], [130, 20], [80, 20], [100, 0]]) {
+      await page.locator(story).evaluate((el, data) => {
+        (el as HTMLElement & { editor: Editor }).editor.commands.setContent({ type: "doc", content: [{
+          type: "paragraph", attrs: { dir: "rtl", leading: { mode: "points", value: 72 } }, content: [{
+            type: "text", text: data.text.repeat(3), marks: [{ type: "textStyle", attrs: {
+              fontFamily: data.font, fontSize: "18pt", charScale: data.scale === 100 ? null : data.scale,
+              scalePercent: data.scale === 100 ? null : data.scale, trackingPercent: data.spacing || null,
+            } }],
+          }],
+        }] });
+      }, { ...sample, scale, spacing });
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(200);
+      const fixture = await page.locator(story).evaluate(el => {
+        const e = (el as HTMLElement & { editor: Editor }).editor;
+        const lines: { top: number; text: string }[] = [];
+        const walker = document.createTreeWalker(el.querySelector("p")!, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const text = walker.currentNode as Text;
+          for (let i = 0; i < text.length; i++) {
+            if (!text.data[i].trim()) { if (lines.length) lines[lines.length - 1].text += " "; continue; }
+            const r = document.createRange(); r.setStart(text, i); r.setEnd(text, i + 1);
+            const top = r.getBoundingClientRect().top;
+            let line = lines.find(line => Math.abs(line.top - top) < 2);
+            if (!line) { line = { top, text: "" }; lines.push(line); }
+            line.text += text.data[i];
+          }
+        }
+        return { doc: e.getJSON(), lines: lines.map(line => line.text) };
+      });
+      const settings = defaultDocumentSettings();
+      settings.page.margins = { preset: "custom", topMm: 12.7, bottomMm: 12.7, startMm: 12.7, endMm: 12.7 };
+      settings.headerFooter = { ...settings.headerFooter, headerEnabled: false, footerEnabled: false, pageNumbers: "none" };
+      const words = [...new Set(sample.text.trim().split(/\s+/))];
+      const paragraph = fixture.doc.content![0];
+      // Reference words share the actual PDF's subset font. This avoids false
+      // failures from Arabic ToUnicode aliases/reordered GPOS extraction while
+      // checking the physical printed glyphs, not a pre-print DOM snapshot.
+      const doc = { ...fixture.doc, content: [...fixture.doc.content!, { type: "pageBreak" }, ...words.map(text => ({
+        ...paragraph, content: [{ ...paragraph.content![0], text }],
+      }))] };
+      const response = await page.request.post("/api/export-pdf", { data: { doc, dir: "rtl", settings } });
+      expect(response.status(), response.status() === 200 ? "HTTP PDF exported" : await response.text()).toBe(200);
+      const pdf = info.outputPath(`http-${scale}-${spacing}.pdf`);
+      writeFileSync(pdf, await response.body());
+      const signatures: string[][] = JSON.parse(execFileSync("python3", ["-c", `
+import fitz,json,sys
+lines=[]
+for page in fitz.open(sys.argv[1]):
+    chars=[(c[3][1],c[3][3],str((span["font"],c[1]))) for span in page.get_texttrace() for c in span["chars"] if not chr(c[0]).isspace()]
+    groups=[]
+    for top,bottom,glyph in sorted(chars):
+        if not groups or top>groups[-1][1]+1: groups.append([top,bottom,[glyph]])
+        else: groups[-1][1]=max(groups[-1][1],bottom);groups[-1][2].append(glyph)
+    lines.extend(g[2] for g in groups)
+print(json.dumps(lines))
+`, pdf], { encoding: "utf8" }));
+      const source = signatures.slice(0, -words.length), references = signatures.slice(-words.length);
+      expect(source.length, `${sample.font} scale ${scale}, spacing ${spacing}: printed PDF line count`).toBe(fixture.lines.length);
+      const reference = new Map(words.map((word, index) => [word, references[index]]));
+      const expected = fixture.lines.map(line => line.trim().split(/\s+/).flatMap(word => reference.get(word)!).sort());
+      expect(source.map(line => line.sort()), "every printed line ends on the editor's same word").toEqual(expected);
+
+    }
+  });
+}
