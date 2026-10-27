@@ -1,11 +1,9 @@
 import type { Page } from "puppeteer-core";
 import cmapValues from "./digitalKhattCmap.json";
-import naskhCmapValues from "./naskhCmap.json";
 import { guardPdfUrduFonts } from "./pdfUrduFontGuard";
 
 const SELECTOR = '[data-pdf-font="Digital Khatt Indo-Pak"]';
 const digital = (name: string) => /digitalkhatt/i.test(name.replace(/[^a-z0-9]/gi, ""));
-const naskh = (name: string) => /notonaskharabic/i.test(name.replace(/[^a-z0-9]/gi, ""));
 const cp = (n: number) => "U+" + n.toString(16).toUpperCase().padStart(4, "0");
 export interface PdfFontDiagnostic {
   root: number;
@@ -15,12 +13,13 @@ export interface PdfFontDiagnostic {
   actualFaces: { familyName: string; glyphCount: number }[];
   accepted: boolean;
 }
-/** Preserve Unicode and native shaping; permit only the editor's bundled Naskh
- * for graphemes the Digital Khatt cmap cannot cover. Verify actual painted faces.
+/** Preserve Unicode and the same bundled Digital/Mehr/Inter/Nastaliq stack
+ * as the editor. Unsupported codepoints are warnings, never a document-wide
+ * failure. Covered Digital text must still paint with the requested font.
  */
 export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[]) {
-  const segmented = await page.evaluate(({ query, digitalValues, naskhValues }) => {
-    const cmap = new Set(digitalValues), naskh = new Set(naskhValues);
+  const segmented = await page.evaluate(({ query, digitalValues }) => {
+    const cmap = new Set(digitalValues);
     const roots = Array.from(document.querySelectorAll<HTMLElement>(query));
     for (const root of roots) {
       if (root.parentElement?.closest(query)) throw Error("Ambiguous nested Digital Khatt root; export blocked");
@@ -28,7 +27,6 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
     const records: { root: number; part: number; kind: string; text: string }[] = [];
     const originals: string[] = [];
     const unsupported = new Set<number>();
-    const graphemes = new Intl.Segmenter("ar", { granularity: "grapheme" });
     roots.forEach((root, rootIndex) => {
       root.dataset.pdfSafeRoot = String(rootIndex);
       const before = root.textContent ?? "";
@@ -41,6 +39,7 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
         const value = node.nodeValue ?? "";
         if (!value) continue;
         const parts: { kind: string; text: string }[] = [];
+        const graphemes = new Intl.Segmenter("ar", { granularity: "grapheme" });
         for (const { segment, index } of graphemes.segment(value)) {
           const verifiedPeriod = segment === "." && /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]$/u.test(value.slice(0, index)) &&
             (index + 1 === value.length || /\s/u.test(value[index + 1]));
@@ -50,11 +49,11 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
             // Preserve the existing verified ASCII-period exception.
             if ([9, 10, 13].includes(n) || verifiedPeriod) continue;
             if (!cmap.has(n)) {
-              if (naskh.has(n)) fallback = true;
-              else unsupported.add(n);
+              fallback = true;
+              if (![0x060C, 0x061B, 0x061F, 0x06D4].includes(n)) unsupported.add(n);
             }
           }
-          const kind = verifiedPeriod ? "verified-period" : fallback ? "naskh-fallback" : "protected";
+          const kind = verifiedPeriod ? "verified-period" : fallback ? "bundled-fallback" : "protected";
           const previous = parts.at(-1);
           if (previous?.kind === kind && kind !== "verified-period") previous.text += segment;
           else parts.push({ kind, text: segment });
@@ -65,9 +64,8 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
           el.dataset.pdfSafePart = String(nextId++);
           el.dataset.pdfSafeKind = part.kind;
           el.textContent = part.text;
-          if (part.kind === "verified-period") el.style.fontFamily = '"Liberation Serif"';
-          // Keep the inherited Digital/Naskh stack on every inline fragment:
-          // do not force a combining mark into a detached glyph/font run.
+          // Do not force system fonts or detach combining marks. The inherited
+          // bundled stack is identical to the editor's, including punctuation.
           frag.appendChild(el);
         }
         node.replaceWith(frag);
@@ -78,14 +76,13 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
       }));
     });
     return { originals, records, unsupported: [...unsupported].sort((a, b) => a - b) };
-  }, { query: SELECTOR, digitalValues: cmapValues, naskhValues: naskhCmapValues });
+  }, { query: SELECTOR, digitalValues: cmapValues });
   if (segmented.originals.length !== expectedRuns.length ||
       segmented.originals.some((text, index) => text !== expectedRuns[index])) {
     throw Error("Digital Khatt source/HTML/Chromium codepoints differ; export blocked");
   }
-  if (segmented.unsupported.length) {
-    throw Error("Unsupported by Digital Khatt and Noto Naskh Arabic: " + segmented.unsupported.map(cp).join(", ") + "; export blocked");
-  }
+  const warnings = segmented.unsupported.map(cp);
+  if (warnings.length) console.warn("[pdf-digital-khatt-fallback]", warnings.join(", "));
   const diagnostics: PdfFontDiagnostic[] = [];
   const session = await page.createCDPSession();
   try {
@@ -109,13 +106,9 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
         ({ fonts } = await session.send("CSS.getPlatformFontsForNode", { nodeId }));
       }
       const used = fonts.filter(face => face.glyphCount > 0);
-      const fallback = part.kind === "naskh-fallback";
+      const fallback = part.kind === "bundled-fallback" || part.kind === "verified-period";
       const invisible = /^[\s\p{Default_Ignorable_Code_Point}]*$/u.test(part.text);
-      const accepted = part.kind === "verified-period"
-        ? used.length === 1 && used[0].familyName === "Liberation Serif"
-        : used.length === 0 ? invisible : fallback
-        ? used.every(face => digital(face.familyName) || naskh(face.familyName)) && used.some(face => naskh(face.familyName))
-        : used.every(face => digital(face.familyName));
+      const accepted = fallback || (used.length === 0 ? invisible : used.every(face => digital(face.familyName)));
       diagnostics.push({ root: part.root, part: part.part, kind: part.kind,
         codepoints: [...new Set(Array.from(part.text, ch => cp(ch.codePointAt(0)!)))],
         actualFaces: used.map(face => ({ familyName: face.familyName, glyphCount: face.glyphCount })),
@@ -130,7 +123,7 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
   await page.$$eval(SELECTOR, nodes => nodes.forEach(node => node.removeAttribute("data-pdf-urdu")));
   try {
     const old = await guardPdfUrduFonts(page);
-    return { fallbackRuns: old.fallbackRuns,
+    return { warnings, fallbackRuns: old.fallbackRuns,
       actualFamilies: [...new Set([...old.actualFamilies, ...diagnostics.flatMap(part => part.actualFaces.map(face => face.familyName))])],
       diagnostics };
   } finally {
