@@ -33,17 +33,16 @@ export type ParagraphForm = {
   firstLine: string;
   lineHeight: string;
   interlineGap: string;
-  tabDefault: boolean;
   tabStop: string;
   breaks: string;
-  keepTogether: boolean;
-  keepWithNext: boolean;
+  keepTogether: boolean | null;
+  keepWithNext: boolean | null;
   widows: string;
   orphans: string;
   before: string;
   after: string;
   characterAlign: "" | "latin" | "arabic";
-  toc: boolean;
+  toc: boolean | null;
 };
 
 export function mmToPt(mm: number): number {
@@ -103,83 +102,99 @@ export function readParagraphForm(editor: Editor, settings: DocumentStudioSettin
     return node.attrs.dir === "ltr" ? "left" : "right";
   });
   const gaps = blocks.map((node) => (typeof node.attrs.lineGapPt === "number" ? node.attrs.lineGapPt : 0));
-  const breakBefore = attr((node) => (typeof node.attrs.breakBefore === "string" ? node.attrs.breakBefore : "none"));
-  const character = attr((node) => (node.attrs.characterAlign === "arabic" || node.attrs.characterAlign === "latin" ? node.attrs.characterAlign : "latin"));
+  const breakValues = blocks.map((node) => (typeof node.attrs.breakBefore === "string" ? node.attrs.breakBefore : "none"));
+  const character = uniform(blocks.map((node) => (node.attrs.characterAlign === "latin" ? "latin" : "arabic")));
   const widows = attr((node) => (typeof node.attrs.widows === "number" ? node.attrs.widows : 1));
   const orphans = attr((node) => (typeof node.attrs.orphans === "number" ? node.attrs.orphans : 1));
-  const tabStop = attr((node) => (typeof node.attrs.tabStopMm === "number" ? node.attrs.tabStopMm : 12.7));
-  const tabDefault = attr((node) => (typeof node.attrs.tabStopDefault === "boolean" ? node.attrs.tabStopDefault : true));
+  const tabStops = blocks.map((node) => (typeof node.attrs.tabStopMm === "number" ? node.attrs.tabStopMm : 12.7));
+  const flag = (key: "keepTogether" | "keepWithNext" | "toc") => {
+    if (!blocks.length) return false;
+    const values = blocks.map((node) => node.attrs[key] === true);
+    return values.every((value) => value === values[0]) ? values[0] : null;
+  };
   return {
-    alignment: uniform(aligns) ?? (ui.textAlign ?? ""),
+    alignment: uniform(aligns) ?? "",
     beginning: ui.mixed.indentStart || ui.indentStartMm == null ? "" : formatMm(ui.indentStartMm),
     end: ui.mixed.indentEnd || ui.indentEndMm == null ? "" : formatMm(ui.indentEndMm),
     firstLine: ui.mixed.firstLineIndent || ui.firstLineIndentMm == null ? "" : formatMm(ui.firstLineIndentMm),
     lineHeight: ui.mixed.lineHeight ? "" : ui.lineHeight == null ? "Auto" : formatLeading({ mode: "points", value: ui.lineHeight }),
     interlineGap: uniform(gaps) == null ? "" : formatPt(uniform(gaps) ?? 0),
-    tabDefault: tabDefault ?? true,
-    tabStop: tabStop == null ? "" : formatMm(tabStop),
-    breaks: breakBefore ?? "none",
-    keepTogether: attr((node) => node.attrs.keepTogether === true) ?? false,
-    keepWithNext: attr((node) => node.attrs.keepWithNext === true) ?? false,
+    tabStop: uniform(tabStops) == null ? "" : formatMm(uniform(tabStops) ?? 12.7),
+    breaks: uniform(breakValues) ?? "",
+    keepTogether: flag("keepTogether"),
+    keepWithNext: flag("keepWithNext"),
     widows: widows == null ? "" : String(widows),
     orphans: orphans == null ? "" : String(orphans),
     before: ui.mixed.spaceBefore || ui.spaceBeforePt == null ? "" : formatMm(ptToMm(ui.spaceBeforePt)),
     after: ui.mixed.spaceAfter || ui.spaceAfterPt == null ? "" : formatMm(ptToMm(ui.spaceAfterPt)),
     characterAlign: character ?? "",
-    toc: attr((node) => node.attrs.toc === true) ?? false,
+    toc: flag("toc"),
   };
 }
 
-export function preferencesFromForm(form: ParagraphForm): { ok: true; attrs: Record<string, unknown> } | { ok: false; field: string } {
+/** Writes only fields that differ from the values shown when the dialog opened. */
+export function preferencesFromForm(form: ParagraphForm, initial: ParagraphForm): { ok: true; attrs: Record<string, unknown> } | { ok: false; field: string } {
   const attrs: Record<string, unknown> = {};
-  if (form.alignment) {
+  if (form.alignment !== initial.alignment && form.alignment) {
     if (!PARAGRAPH_ALIGNS.some((item) => item.value === form.alignment)) return { ok: false, field: "alignment" };
     attrs.textAlign = form.alignment;
   }
-  const mm = (raw: string, key: string, field: string) => {
-    if (!raw.trim()) return true;
+  const mm = (raw: string, initialRaw: string, key: string) => {
+    if (raw === initialRaw) return true;
+    if (!raw.trim()) { attrs[key] = null; return true; }
     const value = parseMmField(raw);
     if (value === null) return false;
     attrs[key] = value;
-    void field;
     return true;
   };
-  if (!mm(form.beginning, "indentStartMm", "beginning")) return { ok: false, field: "beginning" };
-  if (!mm(form.end, "indentEndMm", "end")) return { ok: false, field: "end" };
-  if (!mm(form.firstLine, "firstLineIndentMm", "firstLine")) return { ok: false, field: "firstLine" };
-  if (form.lineHeight.trim()) {
-    const leading = parseLeading(form.lineHeight);
-    if (!leading) return { ok: false, field: "lineHeight" };
-    attrs.leading = leading;
-    attrs.lineHeight = null;
+  if (!mm(form.beginning, initial.beginning, "indentStartMm")) return { ok: false, field: "beginning" };
+  if (!mm(form.end, initial.end, "indentEndMm")) return { ok: false, field: "end" };
+  if (!mm(form.firstLine, initial.firstLine, "firstLineIndentMm")) return { ok: false, field: "firstLine" };
+  if (form.lineHeight !== initial.lineHeight) {
+    if (!form.lineHeight.trim()) { attrs.leading = null; attrs.lineHeight = null; }
+    else {
+      const leading = parseLeading(form.lineHeight);
+      if (!leading) return { ok: false, field: "lineHeight" };
+      attrs.leading = leading;
+      attrs.lineHeight = null;
+    }
   }
-  if (form.interlineGap.trim()) {
-    const gap = parsePtField(form.interlineGap);
-    if (gap === null) return { ok: false, field: "interlineGap" };
-    attrs.lineGapPt = gap;
+  if (form.interlineGap !== initial.interlineGap) {
+    if (!form.interlineGap.trim()) attrs.lineGapPt = null;
+    else {
+      const gap = parsePtField(form.interlineGap);
+      if (gap === null) return { ok: false, field: "interlineGap" };
+      attrs.lineGapPt = gap;
+    }
   }
-  if (form.tabStop.trim()) {
-    const stop = parseMmField(form.tabStop);
-    if (stop === null) return { ok: false, field: "tabStop" };
-    attrs.tabStopMm = stop;
+  if (form.tabStop !== initial.tabStop) {
+    if (!form.tabStop.trim()) attrs.tabStopMm = null;
+    else {
+      const stop = parseMmField(form.tabStop);
+      if (stop === null) return { ok: false, field: "tabStop" };
+      attrs.tabStopMm = stop;
+    }
   }
-  attrs.tabStopDefault = form.tabDefault;
-  if (!PARAGRAPH_BREAKS.some((item) => item.value === form.breaks)) return { ok: false, field: "breaks" };
-  attrs.breakBefore = form.breaks;
-  attrs.keepTogether = form.keepTogether;
-  attrs.keepWithNext = form.keepWithNext;
-  const count = (raw: string, key: string) => {
-    if (!raw.trim()) return true;
+  if (form.breaks !== initial.breaks) {
+    if (form.breaks && !PARAGRAPH_BREAKS.some((item) => item.value === form.breaks)) return { ok: false, field: "breaks" };
+    if (form.breaks) attrs.breakBefore = form.breaks;
+  }
+  if (form.keepTogether !== initial.keepTogether && form.keepTogether !== null) attrs.keepTogether = form.keepTogether;
+  if (form.keepWithNext !== initial.keepWithNext && form.keepWithNext !== null) attrs.keepWithNext = form.keepWithNext;
+  const count = (raw: string, initialRaw: string, key: string) => {
+    if (raw === initialRaw) return true;
+    if (!raw.trim()) { attrs[key] = null; return true; }
     if (!/^\d+$/.test(raw.trim())) return false;
     const value = Number(raw);
     if (value < 0 || value > 20) return false;
     attrs[key] = value;
     return true;
   };
-  if (!count(form.widows, "widows")) return { ok: false, field: "widows" };
-  if (!count(form.orphans, "orphans")) return { ok: false, field: "orphans" };
-  const space = (raw: string, key: string) => {
-    if (!raw.trim()) return true;
+  if (!count(form.widows, initial.widows, "widows")) return { ok: false, field: "widows" };
+  if (!count(form.orphans, initial.orphans, "orphans")) return { ok: false, field: "orphans" };
+  const space = (raw: string, initialRaw: string, key: string) => {
+    if (raw === initialRaw) return true;
+    if (!raw.trim()) { attrs[key] = null; return true; }
     const value = parseMmField(raw);
     if (value === null) return false;
     const pt = validateSpacingPt(mmToPt(value));
@@ -187,10 +202,10 @@ export function preferencesFromForm(form: ParagraphForm): { ok: true; attrs: Rec
     attrs[key] = pt;
     return true;
   };
-  if (!space(form.before, "spaceBeforePt")) return { ok: false, field: "before" };
-  if (!space(form.after, "spaceAfterPt")) return { ok: false, field: "after" };
-  if (form.characterAlign) attrs.characterAlign = form.characterAlign;
-  attrs.toc = form.toc;
+  if (!space(form.before, initial.before, "spaceBeforePt")) return { ok: false, field: "before" };
+  if (!space(form.after, initial.after, "spaceAfterPt")) return { ok: false, field: "after" };
+  if (form.characterAlign !== initial.characterAlign && form.characterAlign) attrs.characterAlign = form.characterAlign;
+  if (form.toc !== initial.toc && form.toc !== null) attrs.toc = form.toc;
   return { ok: true, attrs };
 }
 

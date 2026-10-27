@@ -37,6 +37,7 @@ test("paragraph preferences apply to both paragraphs, undo once, and cancel", as
   await twoParagraphs(page);
   await openParagraph(page);
   const dialog = page.getByRole("dialog", { name: "Paragraph Preferences" });
+  await dialog.screenshot({ path: "/workspace/screenshots/paragraph-preferences.png" });
   await dialog.getByLabel("First Line", { exact: true }).fill("10mm");
   await dialog.getByLabel("Before", { exact: true }).fill("5mm");
   await dialog.getByLabel("Alignment", { exact: true }).selectOption("center");
@@ -70,3 +71,30 @@ test("paragraph preferences apply to both paragraphs, undo once, and cancel", as
   await expect(paragraphs.first()).not.toHaveAttribute("data-text-align", "left");
   await expect(paragraphs.nth(1)).not.toHaveCSS("text-align", "left");
 });
+
+test("a mixed alignment stays when only the first line changes", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop-chrome", "paragraph dialog is covered on desktop");
+  await open(page);
+  await twoParagraphs(page);
+  await page.locator(story).evaluate((el) => {
+    const editor = (el as HTMLElement & { editor: Editor }).editor;
+    const positions: number[] = [];
+    editor.state.doc.descendants((node, pos) => { if (node.type.name === "paragraph") positions.push(pos); });
+    const first = editor.state.doc.nodeAt(positions[0])!;
+    const second = editor.state.doc.nodeAt(positions[1])!;
+    editor.view.dispatch(editor.state.tr
+      .setNodeMarkup(positions[0], undefined, { ...first.attrs, textAlign: "left" })
+      .setNodeMarkup(positions[1], undefined, { ...second.attrs, textAlign: "right" }));
+  });
+  await openParagraph(page);
+  const dialog = page.getByRole("dialog", { name: "Paragraph Preferences" });
+  await expect(dialog.getByLabel("Alignment", { exact: true })).toHaveValue("");
+  await dialog.getByLabel("First Line", { exact: true }).fill("8mm");
+  await dialog.getByRole("button", { name: "OK", exact: true }).click();
+  const paragraphs = page.locator(`${story} p`);
+  await expect(paragraphs.nth(0)).toHaveAttribute("data-text-align", "left");
+  await expect(paragraphs.nth(1)).toHaveAttribute("data-text-align", "right");
+  await expect(paragraphs.nth(0)).toHaveAttribute("data-first-line-indent-mm", "8");
+  await expect(paragraphs.nth(1)).toHaveAttribute("data-first-line-indent-mm", "8");
+});
+
