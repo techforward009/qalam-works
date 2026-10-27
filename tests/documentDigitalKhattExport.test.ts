@@ -149,3 +149,13 @@ test("compiled editor font guards and export use the same catalogued Digital Kha
     expect(await page.$eval("#probe", el => getComputedStyle(el).fontFamily)).toBe(editorFontFamilyStack("digital-khatt-indo-pak"));
   } finally { await browser.close(); }
 }, 60000);
+
+
+test("restored Digital Khatt mark sets export as real CID TrueType text", async () => {
+  const result = await exportDigital(["رَبِّ الۡعٰلَمِیۡنَ بِیَدِکَ بِاَمۡرِہٖ الۡمَیِّتِ"], "32pt");
+  const digital = result.fonts.split("\n").find(line => line.includes("DigitalKhattIndoPakQalam-Regular"));
+  expect(digital).toContain("CID TrueType");
+  expect(digital).toMatch(/Identity-H\s+yes\s+yes\s+yes/);
+  expect(result.fonts).not.toMatch(/Type 3/);
+  expect(result.pdfLines.join("")).toContain("رَبِّ");
+}, 60000);

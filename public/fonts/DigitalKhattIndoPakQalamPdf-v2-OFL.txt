@@ -1,4 +1,4 @@
-Qalam Works PDF compatibility derivative: dangling OpenType mark-filter references (UseMarkFilteringSet 0x0010) are replaced by IgnoreMarks 0x0008 in nine GSUB and three GPOS lookup flags; their dangling MarkFilteringSet fields are removed. Glyph outlines, cmap aliases, advances and substitution/positioning subtables are unchanged. SIL OFL 1.1.
+Qalam Works editor/export derivative: GDEF upgraded to version 1.2 with 12 MarkGlyphSetsDef coverages mapped from the Quran Digital Khatt face. Original UseMarkFilteringSet lookup flags, MarkFilteringSet indices and GSUB/GPOS substitution/positioning subtables are preserved. Glyph outlines, cmap aliases, glyph order and advances are unchanged. SIL OFL 1.1.
 
 Modified by Qalam Works: Urdu character cmap aliases for Qalam Page; Arabic-use Urdu codepoint/digit and U+06E1 jazm aliases; original outlines, GSUB and GPOS unchanged. Copyright (c) 2024 Amine Anane; Copyright (c) 2024 Tarteel Inc. Licensed under SIL Open Font License 1.1.
 
