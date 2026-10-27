@@ -18,7 +18,7 @@ import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/stat
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
-import { quoteEditorFontFamily } from "./fontRegistry";
+import { editorFontFamilyStack, normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
 import { ParagraphAutoDirection } from "./paragraphDirection";
 import { applyImageFloatDataset, imageFloatsBesideText, imageWrapSize, parseImageAlignment } from "./documentImages";
 import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
@@ -650,7 +650,8 @@ const QuotedFontFamily = FontFamily.extend({
             },
             renderHTML: (attributes: { fontFamily?: string | null }) => {
               if (!attributes.fontFamily) return {};
-              const quoted = quoteEditorFontFamily(attributes.fontFamily);
+              const quoted = normalizeEditorFontFamily(attributes.fontFamily) === "Digital Khatt Indo-Pak"
+                ? editorFontFamilyStack("digital-khatt-indo-pak") : quoteEditorFontFamily(attributes.fontFamily);
               return quoted ? { style: `font-family: ${quoted}` } : {};
             },
           },

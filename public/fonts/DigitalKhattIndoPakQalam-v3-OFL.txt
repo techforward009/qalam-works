@@ -1,6 +1,4 @@
-Qalam Works PDF compatibility derivative: dangling OpenType mark-filter references use IgnoreMarks; glyph outlines, cmap aliases, advances and lookup rules are unchanged. Editor font is unchanged. SIL OFL 1.1.
-
-Modified by Qalam Works: Urdu character cmap aliases for Qalam Page; Arabic-use Urdu codepoint/digit aliases; original outlines, GSUB and GPOS unchanged. Copyright (c) 2024 Amine Anane; Copyright (c) 2024 Tarteel Inc. Licensed under SIL Open Font License 1.1.
+Modified by Qalam Works: Urdu character cmap aliases for Qalam Page; Arabic-use Urdu codepoint/digit and U+06E1 jazm aliases; original outlines, GSUB and GPOS unchanged. Copyright (c) 2024 Amine Anane; Copyright (c) 2024 Tarteel Inc. Licensed under SIL Open Font License 1.1.
 
 Copyright (c) 2024 Amine Anane
 Copyright © 2024 Tarteel Inc.

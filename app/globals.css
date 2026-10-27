@@ -368,6 +368,12 @@ footer[data-site-footer="ur"] [data-footer-copy] span {
   font-family: var(--font-inter), Inter, system-ui, sans-serif;
 }
 
+/* Digital Khatt's bundled fallback names must not trigger another font guard. */
+.qalam-editor-content [style*="Digital Khatt Indo-Pak"],
+.qalam-editor-content span[style*="Digital Khatt Indo-Pak"] {
+  font-family: "Digital Khatt Indo-Pak", "Mehr Nastaliq Web", Amiri, Inter, "Noto Nastaliq Urdu" !important;
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
    QURAN READER BACKGROUND
    ──────────────────────────────────────────────────────────────────────────── */
@@ -2097,7 +2103,8 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 @media(max-width:767px){[data-studio-toolbar-language="ur"]{justify-content:flex-start;}}
 
 /* Document Studio public font families. Unlicensed Adobe Arabic, Traditional Arabic, Faiz Lahori, and Al Majeed Quranic are not loaded. */
-@font-face{font-family:"Digital Khatt Indo-Pak";src:url("/fonts/DigitalKhattIndoPakQalam.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Amiri";src:url("/fonts/amiri-400.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Digital Khatt Indo-Pak";src:url("/fonts/DigitalKhattIndoPakQalam-v3.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Gulzar";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Scheherazade New";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/ScheherazadeNew-Medium.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 

@@ -12,10 +12,10 @@ from fontTools.ttLib import TTFont
 ROOT = Path(__file__).resolve().parent.parent
 FONTS = ROOT / "public/fonts"
 SOURCE = FONTS / "DigitalKhattIndoPakRegular.woff2"
-OUTPUT = FONTS / "DigitalKhattIndoPakQalam.woff2"
+OUTPUT = FONTS / "DigitalKhattIndoPakQalam-v3.woff2"
 NOTICE = (
     "Modified by Qalam Works: Urdu character cmap aliases for Qalam Page; "
-    "Arabic-use Urdu codepoint/digit aliases; original outlines, GSUB and GPOS unchanged. "
+    "Arabic-use Urdu codepoint/digit and U+06E1 jazm aliases; original outlines, GSUB and GPOS unchanged. "
     "Copyright (c) 2024 Amine Anane; Copyright (c) 2024 Tarteel Inc. "
     "Licensed under SIL Open Font License 1.1."
 )
@@ -26,6 +26,7 @@ def main():
     original_cmap = font.getBestCmap()
     layout = {tag: font.getTableData(tag) for tag in ("GSUB", "GPOS", "glyf") if tag in font}
     aliases = {
+        0x06E1: "headkhah" if "headkhah" in font.getGlyphOrder() else original_cmap[0x0652],
         0x06CC: original_cmap[0x064A],
         0x06D2: original_cmap[0x064A],
         0x06C1: original_cmap[0x0647],
@@ -42,9 +43,9 @@ def main():
             table.cmap.update(aliases)
     names = {
         1: "DigitalKhatt IndoPak Qalam",
-        3: "DigitalKhattIndoPakQalam-Regular-0.1-Qalam2",
+        3: "DigitalKhattIndoPakQalam-Regular-0.1-Qalam3",
         4: "DigitalKhatt IndoPak Qalam Regular",
-        5: "Version 0.1; Qalam Urdu cmap modification 2",
+        5: "Version 0.1; Qalam Urdu cmap modification 3",
         6: "DigitalKhattIndoPakQalam-Regular",
         10: NOTICE,
         16: "DigitalKhatt IndoPak Qalam",
@@ -72,7 +73,7 @@ def main():
         json.dumps(sorted(cmap), separators=(",", ":")) + "\n", encoding="utf-8"
     )
     license_text = (FONTS / "DigitalKhattIndoPakRegular-OFL.txt").read_text(encoding="utf-8")
-    (FONTS / "DigitalKhattIndoPakQalam-OFL.txt").write_text(NOTICE + "\n\n" + license_text, encoding="utf-8")
+    (FONTS / "DigitalKhattIndoPakQalam-v3-OFL.txt").write_text(NOTICE + "\n\n" + license_text, encoding="utf-8")
     for cp, glyph in sorted(aliases.items()):
         print(f"U+{cp:04X} -> {glyph}")
 

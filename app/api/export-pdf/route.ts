@@ -12,7 +12,7 @@ import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../../tools/document
 import { loadPdfUrduFace } from "../../tools/document-studio/utils/pdfUrduFontGuard";
 import { guardScriptAwarePdfFonts } from "../../tools/document-studio/utils/pdfScriptAwareFontGuard";
 import {
-  buildPdfHtml,
+  buildPdfHtml, fontFaceCss,
 } from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
 import {
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
     const resolved = await fontsForDocument(doc, dir, settings.typography);
     const digitalKhatt = resolved.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak");
     if (digitalKhatt && !digitalKhatt.complete) {
-      throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from DigitalKhattIndoPakQalam.woff2; export blocked");
+      throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from the bundled PDF compatibility face; export blocked");
     }
-    let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
+    let { html, fontsUsed, fontFallbacks, protectedRuns: originalRuns } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();
@@ -68,22 +68,14 @@ export async function POST(request: NextRequest) {
     });
     await page.setContent(html, { waitUntil: "load" });
     if (fontsUsed.includes("Jameel Noori Nastaleeq") && !await page.evaluate(loadPdfUrduFace, "Jameel Noori Nastaleeq")) {
-      ({ html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, {
+      ({ html, fontsUsed, fontFallbacks, protectedRuns: originalRuns } = buildPdfHtml(doc, dir, {
         faces: resolved.fonts.faces.filter(face => face.familyName !== "Jameel Noori Nastaleeq"),
       }, settings.typography));
       await page.setContent(html, { waitUntil: "load" });
     }
     // Preserve the author-supplied Unicode through HTML construction and Chromium.
-    // Only explicitly selected Digital Khatt spans participate in this guard.
-    const originalRuns: string[] = [];
-    const collectProtected = (node: DocNode) => {
-      if (node.type === "text" && typeof node.text === "string" && node.marks?.some(mark =>
-        mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
-        originalRuns.push(node.text);
-      }
-      for (const child of node.content ?? []) collectProtected(child);
-    };
-    collectProtected(doc);
+    // The adapter records the exact JSON tokens assigned to Digital Khatt,
+    // excluding Latin segments intentionally rendered in the English face.
     const sourceCodepoints = originalRuns.flatMap(text => Array.from(text, char => char.codePointAt(0)!));
     const htmlCodepoints = await page.evaluate(sourceHtml => {
       const parsed = new DOMParser().parseFromString(sourceHtml, "text/html");
@@ -101,6 +93,10 @@ export async function POST(request: NextRequest) {
     }
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
     const urduFonts = await guardScriptAwarePdfFonts(page, originalRuns);
+    if (urduFonts.warnings.length) fontFallbacks.push({
+      requested: `Digital Khatt Indo-Pak (${urduFonts.warnings.slice(0, 64).join(", ")})`,
+      used: [...new Set(urduFonts.diagnostics.filter(part => part.kind === "bundled-fallback").flatMap(part => part.actualFaces.map(face => face.familyName)))].join(", ") || "editor fallback",
+    });
     const afterCodepoints = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
         .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!)));
@@ -157,6 +153,9 @@ export async function POST(request: NextRequest) {
       physical.leftMm,
       physical.rightMm,
     );
+    const templateFonts = resolved.fonts.faces.filter(face => ["Inter", "Mehr Nastaliq Web", "Noto Nastaliq Urdu"].includes(face.familyName));
+    const templateCss = fontFaceCss(templateFonts);
+    await page.evaluate(async () => { await document.fonts.load('9px "Inter"'); await document.fonts.ready; });
     const pdfUint8Array = await page.pdf({
       width: `${layout.widthMm}mm`,
       height: `${layout.heightMm}mm`,
@@ -170,8 +169,8 @@ export async function POST(request: NextRequest) {
         right: `${physical.rightMm}mm`,
       },
       displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
-      headerTemplate: buildPdfHeaderTemplate(settings, doc),
-      footerTemplate: buildPdfFooterTemplate(settings),
+      headerTemplate: buildPdfHeaderTemplate(settings, doc, templateCss),
+      footerTemplate: buildPdfFooterTemplate(settings, templateCss),
     });
     const pdfDoc = await PDFDocument.load(pdfUint8Array);
     pdfDoc.setTitle(deriveDocumentTitle(doc));
@@ -199,6 +198,7 @@ export async function POST(request: NextRequest) {
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
         "X-Pdf-Embedded-Fonts": JSON.stringify(embeddedFonts),
         "X-Pdf-Font-Fallbacks": JSON.stringify(fontFallbacks),
+        "X-Pdf-Warnings": JSON.stringify(urduFonts.warnings.slice(0, 64)),
         "X-Pdf-Jameel-Requested": resolved.jameelRequested ? "yes" : "no",
         "X-Pdf-Jameel-Load": resolved.jameelLoad,
         "X-Pdf-Jameel-Used": jameelUsed ? "yes" : "no",

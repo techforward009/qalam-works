@@ -75,7 +75,9 @@ const EXTRA_BLOB_FONTS: StudioFontDefinition[] = PUBLIC_BLOB_FONT_FAMILIES
       editorFamily: family,
       category: font.script === "quran" ? "arabic" : font.script,
       scripts: ["arabic"],
-      cssStack: font.id === "mehr-nastaliq-web"
+      cssStack: font.id === "digital-khatt-indo-pak"
+        ? '"Digital Khatt Indo-Pak", "Mehr Nastaliq Web", Amiri, Inter, "Noto Nastaliq Urdu"'
+        : font.id === "mehr-nastaliq-web"
         ? '"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif'
         : `"${family}", serif`,
       cssClass: `qf-blob-${font.id}`,
@@ -302,7 +304,7 @@ export function editorFontFamilyStack(id: FontId): string {
     case "scheherazade-new":
       return '"Scheherazade New", "Noto Naskh Arabic", serif';
     case "digital-khatt-indo-pak":
-      return '"Digital Khatt Indo-Pak", "Noto Naskh Arabic", serif';
+      return getFontById("digital-khatt-indo-pak").cssStack;
     default: {
       const font = getFontById(id);
       return font.cssStack && font.cssStack !== "inherit" ? font.cssStack : "serif";

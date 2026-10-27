@@ -4,7 +4,6 @@ import { guardPdfUrduFonts } from "./pdfUrduFontGuard";
 
 const SELECTOR = '[data-pdf-font="Digital Khatt Indo-Pak"]';
 const digital = (name: string) => /digitalkhatt/i.test(name.replace(/[^a-z0-9]/gi, ""));
-const notoNaskh = (name: string) => /notonaskharabic/i.test(name.replace(/[^a-z0-9]/gi, ""));
 const cp = (n: number) => "U+" + n.toString(16).toUpperCase().padStart(4, "0");
 export interface PdfFontDiagnostic {
   root: number;
@@ -14,9 +13,9 @@ export interface PdfFontDiagnostic {
   actualFaces: { familyName: string; glyphCount: number }[];
   accepted: boolean;
 }
-/** Preserve the editor's Digital Khatt shaping and generic-serif punctuation.
- * Never introduce a PDF-only Naskh face or move a neighbouring Arabic cluster
- * into that face. Uncovered letters/marks fail closed rather than change font.
+/** Preserve Unicode and the same bundled Digital/Mehr/Inter/Nastaliq stack
+ * as the editor. Unsupported codepoints are warnings, never a document-wide
+ * failure. Covered Digital text must still paint with the requested font.
  */
 export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[]) {
   const segmented = await page.evaluate(({ query, digitalValues }) => {
@@ -40,8 +39,8 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
         const value = node.nodeValue ?? "";
         if (!value) continue;
         const parts: { kind: string; text: string }[] = [];
-        let index = 0;
-        for (const segment of value) {
+        const graphemes = new Intl.Segmenter("ar", { granularity: "grapheme" });
+        for (const { segment, index } of graphemes.segment(value)) {
           const verifiedPeriod = segment === "." && /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]$/u.test(value.slice(0, index)) &&
             (index + 1 === value.length || /\s/u.test(value[index + 1]));
           let fallback = false;
@@ -50,15 +49,14 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
             // Preserve the existing verified ASCII-period exception.
             if ([9, 10, 13].includes(n) || verifiedPeriod) continue;
             if (!cmap.has(n)) {
-              if ([0x060C, 0x061B, 0x061F, 0x06D4].includes(n)) fallback = true;
-              else unsupported.add(n);
+              fallback = true;
+              if (![0x060C, 0x061B, 0x061F, 0x06D4].includes(n)) unsupported.add(n);
             }
           }
-          const kind = verifiedPeriod ? "verified-period" : fallback ? "serif-punctuation" : "protected";
+          const kind = verifiedPeriod ? "verified-period" : fallback ? "bundled-fallback" : "protected";
           const previous = parts.at(-1);
           if (previous?.kind === kind && kind !== "verified-period") previous.text += segment;
           else parts.push({ kind, text: segment });
-          index += segment.length;
         }
         const frag = document.createDocumentFragment();
         for (const part of parts) {
@@ -66,10 +64,8 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
           el.dataset.pdfSafePart = String(nextId++);
           el.dataset.pdfSafeKind = part.kind;
           el.textContent = part.text;
-          if (part.kind === "verified-period") el.style.fontFamily = '"Liberation Serif"';
-          if (part.kind === "serif-punctuation") el.style.fontFamily = "serif";
-          // Covered text stays together with its marks and ligatures. Only
-          // unsupported punctuation uses the editor's generic-serif fallback.
+          // Do not force system fonts or detach combining marks. The inherited
+          // bundled stack is identical to the editor's, including punctuation.
           frag.appendChild(el);
         }
         node.replaceWith(frag);
@@ -85,9 +81,8 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
       segmented.originals.some((text, index) => text !== expectedRuns[index])) {
     throw Error("Digital Khatt source/HTML/Chromium codepoints differ; export blocked");
   }
-  if (segmented.unsupported.length) {
-    throw Error("Unsupported by Digital Khatt: " + segmented.unsupported.map(cp).join(", ") + "; export blocked");
-  }
+  const warnings = segmented.unsupported.map(cp);
+  if (warnings.length) console.warn("[pdf-digital-khatt-fallback]", warnings.join(", "));
   const diagnostics: PdfFontDiagnostic[] = [];
   const session = await page.createCDPSession();
   try {
@@ -111,13 +106,9 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
         ({ fonts } = await session.send("CSS.getPlatformFontsForNode", { nodeId }));
       }
       const used = fonts.filter(face => face.glyphCount > 0);
-      const fallback = part.kind === "serif-punctuation";
+      const fallback = part.kind === "bundled-fallback" || part.kind === "verified-period";
       const invisible = /^[\s\p{Default_Ignorable_Code_Point}]*$/u.test(part.text);
-      const accepted = part.kind === "verified-period"
-        ? used.length === 1 && used[0].familyName === "Liberation Serif"
-        : used.length === 0 ? invisible : fallback
-        ? used.every(face => !notoNaskh(face.familyName))
-        : used.every(face => digital(face.familyName));
+      const accepted = fallback || (used.length === 0 ? invisible : used.every(face => digital(face.familyName)));
       diagnostics.push({ root: part.root, part: part.part, kind: part.kind,
         codepoints: [...new Set(Array.from(part.text, ch => cp(ch.codePointAt(0)!)))],
         actualFaces: used.map(face => ({ familyName: face.familyName, glyphCount: face.glyphCount })),
@@ -132,7 +123,7 @@ export async function guardScriptAwarePdfFonts(page: Page, expectedRuns: string[
   await page.$$eval(SELECTOR, nodes => nodes.forEach(node => node.removeAttribute("data-pdf-urdu")));
   try {
     const old = await guardPdfUrduFonts(page);
-    return { fallbackRuns: old.fallbackRuns,
+    return { warnings, fallbackRuns: old.fallbackRuns,
       actualFamilies: [...new Set([...old.actualFamilies, ...diagnostics.flatMap(part => part.actualFaces.map(face => face.familyName))])],
       diagnostics };
   } finally {

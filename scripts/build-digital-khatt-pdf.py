@@ -10,12 +10,14 @@ from fontTools.ttLib import TTFont
 
 ROOT = Path(__file__).resolve().parent.parent
 FONTS = ROOT / "public/fonts"
-SOURCE = FONTS / "DigitalKhattIndoPakQalam.woff2"
-OUTPUT = FONTS / "DigitalKhattIndoPakQalamPdf-v1.woff2"
+SOURCE = FONTS / "DigitalKhattIndoPakQalam-v3.woff2"
+OUTPUT = FONTS / "DigitalKhattIndoPakQalamPdf-v2.woff2"
 NOTICE = (
     "Qalam Works PDF compatibility derivative: dangling OpenType mark-filter "
-    "references use IgnoreMarks; glyph outlines, cmap aliases, advances and "
-    "lookup rules are unchanged. Editor font is unchanged. SIL OFL 1.1."
+    "references (UseMarkFilteringSet 0x0010) are replaced by IgnoreMarks 0x0008 "
+    "in nine GSUB and three GPOS lookup flags; their dangling MarkFilteringSet "
+    "fields are removed. Glyph outlines, cmap aliases, advances and substitution/"
+    "positioning subtables are unchanged. SIL OFL 1.1."
 )
 
 
@@ -34,16 +36,17 @@ def main():
                 del lookup.MarkFilteringSet
     assert len(repaired) == 12, f"Source font changed; review mark-filter rules: {repaired}"
     old_notice = font["name"].getDebugName(10) or ""
+    copyright_notice = old_notice[old_notice.index("Copyright"): ] if "Copyright" in old_notice else ""
     for record in list(font["name"].names):
         if record.nameID == 10:
-            font["name"].setName(old_notice + " " + NOTICE, 10, record.platformID, record.platEncID, record.langID)
+            font["name"].setName(NOTICE + " " + copyright_notice, 10, record.platformID, record.platEncID, record.langID)
     font.save(OUTPUT)
     result = TTFont(OUTPUT, recalcTimestamp=False)
     assert result.getGlyphOrder() == glyph_order
     for tag, data in unchanged.items():
         assert result.getTableData(tag) == data, f"Unexpected {tag} change"
-    (FONTS / "DigitalKhattIndoPakQalamPdf-v1-OFL.txt").write_text(
-        NOTICE + "\n\n" + (FONTS / "DigitalKhattIndoPakQalam-OFL.txt").read_text(encoding="utf-8"), encoding="utf-8"
+    (FONTS / "DigitalKhattIndoPakQalamPdf-v2-OFL.txt").write_text(
+        NOTICE + "\n\n" + (FONTS / "DigitalKhattIndoPakQalam-v3-OFL.txt").read_text(encoding="utf-8"), encoding="utf-8"
     )
     print(f"Repaired {len(repaired)} dangling mark-filter references: {repaired}")
 

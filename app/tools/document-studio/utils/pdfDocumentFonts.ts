@@ -4,7 +4,7 @@ import { isApprovedPublicBlobFontUrl } from "./publicBlobFontCatalog";
 import { requiredPdfEmbedFonts, type PdfFonts, type PdfFontFace } from "./buildPdfHtml";
 import type { DocNode, Direction } from "./extractPlainText";
 import type { DocumentStudioSettings } from "./documentSettings";
-import { STUDIO_FONTS, type StudioFontDefinition } from "./fontRegistry";
+import { getFontById, STUDIO_FONTS, type StudioFontDefinition } from "./fontRegistry";
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
 
@@ -20,8 +20,8 @@ async function loadPublicFontSource(url: string): Promise<string | null> {
     if (!filename || filename.includes("/") || filename.includes("\\") || filename.includes("..")) return null;
     const root = path.join(process.cwd(), "public", "fonts");
     // PDF-only OpenType compatibility; the editor continues loading the original.
-    const local = path.join(root, filename === "DigitalKhattIndoPakQalam.woff2"
-      ? "DigitalKhattIndoPakQalamPdf-v1.woff2" : filename);
+    const local = path.join(root, filename === "DigitalKhattIndoPakQalam-v3.woff2"
+      ? "DigitalKhattIndoPakQalamPdf-v2.woff2" : filename);
     if (local !== root && !local.startsWith(root + path.sep)) return null;
     return existsSync(local) ? readFileSync(local).toString("base64") : null;
   }
@@ -166,6 +166,14 @@ export async function fontsForDocument(
       faces.push(face);
       names.add(name);
     }
+  }
+  if (needed.some(def => def.id === "digital-khatt-indo-pak") && !names.has("Mehr Nastaliq Web")) {
+    faces.push(await loadPublicFontFace(getFontById("mehr-nastaliq-web")));
+    names.add("Mehr Nastaliq Web");
+  }
+  if (needed.some(def => def.id === "digital-khatt-indo-pak") && !names.has("Amiri")) {
+    const fallback = all.get("Amiri");
+    if (fallback) { faces.push(fallback); names.add("Amiri"); }
   }
   // Always preserve the known-good fallback faces for mixed-script PDFs.
   for (const name of ["Noto Nastaliq Urdu", "Inter"]) {

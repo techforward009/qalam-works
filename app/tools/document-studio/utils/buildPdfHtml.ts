@@ -42,6 +42,7 @@ export interface PdfFonts {
 export interface PdfHtmlResult {
   html: string;
   fontsUsed: string[];
+  protectedRuns: string[];
   fontFallbacks: Array<{ requested: string; used: string }>;
 }
 
@@ -77,6 +78,7 @@ interface WalkCtx {
   globalDir: Direction;
   available: Map<string, PdfFontFace>;
   fontsUsed: Set<string>;
+  protectedRuns: string[];
   fallbacks: Map<string, string>;
   typography?: DocumentStudioSettings["typography"];
 }
@@ -254,6 +256,7 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
         const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
           ? ` data-pdf-font="${escapeAttr(effective.family)}"`
           : "";
+        if (effective.family === "Digital Khatt Indo-Pak") ctx.protectedRuns.push(token);
         const urduMarker = hasScript(token, "arabic") ? ' data-pdf-urdu="true"' : "";
         const isolate = !scaled && piece.dir !== blockDir;
         const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, picked.latin, token)}`;
@@ -416,7 +419,7 @@ function convertListItemInner(item: DocNode, ctx: WalkCtx, parentDir: Direction)
     .join("");
 }
 
-function fontFaceCss(faces: PdfFontFace[]): string {
+export function fontFaceCss(faces: PdfFontFace[]): string {
   const rules: string[] = [];
   for (const f of faces) {
     if (!f.complete) continue;
@@ -465,6 +468,7 @@ export function buildPdfHtml(
     globalDir: dir,
     available,
     fontsUsed: new Set(),
+    protectedRuns: [],
     fallbacks: new Map(),
     typography,
   };
@@ -477,7 +481,7 @@ export function buildPdfHtml(
   }
 
   // Noto stays embedded as the Urdu fallback. Mehr is the body face when that document font loaded.
-  const embeddedNames = [...new Set([...ctx.fontsUsed, "Noto Nastaliq Urdu", "Inter"])].filter((n) => available.has(n));
+  const embeddedNames = [...new Set([...ctx.fontsUsed, ...(ctx.fontsUsed.has("Digital Khatt Indo-Pak") ? ["Mehr Nastaliq Web", "Amiri"] : []), "Noto Nastaliq Urdu", "Inter"])].filter((n) => available.has(n));
   const faces = fonts.faces.filter(
     (f) => f.complete && embeddedNames.includes(f.familyName)
   );
@@ -548,6 +552,7 @@ ${bodyHtml}
   return {
     html,
     fontsUsed: embeddedNames.sort(),
+    protectedRuns: ctx.protectedRuns,
     fontFallbacks: [...ctx.fallbacks.entries()].map(([requested, used]) => ({
       requested,
       used,
