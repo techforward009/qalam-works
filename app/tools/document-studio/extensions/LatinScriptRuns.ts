@@ -167,6 +167,7 @@ function decorations(doc: Node, widths: Map<string, number>) {
         const sample = node.text.slice(range.start, range.end);
         if (scale != null && typeof attrs.charScale === "number") {
           spans.push(Decoration.inline(origin, origin + sample.length, { dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" }));
+          continue;
         }
         if (scale == null) {
           spans.push(Decoration.inline(origin, origin + sample.length, latinRunAttrs(explicitLatin, face, null)));
@@ -178,6 +179,19 @@ function decorations(doc: Node, widths: Map<string, number>) {
           const margin = widths.get(scaleWidthKey(from, factor, token.text));
           const tokenStyle = `${face};${latinScaleCss(scale, token.text)}${margin == null ? "" : `;margin-inline-end:${margin.toFixed(2)}px`}`;
           spans.push(Decoration.inline(from, origin + token.end, latinRunAttrs(explicitLatin, tokenStyle, scale)));
+        }
+      }
+      const tracking = typeof attrs.trackingPercent === "number" && attrs.trackingPercent !== 0 ? attrs.trackingPercent : 0;
+      if (tracking) {
+        const gap = `${tracking / 100}em`;
+        for (const range of scriptRanges(node.text, "arabic")) {
+          for (let index = range.start; index < range.end;) {
+            const point = node.text.codePointAt(index) ?? 0;
+            const length = point > 0xffff ? 2 : 1;
+            const from = pos + 1 + offset + index;
+            spans.push(Decoration.inline(from, from + length, { style: `margin-inline-end:${gap}` }));
+            index += length;
+          }
         }
       }
       if (!arabicNeedsFace) return;
@@ -321,9 +335,11 @@ export const LatinScriptRuns = Extension.create({
             const value = Number(raw);
             return Number.isFinite(value) ? value : null;
           },
-          renderHTML: (attributes: { trackingPercent?: number | null }) => (
-            typeof attributes.trackingPercent === "number" ? { "data-tracking": String(attributes.trackingPercent) } : {}
-          ),
+          renderHTML: (attributes: { trackingPercent?: number | null }) => {
+            if (typeof attributes.trackingPercent !== "number") return {};
+            if (attributes.trackingPercent === 0) return { "data-tracking": "0" };
+            return { "data-tracking": String(attributes.trackingPercent), style: `letter-spacing:${attributes.trackingPercent / 100}em` };
+          },
         },
         scalePercent: {
           default: null,
@@ -337,8 +353,11 @@ export const LatinScriptRuns = Extension.create({
             if (typeof attributes.scalePercent !== "number") return {};
             if (attributes.scalePercent === 100) return { "data-scale": "100" };
             const data = { "data-scale": String(attributes.scalePercent) };
-            // A stored character scale must not force Urdu into an LTR isolate.
-            if (typeof attributes.charScale === "number") return data;
+            // Character scaling is a real width change on every script, not an LTR isolate.
+            if (typeof attributes.charScale === "number") {
+              const factor = attributes.scalePercent / 100;
+              return { ...data, style: `display:inline-block;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline` };
+            }
             return { ...data, dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" };
           },
         },
