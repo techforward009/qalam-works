@@ -22,6 +22,18 @@ import { quoteEditorFontFamily } from "./fontRegistry";
 import { ParagraphAutoDirection } from "./paragraphDirection";
 import { applyImageFloatDataset, imageFloatsBesideText, imageWrapSize, parseImageAlignment } from "./documentImages";
 import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
+import { hatchDeclarations } from "./characterPreferences";
+
+function letterAttr(name: string) {
+  return {
+    default: null as boolean | null,
+    parseHTML: (element: HTMLElement) => element.getAttribute(name) === "true" ? true : null,
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const key = name === "data-meem" ? "meem" : name === "data-be" ? "be" : name === "data-jeem" ? "jeem" : name === "data-ain" ? "ain" : "kaaf";
+      return attributes[key] === true ? { [name]: "true" } : {};
+    },
+  };
+}
 
 const DIRECTION_MODE_ATTR = {
   default: "auto",
@@ -618,6 +630,65 @@ const StudioRunStyle = Extension.create({
             return css ? { "data-text-outline": "true", style: css } : {};
           },
         },
+        charScale: {
+          default: null,
+          parseHTML: (element: HTMLElement) => {
+            const raw = element.getAttribute("data-char-scale");
+            if (raw == null || raw === "") return null;
+            const value = Number(raw);
+            return Number.isFinite(value) ? value : null;
+          },
+          renderHTML: (attributes: { charScale?: number | null }) => (
+            typeof attributes.charScale === "number" ? { "data-char-scale": String(attributes.charScale) } : {}
+          ),
+        },
+        baselineShift: {
+          default: null,
+          parseHTML: (element: HTMLElement) => {
+            const raw = element.getAttribute("data-baseline");
+            if (raw == null || raw === "") return null;
+            const value = Number(raw);
+            return Number.isFinite(value) ? value : null;
+          },
+          renderHTML: (attributes: { baselineShift?: number | null }) => (
+            typeof attributes.baselineShift === "number" && attributes.baselineShift !== 0
+              ? { "data-baseline": String(attributes.baselineShift), style: `vertical-align:${attributes.baselineShift}pt` }
+              : {}
+          ),
+        },
+        hatch: {
+          default: null,
+          parseHTML: (element: HTMLElement) => {
+            const value = element.getAttribute("data-hatch");
+            return value && value !== "none" ? value : null;
+          },
+          renderHTML: (attributes: { hatch?: string | null }) => {
+            const css = hatchDeclarations(attributes.hatch);
+            return css ? { "data-hatch": String(attributes.hatch), style: css } : {};
+          },
+        },
+        kashida: {
+          default: null,
+          parseHTML: (element: HTMLElement) => {
+            const value = element.getAttribute("data-kashida");
+            return value && value !== "none" ? value : null;
+          },
+          renderHTML: (attributes: { kashida?: string | null }) => (
+            attributes.kashida ? { "data-kashida": String(attributes.kashida) } : {}
+          ),
+        },
+        charLanguage: {
+          default: null,
+          parseHTML: (element: HTMLElement) => element.getAttribute("data-char-lang") || null,
+          renderHTML: (attributes: { charLanguage?: string | null }) => (
+            attributes.charLanguage ? { "data-char-lang": attributes.charLanguage, lang: attributes.charLanguage } : {}
+          ),
+        },
+        meem: letterAttr("data-meem"),
+        be: letterAttr("data-be"),
+        jeem: letterAttr("data-jeem"),
+        ain: letterAttr("data-ain"),
+        kaaf: letterAttr("data-kaaf"),
       },
     }];
   },
@@ -632,6 +703,16 @@ const StudioTextStyle = TextStyle.extend({
       { tag: "span[data-scale]" },
       { tag: "span[data-text-effect]" },
       { tag: "span[data-text-outline]" },
+      { tag: "span[data-char-scale]" },
+      { tag: "span[data-baseline]" },
+      { tag: "span[data-hatch]" },
+      { tag: "span[data-kashida]" },
+      { tag: "span[data-char-lang]" },
+      { tag: "span[data-meem]" },
+      { tag: "span[data-be]" },
+      { tag: "span[data-jeem]" },
+      { tag: "span[data-ain]" },
+      { tag: "span[data-kaaf]" },
     ];
   },
 });
