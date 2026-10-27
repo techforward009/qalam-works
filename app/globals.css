@@ -2128,7 +2128,7 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
    Text boxes, inputs and dialogs always retain their native selection highlight. */
 .qalam-editor-content .ProseMirror[data-studio-selection-painted] ::selection {
   background: transparent;
-  color: #000;
+  color: inherit;
 }
 
 /* Restarted by the positioned caret key on movement; solid while typing. */

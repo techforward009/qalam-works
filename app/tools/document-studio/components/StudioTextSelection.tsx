@@ -68,7 +68,9 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
     return () => root.removeAttribute("data-studio-selection-painted");
   }, [editor, host, boxes]);
   if (!host || !boxes.length) return null;
-  return createPortal(<div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 5, mixBlendMode: "difference" }}>
-    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "#fff" }} />)}
+  // Paint a translucent highlight between effect backgrounds (0) and story ink (2).
+  // Difference blending needs an opaque backdrop; effects require a transparent story.
+  return createPortal(<div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
+    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "rgba(80, 145, 255, 0.35)" }} />)}
   </div>, host);
 }
