@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build the PDF-only Digital Khatt compatibility face (fonttools[woff]).
+"""Build the shared editor/export Digital Khatt face (fonttools[woff]).
 
-The editor asset is untouched. Invalid mark-filter references behave differently
-in server Chromium: make their ignore-marks intent explicit. No glyph, cmap,
-advance, lookup rule or Unicode text is replaced.
+Both consumers load this repaired output; the historical Pdf-v2 filename does
+not denote a PDF-only asset. The v3 input provides the Urdu/jazm cmap aliases.
+Repair dangling mark-filter references without changing outlines, advances,
+cmap aliases or substitution/positioning subtables.
 """
 from pathlib import Path
 from fontTools.ttLib import TTFont

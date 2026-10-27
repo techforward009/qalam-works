@@ -19,9 +19,8 @@ async function loadPublicFontSource(url: string): Promise<string | null> {
     try { filename = decodeURIComponent(filename); } catch { return null; }
     if (!filename || filename.includes("/") || filename.includes("\\") || filename.includes("..")) return null;
     const root = path.join(process.cwd(), "public", "fonts");
-    // PDF-only OpenType compatibility; the editor continues loading the original.
-    const local = path.join(root, filename === "DigitalKhattIndoPakQalam-v3.woff2"
-      ? "DigitalKhattIndoPakQalamPdf-v2.woff2" : filename);
+    // The editor and export embed the exact same catalogued font bytes.
+    const local = path.join(root, filename);
     if (local !== root && !local.startsWith(root + path.sep)) return null;
     return existsSync(local) ? readFileSync(local).toString("base64") : null;
   }

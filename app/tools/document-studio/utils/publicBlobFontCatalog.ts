@@ -12,7 +12,7 @@ export interface PublicBlobFontFamily {
 }
 
 export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
-  { id: "digital-khatt-indo-pak", label: "Digital Khatt Indo-Pak", regular: "DigitalKhattIndoPakQalam-v3.woff2", script: "quran" },
+  { id: "digital-khatt-indo-pak", label: "Digital Khatt Indo-Pak", regular: "DigitalKhattIndoPakQalamPdf-v2.woff2", script: "quran" },
   { id: "gulzar", label: "Gulzar", regular: "Gulzar-Regular.woff2", script: "urdu" },
   { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq-v1.02.woff2", script: "urdu" },
   { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
@@ -35,7 +35,7 @@ export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.v
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
 const LOCALLY_HOSTED_FONT_FILES = new Set([
-  "DigitalKhattIndoPakQalam-v3.woff2",
+  "DigitalKhattIndoPakQalamPdf-v2.woff2",
   // Not on the font Worker yet. Pages must not request these from the Worker.
   "MehrNastaliqWeb.woff2",
   "NafeesNastaleeq-v1.02.woff2",

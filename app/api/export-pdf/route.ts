@@ -156,6 +156,15 @@ export async function POST(request: NextRequest) {
     const templateFonts = resolved.fonts.faces.filter(face => ["Inter", "Mehr Nastaliq Web", "Noto Nastaliq Urdu"].includes(face.familyName));
     const templateCss = fontFaceCss(templateFonts);
     await page.evaluate(async () => { await document.fonts.load('9px "Inter"'); await document.fonts.ready; });
+    const digitalInkBleed = originalRuns.length > 0;
+    if (digitalInkBleed) await page.evaluate(({ left, right }) => {
+      // Native print margins clip glyphs even when CSS overflow is visible.
+      // Reserve the same space inside the body instead: text anchors, wrapping
+      // width and vertical pagination stay put, but ink can paint into padding.
+      document.body.style.boxSizing = "content-box";
+      document.body.style.paddingLeft = `${left}px`;
+      document.body.style.paddingRight = `${right}px`;
+    }, { left: physical.leftMm * 96 / 25.4, right: physical.rightMm * 96 / 25.4 });
     const pdfUint8Array = await page.pdf({
       width: `${layout.widthMm}mm`,
       height: `${layout.heightMm}mm`,
@@ -165,8 +174,8 @@ export async function POST(request: NextRequest) {
       margin: {
         top: `${layout.margins.topMm}mm`,
         bottom: `${layout.margins.bottomMm}mm`,
-        left: `${physical.leftMm}mm`,
-        right: `${physical.rightMm}mm`,
+        left: digitalInkBleed ? "0mm" : `${physical.leftMm}mm`,
+        right: digitalInkBleed ? "0mm" : `${physical.rightMm}mm`,
       },
       displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
       headerTemplate: buildPdfHeaderTemplate(settings, doc, templateCss),

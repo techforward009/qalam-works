@@ -5,13 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
-import { editorFontFamilyStack } from "../app/tools/document-studio/utils/fontRegistry";
+import { editorFontFamilyStack, getFontById } from "../app/tools/document-studio/utils/fontRegistry";
 import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { POST } from "../app/api/export-pdf/route";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
+import { fontsForDocument } from "../app/tools/document-studio/utils/pdfDocumentFonts";
 
-async function exportDigital(texts: string[], size = "24pt") {
+async function exportDigital(texts: string[], size = "24pt", indentCssPx = 0) {
   const doc = { type: "doc", content: texts.map(text => ({ type: "paragraph", attrs: { dir: "rtl" }, content: [
     { type: "text", text, marks: [{ type: "textStyle", attrs: { fontFamily: "Digital Khatt Indo-Pak", fontSize: size } }] },
   ] })) };
@@ -32,6 +33,7 @@ async function exportDigital(texts: string[], size = "24pt") {
     return browser;
   });
   const settings = defaultDocumentSettings();
+  settings.typography.firstLineIndentMm = indentCssPx * 25.4 / 96;
   const response = await POST(new NextRequest("http://localhost/api/export-pdf", {
     method: "POST", body: JSON.stringify({ doc, dir: "rtl", settings }),
   })).finally(() => spy.mockRestore());
@@ -72,24 +74,55 @@ test("other uncovered marks use the bundled editor fallback and produce a warnin
   expect(result.response.headers.get("X-Pdf-Font-Fallbacks")).toContain("U+06D7");
 }, 60000);
 
-test("right-edge Digital Khatt ink can bleed past the guide without a flat clipping column", async () => {
-  const result = await exportDigital(["قُلِ اللّٰھُمَّ مِنۡ ، ۔", "لَا إِلٰهَ إِلَّا اللّٰهُ", "فِی سَبِیْلِ اللّٰهِ", "شَیْءٍ قَدِیْرٌ"]);
-  const raster = execFileSync("pdftoppm", ["-f", "1", "-singlefile", "-r", "144", "-png", result.pdf]);
-  const { data, info } = await sharp(raster).greyscale().raw().toBuffer({ resolveWithObject: true });
-  const guide = (result.settings.page.margins.startMm * 96 / 25.4 + Number(result.response.headers.get("X-Pdf-Printable-Width"))) * 1.5;
-  const topMargin = result.settings.page.margins.topMm * 144 / 25.4;
-  const edges = result.bounds.map(bound => {
-    let right = -1;
-    for (let y = Math.max(0, Math.floor(topMargin + bound.top * 1.5) - 3); y < Math.min(info.height, Math.ceil(topMargin + bound.bottom * 1.5) + 3); y++)
-      for (let x = Math.floor(guide - 140); x < Math.min(info.width, Math.ceil(guide + 64)); x++)
-        if (data[y * info.width + x] < 100) right = Math.max(right, x);
-    return right;
+test("right-edge Digital Khatt contours match an unclipped inset reference, rejecting a clipped control", async () => {
+  const texts = ["قُلِ اللّٰھُمَّ مِنۡ ، ۔", "لَا إِلٰهَ إِلَّا اللّٰهُ", "فِی سَبِیْلِ اللّٰهِ", "شَیْءٍ قَدِیْرٌ"];
+  const result = await exportDigital(texts);
+  // Move the reference text 48 CSS px into its line box. Its glyph overhang is
+  // safely inside even if boundary overflow clipping regresses. Shape/size stay
+  // identical: the only intended difference is an integer pixel translation.
+  const reference = await exportDigital(texts, "24pt", 48);
+  const dpi = 384, scale = dpi / 96;
+  const rasterize = async (pdf: string) => {
+    const png = execFileSync("pdftoppm", ["-f", "1", "-singlefile", "-r", String(dpi), "-png", pdf]);
+    return sharp(png).greyscale().raw().toBuffer({ resolveWithObject: true });
+  };
+  const actual = await rasterize(result.pdf), expected = await rasterize(reference.pdf);
+  const margin = result.settings.page.margins.topMm * dpi / 25.4;
+  const guide = (result.settings.page.margins.startMm * 96 / 25.4 + Number(result.response.headers.get("X-Pdf-Printable-Width"))) * scale;
+  type Raster = typeof actual;
+  const box = (image: Raster, bound: { top: number; bottom: number }, clip = Infinity) => {
+    let left = Infinity, right = -1, top = Infinity, bottom = -1;
+    for (let y = Math.max(0, Math.floor(margin + bound.top * scale) - 3); y < Math.min(image.info.height, Math.ceil(margin + bound.bottom * scale) + 3); y++)
+      for (let x = 0; x < Math.min(image.info.width, clip); x++) if (image.data[y * image.info.width + x] < 100) {
+        left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y);
+      }
+    expect(right).toBeGreaterThan(left);
+    return { left, right, top, bottom };
+  };
+  const assertUnclipped = (clip = Infinity) => texts.map((_, index) => {
+    const a = box(actual, result.bounds[index], clip), r = box(expected, reference.bounds[index]);
+    const dx = a.left - r.left, dy = a.top - r.top;
+    expect(Math.abs(dx - 48 * scale)).toBeLessThanOrEqual(1);
+    expect(Math.abs((a.right - a.left) - (r.right - r.left))).toBeLessThanOrEqual(1);
+    let compared = 0, missing = 0;
+    // Compare the actual terminal ink contour, not just its furthest column.
+    // A 1px endpoint difference cannot hide a flat cut through the first glyph.
+    for (let y = r.top; y <= r.bottom; y++) for (let x = Math.max(r.left, r.right - 32); x <= r.right; x++) {
+      if (expected.data[y * expected.info.width + x] >= 80) continue;
+      compared++;
+      const ax = x + dx, ay = y + dy;
+      const painted = ax < clip && [-1, 0, 1].some(offset => actual.data[(ay + offset) * actual.info.width + ax] < 160);
+      if (!painted) missing++;
+    }
+    expect(compared).toBeGreaterThan(20);
+    expect(missing / compared, JSON.stringify({ index, compared, missing, a, r })).toBeLessThan(.001);
+    return { compared, missing, right: a.right };
   });
-  writeFileSync(join(result.dir, "ink-edges.json"), JSON.stringify({ guide, edges }));
-  expect(edges.every(x => x > 0)).toBe(true);
-  expect(new Set(edges).size, JSON.stringify({ guide, edges })).toBeGreaterThan(1);
-  // Pixel indices name their left edge; this column lies wholly past the guide.
-  expect(Math.max(...edges), JSON.stringify({ guide, edges })).toBeGreaterThanOrEqual(Math.ceil(guide));
+  const contours = assertUnclipped();
+  // Sensitivity control: simulate a real cut at the right guide. This matcher
+  // must reject it, even if other lines still happen to vary by one pixel.
+  expect(() => assertUnclipped(Math.floor(guide))).toThrow();
+  writeFileSync(join(result.dir, "ink-contours.json"), JSON.stringify({ guide, contours }));
 }, 60000);
 
 // A Latin segment is intentionally handled by the editor's English face; it
@@ -99,7 +132,13 @@ test("mixed Latin codepoints inside a Digital Khatt mark do not block the docume
   expect(result.pdfLines.join("")).toContain("café");
 }, 60000);
 
-test("compiled editor font guards retain Digital Khatt as the primary face of its fallback stack", async () => {
+test("compiled editor font guards and export use the same catalogued Digital Khatt bytes", async () => {
+  const asset = getFontById("digital-khatt-indo-pak").pdf.regularFiles![0];
+  const globals = readFileSync("app/globals.css", "utf8");
+  expect(globals.match(/@font-face\{font-family:"Digital Khatt Indo-Pak";src:url\("([^"]+)"\)/)?.[1]).toBe(asset);
+  const source = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "لَا مِنۡ", marks: [{ type: "textStyle", attrs: { fontFamily: "Digital Khatt Indo-Pak" } }] }] }] };
+  const loaded = await fontsForDocument(source, "rtl", defaultDocumentSettings().typography);
+  expect(loaded.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak")?.regularSources[0]).toBe(readFileSync(join("public", asset.slice(1))).toString("base64"));
   const browser = await puppeteer.launch({ args: chromium.args, executablePath: await chromium.executablePath(), headless: true });
   try {
     const page = await browser.newPage();
