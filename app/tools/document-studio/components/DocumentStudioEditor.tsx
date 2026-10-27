@@ -163,6 +163,7 @@ import {
 export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
 export { buildDocumentStudioExample, buildReplaceAllTransaction };
 
+export const PDF_EXPORT_BUSY_MESSAGE = "ابھی بہت سے لوگ پی ڈی ایف بنا رہے ہیں، براہِ کرم چند سیکنڈ بعد دوبارہ کوشش کریں۔";
 export const GENERIC_PDF_EXPORT_ERROR = "PDF بنانے میں خرابی ہوئی / Failed to generate PDF.";
 
 function shapePngDataUrl(kind: "rect" | "ellipse" | "round-rect" | "line"): string | null {
@@ -221,6 +222,7 @@ function insertStudioShape(editor: Editor | null, kind: "rect" | "ellipse" | "ro
 }
 
 export async function readPdfExportError(response: Response): Promise<string> {
+  if (response.status === 429 || response.status === 503) return PDF_EXPORT_BUSY_MESSAGE;
   try {
     const payload: unknown = await response.json();
     if (

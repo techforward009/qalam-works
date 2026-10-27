@@ -24,6 +24,7 @@ import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmb
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
 import { restorePdfTextRuns } from "../../tools/document-studio/utils/normalizePdfDocument";
+import { clientIp, closePdfBrowser, pdfExportLimiter, type PdfExportDenied } from "./pdfExportLimiter";
 
 interface ExportPdfRequestBody {
   doc: DocNode;
@@ -37,7 +38,16 @@ function isValidRequestBody(body: unknown): body is ExportPdfRequestBody {
   return typeof b.doc === "object" && b.doc !== null && (b.dir === "rtl" || b.dir === "ltr");
 }
 
+function deniedResponse(denied: PdfExportDenied) {
+  return NextResponse.json({ error: "PDF export is busy. Please try again shortly.", code: denied.code }, {
+    status: denied.status,
+    headers: { "Retry-After": String(denied.retryAfter), "Cache-Control": "private, no-store" },
+  });
+}
+
 export async function POST(request: NextRequest) {
+  const rateDenied = pdfExportLimiter.checkRate(clientIp(request.headers));
+  if (rateDenied) return deniedResponse(rateDenied);
   const exportStarted = Date.now();
   let body: unknown;
   try {
@@ -50,7 +60,15 @@ export async function POST(request: NextRequest) {
   }
   const { dir } = body;
   const settings = parseDocumentSettings(body.settings);
+  const admission = await pdfExportLimiter.acquireSlot(request.signal);
+  if (!("release" in admission)) return deniedResponse(admission);
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+  // Leave time inside maxDuration=60 for the 10s queue and bounded shutdown.
+  const renderAbort = new AbortController();
+  const abort = () => renderAbort.abort();
+  const renderTimer = setTimeout(abort, 40_000);
+  request.signal.addEventListener("abort", abort, { once: true });
+  if (request.signal.aborted) abort();
   try {
     preflightPdfSource(body.doc);
     const doc = restorePdfTextRuns(body.doc);
@@ -62,7 +80,9 @@ export async function POST(request: NextRequest) {
     }
     let { html, fontsUsed, fontFallbacks, protectedRuns: originalRuns } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
     const executablePath = await chromium.executablePath();
-    browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
+    renderAbort.signal.throwIfAborted();
+    browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true, signal: renderAbort.signal });
+    renderAbort.signal.throwIfAborted();
     const page = await browser.newPage();
     await page.setRequestInterception(true);
     page.on("request", (req) => {
@@ -194,6 +214,7 @@ export async function POST(request: NextRequest) {
     const finalBytes = await pdfDoc.save();
     const embeddedFonts = verifyPdfUrduEmbedding(await PDFDocument.load(finalBytes), urduFonts.actualFamilies);
     const pdfBuffer = Buffer.from(finalBytes);
+    renderAbort.signal.throwIfAborted();
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
@@ -226,10 +247,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
+    if (renderAbort.signal.aborted) return deniedResponse({ status: 503, retryAfter: 10, code: "pdf-export-timeout" });
     console.error("PDF export failed:", err);
     const blocked = err instanceof Error && err.message.endsWith("export blocked") ? err.message : null;
     return NextResponse.json({ error: blocked ?? "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
   } finally {
-    if (browser) await browser.close();
+    clearTimeout(renderTimer);
+    request.signal.removeEventListener("abort", abort);
+    try { if (browser) await closePdfBrowser(browser); }
+    finally { admission.release(); }
   }
 }

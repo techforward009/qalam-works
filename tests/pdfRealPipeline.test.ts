@@ -6,7 +6,7 @@ import os from "node:os";
 import { execFileSync } from "node:child_process";
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
-import { NextRequest } from "next/server";
+import { PdfExportTestRequest as NextRequest } from "./helpers/pdfExportRequest";
 import { PDFDocument, PDFDict, PDFName } from "pdf-lib";
 import { POST } from "../app/api/export-pdf/route";
 import { PDF_SOURCE_LIMITS } from "../app/tools/document-studio/utils/pdfSourcePreflight";

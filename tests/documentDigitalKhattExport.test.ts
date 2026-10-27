@@ -7,7 +7,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { editorFontFamilyStack, getFontById } from "../app/tools/document-studio/utils/fontRegistry";
 import sharp from "sharp";
-import { NextRequest } from "next/server";
+import { PdfExportTestRequest as NextRequest } from "./helpers/pdfExportRequest";
 import { POST } from "../app/api/export-pdf/route";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { fontsForDocument } from "../app/tools/document-studio/utils/pdfDocumentFonts";
