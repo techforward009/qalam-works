@@ -1224,6 +1224,7 @@ export default function DocumentToolbar({
           [data-studio-toolbar] [data-studio-geom]{position:relative !important;left:auto !important;top:auto !important;right:auto !important;margin:0 !important;flex:0 0 auto !important;min-width:24px !important;min-height:24px !important;height:26px !important;max-height:26px !important;}
           [data-studio-toolbar] [data-studio-geom] > button{position:relative !important;left:auto !important;top:auto !important;width:100% !important;height:26px !important;min-width:24px !important;min-height:24px !important;max-height:26px !important;}
           [data-studio-toolbar] button[data-studio-geom]{min-width:24px !important;min-height:24px !important;height:26px !important;max-height:26px !important;}
+          [data-studio-toolbar] button[aria-label="Size presets"]{position:absolute !important;right:1px !important;top:1px !important;width:24px !important;height:24px !important;min-width:24px !important;min-height:24px !important;max-width:24px !important;max-height:24px !important;}
         }`}</style>
         <div aria-hidden="true" data-studio-toolbar-etched="true" className="h-[3px] shrink-0" style={{ background: "linear-gradient(to bottom, #f0f0f0 0 1px, #a0a0a0 1px 2px, #ffffff 2px 3px)" }} />
         <div className="relative h-[21px] shrink-0 overflow-x-auto flex-nowrap" data-studio-toolbar-row="format" style={rowStyle}>

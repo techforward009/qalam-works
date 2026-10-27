@@ -82,6 +82,29 @@ test.describe("mobile ribbon touch", () => {
           return [probe(midX, midY), probe(left, midY), probe(right, midY), probe(midX, top), probe(midX, bottom)];
         }, { x: point!.x, y: point!.y, width: point!.width, height: point!.height });
         for (const hit of hits) expect(hit, name).toBe(name);
+        if (name === "size") {
+          const preset = page.getByRole("button", { name: "Size presets" });
+          const presetBox = await preset.boundingBox();
+          expect(presetBox).toBeTruthy();
+          expect(presetBox!.width).toBeGreaterThanOrEqual(24);
+          expect(presetBox!.height).toBeGreaterThanOrEqual(24);
+          const neighbor = await page.locator("[data-studio-geom='tracking-icon']").boundingBox();
+          expect(neighbor).toBeTruthy();
+          const overlapW = Math.min(presetBox!.x + presetBox!.width, neighbor!.x + neighbor!.width) - Math.max(presetBox!.x, neighbor!.x);
+          const overlapH = Math.min(presetBox!.y + presetBox!.height, neighbor!.y + neighbor!.height) - Math.max(presetBox!.y, neighbor!.y);
+          expect(overlapW > 0.5 && overlapH > 0.5, "Size presets overlaps tracking").toBe(false);
+          const presetHits = await page.evaluate(({ x, y, width, height }) => {
+            const probe = (px: number, py: number) => document.elementFromPoint(px, py)?.closest("button[aria-label='Size presets']") != null;
+            const left = Math.round(x) + 2;
+            const right = Math.round(x + width) - 2;
+            const top = Math.round(y) + 2;
+            const bottom = Math.round(y + height) - 2;
+            const midX = Math.round(x + width / 2);
+            const midY = Math.round(y + height / 2);
+            return [probe(midX, midY), probe(left, midY), probe(right, midY), probe(midX, top), probe(midX, bottom)];
+          }, presetBox!);
+          expect(presetHits, "Size presets").toEqual([true, true, true, true, true]);
+        }
         await page.touchscreen.tap(point!.x + point!.width / 2, point!.y + point!.height / 2);
       }
       const overlaps = await page.evaluate((names) => {

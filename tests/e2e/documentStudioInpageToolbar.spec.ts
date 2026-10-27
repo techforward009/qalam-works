@@ -56,6 +56,14 @@ test("size, colour, text style, gap, direction and language controls", async ({ 
   await expect(page.locator(".ProseMirror")).toBeFocused();
   await size.click();
   await expect(size).toBeFocused();
+  await page.getByRole("button", { name: "Size presets" }).click();
+  const presetBox = await page.getByRole("button", { name: "Size presets" }).boundingBox();
+  expect(presetBox).toBeTruthy();
+  const presetSize = (page.viewportSize()?.width ?? 1280) < 719 ? 24 : 16;
+  expect(presetBox!.width).toBeCloseTo(presetSize, 0);
+  expect(presetBox!.height).toBeCloseTo(presetSize, 0);
+  await page.locator("[data-studio-size-list]").getByRole("option", { name: "18pt" }).click();
+  await expect(size).toHaveValue("18pt");
   await size.fill("abc");
   await size.press("Enter");
   await expect(page.locator("[data-studio-size-error]")).toHaveText("Value not typed properly.");
