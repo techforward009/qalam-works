@@ -45,8 +45,15 @@ const TOOLS: ToolSpec[] = [
   { id: "text", label: "Text", enabled: true, icon: (
     <OutlineIcon>
       <path d="M3.5 3.5H8.5M6.5 3.5V18.5M3.5 18.5H8.5" />
-      <path d="M13.5 19.5L10.5 16.5L9.5 12.5L10.5 11.5L12.5 13.5L11.5 7.5L12.5 6.5L13.5 7.5L14.5 10.5L13.5 4.5L14.5 3.5L15.5 4.5L16.5 9.5L16.5 3.5H17.5L18.5 4.5V9.5L20.5 5.5H21.5L22.5 6.5L20.5 11.5L22.5 9.5L23.5 10.5L22.5 15.5L19.5 19.5Z" />
-      <path d="M15.5 10.5L16.5 12.5M18.5 10.5V12.5" />
+      <g stroke="none" fill="#000">
+        <rect x="10" y="11" width="15" height="5" /><rect x="11" y="16" width="13" height="2" /><rect x="12" y="18" width="11" height="1" />
+        <rect x="8" y="11" width="2" height="3" /><rect x="9" y="14" width="2" height="2" />
+        <rect x="10" y="5" width="3" height="7" /><rect x="14" y="3" width="3" height="9" /><rect x="18" y="4" width="3" height="8" /><rect x="22" y="6" width="3" height="6" />
+      </g>
+      <g stroke="none" fill="#fff">
+        <rect x="11" y="6" width="1" height="6" /><rect x="15" y="4" width="1" height="8" /><rect x="19" y="5" width="1" height="7" /><rect x="23" y="7" width="1" height="5" />
+        <rect x="11" y="12" width="13" height="4" /><rect x="12" y="16" width="11" height="1" /><rect x="9" y="12" width="1" height="2" />
+      </g>
     </OutlineIcon>
   ) },
   { id: "rotate", label: "Rotate", enabled: false, icon: (
