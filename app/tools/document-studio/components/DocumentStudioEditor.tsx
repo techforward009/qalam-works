@@ -128,6 +128,7 @@ import {
 } from "../utils/documentView";
 import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fontRegistry";
 import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
+import { AllahAutoMarks } from "../extensions/AllahAutoMarks";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
@@ -464,7 +465,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const fullDeleteRef = useRef(false);
 
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamPagination, LatinScriptRuns],
+    extensions: [...createDocumentStudioExtensions(), QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
