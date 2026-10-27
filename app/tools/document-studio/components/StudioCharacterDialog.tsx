@@ -2,8 +2,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
-import { studioOverlayRoot } from "../utils/inpageToolbar";
-import { TEXT_EFFECT_LABELS } from "../utils/inpageToolbar";
+import { studioOverlayRoot, TEXT_EFFECT_LABELS, TOOLBAR_FONT_SIZE_PRESETS } from "../utils/inpageToolbar";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import {
   CHARACTER_HATCHES,
@@ -35,6 +34,31 @@ function MixedBox({ name, accessKey, value, onChange, children }: { name: string
 
 function blank(value: string) {
   return value === "" ? <option value="">—</option> : null;
+}
+
+function numberIn(raw: string, fallback: number): number {
+  const match = raw.trim().match(/-?\d+(?:\.\d+)?/);
+  const value = match ? Number(match[0]) : fallback;
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function SpinField({ label, at, name, accessKey, value, suffix, step, min, max, fallback, onChange }: { label: string; at: number; name: string; accessKey: string; value: string; suffix: string; step: number; min: number; max: number; fallback: number; onChange: (next: string) => void }) {
+  const bump = (direction: 1 | -1) => {
+    const next = Math.round((numberIn(value, fallback) + direction * step) * 10) / 10;
+    const clamped = Math.min(max, Math.max(min, next));
+    onChange(`${clamped}${suffix}`);
+  };
+  const spin: CSSProperties = { width: 14, height: 9, padding: 0, lineHeight: "8px", fontSize: 8, background: "#f0f0f0", border: "1px solid #808080", color: "#000" };
+  return <label style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+    <span><Mark text={`${label}:`} at={at} /></span>
+    <span style={{ display: "inline-flex", alignItems: "stretch" }}>
+      <input name={name} aria-label={label} accessKey={accessKey} data-character-field="true" value={value} onChange={(event) => onChange(event.target.value)} style={{ ...inputStyle, width: 40 }} />
+      <span style={{ display: "flex", flexDirection: "column" }}>
+        <button type="button" tabIndex={-1} aria-label={`${label} up`} onClick={() => bump(1)} style={spin}>▴</button>
+        <button type="button" tabIndex={-1} aria-label={`${label} down`} onClick={() => bump(-1)} style={spin}>▾</button>
+      </span>
+    </span>
+  </label>;
 }
 
 function withCurrent(options: { value: string; label: string }[], value: string) {
@@ -77,26 +101,27 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
     : INPAGE_TEXT_COLOURS;
   const swatch = form.color || "transparent";
   return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={(event) => event.stopPropagation()}>
-    <form ref={root} role="dialog" aria-modal="true" aria-label="Character" data-studio-character-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ width: "min(480px, 100%)", maxHeight: "calc(100vh - 24px)", overflow: "auto", background: "#f0f0f0", color: "#000", border: "1px solid #fff", boxShadow: "inset -1px -1px #808080, 1px 1px 0 #000", font: "11px Tahoma, sans-serif", padding: 8 }}>
+    <form ref={root} role="dialog" aria-modal="true" aria-label="Character" data-studio-character-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ width: 400, height: 283, minWidth: 400, maxWidth: 400, minHeight: 283, maxHeight: 283, boxSizing: "border-box", overflow: "hidden", justifySelf: "center", alignSelf: "center", background: "#f0f0f0", color: "#000", border: "1px solid #fff", boxShadow: "inset -1px -1px #808080, 1px 1px 0 #000", font: "11px Tahoma, sans-serif", padding: 6 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <span style={{ fontWeight: 700 }}>Character</span>
         <button type="button" aria-label="Close" tabIndex={-1} onClick={close} style={{ ...buttonStyle, width: 18, height: 16, lineHeight: "12px" }}>×</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) 76px", gap: "4px 8px", alignItems: "center" }}>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: 1, gridRow: 1 }}>
-          <span><Mark text="Size" at={0} /></span>
-          <input name="size" aria-label="Size" accessKey="s" data-character-field="true" value={form.size} onChange={(event) => patch({ size: event.target.value })} style={{ ...inputStyle, width: 64 }} />
+          <span><Mark text="Size:" at={0} /></span>
+          <input name="size" aria-label="Size" accessKey="s" data-character-field="true" list="character-size-presets" value={form.size} onChange={(event) => patch({ size: event.target.value })} style={{ ...inputStyle, width: 64 }} />
+          <datalist id="character-size-presets">{TOOLBAR_FONT_SIZE_PRESETS.map((pt) => <option key={pt} value={`${pt}pt`} />)}</datalist>
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: 2, gridRow: 1 }}>
-          <span><Mark text="Style" at={1} /></span>
-          <select name="style" aria-label="Style" accessKey="t" data-character-field="true" value={form.style} onChange={(event) => patch({ style: event.target.value })} style={{ ...inputStyle, width: 88 }}>
+          <span><Mark text="Style:" at={1} /></span>
+          <select name="textStyle" aria-label="Style" accessKey="t" data-character-field="true" value={form.style} onChange={(event) => patch({ style: event.target.value })} style={{ ...inputStyle, width: 88 }}>
             {blank(form.style)}
             {CHARACTER_STYLES.map((item) => <option key={item} value={item}>{TEXT_EFFECT_LABELS[item]}</option>)}
           </select>
         </label>
         <button type="submit" data-character-field="true" style={{ ...buttonStyle, gridColumn: 3, gridRow: 1 }}>OK</button>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: 1, gridRow: 2 }}>
-          <span><Mark text="Color" at={0} /></span>
+          <span><Mark text="Color:" at={0} /></span>
           <span aria-hidden style={{ width: 14, height: 14, background: swatch, border: "1px solid #000", flex: "0 0 auto" }} />
           <select name="color" aria-label="Color" accessKey="c" data-character-field="true" value={form.color} onChange={(event) => patch({ color: event.target.value })} style={{ ...inputStyle, width: 88 }}>
             {blank(form.color)}
@@ -104,7 +129,7 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
           </select>
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: 2, gridRow: 2 }}>
-          <span><Mark text="Hatch" at={0} /></span>
+          <span><Mark text="Hatch:" at={0} /></span>
           <select name="hatch" aria-label="Hatch" accessKey="h" data-character-field="true" value={form.hatch} onChange={(event) => patch({ hatch: event.target.value })} style={{ ...inputStyle, width: 88 }}>
             {blank(form.hatch)}
             {CHARACTER_HATCHES.map((item) => <option key={item} value={item}>{item === "none" ? "None" : item[0].toUpperCase() + item.slice(1)}</option>)}
@@ -112,7 +137,7 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
         </label>
         <button type="button" data-character-field="true" onClick={close} style={{ ...buttonStyle, gridColumn: 3, gridRow: 2 }}>Cancel</button>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: "1 / span 2", gridRow: 3 }}>
-          <span style={{ flex: "0 0 auto" }}><Mark text="Latin Font Name" at={0} /></span>
+          <span style={{ flex: "0 0 auto" }}><Mark text="Latin Font Name:" at={0} /></span>
           <select name="latinFont" aria-label="Latin Font Name" accessKey="l" data-character-field="true" value={form.latinFont} onChange={(event) => patch({ latinFont: event.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 0 }}>
             {blank(form.latinFont)}
             {latinFonts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
@@ -120,14 +145,14 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
         </label>
         <button type="button" data-character-field="true" onClick={() => setHelp(true)} style={{ ...buttonStyle, gridColumn: 3, gridRow: 3 }}>Help</button>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: "1 / span 2", gridRow: 4 }}>
-          <span style={{ flex: "0 0 auto" }}><Mark text="Urdu Font Name" at={0} /></span>
+          <span style={{ flex: "0 0 auto" }}><Mark text="Urdu Font Name:" at={0} /></span>
           <select name="urduFont" aria-label="Urdu Font Name" accessKey="u" data-character-field="true" value={form.urduFont} onChange={(event) => patch({ urduFont: event.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 0 }}>
             {blank(form.urduFont)}
             {urduFonts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: 6, gridColumn: "1 / span 2", gridRow: 5 }}>
-          <span><Mark text="Language" at={3} /></span>
+          <span><Mark text="Language:" at={3} /></span>
           <select name="language" aria-label="Language" accessKey="g" data-character-field="true" value={form.language} onChange={(event) => patch({ language: event.target.value })} style={{ ...inputStyle, width: 140 }}>
             {blank(form.language)}
             {CHARACTER_LANGUAGES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
@@ -138,17 +163,17 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
           <MixedBox name="italics" accessKey="i" value={form.italics} onChange={(italics) => patch({ italics })}><Mark text="Italics" at={0} /></MixedBox>
           <MixedBox name="outline" accessKey="o" value={form.outline} onChange={(outline) => patch({ outline })}><Mark text="Outline" at={0} /></MixedBox>
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-            <span><Mark text="Kashida" at={0} /></span>
+            <span><Mark text="Kashida:" at={0} /></span>
             <select name="kashida" aria-label="Kashida" accessKey="k" data-character-field="true" value={form.kashida} onChange={(event) => patch({ kashida: event.target.value })} style={{ ...inputStyle, width: 88 }}>
               {blank(form.kashida)}
               {CHARACTER_KASHIDA.map((item) => <option key={item} value={item}>{item === "none" ? "None" : item[0].toUpperCase() + item.slice(1)}</option>)}
             </select>
           </label>
         </div>
-        <div style={{ gridColumn: "1 / span 3", gridRow: 7, display: "flex", alignItems: "center", gap: 10 }}>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span><Mark text="Spacing" at={1} /></span><input name="spacing" aria-label="Spacing" accessKey="p" data-character-field="true" value={form.spacing} onChange={(event) => patch({ spacing: event.target.value })} style={{ ...inputStyle, width: 52 }} /></label>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span><Mark text="Scaling" at={5} /></span><input name="scaling" aria-label="Scaling" accessKey="n" data-character-field="true" value={form.scaling} onChange={(event) => patch({ scaling: event.target.value })} style={{ ...inputStyle, width: 52 }} /></label>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span><Mark text="Baseline Shift" at={3} /></span><input name="baseline" aria-label="Baseline Shift" accessKey="e" data-character-field="true" value={form.baseline} onChange={(event) => patch({ baseline: event.target.value })} style={{ ...inputStyle, width: 52 }} /></label>
+        <div style={{ gridColumn: "1 / span 3", gridRow: 7, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <SpinField label="Spacing" at={1} name="spacing" accessKey="p" value={form.spacing} suffix="%" step={1} min={-200} max={200} fallback={0} onChange={(spacing) => patch({ spacing })} />
+          <SpinField label="Scaling" at={5} name="scaling" accessKey="n" value={form.scaling} suffix="%" step={1} min={1} max={400} fallback={100} onChange={(scaling) => patch({ scaling })} />
+          <SpinField label="Baseline Shift" at={3} name="baseline" accessKey="e" value={form.baseline} suffix="pt" step={1} min={-96} max={96} fallback={0} onChange={(baseline) => patch({ baseline })} />
         </div>
         <div style={{ gridColumn: "1 / span 3", gridRow: 8 }}>
           <MixedBox name="meem" accessKey="m" value={form.meem} onChange={(meem) => patch({ meem })}><Mark text="Meem" at={0} /></MixedBox>

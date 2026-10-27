@@ -22,7 +22,7 @@ import { quoteEditorFontFamily } from "./fontRegistry";
 import { ParagraphAutoDirection } from "./paragraphDirection";
 import { applyImageFloatDataset, imageFloatsBesideText, imageWrapSize, parseImageAlignment } from "./documentImages";
 import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
-import { hatchDeclarations } from "./characterPreferences";
+import { baselineShiftDeclarations, hatchDeclarations } from "./characterPreferences";
 
 function letterAttr(name: string) {
   return {
@@ -650,11 +650,10 @@ const StudioRunStyle = Extension.create({
             const value = Number(raw);
             return Number.isFinite(value) ? value : null;
           },
-          renderHTML: (attributes: { baselineShift?: number | null }) => (
-            typeof attributes.baselineShift === "number" && attributes.baselineShift !== 0
-              ? { "data-baseline": String(attributes.baselineShift), style: `vertical-align:${attributes.baselineShift}pt` }
-              : {}
-          ),
+          renderHTML: (attributes: { baselineShift?: number | null }) => {
+            const css = baselineShiftDeclarations(attributes.baselineShift);
+            return css ? { "data-baseline": String(attributes.baselineShift), style: css } : {};
+          },
         },
         hatch: {
           default: null,

@@ -97,6 +97,13 @@ export function hatchDeclarations(hatch: unknown): string {
   }
 }
 
+/** Positive shift moves the run up. Relative offset leaves the line box alone. */
+export function baselineShiftDeclarations(shift: unknown): string {
+  if (typeof shift !== "number" || !Number.isFinite(shift) || shift === 0) return "";
+  const top = Math.round(-shift * 1000) / 1000;
+  return `position:relative;top:${top}pt;`;
+}
+
 function percentLabel(value: number): string {
   const n = Math.round(value * 10) / 10;
   return `${n}%`;
@@ -212,7 +219,7 @@ export function characterPatchFromForm(form: CharacterForm, initial: CharacterFo
     }
   }
   if (form.style !== initial.style && form.style) {
-    if (!CHARACTER_STYLES.some((item) => item === form.style)) return { ok: false, field: "style" };
+    if (!CHARACTER_STYLES.some((item) => item === form.style)) return { ok: false, field: "textStyle" };
     patch.textEffect = form.style === "none" ? null : form.style;
   }
   if (form.color !== initial.color && form.color) {
@@ -290,8 +297,7 @@ function paint(attrs: Record<string, unknown>, patch: CharacterPatch, script: Sc
   if (patch.trackingPercent !== undefined) set("trackingPercent", patch.trackingPercent);
   if (patch.charScale !== undefined) {
     set("charScale", patch.charScale);
-    if (script === "latin" || script === "both") set("scalePercent", patch.charScale);
-    if (script === "arabic") set("scalePercent", null);
+    set("scalePercent", patch.charScale);
   }
   if (patch.baselineShift !== undefined) set("baselineShift", patch.baselineShift);
   if (patch.hatch !== undefined) set("hatch", patch.hatch);
@@ -391,7 +397,7 @@ export function characterPdfExtras(attrs: Record<string, unknown> | undefined): 
   const styles: string[] = [];
   const data: string[] = [];
   if (typeof attrs.baselineShift === "number" && attrs.baselineShift !== 0) {
-    styles.push(`vertical-align:${attrs.baselineShift}pt;`);
+    styles.push(baselineShiftDeclarations(attrs.baselineShift));
     data.push(`data-baseline="${attrs.baselineShift}"`);
   }
   const hatch = hatchDeclarations(attrs.hatch);
