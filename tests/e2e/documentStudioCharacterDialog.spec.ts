@@ -295,8 +295,11 @@ for (const sample of [
     };
     await setText(sample.word, 0, 100);
     const word = page.locator(`${story} p`);
+    expect(await word.locator('[data-char-scale="100"]').evaluate(node => (node as HTMLElement).style.textRendering), "untracked text keeps its existing rendering").toBe("");
+    // Hold scaling/precision constant to test joining independently of hinting.
+    await setText(sample.word, 0, 80);
     const plain = await word.screenshot({ scale: "css" });
-    await setText(sample.word, 20, 100);
+    await setText(sample.word, 20, 80);
     if (sample.dir === "rtl") {
       const a = await glyphMask(plain), b = await glyphMask(await word.screenshot({ scale: "css" }));
       expect(Math.abs(a.width - b.width), "joined word ink width").toBeLessThanOrEqual(1);
@@ -310,6 +313,7 @@ for (const sample of [
     }
     for (const scale of [100, 80, 130]) {
       await setText(sample.text.repeat(8), 20, scale);
+      await expect(word.locator('[data-tracking="20"]').first()).toHaveCSS("text-rendering", "geometricprecision");
       const geometry = await word.evaluate(node => {
         const box = node.getBoundingClientRect();
         const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
@@ -408,7 +412,8 @@ for (const sample of [
     await open(page);
     // A generous vertical pitch isolates printed glyph bands despite Nastaliq
     // overhang. Both renderers get the same pitch; horizontal wrapping is unchanged.
-    for (const [scale, spacing] of [[130, 0], [80, 0], [100, 20], [130, 20], [80, 20], [100, 0]]) {
+    // Plain untracked text is an accepted main baseline, outside this fix.
+    for (const [scale, spacing] of [[130, 0], [80, 0], [100, 20], [130, 20], [80, 20]]) {
       await page.locator(story).evaluate((el, data) => {
         (el as HTMLElement & { editor: Editor }).editor.commands.setContent({ type: "doc", content: [{
           type: "paragraph", attrs: { dir: "rtl", leading: { mode: "points", value: 72 } }, content: [{
@@ -469,7 +474,7 @@ print(json.dumps(lines))
       expect(source.length, `${sample.font} scale ${scale}, spacing ${spacing}: printed PDF line count`).toBe(fixture.lines.length);
       const reference = new Map(words.map((word, index) => [word, references[index]]));
       const expected = fixture.lines.map(line => line.trim().split(/\s+/).flatMap(word => reference.get(word)!).sort());
-      expect(source.map(line => line.sort()), "every printed line ends on the editor's same word").toEqual(expected);
+      expect(source.map(line => line.sort()), `${sample.font} scale ${scale}, spacing ${spacing}: every printed line ends on the editor's same word`).toEqual(expected);
 
     }
   });

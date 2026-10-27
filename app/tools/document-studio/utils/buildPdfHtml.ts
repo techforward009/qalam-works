@@ -181,6 +181,9 @@ function runMetrics(attrs: Record<string, unknown> | undefined, latin: boolean, 
   const parts: string[] = [];
   const tracking = attrs.trackingPercent;
   const scale = attrs.scalePercent;
+  // Use the same fractional glyph/space advances as the editor's metric runs.
+  // Native grid-fitting otherwise changes word widths across Chromium versions.
+  if ((typeof tracking === "number" && tracking !== 0) || (typeof scale === "number" && scale !== 100)) parts.push("text-rendering:geometricPrecision;");
   // ProseMirror preserves spaces at wrap boundaries; normal whitespace in the
   // export changes line ends once character spacing is applied.
   if ((typeof tracking === "number" && tracking !== 0) || typeof attrs.charScale === "number") parts.push("white-space:break-spaces;");

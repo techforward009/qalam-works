@@ -122,7 +122,7 @@ export function latinScaleFactor(scale: number): number {
 export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, cache: Map<string, number>): number {
   if (el.textContent?.trim()) return el.getBoundingClientRect().width / (factor * zoom);
   const style = getComputedStyle(el);
-  const values = [style.font, style.letterSpacing, style.wordSpacing, style.fontKerning, style.fontFeatureSettings, style.direction, el.textContent ?? ""];
+  const values = [style.font, style.letterSpacing, style.wordSpacing, style.fontKerning, style.fontFeatureSettings, style.textRendering, style.direction, el.textContent ?? ""];
   const id = JSON.stringify(values);
   const cached = cache.get(id);
   if (cached != null) return cached;
@@ -133,6 +133,7 @@ export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, c
   probe.style.wordSpacing = style.wordSpacing;
   probe.style.fontKerning = style.fontKerning;
   probe.style.fontFeatureSettings = style.fontFeatureSettings;
+  probe.style.textRendering = style.textRendering;
   probe.style.direction = style.direction;
   probe.textContent = el.textContent;
   document.body.append(probe);
@@ -361,7 +362,7 @@ export const LatinScriptRuns = Extension.create({
           renderHTML: (attributes: { trackingPercent?: number | null }) => {
             if (typeof attributes.trackingPercent !== "number") return {};
             if (attributes.trackingPercent === 0) return { "data-tracking": "0" };
-            return { "data-tracking": String(attributes.trackingPercent), style: `word-spacing:${attributes.trackingPercent / 100}em;letter-spacing:0` };
+            return { "data-tracking": String(attributes.trackingPercent), style: `word-spacing:${attributes.trackingPercent / 100}em;letter-spacing:0;text-rendering:geometricPrecision` };
           },
         },
         scalePercent: {
@@ -377,10 +378,12 @@ export const LatinScriptRuns = Extension.create({
             if (attributes.scalePercent === 100) return { "data-scale": "100" };
             const data = { "data-scale": String(attributes.scalePercent) };
             // Character scaling is a real width change on every script, not an LTR isolate.
+            // Match PDF's fractional advances instead of platform grid-fitting.
+            // Scope this to scaled runs; unscaled text keeps its existing style.
             if (typeof attributes.charScale === "number") {
-              return data;
+              return { ...data, style: "text-rendering:geometricPrecision" };
             }
-            return { ...data, dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" };
+            return { ...data, dir: "ltr", style: "unicode-bidi:isolate;direction:ltr;text-rendering:geometricPrecision" };
           },
         },
       },
