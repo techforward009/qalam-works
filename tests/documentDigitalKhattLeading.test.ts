@@ -12,6 +12,11 @@ test("Digital Khatt Auto pitch follows the paragraph's main font in editor and P
     { name: "pure Digital Khatt", content: [dk("بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ ۝ الحمد للّٰه")], pitch: 12 * 1.9 },
     { name: "Mehr with one inline Digital Khatt word", content: [mehr("یہ مہر نستعلیق میں ایک عام اردو پیراگراف ہے۔ "), dk("اللّٰه"), mehr(" باقی عبارت بھی مہر نستعلیق میں اپنی معمول کی سطر بندی رکھتی ہے۔")], pitch: 12 * 1.65 },
     { name: "plain Mehr", content: [mehr("یہ مہر نستعلیق میں ایک عام اردو پیراگراف ہے۔ باقی عبارت بھی اپنی معمول کی سطر بندی رکھتی ہے۔")], pitch: 12 * 1.65 },
+    { name: "unset English font with one Digital Khatt word", content: [mehr("This mostly English paragraph has one short Arabic word: "), dk("اللّٰه")], pitch: 12 * 1.9 },
+    { name: "Arial winner with one Digital Khatt word", content: [{ type: "text", text: "This mostly English paragraph has one short Arabic word: ", marks: [{ type: "textStyle", attrs: { fontFamily: "Arial" } }] }, dk("اللّٰه")], pitch: 12 * 1.9 },
+    { name: "Digital Khatt ayah symbol only", content: [dk("۝")], pitch: 12 * 1.9 },
+    { name: "Digital Khatt harakat only", content: [dk("َُِّٰ")], pitch: 12 * 1.9 },
+    { name: "empty paragraph", content: [], pitch: 12 * 1.65 },
   ];
   const pitches: number[] = [];
   for (const item of cases) {
