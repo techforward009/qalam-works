@@ -165,6 +165,9 @@ function decorations(doc: Node, widths: Map<string, number>) {
       for (const range of scriptRanges(node.text, "latin")) {
         const origin = pos + 1 + offset + range.start;
         const sample = node.text.slice(range.start, range.end);
+        if (scale != null && typeof attrs.charScale === "number") {
+          spans.push(Decoration.inline(origin, origin + sample.length, { dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" }));
+        }
         if (scale == null) {
           spans.push(Decoration.inline(origin, origin + sample.length, latinRunAttrs(explicitLatin, face, null)));
           continue;
@@ -330,12 +333,13 @@ export const LatinScriptRuns = Extension.create({
             const value = Number(raw);
             return Number.isFinite(value) ? value : null;
           },
-          renderHTML: (attributes: { scalePercent?: number | null }) => {
+          renderHTML: (attributes: { scalePercent?: number | null; charScale?: number | null }) => {
             if (typeof attributes.scalePercent !== "number") return {};
             if (attributes.scalePercent === 100) return { "data-scale": "100" };
-            // Only the Latin slice keeps a non-100 scale (Arabic is stripped).
-            // That mark span is the LTR isolate around the word boxes.
-            return { "data-scale": String(attributes.scalePercent), dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" };
+            const data = { "data-scale": String(attributes.scalePercent) };
+            // A stored character scale must not force Urdu into an LTR isolate.
+            if (typeof attributes.charScale === "number") return data;
+            return { ...data, dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" };
           },
         },
       },
@@ -463,7 +467,7 @@ export const LatinScriptRuns = Extension.create({
             if (end <= Math.max(0, min) || start >= max) continue;
             const next: Record<string, unknown> = { ...attrs, latinFontFamily: null };
             if (isLatinFamilyName(next.fontFamily)) next.fontFamily = null;
-            if (scaled) next.scalePercent = null;
+            if (scaled && typeof attrs.charScale !== "number") next.scalePercent = null;
             jobs.push({ from: start, to: end, attrs: next });
           }
         });

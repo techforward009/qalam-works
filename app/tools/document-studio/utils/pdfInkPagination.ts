@@ -170,7 +170,15 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     context.font = style.font;
     context.direction = style.direction as CanvasDirection;
     const range = document.createRange(); range.setStart(node, start); range.setEnd(node, end);
-    return range.getBoundingClientRect().top + context.measureText(node.data.slice(start, end)).fontBoundingBoxAscent;
+    let visualTop = 0;
+    const block = node.parentElement?.closest("p,h1,h2,h3,h4,li");
+    for (let el: HTMLElement | null = node.parentElement; el && el !== block; el = el.parentElement) {
+      const computed = getComputedStyle(el);
+      if (computed.position !== "relative") continue;
+      const top = parseFloat(computed.top);
+      if (Number.isFinite(top)) visualTop += top;
+    }
+    return range.getBoundingClientRect().top - visualTop + context.measureText(node.data.slice(start, end)).fontBoundingBoxAscent;
   };
   const blockSelector = "p,h1,h2,h3,h4,li";
   const documentText = (root: Node) => textNodes(root)

@@ -19,6 +19,7 @@ import {
 } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
 import { textEffectDeclarations, textOutlineDeclarations } from "./inpageToolbar";
+import { characterPdfExtras } from "./characterPreferences";
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
@@ -256,10 +257,11 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
           : "";
         const urduMarker = hasScript(token, "arabic") ? ' data-pdf-urdu="true"' : "";
         const isolate = !scaled && piece.dir !== blockDir;
-        const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, picked.latin, token)}`;
+        const extra = characterPdfExtras(styleMark?.attrs as Record<string, unknown> | undefined);
+        const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}${runMetrics(styleMark?.attrs as Record<string, unknown> | undefined, picked.latin, token)}${extra.style}`;
         const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
         const scaleAttr = scaled ? ` data-pdf-scale="${latinScaleFactor(Number(scale))}"` : "";
-        inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${scaleAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
+        inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${scaleAttr}${extra.attrs}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
         chunk += inner;
       }
       // One LTR isolate around the whole run. A per-token isolate would reverse the words.
