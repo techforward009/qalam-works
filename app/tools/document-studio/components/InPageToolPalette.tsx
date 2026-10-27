@@ -40,24 +40,25 @@ const URDU_TOOL_LABELS: Partial<Record<StudioToolId, string>> = {
 
 const TOOLS: ToolSpec[] = [
   { id: "select", label: "Select", enabled: true, icon: (
-    <OutlineIcon><path d="M8 3V17L11 14L13 19L15 18L13 13H17Z" fill="#000" stroke="none" /></OutlineIcon>
+    <OutlineIcon><path d="M6 2V19L10 15L12 20L15 19L13 14H19Z" fill="#000" stroke="none" /></OutlineIcon>
   ) },
   { id: "text", label: "Text", enabled: true, icon: (
     <OutlineIcon>
       <path d="M3.5 3.5H8.5M6.5 3.5V18.5M3.5 18.5H8.5" />
-      <path d="M13.5 11.5V4.5H15.5V9.5H17.5V7.5H19.5V9.5H21.5V15.5L18.5 19.5H13.5L10.5 15.5L9.5 12.5L11.5 11.5L13.5 13.5M16.5 10.5V13.5M19.5 10.5V13.5" />
+      <path d="M12.5 12.5L10.5 10.5L9.5 11.5L11.5 16.5L14.5 19.5H19.5L22.5 15.5V9.5L21.5 8.5L20.5 9.5V7.5L19.5 6.5L18.5 7.5V5.5L17.5 4.5L16.5 5.5V8.5L15.5 4.5L14.5 3.5L13.5 4.5L14.5 10.5L12.5 8.5L11.5 9.5Z" />
+      <path d="M16.5 8.5V11.5M18.5 7.5V11.5M20.5 9.5V12.5" />
     </OutlineIcon>
   ) },
   { id: "rotate", label: "Rotate", enabled: false, icon: (
     <OutlineIcon><path d="M13.5 5.5C17.5 5.5 19.5 8.5 19.5 11.5C19.5 15.5 17.5 17.5 13.5 17.5C9.5 17.5 7.5 15.5 7.5 12.5M13.5 2.5L10.5 5.5L13.5 8.5" /></OutlineIcon>
   ) },
   { id: "link", label: "Link text", enabled: false, icon: (
-    <OutlineIcon><path d="M13.5 11.5L10.5 8.5H8.5L6.5 10.5V12.5L8.5 14.5H10.5L16.5 8.5H18.5L20.5 10.5V12.5L18.5 14.5H16.5Z" /></OutlineIcon>
+    <OutlineIcon><path d="M13.5 11.5L10.5 8.5H8.5L6.5 10.5V12.5L8.5 14.5H10.5L16.5 8.5H18.5L20.5 10.5V12.5L18.5 14.5H16.5Z" strokeWidth="2.2" /></OutlineIcon>
   ) },
   { id: "unlink", label: "Unlink text", enabled: false, icon: (
     <OutlineIcon>
-      <path d="M6.5 10.5L8.5 8.5H10.5L12.5 10.5V12.5L10.5 14.5H8.5L6.5 12.5ZM14.5 10.5L16.5 8.5H18.5L20.5 10.5V12.5L18.5 14.5H16.5L14.5 12.5Z" />
-      <path d="M7.5 3.5L10.5 6.5M19.5 3.5L16.5 6.5M7.5 19.5L10.5 16.5M19.5 19.5L16.5 16.5" />
+      <path d="M6.5 10.5L8.5 8.5H10.5L12.5 10.5V12.5L10.5 14.5H8.5L6.5 12.5ZM14.5 10.5L16.5 8.5H18.5L20.5 10.5V12.5L18.5 14.5H16.5L14.5 12.5Z" strokeWidth="2.2" />
+      <path d="M7.5 3.5L10.5 6.5M19.5 3.5L16.5 6.5M7.5 19.5L10.5 16.5M19.5 19.5L16.5 16.5" strokeWidth="1.5" />
     </OutlineIcon>
   ) },
   { id: "textbox", label: "Textbox Tool", enabled: true, icon: (
