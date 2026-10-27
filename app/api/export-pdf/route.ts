@@ -23,6 +23,7 @@ import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
+import { restorePdfTextRuns } from "../../tools/document-studio/utils/normalizePdfDocument";
 
 interface ExportPdfRequestBody {
   doc: DocNode;
@@ -47,11 +48,13 @@ export async function POST(request: NextRequest) {
   if (!isValidRequestBody(body)) {
     return NextResponse.json({ error: "Invalid document data / دستاویز کا ڈیٹا غلط ہے۔" }, { status: 400 });
   }
-  const { doc, dir } = body;
+  const { dir } = body;
   const settings = parseDocumentSettings(body.settings);
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
-    preflightPdfSource(doc);
+    preflightPdfSource(body.doc);
+    const doc = restorePdfTextRuns(body.doc);
+    preflightPdfSource(doc, { skipByteLimit: true });
     const resolved = await fontsForDocument(doc, dir, settings.typography);
     const digitalKhatt = resolved.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak");
     if (digitalKhatt && !digitalKhatt.complete) {
