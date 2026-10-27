@@ -114,11 +114,6 @@ export async function POST(request: NextRequest) {
       actualFaces: [...new Set(urduFonts.diagnostics.flatMap(run => run.actualFaces.map(face => face.familyName)))],
       sourceHtmlChromiumExact: true,
     }));
-    if (urduFonts.diagnostics.some(part => part.kind === "naskh-fallback" &&
-      part.actualFaces.some(face => /Noto Naskh Arabic/i.test(face.familyName)))) {
-      if (!fontsUsed.includes("Noto Naskh Arabic")) fontsUsed.push("Noto Naskh Arabic");
-      fontFallbacks.push({ requested: "Digital Khatt Indo-Pak (uncovered glyphs)", used: "Noto Naskh Arabic" });
-    }
     if (urduFonts.fallbackRuns > 0) {
       if (!fontsUsed.includes("Noto Nastaliq Urdu")) fontsUsed.push("Noto Nastaliq Urdu");
       fontFallbacks.push({ requested: "Runtime Urdu font", used: "Noto Nastaliq Urdu" });

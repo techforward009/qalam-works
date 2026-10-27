@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Build the PDF-only Digital Khatt compatibility face (fonttools[woff]).
+
+The editor asset is untouched. Invalid mark-filter references behave differently
+in server Chromium: make their ignore-marks intent explicit. No glyph, cmap,
+advance, lookup rule or Unicode text is replaced.
+"""
+from pathlib import Path
+from fontTools.ttLib import TTFont
+
+ROOT = Path(__file__).resolve().parent.parent
+FONTS = ROOT / "public/fonts"
+SOURCE = FONTS / "DigitalKhattIndoPakQalam.woff2"
+OUTPUT = FONTS / "DigitalKhattIndoPakQalamPdf-v1.woff2"
+NOTICE = (
+    "Qalam Works PDF compatibility derivative: dangling OpenType mark-filter "
+    "references use IgnoreMarks; glyph outlines, cmap aliases, advances and "
+    "lookup rules are unchanged. Editor font is unchanged. SIL OFL 1.1."
+)
+
+
+def main():
+    font = TTFont(SOURCE, recalcTimestamp=False)
+    unchanged = {tag: font.getTableData(tag) for tag in ("glyf", "hmtx", "cmap")}
+    glyph_order = font.getGlyphOrder()
+    sets = getattr(font["GDEF"].table, "MarkGlyphSetsDef", None)
+    count = len(sets.Coverage) if sets else 0
+    repaired = []
+    for tag in ("GSUB", "GPOS"):
+        for index, lookup in enumerate(font[tag].table.LookupList.Lookup):
+            if lookup.LookupFlag & 0x10 and lookup.MarkFilteringSet >= count:
+                repaired.append((tag, index))
+                lookup.LookupFlag = (lookup.LookupFlag & ~0x10) | 0x08
+                del lookup.MarkFilteringSet
+    assert len(repaired) == 12, f"Source font changed; review mark-filter rules: {repaired}"
+    old_notice = font["name"].getDebugName(10) or ""
+    for record in list(font["name"].names):
+        if record.nameID == 10:
+            font["name"].setName(old_notice + " " + NOTICE, 10, record.platformID, record.platEncID, record.langID)
+    font.save(OUTPUT)
+    result = TTFont(OUTPUT, recalcTimestamp=False)
+    assert result.getGlyphOrder() == glyph_order
+    for tag, data in unchanged.items():
+        assert result.getTableData(tag) == data, f"Unexpected {tag} change"
+    (FONTS / "DigitalKhattIndoPakQalamPdf-v1-OFL.txt").write_text(
+        NOTICE + "\n\n" + (FONTS / "DigitalKhattIndoPakQalam-OFL.txt").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    print(f"Repaired {len(repaired)} dangling mark-filter references: {repaired}")
+
+
+if __name__ == "__main__":
+    main()

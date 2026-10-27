@@ -19,7 +19,9 @@ async function loadPublicFontSource(url: string): Promise<string | null> {
     try { filename = decodeURIComponent(filename); } catch { return null; }
     if (!filename || filename.includes("/") || filename.includes("\\") || filename.includes("..")) return null;
     const root = path.join(process.cwd(), "public", "fonts");
-    const local = path.join(root, filename);
+    // PDF-only OpenType compatibility; the editor continues loading the original.
+    const local = path.join(root, filename === "DigitalKhattIndoPakQalam.woff2"
+      ? "DigitalKhattIndoPakQalamPdf-v1.woff2" : filename);
     if (local !== root && !local.startsWith(root + path.sep)) return null;
     return existsSync(local) ? readFileSync(local).toString("base64") : null;
   }
@@ -164,13 +166,6 @@ export async function fontsForDocument(
       faces.push(face);
       names.add(name);
     }
-  }
-  if (needed.some(def => def.id === "digital-khatt-indo-pak")) {
-    // A private CSS alias avoids the registry's fontsource unicode-range subsets.
-    // These are exactly the same complete Naskh bytes used by the editor.
-    const source = readFileSync(path.join(process.cwd(), "public", "fonts", "naskh-400.woff2")).toString("base64");
-    faces.push({ familyName: "Qalam Digital Naskh", regularSources: [source], complete: true,
-      declaredRegular: 1, declaredBold: 0, loadedRegular: 1, loadedBold: 0 });
   }
   // Always preserve the known-good fallback faces for mixed-script PDFs.
   for (const name of ["Noto Nastaliq Urdu", "Inter"]) {

@@ -444,7 +444,7 @@ function classRulesCss(): string {
   // Same registry drives editor, DOCX family names, and PDF face styling.
   // This includes public Vercel Blob faces without hiding them behind a fallback.
   return STUDIO_FONTS.map(font =>
-    `.${font.cssClass} { font-family: ${font.id === "digital-khatt-indo-pak" ? '"Digital Khatt Indo-Pak", "Qalam Digital Naskh", serif' : font.cssStack}; }`
+    `.${font.cssClass} { font-family: ${font.cssStack}; }`
   ).join("\n");
 }
 
@@ -477,7 +477,7 @@ export function buildPdfHtml(
   }
 
   // Noto stays embedded as the Urdu fallback. Mehr is the body face when that document font loaded.
-  const embeddedNames = [...new Set([...ctx.fontsUsed, ...(ctx.fontsUsed.has("Digital Khatt Indo-Pak") ? ["Qalam Digital Naskh"] : []), "Noto Nastaliq Urdu", "Inter"])].filter((n) => available.has(n));
+  const embeddedNames = [...new Set([...ctx.fontsUsed, "Noto Nastaliq Urdu", "Inter"])].filter((n) => available.has(n));
   const faces = fonts.faces.filter(
     (f) => f.complete && embeddedNames.includes(f.familyName)
   );
