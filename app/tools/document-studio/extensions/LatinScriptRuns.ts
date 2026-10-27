@@ -1,5 +1,6 @@
 import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey, type Transaction } from "@tiptap/pm/state";
+import { Plugin, PluginKey, TextSelection, type Transaction } from "@tiptap/pm/state";
+import { AddMarkStep, RemoveMarkStep } from "@tiptap/pm/transform";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorView } from "@tiptap/pm/view";
 import type { Node } from "@tiptap/pm/model";
@@ -94,19 +95,20 @@ export function latinScaleTokens(text: string): Array<{ text: string; start: num
 }
 
 /**
- * scaleX does not change layout width. Each word and each space is its own
- * inline box so the line can break on the spaces and RTL order stays natural.
- * The measured extra width is margin-right on that decoration. 100% omits
- * this entirely. The caret inside a transformed word still follows the
- * unscaled advances.
+ * A word is an inline-block so scaleX actually stretches the glyphs (a plain
+ * inline box ignores transforms). margin-inline-end, measured from the
+ * unscaled offsetWidth, makes the layout slot equal the painted width.
+ * Spaces stay ordinary inline text so the line can break, and only their
+ * gap is scaled. 100% omits this entirely. The mark span around the Latin
+ * run is an LTR isolate, so the atomic word boxes stay in reading order
+ * inside an Urdu paragraph. Urdu never receives this decoration.
  */
 export function latinScaleCss(scale: number, sample = ""): string {
   const factor = scale / 100;
-  // Inline, not inline-block: an atomic box is ordered by the paragraph
-  // direction and would reverse "Hello Qalam" inside Urdu. A space token stays
-  // a wrap opportunity; a word does not break.
-  const wrap = /^\s+$/.test(sample) ? "pre-wrap" : "nowrap";
-  return `display:inline;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline;white-space:${wrap};line-height:inherit`;
+  if (/^\s+$/.test(sample)) {
+    return "display:inline;white-space:pre-wrap;vertical-align:baseline;line-height:inherit";
+  }
+  return `display:inline-block;transform:scaleX(${factor});transform-origin:left center;vertical-align:baseline;white-space:nowrap;line-height:inherit`;
 }
 
 export function latinScaleFactor(scale: number): number {
@@ -171,7 +173,7 @@ function decorations(doc: Node, widths: Map<string, number>) {
           const from = origin + token.start;
           const factor = latinScaleFactor(scale);
           const margin = widths.get(scaleWidthKey(from, factor, token.text));
-          const tokenStyle = `${face};${latinScaleCss(scale, token.text)}${margin == null ? "" : `;margin-right:${margin.toFixed(2)}px`}`;
+          const tokenStyle = `${face};${latinScaleCss(scale, token.text)}${margin == null ? "" : `;margin-inline-end:${margin.toFixed(2)}px`}`;
           spans.push(Decoration.inline(from, origin + token.end, latinRunAttrs(explicitLatin, tokenStyle, scale)));
         }
       }
@@ -188,6 +190,72 @@ function decorations(doc: Node, widths: Map<string, number>) {
     return false;
   });
   return DecorationSet.create(doc, spans);
+}
+
+function scaledWord(el: Element | null): HTMLElement | null {
+  if (!(el instanceof HTMLElement)) return null;
+  const word = el.closest("[data-studio-latin-scale]");
+  if (!(word instanceof HTMLElement)) return null;
+  if (word.style.display !== "inline-block") return null;
+  if (!word.style.transform.includes("scaleX")) return null;
+  return word;
+}
+
+function wordAtPoint(root: HTMLElement, x: number, y: number, target: EventTarget | null): HTMLElement | null {
+  const direct = scaledWord(target instanceof Element ? target : null);
+  if (direct) {
+    const rect = direct.getBoundingClientRect();
+    if (x >= rect.left - 1 && x <= rect.right + 1 && y >= rect.top - 2 && y <= rect.bottom + 2) return direct;
+  }
+  for (const el of root.querySelectorAll<HTMLElement>("[data-studio-latin-scale]")) {
+    if (el.style.display !== "inline-block" || !el.style.transform.includes("scaleX")) continue;
+    const rect = el.getBoundingClientRect();
+    if (x >= rect.left - 0.5 && x <= rect.right + 0.5 && y >= rect.top - 1 && y <= rect.bottom + 1) return el;
+  }
+  return null;
+}
+
+/** Visual fraction across a uniform scaleX, mapped with the unscaled glyph advances. */
+function offsetInWord(el: HTMLElement, clientX: number): number {
+  const textNode = document.createTreeWalker(el, NodeFilter.SHOW_TEXT).nextNode() as Text | null;
+  const text = textNode?.data ?? "";
+  if (!text) return 0;
+  const rect = el.getBoundingClientRect();
+  const fraction = rect.width > 0 ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
+  const style = getComputedStyle(el);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Math.round(fraction * text.length);
+  ctx.font = style.font;
+  const extra = style.letterSpacing.endsWith("px") ? parseFloat(style.letterSpacing) || 0 : 0;
+  let total = 0;
+  const widths: number[] = [];
+  for (let i = 0; i < text.length; i += 1) {
+    const width = ctx.measureText(text[i]).width + (i < text.length - 1 ? extra : 0);
+    widths.push(width);
+    total += width;
+  }
+  if (total <= 0) return Math.round(fraction * text.length);
+  let cursor = 0;
+  const target = fraction * total;
+  for (let i = 0; i < widths.length; i += 1) {
+    if (cursor + widths[i] / 2 >= target) return i;
+    cursor += widths[i];
+  }
+  return text.length;
+}
+
+function posInWord(view: EditorView, el: HTMLElement, clientX: number): number | null {
+  const textNode = document.createTreeWalker(el, NodeFilter.SHOW_TEXT).nextNode() as Text | null;
+  if (!textNode) return null;
+  const offset = Math.max(0, Math.min(textNode.data.length, offsetInWord(el, clientX)));
+  try { return view.posAtDOM(textNode, offset); } catch { return null; }
+}
+
+function posAtClient(view: EditorView, x: number, y: number): number | null {
+  const word = wordAtPoint(view.dom, x, y, null);
+  if (word) return posInWord(view, word, x);
+  return view.posAtCoords({ left: x, top: y })?.pos ?? null;
 }
 
 function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: EditorView }) {
@@ -262,9 +330,13 @@ export const LatinScriptRuns = Extension.create({
             const value = Number(raw);
             return Number.isFinite(value) ? value : null;
           },
-          renderHTML: (attributes: { scalePercent?: number | null }) => (
-            typeof attributes.scalePercent === "number" ? { "data-scale": String(attributes.scalePercent) } : {}
-          ),
+          renderHTML: (attributes: { scalePercent?: number | null }) => {
+            if (typeof attributes.scalePercent !== "number") return {};
+            if (attributes.scalePercent === 100) return { "data-scale": "100" };
+            // Only the Latin slice keeps a non-100 scale (Arabic is stripped).
+            // That mark span is the LTR isolate around the word boxes.
+            return { "data-scale": String(attributes.scalePercent), dir: "ltr", style: "unicode-bidi:isolate;direction:ltr" };
+          },
         },
       },
     }];
@@ -290,8 +362,52 @@ export const LatinScriptRuns = Extension.create({
           observer = new ResizeObserver(schedule);
           observer.observe(editorView.dom);
         }
+        const onFonts = () => schedule();
         document.fonts?.ready?.then(schedule).catch(() => {});
+        document.fonts?.addEventListener?.("loadingdone", onFonts);
         schedule();
+        let drag: { anchor: number } | null = null;
+        const onMove = (event: MouseEvent) => {
+          if (!drag) return;
+          const view = timer.view;
+          const head = posAtClient(view, event.clientX, event.clientY);
+          if (head == null) return;
+          const selection = TextSelection.create(view.state.doc, drag.anchor, head);
+          if (!view.state.selection.eq(selection)) view.dispatch(view.state.tr.setSelection(selection));
+        };
+        const onUp = () => {
+          drag = null;
+          window.removeEventListener("mousemove", onMove);
+          window.removeEventListener("mouseup", onUp);
+        };
+        const onDown = (event: MouseEvent) => {
+          if (event.button !== 0) return;
+          const view = timer.view;
+          const word = wordAtPoint(view.dom, event.clientX, event.clientY, event.target);
+          if (!word) return;
+          const textNode = document.createTreeWalker(word, NodeFilter.SHOW_TEXT).nextNode() as Text | null;
+          if (!textNode) return;
+          event.preventDefault();
+          event.stopPropagation();
+          let from = posInWord(view, word, event.clientX);
+          let to = from;
+          if (event.detail >= 2) {
+            try {
+              from = view.posAtDOM(textNode, 0);
+              to = view.posAtDOM(textNode, textNode.data.length);
+            } catch { /* keep the point */ }
+          }
+          if (from == null) return;
+          const anchor = event.shiftKey ? view.state.selection.anchor : from;
+          const head = event.shiftKey ? from : (to ?? from);
+          const selection = TextSelection.create(view.state.doc, anchor, head);
+          view.dispatch(view.state.tr.setSelection(selection));
+          view.focus();
+          drag = { anchor };
+          window.addEventListener("mousemove", onMove);
+          window.addEventListener("mouseup", onUp);
+        };
+        editorView.dom.addEventListener("mousedown", onDown, true);
         return {
           update(view) {
             timer.view = view;
@@ -301,6 +417,9 @@ export const LatinScriptRuns = Extension.create({
           destroy() {
             if (timer.raf) cancelAnimationFrame(timer.raf);
             observer?.disconnect();
+            document.fonts?.removeEventListener?.("loadingdone", onFonts);
+            editorView.dom.removeEventListener("mousedown", onDown, true);
+            onUp();
           },
         };
       },
@@ -320,6 +439,13 @@ export const LatinScriptRuns = Extension.create({
               min = Math.min(min, later.map(start, -1));
               max = Math.max(max, later.map(end, 1));
             });
+            if (step instanceof AddMarkStep || step instanceof RemoveMarkStep) {
+              const scale = (step.mark.attrs as { scalePercent?: number | null }).scalePercent;
+              if (typeof scale !== "number" || scale === 100) return;
+              touched = true;
+              min = Math.min(min, later.map(step.from, -1));
+              max = Math.max(max, later.map(step.to, 1));
+            }
           });
         }
         if (!touched || max <= min) return null;
@@ -329,13 +455,15 @@ export const LatinScriptRuns = Extension.create({
           const mark = node.marks.find((item) => item.type === type);
           if (!mark) return;
           const attrs = mark.attrs as Record<string, unknown>;
-          if (!attrs.latinFontFamily && !isLatinFamilyName(attrs.fontFamily)) return;
+          const scaled = typeof attrs.scalePercent === "number" && attrs.scalePercent !== 100;
+          if (!attrs.latinFontFamily && !isLatinFamilyName(attrs.fontFamily) && !scaled) return;
           for (const range of scriptRanges(node.text, "arabic")) {
             const start = pos + range.start;
             const end = pos + range.end;
             if (end <= Math.max(0, min) || start >= max) continue;
             const next: Record<string, unknown> = { ...attrs, latinFontFamily: null };
             if (isLatinFamilyName(next.fontFamily)) next.fontFamily = null;
+            if (scaled) next.scalePercent = null;
             jobs.push({ from: start, to: end, attrs: next });
           }
         });

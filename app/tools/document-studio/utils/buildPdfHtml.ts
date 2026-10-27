@@ -238,6 +238,7 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       const scale = styleMark?.attrs?.scalePercent;
       const scaled = picked.latin && typeof scale === "number" && scale !== 100;
       const tokens = scaled ? latinScaleTokens(piece.text).map((token) => token.text) : [piece.text];
+      let chunk = "";
       for (const token of tokens) {
         if (!token) continue;
         let inner = escapeHtml(token);
@@ -259,8 +260,11 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
         const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
         const scaleAttr = scaled ? ` data-pdf-scale="${latinScaleFactor(Number(scale))}"` : "";
         inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${scaleAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
-        html += inner;
+        chunk += inner;
       }
+      // One LTR isolate around the whole run. A per-token isolate would reverse the words.
+      if (scaled && blockDir === "rtl") html += `<span dir="ltr" style="unicode-bidi:isolate">${chunk}</span>`;
+      else html += chunk;
     }
   }
 
@@ -532,7 +536,7 @@ ${classRulesCss()}
 </head>
 <body dir="${dir}">
 ${bodyHtml}
-<script>(function(){function measure(){document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=el.offsetWidth;if(width<=0)return;el.style.marginRight=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
+<script>(function(){function measure(){document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=el.offsetWidth;if(width<=0)return;el.style.marginInlineEnd=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
 </body>
 </html>`;
 

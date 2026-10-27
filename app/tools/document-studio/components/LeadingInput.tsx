@@ -10,6 +10,7 @@ function focusEditor(node: HTMLElement) {
 export function LeadingInput({ value, onChange, ref: forwarded, ...props }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & { ref?: React.Ref<HTMLInputElement>; value: Leading; onChange: (value: Leading, meta?: { focus?: boolean }) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const tabbing = useRef(false);
+  const cancelling = useRef(false);
   const label = formatLeading(value);
   const [text, setText] = useState(label);
   useEffect(() => {
@@ -22,6 +23,7 @@ export function LeadingInput({ value, onChange, ref: forwarded, ...props }: Omit
     else setText(label);
   };
   return <input {...props} ref={(node) => { inputRef.current = node; if (typeof forwarded === "function") forwarded(node); else if (forwarded) forwarded.current = node; }} value={text} onChange={event => setText(event.target.value)} onBlur={event => {
+    if (cancelling.current) { cancelling.current = false; tabbing.current = false; setText(label); return; }
     const next = event.relatedTarget;
     const toolbar = event.currentTarget.closest("[data-studio-toolbar]");
     const inToolbar = next instanceof HTMLElement && !!toolbar?.contains(next);
@@ -32,6 +34,6 @@ export function LeadingInput({ value, onChange, ref: forwarded, ...props }: Omit
   }} onKeyDown={event => {
     if (event.key === "Tab") tabbing.current = true;
     if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); focusEditor(event.currentTarget); }
-    if (event.key === "Escape") { event.preventDefault(); setText(label); focusEditor(event.currentTarget); }
+    if (event.key === "Escape") { event.preventDefault(); cancelling.current = true; setText(label); focusEditor(event.currentTarget); }
   }} />;
 }

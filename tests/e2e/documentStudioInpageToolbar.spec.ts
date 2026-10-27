@@ -182,6 +182,17 @@ test("everyday writing, undo, menus, zoom and pages", async ({ page }) => {
   await tracking.fill("10");
   await tracking.press("Enter");
   await expect(tracking).toHaveValue("10%");
+  await editor.evaluate((element) => {
+    const editorApi = (element as HTMLElement & { editor: { commands: { insertContent: (text: string) => boolean; setTextSelection: (range: { from: number; to: number }) => boolean }; state: { doc: { descendants: (fn: (node: { isText: boolean; text?: string }, pos: number) => void) => void } } } }).editor;
+    editorApi.commands.insertContent(" Hello");
+    let from = -1;
+    editorApi.state.doc.descendants((node, pos) => {
+      if (from >= 0 || !node.isText || !node.text) return;
+      const index = node.text.lastIndexOf("Hello");
+      if (index >= 0) from = pos + index;
+    });
+    if (from >= 0) editorApi.commands.setTextSelection({ from, to: from + 5 });
+  });
   const scale = page.locator("[data-studio-scale]");
   await scale.fill("90");
   await scale.press("Enter");
@@ -215,4 +226,24 @@ test("everyday writing, undo, menus, zoom and pages", async ({ page }) => {
   await page.locator("[data-menu-root='file']").click();
   await page.locator("[data-menu-action='file.new']").click();
   await expect(page.getByLabel("Facing Pages")).toBeEnabled();
+});
+
+test("Escape cancels Leading and Interline gap", async ({ page }) => {
+  await openStudio(page);
+  const editor = page.locator(".ProseMirror");
+  const leading = page.locator("[data-studio-leading]");
+  await expect(leading).toHaveValue("Auto");
+  const before = await editor.evaluate((element) => (element as HTMLElement & { editor: { getAttributes: (name: string) => { leading?: unknown; lineGapPt?: number } } }).editor.getAttributes("paragraph"));
+  await leading.fill("33");
+  await leading.press("Escape");
+  await expect(leading).toHaveValue("Auto");
+  await expect(editor).toBeFocused();
+  await expect.poll(async () => editor.evaluate((element) => (element as HTMLElement & { editor: { getAttributes: (name: string) => { leading?: unknown } } }).editor.getAttributes("paragraph").leading)).toEqual(before.leading ?? null);
+  const gap = page.locator("[data-studio-line-gap]");
+  await expect(gap).toHaveValue("0pt");
+  await gap.fill("33");
+  await gap.press("Escape");
+  await expect(gap).toHaveValue("0pt");
+  await expect(editor).toBeFocused();
+  expect(await editor.evaluate((element) => (element as HTMLElement & { editor: { getAttributes: (name: string) => { lineGapPt?: number } } }).editor.getAttributes("paragraph").lineGapPt ?? 0)).toBe(before.lineGapPt ?? 0);
 });

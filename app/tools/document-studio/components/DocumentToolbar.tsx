@@ -639,6 +639,7 @@ function isLightHex(hex: string): boolean {
 function LineGapField({ editor, value }: { editor: Editor; value: number }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const tabbing = useRef(false);
+  const cancelling = useRef(false);
   const label = `${value}pt`;
   const [text, setText] = useState(label);
   useEffect(() => {
@@ -653,6 +654,7 @@ function LineGapField({ editor, value }: { editor: Editor; value: number }) {
   };
   return <SunkenBox geom="gap" x={122} w={60} h={19}>
     <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => {
+      if (cancelling.current) { cancelling.current = false; tabbing.current = false; setText(label); return; }
       const next = event.relatedTarget;
       const toolbar = event.currentTarget.closest("[data-studio-toolbar]");
       const inToolbar = next instanceof HTMLElement && !!toolbar?.contains(next);
@@ -662,7 +664,7 @@ function LineGapField({ editor, value }: { editor: Editor; value: number }) {
     }} onKeyDown={(event) => {
       if (event.key === "Tab") tabbing.current = true;
       if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
-      if (event.key === "Escape") { event.preventDefault(); setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+      if (event.key === "Escape") { event.preventDefault(); cancelling.current = true; setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
     }} style={EDIT_TEXT} />
   </SunkenBox>;
 }
@@ -1217,10 +1219,11 @@ export default function DocumentToolbar({
           [data-studio-shell] [data-studio-sticky-chrome]{min-width:0 !important;max-width:100% !important;}
           [data-studio-shell] [data-studio-chrome="toolbar"]{min-width:0 !important;width:100% !important;max-width:100% !important;overflow-x:auto !important;overflow-y:hidden !important;touch-action:pan-x !important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;}
           [data-studio-toolbar],[data-studio-toolbar] *{touch-action:pan-x;}
-          [data-studio-toolbar]{height:auto !important;}
-          [data-studio-toolbar] [data-studio-toolbar-row]{height:32px !important;min-height:32px !important;max-height:32px !important;flex-wrap:nowrap !important;overflow:hidden !important;}
-          [data-studio-toolbar] [data-studio-geom],[data-studio-toolbar] [data-studio-geom] > button,[data-studio-toolbar] button,[data-studio-toolbar] select,[data-studio-toolbar] input{min-width:24px !important;min-height:24px !important;max-height:none !important;}
-          [data-studio-toolbar] [data-studio-geom]{height:26px !important;}
+          [data-studio-toolbar]{height:auto !important;min-width:0 !important;width:max-content !important;}
+          [data-studio-toolbar] [data-studio-toolbar-row]{display:flex !important;align-items:center !important;position:relative !important;height:32px !important;min-height:32px !important;max-height:32px !important;width:max-content !important;flex-wrap:nowrap !important;overflow:visible !important;gap:4px !important;padding:0 4px !important;box-sizing:border-box !important;}
+          [data-studio-toolbar] [data-studio-geom]{position:relative !important;left:auto !important;top:auto !important;right:auto !important;margin:0 !important;flex:0 0 auto !important;min-width:24px !important;min-height:24px !important;height:26px !important;max-height:26px !important;}
+          [data-studio-toolbar] [data-studio-geom] > button{position:relative !important;left:auto !important;top:auto !important;width:100% !important;height:26px !important;min-width:24px !important;min-height:24px !important;max-height:26px !important;}
+          [data-studio-toolbar] button[data-studio-geom]{min-width:24px !important;min-height:24px !important;height:26px !important;max-height:26px !important;}
         }`}</style>
         <div aria-hidden="true" data-studio-toolbar-etched="true" className="h-[3px] shrink-0" style={{ background: "linear-gradient(to bottom, #f0f0f0 0 1px, #a0a0a0 1px 2px, #ffffff 2px 3px)" }} />
         <div className="relative h-[21px] shrink-0 overflow-x-auto flex-nowrap" data-studio-toolbar-row="format" style={rowStyle}>

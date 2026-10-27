@@ -357,7 +357,7 @@ describe("InPage toolbar values", () => {
         sawArabic = true;
         expect(String(attrs.fontFamily ?? "")).toContain("Gulzar");
         expect(attrs.trackingPercent).toBe(15);
-        expect(attrs.scalePercent).toBe(80);
+        expect(attrs.scalePercent ?? null).toBeNull();
       }
     });
     expect(sawLatin && sawArabic).toBe(true);
@@ -398,10 +398,17 @@ describe("InPage toolbar values", () => {
     const runs = [...wrapped.view.dom.querySelectorAll("[data-studio-latin-scale]")];
     expect(runs.map((run) => run.textContent)).toEqual(["Hello", " ", "Qalam", " ", "2026"]);
     for (const run of runs) {
-      expect(run.getAttribute("style")).toContain("scaleX(4)");
+      const word = !/^\s+$/.test(run.textContent ?? "");
       expect(run.getAttribute("style")).not.toContain("margin-inline-end");
-      expect((run as HTMLElement).style.display).toBe("inline");
+      if (word) {
+        expect(run.getAttribute("style")).toContain("scaleX(4)");
+        expect((run as HTMLElement).style.display).toBe("inline-block");
+      } else {
+        expect(run.getAttribute("style") ?? "").not.toContain("scaleX");
+        expect((run as HTMLElement).style.display).toBe("inline");
+      }
     }
+    expect(runs.find((run) => run.textContent === "Hello")?.closest("[dir='ltr']")?.getAttribute("style") ?? "").toContain("unicode-bidi");
   });
 
   it("shows Times for a legacy Latin run", () => {
@@ -446,6 +453,37 @@ describe("InPage toolbar values", () => {
     gap.focus();
     fireEvent.blur(gap, { relatedTarget: urdu });
     expect(document.activeElement).toBe(urdu);
+  });
+
+  it("Escape on Leading and Interline gap restores the value and leaves the paragraph", () => {
+    const editor = make("<p>Hello</p>");
+    const shell = document.createElement("div");
+    shell.setAttribute("data-studio-shell", "true");
+    document.body.appendChild(shell);
+    render(<DocumentToolbar editor={editor} dir="rtl" setDir={() => {}} isUr={false} />, { container: shell });
+    const pm = document.createElement("div");
+    pm.className = "ProseMirror";
+    pm.tabIndex = 0;
+    shell.appendChild(pm);
+    const leading = shell.querySelector("[data-studio-leading]") as HTMLInputElement;
+    const beforeLeading = leading.value;
+    const beforeAttr = editor.getAttributes("paragraph").leading;
+    leading.focus();
+    fireEvent.change(leading, { target: { value: "33" } });
+    fireEvent.keyDown(leading, { key: "Escape" });
+    expect(leading.value).toBe(beforeLeading);
+    expect(editor.getAttributes("paragraph").leading).toEqual(beforeAttr);
+    expect(document.activeElement).toBe(pm);
+    const gap = shell.querySelector("[data-studio-line-gap]") as HTMLInputElement;
+    const beforeGap = gap.value;
+    const beforeGapAttr = editor.getAttributes("paragraph").lineGapPt ?? 0;
+    gap.focus();
+    fireEvent.change(gap, { target: { value: "33" } });
+    fireEvent.keyDown(gap, { key: "Escape" });
+    expect(gap.value).toBe(beforeGap);
+    expect(editor.getAttributes("paragraph").lineGapPt ?? 0).toBe(beforeGapAttr);
+    expect(document.activeElement).toBe(pm);
+    shell.remove();
   });
 });
 
