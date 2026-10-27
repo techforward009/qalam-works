@@ -221,13 +221,47 @@ function patchTextRanges(
   if (!type) return;
   const { from, to } = state.selection;
   const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
+  // Carry the Urdu face across separators between Arabic words, including when
+  // the separators and words have different existing marks.
+  const separators = new Set<number>();
+  if (script === "arabic") {
+    const chars: { pos: number; value: string }[] = [];
+    state.doc.nodesBetween(from, to, (node, pos) => {
+      if (!node.isText || !node.text) return;
+      for (let index = Math.max(0, from - pos); index < Math.min(node.text.length, to - pos); index += 1) {
+        chars.push({ pos: pos + index, value: node.text[index] });
+      }
+    });
+    const arabic = (value: string) => /\p{Script_Extensions=Arabic}/u.test(value);
+    const neutral = (value: string) => /[\s\p{P}\p{M}]/u.test(value) && !arabic(value);
+    for (let start = 0; start < chars.length;) {
+      if (!neutral(chars[start].value)) { start += 1; continue; }
+      let end = start + 1;
+      while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1 && neutral(chars[end].value)) end += 1;
+      if (start > 0 && end < chars.length && chars[start - 1].pos + 1 === chars[start].pos &&
+          chars[end - 1].pos + 1 === chars[end].pos && arabic(chars[start - 1].value) && arabic(chars[end].value)) {
+        for (let index = start; index < end; index += 1) separators.add(chars[index].pos);
+      }
+      start = end;
+    }
+  }
   state.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isText || !node.text) return;
     const localFrom = Math.max(0, from - pos);
     const localTo = Math.min(node.text.length, to - pos);
     const slice = node.text.slice(localFrom, localTo);
     const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
-    for (const range of scriptRanges(slice, script)) {
+    const selected = new Set<number>();
+    for (const range of scriptRanges(slice, script)) for (let i = range.start; i < range.end; i += 1) selected.add(i);
+    for (let i = 0; i < slice.length; i += 1) if (separators.has(pos + localFrom + i)) selected.add(i);
+    const ranges: { start: number; end: number }[] = [];
+    for (let i = 0; i < slice.length; i += 1) {
+      if (!selected.has(i)) continue;
+      const start = i;
+      while (i + 1 < slice.length && selected.has(i + 1)) i += 1;
+      ranges.push({ start, end: i + 1 });
+    }
+    for (const range of ranges) {
       const start = pos + localFrom + range.start;
       const end = pos + localFrom + range.end;
       if (end <= start) continue;
