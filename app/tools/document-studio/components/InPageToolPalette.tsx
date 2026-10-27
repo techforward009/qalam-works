@@ -45,19 +45,19 @@ const TOOLS: ToolSpec[] = [
   { id: "text", label: "Text", enabled: true, icon: (
     <OutlineIcon>
       <path d="M3.5 3.5H8.5M6.5 3.5V18.5M3.5 18.5H8.5" />
-      <path d="M13.5 19.5L10.5 16.5L9.5 12.5L10.5 11.5L12.5 13.5L11.5 7.5L12.5 6.5L13.5 7.5L14.5 10.5L13.5 4.5L14.5 3.5L15.5 4.5L16.5 9.5V3.5H17.5L18.5 4.5V9.5L19.5 5.5H20.5L21.5 6.5L20.5 10.5L22.5 8.5L23.5 9.5L22.5 15.5L19.5 19.5Z" />
-      <path d="M14.5 10.5L15.5 12.5M16.5 9.5V12.5M18.5 9.5V12.5M20.5 10.5L19.5 13.5" />
+      <path d="M13.5 19.5L10.5 16.5L9.5 12.5L10.5 11.5L12.5 13.5L11.5 7.5L12.5 6.5L13.5 7.5L14.5 10.5L13.5 4.5L14.5 3.5L15.5 4.5L16.5 9.5L16.5 3.5H17.5L18.5 4.5V9.5L20.5 5.5H21.5L22.5 6.5L20.5 11.5L22.5 9.5L23.5 10.5L22.5 15.5L19.5 19.5Z" />
+      <path d="M15.5 10.5L16.5 12.5M18.5 10.5V12.5" />
     </OutlineIcon>
   ) },
   { id: "rotate", label: "Rotate", enabled: false, icon: (
     <OutlineIcon><path d="M13.5 5.5C17.5 5.5 19.5 8.5 19.5 11.5C19.5 15.5 17.5 17.5 13.5 17.5C9.5 17.5 7.5 15.5 7.5 12.5M13.5 2.5L10.5 5.5L13.5 8.5" /></OutlineIcon>
   ) },
   { id: "link", label: "Link text", enabled: false, icon: (
-    <OutlineIcon><path d="M13.5 11.5L10.5 8.5H8.5L6.5 10.5V12.5L8.5 14.5H10.5L16.5 8.5H18.5L20.5 10.5V12.5L18.5 14.5H16.5Z" strokeWidth="3.5" strokeLinejoin="round" /></OutlineIcon>
+    <OutlineIcon><path d="M13.5 11.5L10.5 8.5H8.5L6.5 10.5V12.5L8.5 14.5H10.5L16.5 8.5H18.5L20.5 10.5V12.5L18.5 14.5H16.5Z" strokeWidth="2.7" strokeLinejoin="round" /></OutlineIcon>
   ) },
   { id: "unlink", label: "Unlink text", enabled: false, icon: (
     <OutlineIcon>
-      <path d="M5.5 10.5L7.5 8.5H9.5L11.5 10.5V12.5L9.5 14.5H7.5L5.5 12.5ZM15.5 10.5L17.5 8.5H19.5L21.5 10.5V12.5L19.5 14.5H17.5L15.5 12.5Z" strokeWidth="3.5" strokeLinejoin="round" />
+      <path d="M5.5 10.5L7.5 8.5H9.5L11.5 10.5V12.5L9.5 14.5H7.5L5.5 12.5ZM15.5 10.5L17.5 8.5H19.5L21.5 10.5V12.5L19.5 14.5H17.5L15.5 12.5Z" strokeWidth="2.7" strokeLinejoin="round" />
       <path d="M6.5 3.5L9.5 5.5M20.5 3.5L17.5 5.5M6.5 19.5L9.5 17.5M20.5 19.5L17.5 17.5" strokeWidth="2" />
     </OutlineIcon>
   ) },
