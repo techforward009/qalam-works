@@ -331,7 +331,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         marker.style.display = "none";
         br.replaceWith(marker);
       });
-      for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "text-align-last", "letter-spacing", "word-spacing", "text-decoration", "-webkit-text-stroke", "-webkit-text-fill-color"]) element.style.setProperty(property, style.getPropertyValue(property));
+      for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "text-align-last", "letter-spacing", "word-spacing", "text-decoration", "-webkit-text-stroke"]) element.style.setProperty(property, style.getPropertyValue(property));
       const box = lineBox(group);
       let frame = { left: rect.left - origin.left, width: rect.width };
       let besideFloat = false;

@@ -2,7 +2,7 @@ import type { DocNode } from "./extractPlainText";
 import { documentImagePayloadBytes, MAX_DOCUMENT_IMAGE_TOTAL_BYTES } from "./documentImages";
 
 export const PDF_SOURCE_LIMITS = {
-  bytes: 96 * 1024,
+  bytes: 1024 * 1024,
   codePoints: 60_000,
   nodes: 2_500,
   textNodes: 1_200,
@@ -101,7 +101,7 @@ function withoutImagePayloads(root: DocNode): DocNode {
 }
 
 /** Cheap request-side bound that runs before fonts, Chromium, layout, or raster work. */
-export function preflightPdfSource(doc: DocNode): PdfSourceComplexity {
+export function preflightPdfSource(doc: DocNode, options?: { skipByteLimit?: boolean }): PdfSourceComplexity {
   let codePoints = 0;
   let nodes = 0;
   let textNodes = 0;
@@ -136,6 +136,6 @@ export function preflightPdfSource(doc: DocNode): PdfSourceComplexity {
   if (imageBytes > MAX_DOCUMENT_IMAGE_TOTAL_BYTES) {
     throw new Error(`PDF source exceeds the supported ${MAX_DOCUMENT_IMAGE_TOTAL_BYTES}-byte image payload; export blocked`);
   }
-  const bytes = measureJsonUtf8Bytes(withoutImagePayloads(doc), PDF_SOURCE_LIMITS.bytes);
+  const bytes = measureJsonUtf8Bytes(withoutImagePayloads(doc), options?.skipByteLimit ? Number.POSITIVE_INFINITY : PDF_SOURCE_LIMITS.bytes);
   return { bytes, codePoints, nodes, textNodes, maxTextNodeCodePoints };
 }

@@ -9,6 +9,7 @@ import puppeteer from "puppeteer-core";
 import { NextRequest } from "next/server";
 import { PDFDocument, PDFDict, PDFName } from "pdf-lib";
 import { POST } from "../app/api/export-pdf/route";
+import { PDF_SOURCE_LIMITS } from "../app/tools/document-studio/utils/pdfSourcePreflight";
 import { defaultDocumentSettings, FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS } from "../app/tools/document-studio/utils/documentSettings";
 import { resolvePageLayout } from "../app/tools/document-studio/utils/pageLayout";
 
@@ -321,13 +322,13 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       return response;
     };
     currentCase = "source-byte-guard";
-    const byteHeavyDoc = { type: "doc", content: Array.from({ length: 3 }, () => ({ type: "paragraph", content: [{ type: "text", text: "ی".repeat(18_000) }] })) };
+    const byteHeavyDoc = { type: "doc", attrs: { padding: "x".repeat(PDF_SOURCE_LIMITS.bytes) }, content: [{ type: "paragraph", content: [{ type: "text", text: "ی" }] }] };
     const byteLaunchesBefore = browserLaunchCount, byteScreenshotsBefore = screenshotCount;
     const byteResponse = await POST(new NextRequest("http://localhost/api/export-pdf", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc: byteHeavyDoc, dir: "rtl", settings: defaultDocumentSettings() }),
     }));
     expect(byteResponse.status).toBe(500);
-    await expect(byteResponse.json()).resolves.toMatchObject({ error: expect.stringContaining("98304-byte limit") });
+    await expect(byteResponse.json()).resolves.toMatchObject({ error: expect.stringContaining(`${PDF_SOURCE_LIMITS.bytes}-byte limit`) });
     expect(browserLaunchCount).toBe(byteLaunchesBefore);
     expect(screenshotCount).toBe(byteScreenshotsBefore);
     await expect((await request("source-single-node-guard", "x".repeat(20_001))).json())
