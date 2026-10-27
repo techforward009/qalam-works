@@ -11,6 +11,7 @@ import { useEditor, type Editor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
+import { normalizePdfDocument } from "../utils/normalizePdfDocument";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import {
@@ -1424,7 +1425,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       const response = await fetch("/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc: editor.getJSON(), dir, settings: documentSettings }),
+        body: JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings }),
       });
 
       if (!response.ok) {
