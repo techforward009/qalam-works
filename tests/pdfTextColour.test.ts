@@ -5,7 +5,7 @@ import { join } from "node:path";
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 import sharp from "sharp";
-import { NextRequest } from "next/server";
+import { PdfExportTestRequest as NextRequest } from "./helpers/pdfExportRequest";
 import { POST } from "../app/api/export-pdf/route";
 import { defaultDocumentSettings, withStudioOpeningMargins } from "../app/tools/document-studio/utils/documentSettings";
 

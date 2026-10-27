@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
-import { NextRequest } from "next/server";
+import { PdfExportTestRequest as NextRequest } from "./helpers/pdfExportRequest";
 import { PDFDocument, PDFDict, PDFName } from "pdf-lib";
 import { POST } from "../app/api/export-pdf/route";
 
