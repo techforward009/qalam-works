@@ -1,5 +1,6 @@
 "use client";
 
+import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
 import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
@@ -281,6 +282,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [canvasTool, setCanvasTool] = useState<StudioToolId>("text");
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
+  const formattingSafety = useRef<ReturnType<typeof installFormattingSafety> | null>(null);
+  const [formattingNotice, setFormattingNotice] = useState(0);
   const [characterOpen,setCharacterOpen] = useState(false);
   const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
@@ -604,6 +607,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   useEffect(() => {
     if (!editor) return;
+    const guard = installFormattingSafety(editor, () => setFormattingNotice(n => n + 1), () => setFormattingNotice(0));
+    formattingSafety.current = guard;
+    return () => { guard.dispose(); formattingSafety.current = null; };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
     const syncEmpty = () => {
       const empty = editor.isEmpty;
       setIsEditorEmpty(empty);
@@ -724,6 +734,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+    formattingSafety.current?.documentChanged();
+    setFormattingNotice(0);
+    setCharacterOpen(false); setParagraphOpen(false);
     setOpenDocuments(previous => previous.some(doc => doc.id === record.id)
       ? previous.map(doc => doc.id === record.id ? { id: record.id, title: record.title } : doc)
       : [...previous, { id: record.id, title: record.title }]);
@@ -1803,6 +1816,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const handleMenuAction = (id: MenuActionId) => {
     if (transitionRef.current) return;
+    if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
     if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
     if (id === "window.page") {
       // Activate the existing Page workspace, not the Single Pages view mode.
@@ -2005,6 +2019,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   return (
     <div data-studio-root="true" inert={switchingDocument || undefined} aria-busy={switchingDocument || undefined} className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+      {formattingNotice > 0 ? <div role="alert" data-studio-formatting-notice style={{ position:"fixed", bottom:30, left:32, right:24, zIndex:10000, padding:8, background:"#ffffe1", color:"#000", border:"1px solid #808080", fontSize:13 }} dir={uiLanguage === "ur" ? "rtl" : "ltr"}>{formattingSafetyMessage(uiLanguage === "ur")} <button type="button" aria-label="Dismiss formatting message" onClick={()=>{ formattingSafety.current?.invalidate(); setFormattingNotice(0); }}>×</button></div> : null}
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
@@ -2044,7 +2059,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
-        onCharacter={()=>setCharacterOpen(true)} onParagraph={()=>setParagraphOpen(true)} />
+        onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
       {imageMenu && editor ? (

@@ -1,3 +1,4 @@
+import { CONTENT_REPLACEMENT } from "./formattingSafety";
 import type { Leading } from "./leading";
 /**
  * Shared Document Studio editor commands.
@@ -56,6 +57,7 @@ export function setEditorContent(
     .chain()
     .command(({ tr }) => {
       tr.setMeta("addToHistory", origin === "user");
+      tr.setMeta(CONTENT_REPLACEMENT, true);
       return true;
     })
     .setContent(content)
