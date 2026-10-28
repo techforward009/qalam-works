@@ -15,10 +15,10 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   let owner: 'story' | 'frame' | 'none' = 'story';
   let input: HTMLTextAreaElement | null = null;
   const invalidate = () => { owner = 'none'; input = null; };
-  // Replacing a known story keeps that editing context usable. A former box
-  // or ambiguous target stays closed until explicit new story interaction.
-  // No old story bookmark is retained by this guard.
-  const documentChanged = () => { if (owner !== 'story') invalidate(); input = null; };
+  // A document replacement or switch invalidates *every* previous target,
+  // including story selections. Programmatic focus in the new document must
+  // not authorize formatting until the user explicitly selects/edits there.
+  const documentChanged = () => invalidate();
   const canFormat = () => {
     if (owner === 'frame' && (!input?.isConnected || input.readOnly)) invalidate();
     if (owner === 'story') return true;

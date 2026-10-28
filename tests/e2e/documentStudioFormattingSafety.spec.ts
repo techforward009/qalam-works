@@ -95,3 +95,25 @@ test('an unsupported size edit cannot be committed to the story on blur', async 
   await story(page).click();
   expect(await snapshot(page)).toEqual(before);
 });
+test('a story selection in document A cannot format document B until explicitly reselected', async ({ page }) => {
+  // Start with a real main-story selection (rather than a text-box selection).
+  await story(page).click(); await page.keyboard.press('Control+a');
+  await page.locator('[data-menu-root="file"]').click(); await page.locator('[data-menu-action="file.new"]').click();
+  await page.getByRole('dialog', { name: 'New Document', exact: true }).getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(frame(page)).toHaveCount(0);
+  const fresh = await snapshot(page);
+  await page.getByRole('combobox', { name: 'Urdu font', exact: true }).selectOption({ label: 'Digital Khatt Indo-Pak' });
+  expect(await snapshot(page)).toEqual(fresh);
+  await expect(page.locator('[data-studio-formatting-notice]')).toContainText(message);
+  const marks = await story(page).evaluate(el => (el as HTMLElement & { editor: Editor }).editor.state.storedMarks);
+  expect(marks).toBeNull();
+
+  // A fresh explicit interaction with B restores ordinary formatting.
+  await story(page).click();
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type('New story text');
+  await page.keyboard.press('Control+a');
+  const selectedB = await snapshot(page);
+  await page.getByRole('button', { name: 'Bold', exact: true }).click();
+  expect(await snapshot(page)).not.toEqual(selectedB);
+});

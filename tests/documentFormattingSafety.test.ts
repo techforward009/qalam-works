@@ -61,11 +61,27 @@ describe('formatting target safety', () => {
     const { claim, before } = setup(); claim(); const second = document.createElement('textarea'); second.dataset.studioTextFrame = ''; document.querySelector('[data-studio-scroller]')!.append(second); second.focus();
     editor.commands.toggleBold(); expect(editor.getJSON()).toEqual(before);
   });
-  it('keeps a known story usable after normal document replacement', () => {
-    setup();
+  it('invalidates a previously selected story after replacement until new user interaction', () => {
+    const { reject } = setup();
     editor.chain().command(({ tr }) => { tr.setMeta(CONTENT_REPLACEMENT, true); return true; }).setContent('<p>New story</p>').run();
+    const fresh = editor.getJSON();
     editor.commands.selectAll(); editor.commands.toggleBold();
-    expect(editor.getJSON().content?.[0].content?.[0].marks?.[0].type).toBe('bold');
+    expect(editor.getJSON()).toEqual(fresh);
+    expect(reject).toHaveBeenCalled();
+    editor.view.dom.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    editor.commands.selectAll(); editor.commands.toggleBold();
+    expect(editor.getJSON()).not.toEqual(fresh);
+  });
+  it('invalidates a story target when switching records without replacing editor content', () => {
+    const { guard, before, reject } = setup();
+    guard.documentChanged();
+    editor.commands.focus(); // programmatic focus is not a new user selection
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).toEqual(before);
+    expect(reject).toHaveBeenCalled();
+    editor.view.dom.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).not.toEqual(before);
   });
   it('blocks input before a toolbar field can retain a deferred blur commit', () => {
     const { claim } = setup(); claim();
