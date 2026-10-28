@@ -1,5 +1,7 @@
 "use client";
 
+import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
+import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
 import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
 import { migrateDocumentLeading } from "../utils/leading";
 
@@ -123,6 +125,7 @@ import {
   loadRulerUnit,
   saveRulerUnit,
   printDocumentStudio,
+  printDocumentStudioAsync,
   EDITOR_SPELLCHECK_ATTR,
   type DocumentViewMode,
   type DocumentZoom,
@@ -393,6 +396,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfRecoveryAvailable, setPdfRecoveryAvailable] = useState(false);
+  const pdfExportInFlight = useRef(false);
+  const browserPrintPending = useRef(false);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -1465,6 +1471,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     }
   };
 
+  const handleRecoveryPrint = async () => {
+    // Keep the guard across dialog close/reopen while fonts or native printing
+    // are pending. afterprint signals completion, not that a PDF was saved.
+    if (browserPrintPending.current) return;
+    browserPrintPending.current = true;
+    const finished = () => { browserPrintPending.current = false; };
+    window.addEventListener("afterprint", finished, { once: true });
+    try { await printDocumentStudioAsync(); }
+    catch (error) {
+      window.removeEventListener("afterprint", finished);
+      browserPrintPending.current = false;
+      throw error;
+    }
+  };
+
   // v1 — visual/print quality only, no searchable text layer (see
   // docs/KNOWN-LIMITATIONS.md's "PDF Export" section for the full
   // investigation behind that decision). Sends structured DocNode JSON
@@ -1473,19 +1494,31 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   // the server's own template in full control of what markup ever exists.
   const handleDownloadPdf = async () => {
     trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
-    if (!editor) return;
+    if (!editor || pdfExportInFlight.current) return;
+    pdfExportInFlight.current = true;
     setPdfError(null);
+    setPdfRecoveryAvailable(false);
     setPdfSummary(null);
     setIsExportingPdf(true);
     try {
-      const response = await fetch("/api/export-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings }),
-      });
+      const body = JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings });
+      let response: Response;
+      try {
+        response = await fetch("/api/export-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
+      } catch {
+        // Rejected fetch is a connection failure; validation above remains in
+        // the outer error path. Never retry the server automatically.
+        setPdfRecoveryAvailable(true);
+        return;
+      }
 
       if (!response.ok) {
-        setPdfError(await readPdfExportError(response));
+        if (isRecoverablePdfStatus(response.status)) setPdfRecoveryAvailable(true);
+        else setPdfError(await readPdfExportError(response));
         return;
       }
 
@@ -1494,7 +1527,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       const fontsUsedHeader = response.headers.get("X-Pdf-Fonts-Used");
       const fontFallbacksHeader = response.headers.get("X-Pdf-Font-Fallbacks");
 
-      const blob = await response.blob();
+      let blob: Blob;
+      try { blob = await response.blob(); }
+      catch { setPdfRecoveryAvailable(true); return; }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1528,6 +1563,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       console.error("Failed to generate PDF:", err);
       setPdfError(GENERIC_PDF_EXPORT_ERROR);
     } finally {
+      pdfExportInFlight.current = false;
       setIsExportingPdf(false);
     }
   };
@@ -2256,11 +2292,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
               {uploadError}
             </div>
           )}
-          {pdfError && (
-            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-              {pdfError}
-            </div>
-          )}
+          {(pdfRecoveryAvailable || pdfError) ? <StudioPdfRecoveryDialog
+            isUr={isUr} recoverable={pdfRecoveryAvailable} error={pdfError}
+            onClose={() => { setPdfRecoveryAvailable(false); setPdfError(null); }}
+            onPrint={handleRecoveryPrint}
+          /> : null}
           {docxImportNotice && (
             <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
               <span>
