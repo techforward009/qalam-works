@@ -126,7 +126,7 @@ describe("document shell helpers", () => {
 });
 
 describe("document menus", () => {
-  it("exposes File Edit View Format Insert Utilities Window Help", () => {
+  it("exposes File Edit View Text Page Utilities Window Help", () => {
     expect(DOCUMENT_MENU_BAR.map((m) => m.id)).toEqual([
       "file",
       "edit",
@@ -284,14 +284,11 @@ describe("document menus", () => {
     }
   });
 
-  it("keeps Insert limited to currently implemented actions", () => {
+  it("keeps Page actions wired while future items are non-dispatchable", () => {
     const insert = DOCUMENT_MENU_BAR.find((m) => m.id === "insert");
     expect(collectMenuActionIds(insert?.items ?? [])).toEqual([
-      "insert.link", "insert.table", "insert.image",
-      "insert.pageBreak", "insert.sectionBreakNextPage", "insert.sectionBreakContinuous",
-      "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
-      "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn", "table.toggleHeaderRow",
-      "table.delete", "insert.example",
+      "insert.pageBreak", "insert.image", "insert.table", "insert.link",
+      "insert.sectionBreakNextPage", "insert.sectionBreakContinuous", "insert.example",
     ]);
   });
 
@@ -300,7 +297,7 @@ describe("document menus", () => {
     const subIds = (format?.items ?? [])
       .filter((item) => item.type === "submenu")
       .map((item) => item.id);
-    expect(subIds).toEqual(["format.text", "format.style", "format.align", "format.lists", "format.spacing", "format.image"]);
+    expect(subIds).toEqual(["format.image", "insert.tableActions", "format.text", "format.style", "format.align", "format.lists", "format.spacing"]);
   });
 
   it("places nested submenus beside the parent and flips when space is tight", () => {

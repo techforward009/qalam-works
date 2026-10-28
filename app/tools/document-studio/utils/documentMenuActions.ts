@@ -28,6 +28,10 @@ import { zoomFromMenuAction } from "./documentView";
 export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
 
 export type DocumentMenuHandlers = {
+  save?: () => void;
+  character?: () => void;
+  paragraph?: () => void;
+  textAction?: (action: "cut" | "copy" | "paste" | "clear") => void;
   newDocument: () => void;
   openLibrary: () => void;
   upload: () => void;
@@ -110,6 +114,13 @@ export function dispatchDocumentMenuAction(
   }
 
   switch (id) {
+    case "file.save": handlers.save?.(); return;
+    case "format.character": handlers.character?.(); return;
+    case "format.paragraph": handlers.paragraph?.(); return;
+    case "edit.cut": handlers.textAction?.("cut"); return;
+    case "edit.copy": handlers.textAction?.("copy"); return;
+    case "edit.paste": handlers.textAction?.("paste"); return;
+    case "edit.clear": handlers.textAction?.("clear"); return;
     case "file.new":
       handlers.newDocument();
       return;

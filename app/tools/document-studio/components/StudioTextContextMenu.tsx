@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {useEffect,useImperativeHandle,useLayoutEffect,useRef,useState,type Ref} from 'react';
 import {createPortal} from 'react-dom';
 import {studioOverlayRoot} from '../utils/inpageToolbar';
 import type {Editor} from '@tiptap/react';
@@ -10,7 +10,8 @@ import {TEXT_CONTEXT_ITEMS,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition
 
 const itemStyle:React.CSSProperties={height:24,minHeight:24,width:'100%',padding:'0 24px',textAlign:'left',fontFamily:'Segoe UI, Tahoma, sans-serif',fontSize:12,color:'#000',whiteSpace:'nowrap'};
 function enabledItems(menu:HTMLElement|null){return menu?[...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')]:[];}
-export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void}){
+export type StudioTextActions = { run: (id: "cut" | "copy" | "paste" | "clear") => void };
+export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;actionRef?:Ref<StudioTextActions>}){
  const [menu,setMenu]=useState<{x:number;y:number;hasSelection:boolean}|null>(null),[zoom,setZoom]=useState(false),[message,setMessage]=useState<string|null>(null);
  const root=useRef<HTMLDivElement>(null),submenu=useRef<HTMLDivElement>(null),zoomTrigger=useRef<HTMLButtonElement>(null),bookmark=useRef<SelectionBookmark|null>(null);
  const [position,setPosition]=useState({left:0,top:0}),[subPosition,setSubPosition]=useState({left:0,top:0});
@@ -70,6 +71,9 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
    }
   }catch{setMessage(id==='paste'?'Clipboard access was denied or is unavailable. Close this message and use Ctrl+V to paste.':`Clipboard access was denied or is unavailable. Nothing was ${id==='cut'?'cut':'copied'}. Close this message and use ${id==='cut'?'Ctrl+X':'Ctrl+C'}.`);}
  };
+ // The top menu uses these same clipboard actions and permission feedback,
+ // taking the current selection rather than an old context-menu bookmark.
+ useImperativeHandle(actionRef,()=>({run(id){bookmark.current=editor?.state.selection.getBookmark()??null;void action(id);}}));
  return <>
   {menu?createPortal(<>
    <div ref={root} role="menu" aria-label="Text context menu" data-studio-text-menu dir="ltr" className="fixed z-[110] border border-[#808080] bg-[#f0f0f0] py-1 shadow-md" style={{...position,width:200,maxWidth:'calc(100vw - 8px)',maxHeight:'calc(100vh - 8px)',overflowY:'auto'}} onKeyDown={event=>key(event)} onPointerDown={event=>event.preventDefault()}>

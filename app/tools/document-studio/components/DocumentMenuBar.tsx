@@ -27,12 +27,12 @@ function topMenuPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSPr
     return { position: "fixed", top: 0, left: 0, visibility: "hidden" };
   }
   const rect = anchor.getBoundingClientRect();
-  const width = TOP_MENU_WIDTH_PX;
+  const width = Math.min(TOP_MENU_WIDTH_PX, Math.max(1, window.innerWidth - 16));
   const pad = 8;
   const maxLeft = Math.max(pad, window.innerWidth - width - pad);
   const left = Math.min(Math.max(pad, isUr ? rect.right - width : rect.left), maxLeft);
-  const top = rect.bottom + 2;
-  const maxHeight = Math.max(160, window.innerHeight - top - 12);
+  const top = Math.max(pad, Math.min(rect.bottom + 2, window.innerHeight - 40));
+  const maxHeight = Math.max(1, window.innerHeight - top - 8);
   return {
     position: "fixed",
     top,
@@ -65,6 +65,10 @@ function MenuItems({
     if (item.type === "separator") {
       return <div key={`sep-${index}`} role="separator" className="my-1 border-t border-[#a0a0a0] shadow-[0_1px_0_#fff]" />;
     }
+    if (item.type === "unavailable") return <button key={item.id} type="button" role="menuitem" disabled aria-disabled="true" title="Coming soon" data-coming-soon="true" data-menu-unavailable={item.id} style={dropdownItemStyle} className="flex w-full items-center text-left cursor-default">
+      <span>{menuLabel(item, isUr)}</span>
+      {item.shortcut ? <span className="ms-auto shrink-0 ps-3 tabular-nums" dir="ltr">{item.shortcut}</span> : null}
+    </button>;
     if (item.type === "submenu") {
       const open = openSubmenuId === item.id;
       return <div key={item.id} className="relative" onPointerEnter={(event) => {
@@ -79,6 +83,7 @@ function MenuItems({
             // Mouse hover may already have opened it before the click arrives.
             if (inlineSubmenus && item.id !== "file.download") onToggleSubmenu(item.id);
             else onOpenSubmenu(item.id);
+            if (event.detail === 0) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-menu-flyout="${item.id}"] [role='menuitem']:not([disabled])`)?.focus());
           }}>
           <span className="min-w-0 whitespace-nowrap text-left">{menuLabel(item, isUr)}</span>
           <span aria-hidden="true" className="ms-auto shrink-0">{inlineSubmenus && open ? "▾" : isUr ? "◂" : "▸"}</span>
@@ -98,7 +103,7 @@ function MenuItems({
       data-coming-soon={comingSoon ? "true" : undefined}
       aria-disabled={disabled || undefined} aria-checked={checked || undefined}
       data-menu-action={item.id} style={dropdownItemStyle}
-      className={`flex w-full items-center text-left ${disabled ? "cursor-not-allowed" : "hover:bg-[#d6dff2]"}`}
+      className={`flex w-full items-center text-left ${disabled ? "cursor-default" : "hover:bg-[#d6dff2] focus:bg-[#d6dff2]"}`}
       onPointerEnter={(event) => { if (event.pointerType === "mouse" && openSubmenuId) onOpenSubmenu(""); }}
       onClick={() => { if (!disabled) onAction(item.id); }}>
       <span aria-hidden="true" className="absolute left-[8px] top-0">{checked ? "✓" : null}</span>
@@ -147,6 +152,22 @@ export default function DocumentMenuBar({
   const submenuPortalRef = useRef<HTMLDivElement>(null);
   const triggerRefs = useRef<Partial<Record<MenuId, HTMLButtonElement | null>>>({});
   const focusMenuOnOpen = useRef(false);
+
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (event.defaultPrevented || !target?.closest("[data-studio-shell]") || target.closest('[role="dialog"], [role="alertdialog"]')) return;
+      const key = event.key.toLowerCase();
+      let id: MenuActionId | undefined;
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
+      if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "y") id = "file.downloadTxt";
+      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "insert") id = "insert.pageBreak";
+      if (!id) return;
+      event.preventDefault(); closeAndAct(id);
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  }, [onAction]);
 
   useEffect(() => {
     const sync = () => setPortalRoot(studioOverlayRoot());
@@ -218,17 +239,22 @@ export default function DocumentMenuBar({
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        e.preventDefault();
         e.stopPropagation();
+        if (openState.submenuId) portalRef.current?.querySelector<HTMLElement>(`[data-menu-submenu="${openState.submenuId}"]`)?.focus();
+        if (!openState.submenuId && openState.menuId) triggerRefs.current[openState.menuId]?.focus();
         setOpenState((prev) => applyMenuEscape(prev));
       }
     };
     const onReposition = () => updatePosition();
     document.addEventListener("mousedown", onPointer);
+    document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
     window.addEventListener("resize", onReposition);
     window.addEventListener("scroll", onReposition, true);
     return () => {
       document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onReposition);
       window.removeEventListener("scroll", onReposition, true);
@@ -344,7 +370,9 @@ export default function DocumentMenuBar({
           color: #000 !important;
         }
         [data-menu-portaled="true"][data-studio-menu-language] [data-coming-soon="true"],
-        [data-menu-portaled="true"][data-studio-menu-language] [data-coming-soon="true"] * {
+        [data-menu-portaled="true"][data-studio-menu-language] [data-coming-soon="true"] *,
+        [data-menu-portaled="true"][data-studio-menu-language] [aria-disabled="true"],
+        [data-menu-portaled="true"][data-studio-menu-language] [aria-disabled="true"] * {
           color: #808080 !important;
         }
       `}</style>
@@ -439,7 +467,10 @@ export default function DocumentMenuBar({
                 onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
                 onPointerEnter={(e) => {
                   if (e.pointerType !== "mouse") return;
-                  if (openState.menuId) setOpenState({ menuId: menu.id, submenuId: null });
+                  if (openState.menuId) {
+                    triggerRefs.current[menu.id]?.focus({ preventScroll: true });
+                    setOpenState({ menuId: menu.id, submenuId: null });
+                  }
                 }}
               >
                 {menuLabel(menu, isUr)}

@@ -35,7 +35,7 @@ describe("DocumentMenuBar", () => {
     const onAction = vi.fn();
     render(<DocumentMenuBar isUr={false} onAction={onAction} />);
     fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "New document" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^New…/ }));
     expect(onAction).toHaveBeenCalledWith("file.new");
     expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
   });
@@ -44,7 +44,7 @@ describe("DocumentMenuBar", () => {
     const onAction = vi.fn();
     render(<DocumentMenuBar isUr={false} onAction={onAction} />);
     fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Open document…" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Open…/ }));
     expect(onAction).toHaveBeenCalledWith("file.open");
   });
 
@@ -85,8 +85,8 @@ describe("DocumentMenuBar", () => {
     expect(flyout).toBeTruthy();
     expect(flyout?.getAttribute("data-menu-portaled")).toBe("true");
     expect(parent?.contains(flyout)).toBe(false);
-    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
-    expect(onAction).toHaveBeenCalledWith("file.downloadPdf");
+    fireEvent.click(screen.getByRole("menuitem", { name: "DOCX" }));
+    expect(onAction).toHaveBeenCalledWith("file.downloadDocx");
     expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
   });
 });

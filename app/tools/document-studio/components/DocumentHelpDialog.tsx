@@ -53,6 +53,13 @@ export default function DocumentHelpDialog({
         )}
         {mode === "shortcuts" && (
           <ul className="space-y-1.5 text-sm text-[#1A3A2A]/80" dir="ltr">
+            <li>Ctrl/Cmd + N — New document</li>
+            <li>Ctrl/Cmd + O — Open document library</li>
+            <li>Ctrl/Cmd + S — Save in this browser</li>
+            <li>Ctrl/Cmd + H — Character</li>
+            <li>Ctrl/Cmd + G — Paragraph</li>
+            <li>Alt + Insert — Insert page break</li>
+            <li>Ctrl/Cmd + Alt + Y — Export all text</li>
             <li>Ctrl/Cmd + B — Bold</li>
             <li>Ctrl/Cmd + I — Italic</li>
             <li>Ctrl/Cmd + U — Underline</li>
@@ -60,6 +67,7 @@ export default function DocumentHelpDialog({
             <li>Ctrl/Cmd + Shift + Z — Redo</li>
             <li>Ctrl/Cmd + A — Select all</li>
             <li>Ctrl/Cmd + F — Find and replace</li>
+            <li>F6 / F7 / F8 — 50% / 100% / 200% zoom</li>
           </ul>
         )}
         {mode === "rtl" && (
@@ -71,8 +79,8 @@ export default function DocumentHelpDialog({
             </p>
             <p>
               {isUr
-                ? "Format → Align and direction، یا ٹول بار کے RTL/LTR بٹن استعمال کریں۔"
-                : "Use Format → Align and direction, or the toolbar RTL/LTR buttons."}
+                ? "Text → Align and direction، یا ٹول بار کے RTL/LTR بٹن استعمال کریں۔"
+                : "Use Text → Align and direction, or the toolbar RTL/LTR buttons."}
             </p>
           </div>
         )}

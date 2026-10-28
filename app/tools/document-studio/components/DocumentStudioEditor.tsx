@@ -138,7 +138,7 @@ import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioO
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
-import { StudioTextContextMenu } from "./StudioTextContextMenu";
+import { StudioTextContextMenu, type StudioTextActions } from "./StudioTextContextMenu";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { functionKeyZoom } from "../utils/documentView";
@@ -277,6 +277,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
   const [characterOpen,setCharacterOpen] = useState(false);
+  const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
@@ -1720,6 +1721,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const handleMenuAction = (id: MenuActionId) => {
     dispatchDocumentMenuAction(id, editor, {
+      save: () => {
+        setSaveStatus("saving");
+        void persistActiveNow().then(() => setSaveStatus("saved"), () => setSaveStatus("error"));
+      },
+      character: () => setCharacterOpen(true),
+      paragraph: () => setParagraphOpen(true),
+      textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
       upload: () => fileInputRef.current?.click(),
@@ -1763,6 +1771,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const disabledIds = new Set<MenuActionId>();
+  if (!editor?.can().undo()) disabledIds.add("edit.undo");
+  if (!editor?.can().redo()) disabledIds.add("edit.redo");
+  if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
+  if (!editor?.isActive("image")) (["format.image.left", "format.image.center", "format.image.right", "format.image.wrap", "format.image.break", "format.image.alt", "format.image.delete"] as MenuActionId[]).forEach(id => disabledIds.add(id));
   if (isExportingPdf) disabledIds.add("file.downloadPdf");
   if (isImporting) disabledIds.add("file.upload");
   if (typeof document !== "undefined" && !document.fullscreenEnabled) {
@@ -1936,7 +1948,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         }}
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
-      <StudioTextContextMenu editor={editor} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
+      <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>setCharacterOpen(true)} onParagraph={()=>setParagraphOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
