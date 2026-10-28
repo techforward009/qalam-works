@@ -1,6 +1,18 @@
 import type { Editor } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 
+/** Read-only visual subscribers must follow the same ownership as the guard. */
+export const FORMATTING_TARGET_CHANGE = 'studio-formatting-target-change';
+type FormattingTarget = Readonly<{ owner: 'story' | 'frame' | 'none'; input: HTMLTextAreaElement | null }>;
+const targets = new WeakMap<HTMLElement, FormattingTarget>();
+export function isFormattingSurface(target: Element | null): boolean {
+  return Boolean(target?.closest('[data-studio-toolbar], [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [data-menu-root], [data-menu-dropdown], [data-studio-formatting-notice]'));
+}
+export function readFormattingTarget(element: HTMLElement): FormattingTarget | undefined {
+  const root = element.closest<HTMLElement>('[data-studio-root]');
+  return root ? targets.get(root) : undefined;
+}
+
 /** Internal document replacement, never a formatting-command escape hatch. */
 export const CONTENT_REPLACEMENT = 'studio-content-replacement';
 export const formattingSafetyMessage = (urdu: boolean) => urdu
@@ -14,7 +26,8 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   const root = dom.closest<HTMLElement>('[data-studio-root]') ?? dom.parentElement!;
   let owner: 'story' | 'frame' | 'none' = 'story';
   let input: HTMLTextAreaElement | null = null;
-  const invalidate = () => { owner = 'none'; input = null; };
+  const publish = () => { targets.set(root, { owner, input }); root.dispatchEvent(new Event(FORMATTING_TARGET_CHANGE)); };
+  const invalidate = () => { owner = 'none'; input = null; publish(); };
   // A document replacement or switch invalidates *every* previous target,
   // including story selections. Programmatic focus in the new document must
   // not authorize formatting until the user explicitly selects/edits there.
@@ -39,13 +52,13 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   const claimFrame = (target: Element | null) => {
     const box = target?.closest<HTMLTextAreaElement>('textarea[data-studio-text-frame]');
     if (!box || !root.contains(box)) return false;
-    if (box.readOnly) invalidate(); else { owner = 'frame'; input = box; }
+    if (box.readOnly) invalidate(); else { owner = 'frame'; input = box; publish(); }
     return true;
   };
   const pointer = (event: Event) => {
     const target = element(event);
     if (claimFrame(target)) return;
-    if (target && dom.contains(target)) { owner = 'story'; input = null; clearNotice(); }
+    if (target && dom.contains(target)) { owner = 'story'; input = null; publish(); clearNotice(); }
     else if (target?.closest('[data-studio-scroller], [data-studio-tool-button]') && root.contains(target)) invalidate();
   };
   const focus = (event: Event) => { claimFrame(element(event)); };
@@ -64,7 +77,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     if (!target || !root.contains(target)) return;
     if (event.key === 'Escape' && !target.closest('[role="dialog"]')) { invalidate(); return; }
     if (dom.contains(target) && ((['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key) && !event.ctrlKey && !event.metaKey) || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a')) && !event.altKey) {
-      owner = 'story'; input = null; clearNotice();
+      owner = 'story'; input = null; publish(); clearNotice();
     }
     const shortcut = (event.ctrlKey || event.metaKey) &&
       (['b','i','u','h','g'].includes(event.key.toLowerCase()) || (event.altKey && ['l','r','c','j','f'].includes(event.key.toLowerCase())));
@@ -77,8 +90,9 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     const e = event as InputEvent;
     // A deliberate new story edit may establish a target after dismissal or
     // document load; toolbar focus alone never does. Box ownership stays closed.
-    if (owner === 'none' && event.target === dom && /^(insert|delete)/.test(e.inputType)) { owner = 'story'; clearNotice(); }
+    if (owner === 'none' && event.target === dom && /^(insert|delete)/.test(e.inputType)) { owner = 'story'; publish(); clearNotice(); }
   };
+  publish();
   document.addEventListener('pointerdown', pointer, true);
   document.addEventListener('focusin', focus, true);
   document.addEventListener('click', control, true);
@@ -87,6 +101,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   document.addEventListener('keydown', key, true);
   document.addEventListener('beforeinput', typing, true);
   return { canFormat, invalidate, documentChanged, dispose() {
+    targets.delete(root); root.dispatchEvent(new Event(FORMATTING_TARGET_CHANGE));
     editor.unregisterPlugin(keyId);
     document.removeEventListener('pointerdown', pointer, true);
     document.removeEventListener('focusin', focus, true);
