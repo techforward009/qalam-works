@@ -1,0 +1,35 @@
+# Dialog-reference future workstream — not implemented in Phase 1
+
+Source: owner-provided `menu.rar`, SHA-256 `3b5c74c8999a204f9ed24e3bd17b1def386ace43a01088287371f45ab4e31083`.
+
+All 18 JPEGs report 96 × 96 DPI. Canvas dimensions below are exact raster dimensions. Window-frame dimensions/positions exclude shadows and are approximate (±2 px) at the apparent 1:1 UI scale; confirm pixel bounds before implementing a dialog. Crop canvas size is not CSS dialog size. A 96-DPI tag alone does not prove Windows scaling. Repeated frames (Colors, Style Sheets, Find) provide cross-checks. Menus and dialogs must not scale with document zoom.
+
+This document records a **separate future workstream**, not authorization to implement any reference dialog. Phase 1 changes only menu interiors and restores the live main bar. Native Open/Save/Print chrome is OS/browser controlled; do not promise an identical Win7 shell on other platforms. Current working Qalam dialogs remain unchanged.
+
+| Reference | Exact canvas (px) | Measured UI frame(s), x/y relative to crop | Functionality and safety requirements |
+|---|---:|---|---|
+| 01-border - style.JPG | 456 × 315 | Border Attributes ≈173 × 180 at (264,17); Border Style ≈247 × 146 at (14,156) | Above/Below border selection and Style buttons; line style, thickness, foreground/background colors; OK/Cancel/Help. Future paragraph-border model required; do not treat current text-outline styling as this feature. |
+| 02-define color - modify.JPG | 605 × 554 | Define Colors ≈234 × 219 at (18,15); Define Color ≈322 × 333 at (257,201) | Color list, New/Remove/Modify; editing includes spectrum, lightness, preview and CMYK/RGB/HSL numeric values. Requires explicit color-model/export decisions before implementation. |
+| 03-define color.JPG | 282 × 258 | Define Colors ≈234 × 218 at (19,19) | Standalone color manager with None/White/Black/Gray/Red/Magenta/Blue/Cyan/Green and scrolling. Existing fixed Character palette remains working; it is not a custom color manager. |
+| 04-define style sheets.jpg | 671 × 617 | Style manager ≈336 × 216 at (115,13); editor ≈201 × 248 at (455,196); borders ≈173 × 180 at (274,376) and ≈246 × 144 at (23,416) | Normal style list; Apply/Cancel/Help/New/Remove/Modify; style editor name/base/key equivalent plus Paragraph/Character/Border/Hyphenation/Tabs. Record dependent dialogs, not permission to introduce heading presets or change fonts. |
+| 05-document.JPG | 381 × 582 | Qalam Settings panel fills this 381 × 582 crop | This is Qalam, not an InPage native dialog. Existing style/page size/orientation/units/margins/font size/leading/header/footer settings are a comparison baseline and must be preserved. |
+| 06-documents.JPG | 435 × 229 | Page Setup ≈386 × 180 at (18,22) | Edit current page dimensions/orientation, four margins, columns and gutter; Double Sided/Facing Pages shown disabled. Do not wire this to creating a new document or discard existing content. |
+| 07-export all text.jpg | 482 × 362 | Export File Name ≈437 × 302 at (19,18), with type list extending below it | Reference types: Text (*.txt), Unicode (*.uni), RTF (*.rtf). Existing TXT download remains active. Additional encodings/formats need separate support and validation; browser controls native save UI. |
+| 08-export page.JPG | 456 × 287 | Export As Picture ≈422 × 247 at (19,20) | EPS/GIF filename, selected/all/page range, scale, Black Overprint, Show in Folder. Not implemented by current PDF export. Keep Export Page disabled until a separate approved exporter exists. |
+| 09-find replace.JPG | 349 × 232 | Find Replace ≈335 × 215 at (6,6) | Find What/Text, Find/Replace text, From Beginning/Match Case/Match Word, Find Next/Replace and Find/Replace All; preserve current ordinary find/replace. Advanced story fields require separate support. |
+| 10-find replace_b.jpg | 374 × 259 | Find Replace ≈337 × 219 at (18,18) | Expanded Find What choices: Text, Index Field, Object Lock, Footnote. Only real supported search modes may be active; never fake structured-field search. |
+| 11-hyphination.JPG | 266 × 153 | Hyphenation ≈229 × 117 at (18,17) | None/Light/Heavy and maximum consecutive hyphenated lines (3 shown). Requires language-aware layout/serialization; not a visual-only dialog and not part of Phase 1. |
+| 12-import.jpg | 625 × 484 | Import File Name ≈568 × 422 at (24,24), type list extending below it | Native reference types: Text, Unicode, InPage Story Editor, GIST, All Files. Phase 2 is limited to routing existing .inp/.txt/.docx implementations, preserving limits and useful corruption/unsupported errors; no new parser. |
+| 13-insert table.JPG | 258 × 151 | Insert Table ≈220 × 114 at (19,17) | Rows (1), Columns (2), Column Width (Auto), spin controls and OK/Cancel/Help. Current table insertion stays accessible; width and richer table formatting need separately approved model changes. |
+| 14-new document.JPG | 458 × 262 | New Document ≈402 × 218 at (25,19) | A4 dimensions, orientation, Pages, four margins, direction, Columns/Gutter, Automatic Text Box, Double Sided/Facing Pages, Save as Default. Existing New Document implementation is reused without Phase 1 changes. |
+| 15-Open.JPG | 610 × 450 | Open ≈567 × 422 at (12,9) | All InPage Files (*.inp;*.int;*.qps) native picker. Qalam currently has browser document-library Open plus file import. Do not advertise .int/.qps without verified parser support or imitate access to the user filesystem. |
+| 16-paste especial.JPG | 502 × 300 | Paste Special ≈452 × 262 at (20,18) | Source/As list, Paste/Paste Link, Display As Icon, result preview. Browser clipboard capabilities differ from OLE; preserve working ordinary clipboard actions and keep unsupported modes disabled. |
+| 17-print.JPG | 481 × 381 | Print ≈436 × 344 at (18,17) | Printer/properties, range/sequence, copies/collate, normal/tiled/manual print, marks/mirror/scale. Browser owns printer/destination selection. Phase 4 must reuse existing document-only print, stay user-controlled, and never force PrimoPDF/PDF or silent saving. |
+| 18-style sheets.JPG | 566 × 466 | Style manager ≈335 × 216 at (15,15); Edit Style Sheet ≈198 × 248 at (353,200) | Standalone style-manager/editor workflow. Apply/cancel semantics, style identity/base and key equivalents must be designed and tested before any implementation; related border/hyphenation/tab dialogs are dependencies. |
+
+## Approval gates
+
+- Phase 2: connect the existing InPage importer; do not redesign import/native picker dialogs or parse additional formats.
+- Phase 3: inspect real open-document session state and safe switching first; a stored-library list is not an open-document list.
+- Phase 4: preserve successful server PDF generation; reuse existing browser print with a visible manual recovery control. Browsers cannot reliably report that print UI was suppressed; prevent duplicate attempts and do not force destinations.
+- Borders, custom colors/style sheets, hyphenation, advanced find fields, picture export, Paste Special and richer table/page-setup dialog parity require their own approval and focused implementation/testing. No font/rendering changes are implied.

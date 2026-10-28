@@ -1,12 +1,16 @@
 /**
  * Qalam Page: Urdu Editor menu catalog.
- * Only real, already-implemented actions. Future features are omitted —
- * never shown as working items.
+ * Existing action IDs stay stable; unavailable InPage operations are explicit,
+ * non-dispatchable rows rather than fake working actions.
  */
 
 export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | "window" | "help";
 
 export type MenuActionId =
+  | "file.save"
+  | "format.character"
+  | "format.paragraph"
+  | "edit.cut" | "edit.copy" | "edit.paste" | "edit.clear"
   | "file.new"
   | "file.open"
   | "file.upload"
@@ -91,6 +95,8 @@ export type MenuActionId =
   | "format.image.break"
   | "format.image.alt"
   | "format.image.delete"
+  | "window.page"
+  | `window.document:${string}`
   | "window.outline"
   | "window.quality"
   | "window.settings"
@@ -107,6 +113,8 @@ export type MenuActionId =
 
 export type MenuNode =
   | { type: "action"; id: MenuActionId; labelEn: string; labelUr: string; shortcut?: string }
+  | { type: "unavailable"; id: string; labelEn: string; labelUr: string; shortcut?: string }
+  | { type: "section"; labelEn: string; labelUr: string }
   | { type: "separator" }
   | { type: "submenu"; id: string; labelEn: string; labelUr: string; items: MenuNode[] };
 
@@ -145,7 +153,7 @@ export function applyMenuEscape(state: MenuOpenState): MenuOpenState {
   return CLOSED_MENU_STATE;
 }
 
-export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
+const QALAM_MENU_ITEMS: MenuDefinition[] = [
   {
     id: "file",
     labelEn: "File",
@@ -393,6 +401,82 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   },
 ];
 
+// Reuse the current Qalam actions/submenus; internal IDs intentionally stay stable
+// so toolbar commands, persisted settings and keyboard shortcuts are unchanged.
+const original = (id: MenuId) => QALAM_MENU_ITEMS.find(menu => menu.id === id)!;
+const submenu = (menu: MenuId, id: string) => original(menu).items.find(item => item.type === "submenu" && item.id === id)!;
+const separator: MenuNode = { type: "separator" };
+const qalamSection: MenuNode = { type: "section", labelEn: "Qalam Page", labelUr: "قلم پیج" };
+const ready = (id: MenuActionId, labelEn: string, shortcut?: string): MenuNode => ({ type: "action", id, labelEn, labelUr: labelEn, shortcut });
+const soon = (id: string, labelEn: string, shortcut?: string): MenuNode => ({ type: "unavailable", id, labelEn, labelUr: labelEn, shortcut });
+
+export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
+  { ...original("file"), items: [
+    ready("file.new", "New…", "Ctrl+N"), ready("file.open", "Open…", "Ctrl+O"), soon("file.close", "Close", "Ctrl+F4"), separator,
+    ready("file.save", "Save…", "Ctrl+S"), soon("file.saveAs", "Save As…", "Ctrl+Alt+S"), ready("file.downloadPdf", "Save as PDF…"), separator,
+    soon("file.place", "Place…"), ready("file.upload", "Import…"), ready("file.downloadTxt", "Export All Text…", "Ctrl+Alt+Y"), soon("file.exportPage", "Export Page…"), separator,
+    ready("file.print", "Print…", "Ctrl+P"), separator, soon("file.exit", "Exit", "Alt+F4"), separator,
+    soon("file.recent", "Recent Files"),
+    separator, qalamSection,
+    { type: "submenu", id: "file.download", labelEn: "Download", labelUr: "ڈاؤن لوڈ", items: [ready("file.downloadDocx", "DOCX")] },
+  ] },
+  { ...original("edit"), items: [
+    ready("edit.undo", "Undo", "Ctrl+Z"), separator,
+    ready("edit.cut", "Cut", "Ctrl+X"), ready("edit.copy", "Copy", "Ctrl+C"), soon("edit.pasteSpecial", "Paste Special…"), ready("edit.paste", "Paste", "Ctrl+V"),
+    soon("edit.duplicate", "Duplicate…"), ready("edit.clear", "Clear", "Del"), ready("edit.selectAll", "Select All", "Ctrl+A"), separator,
+    ready("edit.find", "Find and Replace…", "Ctrl+F"), separator,
+    soon("edit.topMost", "Top Most"), soon("edit.sendBack", "Send To Back"), soon("edit.bringFront", "Bring To Front"), soon("edit.lockGuides", "Lock Guides"), soon("edit.lockObjects", "Lock/Unlock Objects", "Ctrl+U"), separator,
+    soon("edit.story", "Story Editor", "F2"), soon("edit.deletePage", "Delete Page…", "Alt+Del"),
+    { type: "submenu", id: "edit.preferences", labelEn: "Preferences", labelUr: "ترجیحات", items: [
+      soon("preferences.application", "Application…", "Alt+F11"), ready("window.settings", "Document…"), soon("preferences.typographic", "Typographic…", "F11"), soon("preferences.story", "Story Editor…"), soon("preferences.spelling", "Spelling Preferences…"),
+    ] }, soon("edit.prompting", "Start Prompting"), separator, qalamSection,
+    ready("edit.redo", "Redo", "Ctrl+Shift+Z"),
+  ] },
+  { ...original("view"), items: [
+    ready("view.zoom.fit-page", "Fit in Window"), ready("view.zoom.50", "50%", "F6"), ready("view.zoom.100", "Actual", "F7"), ready("view.zoom.200", "200%", "F8"), separator,
+    ready("view.facing", "Facing Pages"), soon("view.ribbon", "Hide Ribbon"), soon("view.tools", "Hide Tools"), ready("view.ruler", "Show Rulers"), soon("view.guides", "Hide Guides"), soon("view.invisibles", "Show Invisibles"), soon("view.indexEntries", "Show Index Entries"), separator,
+    soon("view.snap", "Snap To Guides", "F9"), separator, qalamSection,
+    { type: "submenu", id: "view.zoom", labelEn: "More Zoom Levels", labelUr: "مزید زوم", items: [
+      ready("view.zoom.75", "75%"), ready("view.zoom.125", "125%"), ready("view.zoom.150", "150%"), ready("view.zoom.300", "300%"), ready("view.zoom.fit-width", "Fit Width"),
+    ] },
+    ready("view.pages", "Single Page"), ready("view.pageless", "Pageless"), ready("view.hand", "Hand"), submenu("view", "view.rulerUnit"), separator,
+    ready("view.outline", "Outline"), ready("view.quality", "Quality and Suggestions"), ready("view.glossary", "Glossary"), ready("view.settings", "Settings"), ready("view.stats", "Statistics"), ready("view.fullscreen", "Full Screen"),
+  ] },
+  { ...original("format"), items: [
+    ready("format.character", "Character…", "Ctrl+H"), ready("format.paragraph", "Paragraph…", "Ctrl+G"), soon("text.hyphenation", "Hyphenation…"), soon("text.borders", "Borders…"), soon("text.tabs", "Tabs", "Ctrl+Alt+T"), soon("text.wrap", "Text Wrap"), separator,
+    soon("text.sort", "Sort Text…"), soon("text.tableFormat", "Table Format…"), soon("text.tableLayout", "Table Layout…"), separator,
+    soon("text.object", "Object…"), soon("text.runaround", "Runaround…"), soon("text.inset", "Inset…"), soon("text.master", "Master Page Objects…"), ready("file.pageSetup", "Document…"), soon("text.guides", "Guides…"), separator,
+    soon("text.styles", "Style Sheets…", "Ctrl+T"), soon("text.colors", "Define Colors…"), separator, qalamSection,
+    { type: "submenu", id: "format.image", labelEn: "Image Commands", labelUr: "تصویر کے اوزار", items: findSubmenuItems(original("format").items, "format.image")! },
+    { type: "submenu", id: "insert.tableActions", labelEn: "Table Commands", labelUr: "جدول کے اوزار", items: findSubmenuItems(original("insert").items, "insert.tableActions")! },
+    ...original("format").items.filter(item => item.type === "submenu" && item.id !== "format.image"),
+    ready("format.shade", "Shade"), ready("insert.link", "Link…"),
+  ] },
+  { ...original("insert"), items: [
+    soon("page.date", "Date & Time…"), separator, ready("insert.pageBreak", "Page…", "Alt+Ins"), soon("page.number", "Page Number…"), separator,
+    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), soon("page.splitTable", "Split Table"), separator,
+    soon("page.index", "Index Entry…", "Ctrl+Alt+I"), soon("page.lock", "Object Lock…"), soon("page.footnote", "Footnote"), separator, qalamSection,
+    submenu("insert", "insert.sectionBreak"),
+  ] },
+  { ...original("tools"), items: [
+    soon("utilities.spelling", "Spelling…", "Ctrl+L"), ready("tools.stats", "Word Count"), separator,
+    soon("utilities.group", "Group", "Ctrl+Alt+G"), soon("utilities.ungroup", "Ungroup", "Ctrl+Alt+U"), separator,
+    soon("utilities.autoIndex", "Auto Index…"), soon("utilities.generateIndex", "Generate Index"), soon("utilities.contents", "Table of Contents", "Ctrl+Alt+O"), separator,
+    soon("utilities.symbols", "Symbols", "Ctrl+."), separator, qalamSection,
+    ...original("tools").items.filter(item => item.type === "action" && item.id !== "tools.stats"),
+    ready("insert.example", "Load Example"),
+  ] },
+  { ...original("window"), items: [
+    soon("window.cascade", "Cascade"), soon("window.tile", "Tile"), soon("window.closeAll", "Close All"), separator,
+    soon("window.ribbon", "Ribbon", "F12"), ready("window.page", "Page", "Alt+F12"), soon("window.view", "View", "Ctrl+F12"), separator, qalamSection,
+    ready("window.outline", "Outline"), ready("window.quality", "Quality"),
+  ] },
+  { ...original("help"), items: [
+    soon("help.index", "Index…"), ready("help.shortcuts", "Short Cuts…"), soon("help.using", "Using Help…"), separator,
+    ready("help.about", "About", "F1"), separator, qalamSection, ready("help.rtl", "Urdu / RTL Help"), ready("help.voice", "Voice Dictation Help"),
+  ] },
+];
+
 export const OMITTED_FUTURE_ACTIONS = [
   "share",
   "cloud",
@@ -428,7 +512,9 @@ export function menuCatalogText(): string {
   return JSON.stringify(DOCUMENT_MENU_BAR).toLowerCase();
 }
 
-export const TOP_MENU_WIDTH_PX = 280;
+// Raster-reference widths; File is content-sized without fabricated MRU paths.
+export const MENU_WIDTHS: Record<MenuId, number> = { file: 250, edit: 244, view: 202, format: 263, insert: 225, tools: 243, window: 197, help: 168 };
+export const TOP_MENU_WIDTH_PX = 250;
 export const SUBMENU_WIDTH_PX = 220;
 
 export function findSubmenuItems(nodes: MenuNode[], submenuId: string): MenuNode[] | null {
@@ -451,18 +537,19 @@ export function placeFloatingSubmenu(opts: {
   isUr: boolean;
 }): { top: number; left: number } {
   const pad = 8;
-  const width = opts.submenuWidth ?? SUBMENU_WIDTH_PX;
+  const width = Math.min(opts.submenuWidth ?? SUBMENU_WIDTH_PX, Math.max(1, opts.viewportWidth - 16));
+  const overlap = 6;
   const spaceRight = opts.viewportWidth - opts.parentRect.right - pad;
   const spaceLeft = opts.parentRect.left - pad;
   let left: number;
   if (opts.isUr) {
-    if (spaceLeft >= width) left = opts.parentRect.left - width;
-    else if (spaceRight >= width) left = opts.parentRect.right;
+    if (spaceLeft >= width) left = opts.parentRect.left - width + overlap;
+    else if (spaceRight >= width) left = opts.parentRect.right - overlap;
     else left = pad;
   } else if (spaceRight >= width) {
-    left = opts.parentRect.right;
+    left = opts.parentRect.right - overlap;
   } else if (spaceLeft >= width) {
-    left = opts.parentRect.left - width;
+    left = opts.parentRect.left - width + overlap;
   } else {
     left = Math.max(pad, opts.viewportWidth - width - pad);
   }

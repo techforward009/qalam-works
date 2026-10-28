@@ -35,7 +35,7 @@ describe("DocumentMenuBar", () => {
     const onAction = vi.fn();
     render(<DocumentMenuBar isUr={false} onAction={onAction} />);
     fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "New document" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^New…/ }));
     expect(onAction).toHaveBeenCalledWith("file.new");
     expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
   });
@@ -44,7 +44,7 @@ describe("DocumentMenuBar", () => {
     const onAction = vi.fn();
     render(<DocumentMenuBar isUr={false} onAction={onAction} />);
     fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Open document…" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Open…/ }));
     expect(onAction).toHaveBeenCalledWith("file.open");
   });
 
@@ -85,8 +85,30 @@ describe("DocumentMenuBar", () => {
     expect(flyout).toBeTruthy();
     expect(flyout?.getAttribute("data-menu-portaled")).toBe("true");
     expect(parent?.contains(flyout)).toBe(false);
-    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
-    expect(onAction).toHaveBeenCalledWith("file.downloadPdf");
+    fireEvent.click(screen.getByRole("menuitem", { name: "DOCX" }));
+    expect(onAction).toHaveBeenCalledWith("file.downloadDocx");
     expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
+  });
+});
+
+describe("Window session menu", () => {
+  it("numbers actual open titles and marks only the active document", () => {
+    const action = vi.fn();
+    render(<DocumentMenuBar isUr={false} onAction={action} openDocuments={[{ id: "a", title: "First" }, { id: "b", title: "اردو مضمون" }]} activeDocumentId="b" />);
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Window$/ }));
+    const first = screen.getByRole("menuitem", { name: "1 First" });
+    const second = screen.getByRole("menuitem", { name: "2 اردو مضمون" });
+    expect(first.getAttribute("aria-checked")).toBeNull();
+    expect(second.getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(first); expect(action).toHaveBeenCalledWith("window.document:a");
+  });
+  it("Alt+F12 activates Page only inside the studio, not in dialogs or elsewhere", () => {
+    const action = vi.fn();
+    render(<><div data-studio-shell><DocumentMenuBar isUr={false} onAction={action} /><input aria-label="Inside" /><div role="dialog"><input aria-label="Dialog field" /></div></div><input aria-label="Outside" /></>);
+    fireEvent.keyDown(screen.getByLabelText("Outside"), { key: "F12", altKey: true });
+    fireEvent.keyDown(screen.getByLabelText("Dialog field"), { key: "F12", altKey: true });
+    expect(action).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByLabelText("Inside"), { key: "F12", altKey: true });
+    expect(action).toHaveBeenCalledExactlyOnceWith("window.page");
   });
 });

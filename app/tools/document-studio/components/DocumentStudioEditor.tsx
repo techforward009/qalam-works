@@ -1,4 +1,9 @@
 "use client";
+
+import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
+import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
+import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
+import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
 import { migrateDocumentLeading } from "../utils/leading";
 
 
@@ -121,6 +126,7 @@ import {
   loadRulerUnit,
   saveRulerUnit,
   printDocumentStudio,
+  printDocumentStudioAsync,
   EDITOR_SPELLCHECK_ATTR,
   type DocumentViewMode,
   type DocumentZoom,
@@ -138,7 +144,7 @@ import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioO
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
-import { StudioTextContextMenu } from "./StudioTextContextMenu";
+import { StudioTextContextMenu, type StudioTextActions } from "./StudioTextContextMenu";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { functionKeyZoom } from "../utils/documentView";
@@ -276,7 +282,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [canvasTool, setCanvasTool] = useState<StudioToolId>("text");
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
+  const formattingSafety = useRef<ReturnType<typeof installFormattingSafety> | null>(null);
+  const [formattingNotice, setFormattingNotice] = useState(0);
   const [characterOpen,setCharacterOpen] = useState(false);
+  const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
@@ -302,7 +311,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const id = activeDocumentIdRef.current;
     if (!libraryReadyRef.current || !library || !id) return;
     setPendingMetadataWrites(count=>count+1);
-    void library.updateDocument(id, { documentSettings }).catch((err) => {
+    void sessionWrites.current.write(() => library.updateDocument(id, { documentSettings })).catch((err) => {
       console.error("Failed to save document settings:", err);
       setSaveStatus("error");
     }).finally(()=>setPendingMetadataWrites(count=>count-1));
@@ -364,7 +373,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   useEffect(() => {
     documentTitleRef.current = documentTitle;
   }, [documentTitle]);
-  const saveChainRef = useRef(Promise.resolve());
+  const sessionWrites = useRef(createDocumentSessionWrites());
+  const transitionRef = useRef(false);
+  const [switchingDocument, setSwitchingDocument] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const [openDocuments, setOpenDocuments] = useState<{ id: string; title: string }[]>([]);
+  const sessionColumns = useRef(new Map<string, { count: number; gutter: number }>());
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inpageInputRef = useRef<HTMLInputElement>(null);
   const [inpageStories, setInpageStories] = useState<ImportedStory[] | null>(null);
@@ -383,6 +399,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfRecoveryAvailable, setPdfRecoveryAvailable] = useState(false);
+  const pdfExportInFlight = useRef(false);
+  const browserPrintPending = useRef(false);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -566,28 +585,32 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setSaveStatus("saving");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
+      const library = libraryRef.current;
+      const id = activeDocumentIdRef.current;
       saveTimerRef.current = setTimeout(() => {
-        saveChainRef.current = saveChainRef.current.then(async () => {
-          const library = libraryRef.current;
-          const id = activeDocumentIdRef.current;
-          if (!library || !id || !libraryReadyRef.current) return;
-          try {
-            await library.updateDocument(id, {
-              content: editor.getJSON() as DocNode,
-              title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
-              documentSettings: documentSettingsRef.current,
-            });
-            const items = await library.listDocuments();
-            setLibraryItems(items);
-            setSaveStatus("saved");
-          } catch (err) {
-            console.error("Autosave error:", err);
-            setSaveStatus("error");
-          }
+        if (!library || !id || !libraryReadyRef.current) return;
+        const snapshot = {
+          content: editor.getJSON() as DocNode,
+          title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+          documentSettings: documentSettingsRef.current,
+        };
+        void sessionWrites.current.write(() => library.updateDocument(id, snapshot)).then(async () => {
+          setLibraryItems(await library.listDocuments());
+          setSaveStatus("saved");
+        }).catch(err => {
+          console.error("Autosave error:", err);
+          setSaveStatus("error");
         });
       }, AUTOSAVE_DEBOUNCE_MS);
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+    const guard = installFormattingSafety(editor, () => setFormattingNotice(n => n + 1), () => setFormattingNotice(0));
+    formattingSafety.current = guard;
+    return () => { guard.dispose(); formattingSafety.current = null; };
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -679,21 +702,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const confirmNewDocument = (draft: NewDocumentDraft) => {
     const pages = pageCountFromNewDocument(draft);
-    setDir(draft.direction);
-    setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
-    setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
-    setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
-    minimumPagesRef.current = pages;
-    setMinimumPages(pages);
-    setViewMode(draft.facingPages ? "facing" : "pages");
-    setViewAnchor(previous=>({page:1,fraction:-1,version:(previous?.version??0)+1}));
-    setZoom(openingDocumentZoom(window.innerWidth));
-    setVisiblePage(1);
     setNewDocOpen(false);
     void createAndOpenDocument({
-      content: contentFromNewDocument(draft),
-      documentSettings: settingsFromNewDocument(draft),
-      minimumPages: pages,
+      content: contentFromNewDocument(draft), documentSettings: settingsFromNewDocument(draft), minimumPages: pages,
+    }).then(created => {
+      if (!created) return;
+      setDir(draft.direction);
+      setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
+      setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
+      setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
+      setViewMode(draft.facingPages ? "facing" : "pages");
+      setViewAnchor(previous => ({ page: 1, fraction: -1, version: (previous?.version ?? 0) + 1 }));
+      setZoom(openingDocumentZoom(window.innerWidth));
+      setVisiblePage(1);
     });
   };
 
@@ -713,6 +734,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+    formattingSafety.current?.documentChanged();
+    setFormattingNotice(0);
+    setCharacterOpen(false); setParagraphOpen(false);
+    setOpenDocuments(previous => previous.some(doc => doc.id === record.id)
+      ? previous.map(doc => doc.id === record.id ? { id: record.id, title: record.title } : doc)
+      : [...previous, { id: record.id, title: record.title }]);
     activeDocumentIdRef.current = record.id;
     setActiveDocumentId(record.id);
     saveActiveDocumentId(record.id);
@@ -728,10 +755,15 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     minimumPagesRef.current = pages;
     setMinimumPages(pages);
     writeStoredMinimumPages(record.id, pages);
-    setFrames(readStoredFrames(record.id));
+    const restoredFrames = readStoredFrames(record.id);
+    framesRef.current = restoredFrames;
+    setFrames(restoredFrames);
     if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
       setZoomState("fit-width");
     }
+    const columns = sessionColumns.current.get(record.id);
+    setColumnCount(columns?.count ?? 1);
+    setColumnGutterMm(columns?.gutter ?? STUDIO_DEFAULT_GUTTER_MM);
     setSaveStatus("saved");
     setPreview(null);
     setAlreadyClean(false);
@@ -759,20 +791,57 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (!library || !id || !editor) return;
-    await library.updateDocument(id, {
-      content: editor.getJSON() as DocNode,
-      title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    sessionColumns.current.set(id, { count: columnCount, gutter: columnGutterMm });
+    // Serialize metadata and autosave before taking the final, current snapshot.
+    await sessionWrites.current.drain();
+    const title = sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current);
+    await sessionWrites.current.write(() => library.updateDocument(id, {
+      content: editor.getJSON() as DocNode, title,
       documentSettings: documentSettingsRef.current,
-    });
+    }));
+    // Object/page-floor storage is separate and its old helpers swallow errors.
+    // Probe the shared maps strictly: a denied/corrupt read must not look like
+    // an empty destination and later overwrite that document's saved objects.
+    for (const key of ["qalam-studio-frames-v1", "qalam-studio-minimum-pages-v1"]) {
+      const map: unknown = JSON.parse(window.localStorage.getItem(key) || "{}");
+      if (!map || typeof map !== "object" || Array.isArray(map)) throw new Error("Object storage could not be read");
+    }
+    // Verify writes before permitting a transition, including quota failures.
+    writeStoredFrames(id, framesRef.current);
+    writeStoredMinimumPages(id, minimumPagesRef.current);
+    if (JSON.stringify(readStoredFrames(id)) !== JSON.stringify(framesRef.current)
+      || readStoredMinimumPages(id) !== minimumPagesRef.current) throw new Error("Object settings could not be saved");
+    setOpenDocuments(previous => previous.map(doc => doc.id === id ? { ...doc, title } : doc));
+  };
+
+  const transitionDocument = async (operation: () => Promise<void>) => {
+    if (transitionRef.current || !editor) return false;
+    transitionRef.current = true;
+    setSwitchingDocument(true);
+    setSwitchError(null);
+    const editable = editor.isEditable;
+    editor.setEditable(false);
+    try {
+      await persistActiveNow();
+      await operation();
+      return true;
+    } catch (err) {
+      console.error("Document transition blocked:", err);
+      setSwitchError("The current document could not be saved or the requested document could not be opened. Your edits remain here. Please retry.");
+      setSaveStatus("error");
+      return false;
+    } finally {
+      editor.setEditable(editable);
+      transitionRef.current = false;
+      setSwitchingDocument(false);
+    }
   };
 
   const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings; minimumPages?: number }) => {
     const library = libraryRef.current;
     if (!library) return false;
-    try {
-      if (activeDocumentIdRef.current && editor) {
-        await persistActiveNow();
-      }
+    return transitionDocument(async () => {
       const record = await library.createDocument({
         title: input?.title ?? defaultDocumentTitle(isUrRef.current),
         content: input?.content ?? emptyDocumentContent(dir),
@@ -781,31 +850,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setCanvasTool("text");
       canvasToolRef.current = "text";
       applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
-      await refreshLibraryList(library);
-      return true;
-    } catch (err) {
-      console.error("Failed to create document:", err);
-      setSaveStatus("error");
-      return false;
-    }
+      void refreshLibraryList(library);
+    });
   };
 
   const openLibraryDocument = async (id: string) => {
     const library = libraryRef.current;
-    if (!library || !editor) return;
-    try {
-      if (activeDocumentIdRef.current && activeDocumentIdRef.current !== id) {
-        await persistActiveNow();
-      }
+    if (!library || !editor || transitionRef.current) return;
+    if (activeDocumentIdRef.current === id) { setLibraryOpen(false); return; }
+    await transitionDocument(async () => {
       const record = await library.getDocument(id);
-      if (!record) return;
+      if (!record) throw new Error("Document not found");
       applyRecordToEditor(record);
       setLibraryOpen(false);
-      await refreshLibraryList(library);
-    } catch (err) {
-      console.error("Failed to open document:", err);
-      setSaveStatus("error");
-    }
+      void refreshLibraryList(library);
+    });
   };
 
   const renameLibraryDocument = async (id: string) => {
@@ -816,7 +875,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (next == null) return;
     const title = sanitizeDocumentTitle(next) || defaultDocumentTitle(isUr);
     try {
-      await library.renameDocument(id, title);
+      await sessionWrites.current.write(() => library.renameDocument(id, title));
+      setOpenDocuments(previous => previous.map(doc => doc.id === id ? { ...doc, title } : doc));
       if (id === activeDocumentIdRef.current) {
         setDocumentTitle(title);
         documentTitleRef.current = title;
@@ -840,7 +900,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (!ok) return;
     try {
       const deletingActive = id === activeDocumentIdRef.current;
-      await library.deleteDocument(id);
+      await sessionWrites.current.write(() => library.deleteDocument(id));
+      setOpenDocuments(previous => previous.filter(doc => doc.id !== id));
       const remaining = await library.listDocuments();
       setLibraryItems(remaining);
       if (!deletingActive) return;
@@ -926,6 +987,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const handleInPageFile = async (file: File) => {
     setInpageError(null);
+    setUploadError(null);
+    setDocxImportNotice(false);
     setIsImporting(true);
     try {
       const { parseInPage, MAX_INPAGE_BYTES } = await import("../utils/inpage/parseInPage");
@@ -961,11 +1024,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   // Document Cleaner already uses, and the newly-shared plainTextToDocNode.
   const handleUploadFile = async (file: File) => {
     setUploadError(null);
+    setInpageError(null);
     setDocxImportNotice(false);
 
     const validation = validateFile(file);
     if (!validation.valid) {
-      setUploadError(validation.error || "فائل ناکام ہو گئی / File validation failed.");
+      setUploadError(validation.errorCode === "unsupported" ? "Only .inp, .txt and .docx files are supported." : validation.error || "فائل ناکام ہو گئی / File validation failed.");
       return;
     }
 
@@ -1420,6 +1484,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     }
   };
 
+  const handleRecoveryPrint = async () => {
+    // Keep the guard across dialog close/reopen while fonts or native printing
+    // are pending. afterprint signals completion, not that a PDF was saved.
+    if (browserPrintPending.current) return;
+    browserPrintPending.current = true;
+    const finished = () => { browserPrintPending.current = false; };
+    window.addEventListener("afterprint", finished, { once: true });
+    try { await printDocumentStudioAsync(framesRef.current); }
+    catch (error) {
+      window.removeEventListener("afterprint", finished);
+      browserPrintPending.current = false;
+      throw error;
+    }
+  };
+
   // v1 — visual/print quality only, no searchable text layer (see
   // docs/KNOWN-LIMITATIONS.md's "PDF Export" section for the full
   // investigation behind that decision). Sends structured DocNode JSON
@@ -1428,19 +1507,31 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   // the server's own template in full control of what markup ever exists.
   const handleDownloadPdf = async () => {
     trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
-    if (!editor) return;
+    if (!editor || pdfExportInFlight.current) return;
+    pdfExportInFlight.current = true;
     setPdfError(null);
+    setPdfRecoveryAvailable(false);
     setPdfSummary(null);
     setIsExportingPdf(true);
     try {
-      const response = await fetch("/api/export-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings }),
-      });
+      const body = JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings, frames: framesRef.current });
+      let response: Response;
+      try {
+        response = await fetch("/api/export-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
+      } catch {
+        // Rejected fetch is a connection failure; validation above remains in
+        // the outer error path. Never retry the server automatically.
+        setPdfRecoveryAvailable(true);
+        return;
+      }
 
       if (!response.ok) {
-        setPdfError(await readPdfExportError(response));
+        if (isRecoverablePdfStatus(response.status)) setPdfRecoveryAvailable(true);
+        else setPdfError(await readPdfExportError(response));
         return;
       }
 
@@ -1449,7 +1540,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       const fontsUsedHeader = response.headers.get("X-Pdf-Fonts-Used");
       const fontFallbacksHeader = response.headers.get("X-Pdf-Font-Fallbacks");
 
-      const blob = await response.blob();
+      let blob: Blob;
+      try { blob = await response.blob(); }
+      catch { setPdfRecoveryAvailable(true); return; }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1483,6 +1576,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       console.error("Failed to generate PDF:", err);
       setPdfError(GENERIC_PDF_EXPORT_ERROR);
     } finally {
+      pdfExportInFlight.current = false;
       setIsExportingPdf(false);
     }
   };
@@ -1550,11 +1644,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const next = sanitizeDocumentTitle(documentTitle) || defaultDocumentTitle(isUr);
     setDocumentTitle(next);
     documentTitleRef.current = next;
+    setOpenDocuments(previous => previous.map(doc => doc.id === activeDocumentIdRef.current ? { ...doc, title: next } : doc));
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (library && id) {
       setPendingMetadataWrites(count=>count+1);
-      void library.renameDocument(id, next).then(() => refreshLibraryList(library)).catch((err) => {
+      void sessionWrites.current.write(() => library.renameDocument(id, next)).then(() => refreshLibraryList(library)).catch((err) => {
         console.error("Failed to save title:", err);
         setSaveStatus("error");
       }).finally(()=>setPendingMetadataWrites(count=>count-1));
@@ -1693,6 +1788,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const changeFrames = (next: StudioFrame[]) => {
+    framesRef.current = next;
     setFrames(next);
     const id = activeDocumentIdRef.current;
     if (id) writeStoredFrames(id, next);
@@ -1719,7 +1815,25 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const handleMenuAction = (id: MenuActionId) => {
+    if (transitionRef.current) return;
+    if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
+    if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
+    if (id === "window.page") {
+      // Activate the existing Page workspace, not the Single Pages view mode.
+      setLibraryOpen(false);
+      const scroller = editor?.view.dom.closest<HTMLElement>("[data-studio-scroller]");
+      if (canvasToolRef.current === "text") editor?.commands.focus(undefined, { scrollIntoView: false });
+      else if (scroller) { scroller.tabIndex = -1; scroller.focus({ preventScroll: true }); }
+      return;
+    }
     dispatchDocumentMenuAction(id, editor, {
+      save: () => {
+        setSaveStatus("saving");
+        void persistActiveNow().then(() => setSaveStatus("saved"), () => setSaveStatus("error"));
+      },
+      character: () => setCharacterOpen(true),
+      paragraph: () => setParagraphOpen(true),
+      textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
       upload: () => fileInputRef.current?.click(),
@@ -1730,7 +1844,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       downloadPdf: () => {
         void handleDownloadPdf();
       },
-      print: printDocumentStudio,
+      print: () => { void printDocumentStudioAsync(framesRef.current).catch(error => setPdfError(error instanceof Error ? error.message : GENERIC_PDF_EXPORT_ERROR)); },
       openPageSetup: () => setRightPanel("settings"),
       find: () => setFindOpen(true),
       toggleOutline: () => setLeftPanel((p) => toggleLeftPanel(p, "outline")),
@@ -1763,6 +1877,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const disabledIds = new Set<MenuActionId>();
+  if (!editor?.can().undo()) disabledIds.add("edit.undo");
+  if (!editor?.can().redo()) disabledIds.add("edit.redo");
+  if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
+  if (!editor?.isActive("image")) (["format.image.left", "format.image.center", "format.image.right", "format.image.wrap", "format.image.break", "format.image.alt", "format.image.delete"] as MenuActionId[]).forEach(id => disabledIds.add(id));
   if (isExportingPdf) disabledIds.add("file.downloadPdf");
   if (isImporting) disabledIds.add("file.upload");
   if (typeof document !== "undefined" && !document.fullscreenEnabled) {
@@ -1900,10 +2018,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
 
   return (
-    <div data-studio-root="true" className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+    <div data-studio-root="true" inert={switchingDocument || undefined} aria-busy={switchingDocument || undefined} className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+      {formattingNotice > 0 ? <div role="alert" data-studio-formatting-notice style={{ position:"fixed", bottom:30, left:32, right:24, zIndex:10000, padding:8, background:"#ffffe1", color:"#000", border:"1px solid #808080", fontSize:13 }} dir={uiLanguage === "ur" ? "rtl" : "ltr"}>{formattingSafetyMessage(uiLanguage === "ur")} <button type="button" aria-label="Dismiss formatting message" onClick={()=>{ formattingSafety.current?.invalidate(); setFormattingNotice(0); }}>×</button></div> : null}
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
-      {inpageError ? <p role="alert" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
+      {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
       <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void handleInPageFile(file);
@@ -1913,10 +2032,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <input
         ref={fileInputRef}
         type="file"
-        accept=".txt,.docx"
+        accept=".inp,.txt,.docx"
         onChange={(e) => {
           const f = e.target.files && e.target.files[0];
-          if (f) handleUploadFile(f);
+          if (f) {
+            if (f.name.toLowerCase().endsWith(".inp")) void handleInPageFile(f);
+            else void handleUploadFile(f);
+          }
           e.target.value = "";
         }}
         className="hidden"
@@ -1936,8 +2058,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         }}
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
-      <StudioTextContextMenu editor={editor} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
-        onCharacter={()=>setCharacterOpen(true)} onParagraph={()=>setParagraphOpen(true)} />
+      <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
+        onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
       {imageMenu && editor ? (
@@ -2044,6 +2166,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         </div>
       ) : null}
 
+      {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}
       <DocumentStudioShell
         isUr={isUr}
         fillWindow={fillWindow}
@@ -2053,6 +2176,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             isUr={isUr}
             showHome={fillWindow}
             hasUnsavedChanges={pendingMetadataWrites > 0 || saveStatus === "saving" || saveStatus === "error" || (editingTitle && documentTitle !== documentTitleRef.current) || (storageDurability === "memory" && !isEditorEmpty)}
+            openDocuments={openDocuments}
+            activeDocumentId={activeDocumentId}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
@@ -2178,15 +2303,15 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             />
           ) : null}
           {uploadError && (
-            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+            <div role="alert" data-studio-import-error="true" className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
               {uploadError}
             </div>
           )}
-          {pdfError && (
-            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-              {pdfError}
-            </div>
-          )}
+          {(pdfRecoveryAvailable || pdfError) ? <StudioPdfRecoveryDialog
+            isUr={isUr} recoverable={pdfRecoveryAvailable} error={pdfError}
+            onClose={() => { setPdfRecoveryAvailable(false); setPdfError(null); }}
+            onPrint={handleRecoveryPrint}
+          /> : null}
           {docxImportNotice && (
             <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
               <span>

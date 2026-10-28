@@ -1,3 +1,4 @@
+import { validatePrintFrames, frameTextNode } from "../../tools/document-studio/utils/printableFrames";
 import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
 import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../../tools/document-studio/utils/pdfHeaderFooter";
 import { fontsForDocument } from "../../tools/document-studio/utils/pdfDocumentFonts";
@@ -28,6 +29,7 @@ import { clientIp, closePdfBrowser, pdfExportLimiter, type PdfExportDenied } fro
 
 interface ExportPdfRequestBody {
   doc: DocNode;
+  frames?: unknown;
   dir: Direction;
   settings?: DocumentStudioSettings;
 }
@@ -59,6 +61,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid document data / دستاویز کا ڈیٹا غلط ہے۔" }, { status: 400 });
   }
   const { dir } = body;
+  let frames;
+  try { frames = validatePrintFrames(body.frames); }
+  catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 400 }); }
   const settings = parseDocumentSettings(body.settings);
   const admission = await pdfExportLimiter.acquireSlot(request.signal);
   if (!("release" in admission)) return deniedResponse(admission);
@@ -73,12 +78,14 @@ export async function POST(request: NextRequest) {
     preflightPdfSource(body.doc);
     const doc = restorePdfTextRuns(body.doc);
     preflightPdfSource(doc, { skipByteLimit: true });
-    const resolved = await fontsForDocument(doc, dir, settings.typography);
+    const fontDoc = frames.length ? { ...doc, content: [...(doc.content ?? []), ...frames.filter(f => f.kind === "text").map(frameTextNode)] } : doc;
+    if (frames.length) preflightPdfSource(fontDoc);
+    const resolved = await fontsForDocument(fontDoc, dir, settings.typography);
     const digitalKhatt = resolved.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak");
     if (digitalKhatt && !digitalKhatt.complete) {
       throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from the bundled PDF compatibility face; export blocked");
     }
-    let { html, fontsUsed, fontFallbacks, protectedRuns: originalRuns } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
+    let { html, fontsUsed, fontFallbacks, protectedRuns: originalRuns } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography, frames);
     const executablePath = await chromium.executablePath();
     renderAbort.signal.throwIfAborted();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true, signal: renderAbort.signal });
@@ -93,7 +100,7 @@ export async function POST(request: NextRequest) {
     if (fontsUsed.includes("Jameel Noori Nastaleeq") && !await page.evaluate(loadPdfUrduFace, "Jameel Noori Nastaleeq")) {
       ({ html, fontsUsed, fontFallbacks, protectedRuns: originalRuns } = buildPdfHtml(doc, dir, {
         faces: resolved.fonts.faces.filter(face => face.familyName !== "Jameel Noori Nastaleeq"),
-      }, settings.typography));
+      }, settings.typography, frames));
       await page.setContent(html, { waitUntil: "load" });
     }
     // Preserve the author-supplied Unicode through HTML construction and Chromium.
@@ -169,6 +176,13 @@ export async function POST(request: NextRequest) {
       customMargins: settings.page.margins,
     });
     const physical = resolvePhysicalMargins(layout.margins, dir);
+    // Guarded text markup is detached before story measurement. It cannot
+    // enter the ink-line count, text pagination or authored-break calculations.
+    const guardedFrameHtml = frames.length ? await page.evaluate(() => {
+      const source = document.querySelector("[data-pdf-frame-source]");
+      const html = source ? Array.from(source.children).map(node => node.outerHTML) : [];
+      source?.remove(); return html;
+    }) : [];
     const inkPagination = await paginatePdfInk(
       page,
       layout.contentWidthMm,
@@ -176,11 +190,28 @@ export async function POST(request: NextRequest) {
       physical.leftMm,
       physical.rightMm,
     );
+    if (frames.length) {
+      const pageCount = Math.max(inkPagination.pages, ...frames.map(f => f.page));
+      await page.evaluate(({ markup, frames, width, height, left, top, contentWidth, contentHeight, pageCount }) => {
+        const sheets = Array.from(document.querySelectorAll<HTMLElement>("[data-pdf-ink-page]"));
+        document.body.style.cssText += `;width:${width}mm;margin:0;padding:0;`;
+        for (let index = 0; index < pageCount; index++) {
+          const physical = document.createElement("div"); physical.dataset.pdfPhysicalPage = String(index + 1);
+          physical.style.cssText = `position:relative;width:${width}mm;height:${height}mm;overflow:hidden;break-after:${index + 1 === pageCount ? "auto" : "page"};`;
+          const story = sheets[index];
+          if (story) { story.style.cssText += `;position:absolute;left:${left}mm;top:${top}mm;width:${contentWidth}mm;height:${contentHeight}mm;break-after:auto;`; physical.append(story); }
+          const layer = document.createElement("div"); layer.style.cssText = "position:absolute;inset:0;overflow:hidden;z-index:10;";
+          markup.forEach((html, i) => { if (frames[i].page === index + 1) layer.insertAdjacentHTML("beforeend", html); });
+          physical.append(layer); document.body.append(physical);
+        }
+      }, { markup: guardedFrameHtml, frames, width: layout.widthMm, height: layout.heightMm, left: physical.leftMm, top: layout.margins.topMm, contentWidth: layout.contentWidthMm, contentHeight: layout.heightMm - layout.margins.topMm - layout.margins.bottomMm, pageCount });
+      inkPagination.pages = pageCount;
+    }
     const templateFonts = resolved.fonts.faces.filter(face => ["Inter", "Mehr Nastaliq Web", "Noto Nastaliq Urdu"].includes(face.familyName));
     const templateCss = fontFaceCss(templateFonts);
     await page.evaluate(async () => { await document.fonts.load('9px "Inter"'); await document.fonts.ready; });
     const digitalInkBleed = originalRuns.length > 0;
-    if (digitalInkBleed) await page.evaluate(({ left, right }) => {
+    if (digitalInkBleed && !frames.length) await page.evaluate(({ left, right }) => {
       // Native print margins clip glyphs even when CSS overflow is visible.
       // Reserve the same space inside the body instead: text anchors, wrapping
       // width and vertical pagination stay put, but ink can paint into padding.
@@ -195,10 +226,10 @@ export async function POST(request: NextRequest) {
       preferCSSPageSize: false,
       printBackground: true,
       margin: {
-        top: `${layout.margins.topMm}mm`,
-        bottom: `${layout.margins.bottomMm}mm`,
-        left: digitalInkBleed ? "0mm" : `${physical.leftMm}mm`,
-        right: digitalInkBleed ? "0mm" : `${physical.rightMm}mm`,
+        top: frames.length ? "0mm" : `${layout.margins.topMm}mm`,
+        bottom: frames.length ? "0mm" : `${layout.margins.bottomMm}mm`,
+        left: frames.length || digitalInkBleed ? "0mm" : `${physical.leftMm}mm`,
+        right: frames.length || digitalInkBleed ? "0mm" : `${physical.rightMm}mm`,
       },
       displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
       headerTemplate: buildPdfHeaderTemplate(settings, doc, templateCss),

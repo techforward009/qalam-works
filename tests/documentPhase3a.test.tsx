@@ -79,11 +79,12 @@ describe("Phase 3A editor parity", () => {
     expect(DOCUMENT_TOOLBAR_LEADING).toEqual(["style", "spacing", "latin-font", "bold"]);
     const tools = DOCUMENT_MENU_BAR.find((menu) => menu.id === "tools");
     expect(tools?.items.filter((item) => item.type === "action").map((item) => item.id)).toEqual([
+      "tools.stats",
       "tools.standardize",
       "tools.audit",
-      "tools.stats",
       "tools.dictation",
       "tools.glossary",
+      "insert.example",
     ]);
   });
 
