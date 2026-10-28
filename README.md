@@ -208,6 +208,8 @@ More detailed project documentation lives in [`docs/`](docs/).
 Useful starting points include:
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/QALAM-PAGE-ENGINEERING.md`](docs/QALAM-PAGE-ENGINEERING.md) — mandatory engineering handbook for future agents working on Qalam Page
+- [`docs/reviews/qalam-page-engineering-audit-2026-10-28.md`](docs/reviews/qalam-page-engineering-audit-2026-10-28.md) — dated supporting evidence and unresolved risks
 - [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md)
 - [`docs/DECISIONS.md`](docs/DECISIONS.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)

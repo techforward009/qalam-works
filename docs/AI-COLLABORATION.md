@@ -25,6 +25,12 @@ Policy — Risk-Based Role Division" for the reasoning behind this.
 
 ---
 
+## Required Qalam Page engineering handbook
+
+Before working on Qalam Page, document editing, selected-text formatting, object frames, font loading, page geometry or PDF export, **read and follow** [QALAM-PAGE-ENGINEERING.md](QALAM-PAGE-ENGINEERING.md). The source investigation is preserved in [the dated engineering audit](reviews/qalam-page-engineering-audit-2026-10-28.md). The audit is evidence, not authorization to refactor. Always check the current implementation and keep user content and print fidelity safe.
+
+---
+
 ## Mandatory Pre-Coding Rule
 
 Before modifying code, the AI must:
