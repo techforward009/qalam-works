@@ -71,7 +71,7 @@ test('compare existing browser and real server PDF output without changing eithe
     const portal = page.locator('[data-studio-print-portal]'); await expect(portal).toHaveAttribute('data-print-waited-fonts', 'true');
     await expect(portal.locator('img')).toHaveCount(1); await expect(portal.locator('td')).toHaveCount(4);
     await expect(portal.locator('[dir="rtl"]')).not.toHaveCount(0);
-    await expect(portal.locator('[data-studio-frame]')).toHaveCount(0); // Existing omission, reported rather than changing rendering.
+    await expect(portal.locator('[data-print-frame]')).toHaveCount(1); // Phase 5 now includes the saved object.
     const printStyle = await portal.locator('style').textContent();
     expect(printStyle).toContain('size: 148mm 210mm'); expect(printStyle).toContain('margin: 12.7mm 0 12.7mm 0');
     const color = await portal.locator('[data-studio-latin-run]').filter({ hasText: 'First page:' }).evaluate(el => getComputedStyle(el).color);
@@ -82,7 +82,7 @@ test('compare existing browser and real server PDF output without changing eithe
     const server = await PDFDocument.load(readFileSync(serverPath)), browser = await PDFDocument.load(readFileSync(browserPath));
     const report = { serverPages: server.getPageCount(), browserPages: browser.getPageCount(),
       serverSizes: server.getPages().map(p => p.getSize()), browserSizes: browser.getPages().map(p => p.getSize()),
-      existingSeparateObjectOmission: true, browserTableCells,
+      existingSeparateObjectOmission: false, browserTableCells,
       browserText: (execFileSync('pdftotext', ['-layout', browserPath, '-'])).toString(), serverText: (execFileSync('pdftotext', ['-layout', serverPath, '-'])).toString(),
     };
     writeFileSync(info.outputPath('comparison.json'), JSON.stringify(report, null, 2));

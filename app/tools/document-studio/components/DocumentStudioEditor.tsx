@@ -1478,7 +1478,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     browserPrintPending.current = true;
     const finished = () => { browserPrintPending.current = false; };
     window.addEventListener("afterprint", finished, { once: true });
-    try { await printDocumentStudioAsync(); }
+    try { await printDocumentStudioAsync(framesRef.current); }
     catch (error) {
       window.removeEventListener("afterprint", finished);
       browserPrintPending.current = false;
@@ -1501,7 +1501,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setPdfSummary(null);
     setIsExportingPdf(true);
     try {
-      const body = JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings });
+      const body = JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings, frames: framesRef.current });
       let response: Response;
       try {
         response = await fetch("/api/export-pdf", {
@@ -1830,7 +1830,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       downloadPdf: () => {
         void handleDownloadPdf();
       },
-      print: printDocumentStudio,
+      print: () => { void printDocumentStudioAsync(framesRef.current).catch(error => setPdfError(error instanceof Error ? error.message : GENERIC_PDF_EXPORT_ERROR)); },
       openPageSetup: () => setRightPanel("settings"),
       find: () => setFindOpen(true),
       toggleOutline: () => setLeftPanel((p) => toggleLeftPanel(p, "outline")),

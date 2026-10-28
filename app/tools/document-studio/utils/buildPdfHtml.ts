@@ -1,3 +1,5 @@
+import { frameTextNode, renderPrintFrame } from "./printableFrames";
+import type { StudioFrame } from "../components/StudioObjectLayer";
 // Document Studio PDF HTML adapter — pure/sync.
 // Fonts and direction resolve through the central font registry.
 // Effective CSS classes are chosen only from faces that fully loaded.
@@ -463,7 +465,8 @@ export function buildPdfHtml(
   doc: DocNode,
   dir: Direction,
   fonts: PdfFonts,
-  typography?: DocumentStudioSettings["typography"]
+  typography?: DocumentStudioSettings["typography"],
+  frames: StudioFrame[] = [],
 ): PdfHtmlResult {
   const available = new Map<string, PdfFontFace>();
   for (const face of fonts.faces) {
@@ -482,6 +485,7 @@ export function buildPdfHtml(
   };
 
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");
+  const frameHtml = frames.map(frame => renderPrintFrame(frame, frame.kind === "text" ? convertInline(frameTextNode(frame).content, ctx, "rtl") : undefined)).join("");
 
   if (ctx.fontsUsed.size === 0) {
     const effective = resolveEffectivePdfFont(null, dir, available, typography);
@@ -553,6 +557,7 @@ ${classRulesCss()}
 </head>
 <body dir="${dir}">
 ${bodyHtml}
+${frameHtml ? `<div data-pdf-frame-source style="position:absolute;left:-10000px;top:0">${frameHtml}</div>` : ""}
 <script>(function(){var tokenWidth=${scaleTokenWidth.toString()};function measure(){var widths=new Map();document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=tokenWidth(el,factor,1,widths);if(width<=0)return;el.style.marginInlineEnd=(width*(factor-1)).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
 </body>
 </html>`;

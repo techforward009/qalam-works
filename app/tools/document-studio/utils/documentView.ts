@@ -1,3 +1,5 @@
+import { validatePrintFrames, printFramePageMarkup } from "./printableFrames";
+import type { StudioFrame } from "../components/StudioObjectLayer";
 /**
  * Single Pages / Facing Pages / Pageless are VIEW preferences only.
  * It must not live in the document JSON schema.
@@ -162,8 +164,8 @@ export function zoomFromMenuAction(id: string): DocumentZoom | null {
   return parseStoredZoom(id.slice("view.zoom.".length));
 }
 
-export function printDocumentStudio(): void {
-  void printDocumentStudioAsync();
+export function printDocumentStudio(frames: StudioFrame[] = []): void {
+  void printDocumentStudioAsync(frames);
 }
 
 export async function waitForPrintFonts(portal: HTMLElement | null): Promise<boolean> {
@@ -184,6 +186,15 @@ export async function waitForPrintFonts(portal: HTMLElement | null): Promise<boo
       /* fallback remains Noto */
     }
   }
+  const unavailableFrameFonts: string[] = [];
+  for (const family of new Set(Array.from(portal?.querySelectorAll<HTMLElement>("[data-print-frame-font]") ?? []).map(node => node.dataset.printFrameFont!))) {
+    try {
+      const loaded = await fonts?.load?.(`16px "${family}"`);
+      if (loaded && !loaded.length) unavailableFrameFonts.push(family);
+    } catch { unavailableFrameFonts.push(family); }
+  }
+  portal?.setAttribute("data-print-unavailable-frame-fonts", JSON.stringify(unavailableFrameFonts));
+  if (unavailableFrameFonts.length) console.warn("[studio-print] Frame fonts unavailable; retaining declared fallback stacks:", unavailableFrameFonts);
   const jameelReady = needsJameel ? Boolean(fonts?.check?.('16px "Jameel Noori Nastaleeq"')) : true;
   if (fonts?.load && portal) {
     for (const family of ["AlFars 9 Badr", "B Nazanin"]) {
@@ -200,9 +211,9 @@ export async function waitForPrintFonts(portal: HTMLElement | null): Promise<boo
   return jameelReady;
 }
 
-export async function printDocumentStudioAsync(): Promise<void> {
+export async function printDocumentStudioAsync(frames: StudioFrame[] = []): Promise<void> {
   if (typeof window === "undefined") return;
-  const portal = mountDocumentPrintPortal();
+  const portal = mountDocumentPrintPortal(frames);
   if (!portal) {
     window.print();
     return;
@@ -264,7 +275,8 @@ export function stripViewOnlyPagination(root: HTMLElement): void {
   });
 }
 
-export function mountDocumentPrintPortal(): HTMLElement | null {
+export function mountDocumentPrintPortal(inputFrames: StudioFrame[] = []): HTMLElement | null {
+  const frames = validatePrintFrames(inputFrames);
   if (typeof document === "undefined") return null;
   unmountDocumentPrintPortal();
   const root = document.querySelector("[data-studio-print-root]");
@@ -293,10 +305,18 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   });
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
-  const needsJameel = source.innerHTML.includes("Jameel Noori Nastaleeq");
-  const onDemandFaces = studioOnDemandFontFaceCss(source.innerHTML);
+  const frameHtml = printFramePageMarkup(frames, widthMm, heightMm);
+  if (frameHtml) {
+    portal.setAttribute("data-print-frames", "true");
+    page.insertAdjacentHTML("beforeend", frameHtml);
+  }
+  const needsJameel = (source.innerHTML + frameHtml).includes("Jameel Noori Nastaleeq");
+  const onDemandFaces = studioOnDemandFontFaceCss(source.innerHTML + frameHtml);
   const style = document.createElement("style");
   style.textContent = `${needsJameel ? studioJameelFontFaceCss() + "\n" : ""}${onDemandFaces ? onDemandFaces + "\n" : ""}${studioGulzarFontFaceCss()}\n${studioMehrFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
+  if (frames.length) style.textContent += `
+@page{margin:0;}
+@media print{[data-studio-print-portal][data-print-frames] [data-studio-print-page]{position:relative!important;padding:${topMm}mm ${rightMm}mm ${bottomMm}mm ${leftMm}mm!important;box-decoration-break:clone;-webkit-box-decoration-break:clone;}}`;
   portal.append(style, page);
   document.body.appendChild(portal);
   return portal;
