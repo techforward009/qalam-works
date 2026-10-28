@@ -116,6 +116,10 @@ export function StudioObjectLayer({
   const drawing = DRAW_TOOLS.has(tool);
   const pendingTextFocus = useRef<string | null>(null);
 
+  // Object selection belongs exclusively to the Arrow/Select tool. Switching
+  // tools must not leave stale handles that reappear on the next tool switch.
+  useEffect(() => { setSelected([]); }, [tool]);
+
   useLayoutEffect(() => {
     if (tool !== "text" || !pendingTextFocus.current) return;
     const frame = rootRef.current?.querySelector<HTMLElement>(`[data-studio-frame-id="${pendingTextFocus.current}"]`);
@@ -127,9 +131,10 @@ export function StudioObjectLayer({
 
   useEffect(() => {
     const clearOnEmpty = (event: PointerEvent) => {
-      if (tool !== "select") return;
       const target = event.target as HTMLElement | null;
-      if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-objects]")) setSelected([]);
+      // Any click in the document/pasteboard away from a frame dismisses the
+      // previous object selection, whether the active tool is Arrow or Text.
+      if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-frame]")) setSelected([]);
     };
     const clearOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -144,11 +149,11 @@ export function StudioObjectLayer({
       document.removeEventListener("pointerdown", clearOnEmpty, true);
       document.removeEventListener("keydown", clearOnEscape, true);
     };
-  }, [tool]);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (tool !== "select" || (event.key !== "Delete" && event.key !== "Backspace")) return;
       const target = event.target as HTMLElement | null;
       if (target?.closest("textarea, input, [contenteditable='true']")) return;
       if (!selected.length) return;
@@ -158,7 +163,7 @@ export function StudioObjectLayer({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [frames, onFramesChange, selected]);
+  }, [frames, onFramesChange, selected, tool]);
 
   const localPoint = (event: { clientX: number; clientY: number }) => {
     const root = rootRef.current;
@@ -327,7 +332,7 @@ export function StudioObjectLayer({
         const top = snap(slot.y+frame.yMm * PX_PER_MM, rootBox?.top);
         const width = Math.max(1, snap(frame.wMm * PX_PER_MM));
         const height = Math.max(1, snap(frame.hMm * PX_PER_MM));
-        const active = selected.includes(frame.id);
+        const active = tool === "select" && selected.includes(frame.id);
         return (
           <div
             key={frame.id}
@@ -345,7 +350,7 @@ export function StudioObjectLayer({
             onPointerDown={(event) => {
               if (frame.kind === "text" && tool === "text") {
                 event.stopPropagation();
-                setSelected([frame.id]);
+                setSelected([]);
                 event.currentTarget.querySelector("textarea")?.focus({ preventScroll: true });
                 return;
               }
@@ -368,7 +373,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected([frame.id])} onText={(text) => updateFrame(frame.id, { text })} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected([])} onText={(text) => updateFrame(frame.id, { text })} />
             {active
               ? (["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
                   <div

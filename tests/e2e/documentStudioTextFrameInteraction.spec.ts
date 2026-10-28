@@ -62,12 +62,43 @@ test('Arrow selects single-line boxes repeatedly and preserves drag and resize',
   await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2); await page.mouse.down(); await page.mouse.move(handle.x + handle.width / 2 + 12, handle.y + handle.height / 2 + 9, { steps: 3 }); await page.mouse.up();
   expect((await frame.boundingBox())!.width).toBeGreaterThan(moved.width + 5);
 });
-test('clicking an already-focused single-line box after Escape restores its handles and editing', async ({ page }) => {
-  const input = box(page, 'single'); await input.click(); await expect(input).toBeFocused();
-  await input.press('Escape'); await expect(object(page, 'single').locator('[data-studio-frame-handle]')).toHaveCount(0);
-  await input.click(); await expect(object(page, 'single').locator('[data-studio-frame-handle]')).toHaveCount(8);
-  await input.press('End'); await input.pressSequentially(' ب'); expect(await input.inputValue()).toContain(' ب');
-  await box(page, 'multi').click(); await expect(object(page, 'multi').locator('[data-studio-frame-handle]')).toHaveCount(8);
+test('Text tool edits single-line boxes after Escape without showing object handles', async ({ page }) => {
+  const input = box(page, 'single'), handles = object(page, 'single').locator('[data-studio-frame-handle]');
+  await input.click(); await expect(input).toBeFocused();
+  await expect(handles).toHaveCount(0);
+  await input.press('Escape'); await expect(handles).toHaveCount(0);
+  await input.click(); await expect(input).toBeFocused(); await expect(handles).toHaveCount(0);
+  await input.press('End'); await input.pressSequentially(' ب');
+  expect(await input.inputValue()).toContain(' ب');
+  await box(page, 'multi').click();
+  await expect(object(page, 'multi').locator('[data-studio-frame-handle]')).toHaveCount(0);
+});
+test('Arrow alone shows handles; clicking an empty page area or switching to Text dismisses them', async ({ page }, info) => {
+  const single = object(page, 'single'), handles = single.locator('[data-studio-frame-handle]');
+  const arrow = page.locator('[data-studio-tool-button="select"]');
+  const textTool = page.locator('[data-studio-tool-button="text"]');
+  const input = box(page, 'single');
+
+  // Editing is not frame selection.
+  await input.click(); await expect(input).toBeFocused(); await expect(handles).toHaveCount(0);
+
+  await arrow.click(); await single.click(); await expect(handles).toHaveCount(8);
+  // Empty paper inside the object layer must clear the eight handles.
+  await page.locator('[data-studio-objects]').click({ position: { x: 8, y: 8 } });
+  await expect(handles).toHaveCount(0);
+  await single.click(); await expect(handles).toHaveCount(8);
+
+  // Changing to the text insertion tool also immediately clears the object.
+  await textTool.click(); await expect(handles).toHaveCount(0);
+  await input.click(); await expect(input).toBeFocused(); await expect(handles).toHaveCount(0);
+  await story(page).click(); await expect(handles).toHaveCount(0);
+
+  // Returning to Arrow does not resurrect an old selection.
+  await arrow.click(); await expect(handles).toHaveCount(0);
+  await single.click(); await expect(handles).toHaveCount(8);
+  await object(page, 'multi').click(); await expect(handles).toHaveCount(0);
+  await expect(object(page, 'multi').locator('[data-studio-frame-handle]')).toHaveCount(8);
+  if (info.project.name === 'desktop-chrome') await page.screenshot({ path: info.outputPath('arrow-selection-only.png'), scale: 'css' });
 });
 test('box selection stays painted at the formatting controls, rejects formatting, and clears on dismissal', async ({ page }, info) => {
   const before = await snapshot(page), input = box(page, 'single'); await input.click(); await input.press('Control+a');
