@@ -2,8 +2,8 @@
 
 **Status:** Standing engineering and review instructions.  
 **Date established:** 2026-10-28.  
-**Scope:** \`app/tools/document-studio/\`, \`app/api/export-pdf/\`, relevant text/font/PDF helpers, and tests.  
-**Evidence baseline:** [Architecture audit, 2026-10-28](reviews/qalam-page-engineering-audit-2026-10-28.md), reviewing **Draft PR #144** at \`2b3d7aa3eda83e7db5c470b5b67e9dbfbe6eef3f\`.  
+**Scope:** `app/tools/document-studio/`, `app/api/export-pdf/`, relevant text/font/PDF helpers, and tests.  
+**Evidence baseline:** [Architecture audit, 2026-10-28](reviews/qalam-page-engineering-audit-2026-10-28.md), reviewing **Draft PR #144** at `2b3d7aa3eda83e7db5c470b5b67e9dbfbe6eef3f`.  
 **Related policies:** [AI collaboration rules](AI-COLLABORATION.md), [general architecture](ARCHITECTURE.md), [document specification](DOCUMENT-STUDIO-SPEC.md).
 
 > **IMPORTANT:** This handbook is an enduring procedure, **not** an approval to implement any proposed redesign. The audit is a dated snapshot; verify current code, the latest approved decisions, branch/PR state, and behavior before using it. The latest evidence wins over stale documentation. Never merge or deploy to production without explicit owner approval.
@@ -16,7 +16,7 @@
 
 Before editing Qalam Page:
 
-1. Read this handbook, \`docs/AI-COLLABORATION.md\`, and the dated architecture audit. Also read other relevant product decisions.
+1. Read this handbook, `docs/AI-COLLABORATION.md`, and the dated architecture audit. Also read other relevant product decisions.
 2. Inspect **actual current** branch, head SHA, PR draft/merge state, the files to be edited, their callers, and tests. Do not assume PR #144 has merged or that 2026-10-28 paths/bugs are unchanged.
 3. Explain scope, risks, affected subsystems, non-goals, and an acceptance test. Do not expand scope or execute a major redesign without owner approval.
 4. Label every important statement **Verified**, **Inferred**, **Proposed**, or **Unresolved**. A failed reproduction is not evidence that the bug never occurs.
@@ -27,7 +27,7 @@ Before editing Qalam Page:
 
 ## 2. Current architectural map — dated snapshot
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
   UI["Toolbar / Character / Paragraph / menus"]
   Story["Main story: TipTap / ProseMirror"]
@@ -52,14 +52,14 @@ flowchart TD
   Server --> Physical
   Story --> Browser
   Frames --> Browser
-\`\`\`
+```
 
-- **Main story:** \`DocumentStudioEditor.tsx\`, \`documentSchema.ts\`, ProseMirror model/marks/history, formatting handlers and \`DocumentCanvas.tsx\`.
-- **Frame editing:** \`StudioObjectLayer.tsx\` owns object selection, placement, resize and drawing; \`StudioTextFrame.tsx\` uses a native textarea and a mirror for painted caret/selection.
-- **Storage boundary:** the document library stores story/settings; drawing frames use a separate \`localStorage\` map. Their writes are **not atomic**. A saved library record is not necessarily the live editor snapshot.
-- **Geometry:** \`QalamPagination.ts\` measures canonical story flow; \`facingPages.ts\` and zoom transform the display, **not** print coordinates.
-- **Server PDF:** \`app/api/export-pdf/route.ts\`, \`buildPdfHtml.ts\`, \`pdfInkPagination.ts\`, font guard/loader and \`printableFrames.ts\`.
-- **Browser print:** \`documentView.ts\` clones/prints the story and overlays validated frames; Phase 4 recovery uses the browser route.
+- **Main story:** `DocumentStudioEditor.tsx`, `documentSchema.ts`, ProseMirror model/marks/history, formatting handlers and `DocumentCanvas.tsx`.
+- **Frame editing:** `StudioObjectLayer.tsx` owns object selection, placement, resize and drawing; `StudioTextFrame.tsx` uses a native textarea and a mirror for painted caret/selection.
+- **Storage boundary:** the document library stores story/settings; drawing frames use a separate `localStorage` map. Their writes are **not atomic**. A saved library record is not necessarily the live editor snapshot.
+- **Geometry:** `QalamPagination.ts` measures canonical story flow; `facingPages.ts` and zoom transform the display, **not** print coordinates.
+- **Server PDF:** `app/api/export-pdf/route.ts`, `buildPdfHtml.ts`, `pdfInkPagination.ts`, font guard/loader and `printableFrames.ts`.
+- **Browser print:** `documentView.ts` clones/prints the story and overlays validated frames; Phase 4 recovery uses the browser route.
 - **Font behavior:** discovery, file availability, browser readiness, actual use and embedded family are distinct checks. An available fallback is **not** proof that the requested face was used.
 
 **Version warning:** These descriptions are verified by the linked October audit of PR #144; their current status must be rechecked.
@@ -71,16 +71,16 @@ flowchart TD
 - Formatting a frame must leave **main story JSON byte-for-byte unchanged**, except changes explicitly requested to the story. The converse applies to story formatting.
 - Never apply a command to a stale or unrelated selection. When the intended target is unsupported/invalid/ambiguous, **fail closed** with a clear user-facing message.
 - Changing fonts, selection, object geometry, export layout or page mode must not silently alter Unicode text, mark ranges or saved frame content.
-- Existing documents and legacy \`StudioFrame\` plain-text data must load without rewriting or losing text. Do not silently migrate on read.
+- Existing documents and legacy `StudioFrame` plain-text data must load without rewriting or losing text. Do not silently migrate on read.
 - User content, selected fonts and object positions must survive edit → save → reload → export, subject only to clearly disclosed and tested limitations.
 
 ### 3.2 Editing-target ownership
 
 Every formatting action must resolve **exactly one** valid context:
 
-- \`story\`: current document ID + valid ProseMirror selection/bookmark.
-- \`frame\`: current document ID + existing frame ID + valid box-editor selection/bookmark.
-- \`none\`: no editing selection.
+- `story`: current document ID + valid ProseMirror selection/bookmark.
+- `frame`: current document ID + existing frame ID + valid box-editor selection/bookmark.
+- `none`: no editing selection.
 
 Treat **browser focus** (which control has keyboard focus) separately from **formatting target** (which validated selection gets the command). Toolbar/dialog focus must not move a frame command into the main story. Validate document ID, frame existence, revisions and editor lifetime before dispatch. Invalidate bookmarks on document switch, deletion or genuine dismissal. Do not treat object selection alone as permission to format a whole text range.
 
@@ -99,12 +99,12 @@ The audit recommends **restricted TipTap/ProseMirror editing in boxes, behind a 
 
 Before approving this work, require a design covering:
 
-- Versioned structured content and an adapter for legacy \`text\`; exactly one authoritative editable representation.
+- Versioned structured content and an adapter for legacy `text`; exactly one authoritative editable representation.
 - Selection-aware marks; edit/paste/IME composition; RTL/BiDi shaping, diacritics, joins and wrapped ranges.
 - Undo/redo, font changes, supported marks, overflow/clipping/scrolling, keyboard focus and performance with many boxes.
 - Matching screen, server-PDF and browser-print serializers.
 - Restricted schema initially: text, paragraphs, supported marks and hard breaks. No copied story pagination, page breaks, nested boxes or tables by default.
-- Lazy editor activation where safe, and review of global \`.ProseMirror\` CSS/queries/listeners before adding box editors.
+- Lazy editor activation where safe, and review of global `.ProseMirror` CSS/queries/listeners before adding box editors.
 
 Do **not** emulate per-word rich text by styling an entire textarea or maintain two independently editable copies of the same frame text.
 
@@ -113,7 +113,7 @@ Do **not** emulate per-word rich text by styling an entire textarea or maintain 
 The agreed contract to **test** before refactors:
 
 - Physical paper origin = upper-left of the sheet.
-- Each frame's \`xMm/yMm/wMm/hMm\` = physical-page-local millimetres.
+- Each frame's `xMm/yMm/wMm/hMm` = physical-page-local millimetres.
 - Main story origin = resolved physical page margins.
 - Single/Facing presentation and zoom must **not** affect stored object geometry or PDF positions.
 - Finalize story pagination **before** adding object overlays; an overlay alone must not reflow story text.
@@ -127,7 +127,7 @@ A regression test must compare the **same saved/snapshot content**, margins and 
 ### 3.6 Exact font evidence, not visual guesses
 
 - Respect authored font selection and existing font license decisions. Do **not** replace font files or weaken Unicode/font guards to make tests pass.
-- Log/report requested family, source availability, download/completeness, browser \`document.fonts\` outcome, fallback actually used, and **embedded font**. Never log URLs containing secret credentials.
+- Log/report requested family, source availability, download/completeness, browser `document.fonts` outcome, fallback actually used, and **embedded font**. Never log URLs containing secret credentials.
 - The audit confirms Jameel Noori embedded in the owner's live PDF, but Noto Nastaliq Urdu and Mehr in the preview PDF. The precise historical preview failure **remains unresolved**.
 - An error or fallback must not be reported as a faithful export using the requested font. Never "repair" mismatched glyph metrics with arbitrary line-height adjustments.
 - Digital Khatt is for its approved Arabic/Quranic use; do not touch the Muhammadi Quranic font. Follow current font-policy decisions for Urdu prose.
