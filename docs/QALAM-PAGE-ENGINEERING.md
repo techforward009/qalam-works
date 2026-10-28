@@ -24,6 +24,13 @@ Before editing Qalam Page:
 6. Write a failing behavioral test first for a bug fix when practicable. Compare before/after against the same document snapshot.
 7. No unauthorized merge, production deploy, environment change, billing, license change, or font-binary edit. Respect draft/preview instructions on each task.
 8. Never print credentials or persist sensitive user content in fixtures or logs. Use synthetic fixtures.
+9. **Limited checks only:** run `npx tsc --noEmit` plus tests directly related to the approved change. **Never run `npm run build` unless the owner explicitly asks**, and ensure Playwright's `webServer`, setup scripts, or other test helpers do not run a build implicitly.
+10. **Never test against the live production site.** Use a local test server or an explicitly approved isolated test environment, never `www.qalamworks.com` as a test target.
+11. **Do not modify `package.json`, any lockfile, or workflow files.** No dependency or CI configuration changes under this standing rule.
+12. **Do not touch the Muhammadi Quranic or Jameel Noori font files.** Preserve the existing approved fonts and their bytes.
+13. **Never commit generated or ignored artifacts:** `next-env.d.ts`, `*.tsbuildinfo`, `test-results/`, or `public/quran/madinah-v2/` (including its contents).
+14. **Git author email:** use `124031367+techforward009@users.noreply.github.com`; verify the resulting commit author before reporting completion.
+15. **Push once** for the approved, verified change. Keep its PR in **DRAFT** and **never merge** without explicit owner approval. Do not deploy production.
 
 ## 2. Current architectural map — dated snapshot
 
@@ -130,7 +137,7 @@ A regression test must compare the **same saved/snapshot content**, margins and 
 - Log/report requested family, source availability, download/completeness, browser `document.fonts` outcome, fallback actually used, and **embedded font**. Never log URLs containing secret credentials.
 - The audit confirms Jameel Noori embedded in the owner's live PDF, but Noto Nastaliq Urdu and Mehr in the preview PDF. The precise historical preview failure **remains unresolved**.
 - An error or fallback must not be reported as a faithful export using the requested font. Never "repair" mismatched glyph metrics with arbitrary line-height adjustments.
-- Digital Khatt is for its approved Arabic/Quranic use; do not touch the Muhammadi Quranic font. Follow current font-policy decisions for Urdu prose.
+- Digital Khatt is for its approved Arabic/Quranic use. **Do not change either the Muhammadi Quranic font files or the Jameel Noori font files.** Follow current font-policy decisions for Urdu prose.
 
 ### 3.7 Storage, history and compatibility
 
@@ -171,10 +178,10 @@ For each material editor/export change, provide:
 1. **Behavioral reproduction:** initial failing test or exact documented sequence; desktop and mobile when relevant.
 2. **Model tests:** editing target, serialized marks/text, document switch, undo/redo and legacy fixtures.
 3. **Real editor tests:** selection, toolbar focus, keyboard, paste/IME where relevant, zoom and Facing mode.
-4. **Real PDF inspection:** embedded font names and Unicode extraction, rendered pixels, physical coordinates, glyph baselines/line endings, page counts and margins. HTML-only checks are insufficient.
+4. **Real PDF inspection — only for changes that can affect PDF output or layout:** inspect embedded font names and Unicode extraction, rendered pixels, physical coordinates, glyph baselines/line endings, page counts and margins. HTML-only checks are insufficient when PDF verification is required.
 5. **Regression safety:** expected untouched story JSON for a box-only action, untouched object geometry for a story-only action, exact legacy load behavior.
-6. **Build/check reporting:** TypeScript, focused Vitest, focused Playwright, broader relevant checks and known CI failures reported separately. Do not claim CI passes if any relevant job fails; do not hide pre-existing failures.
-7. **Before/after comparison:** same snapshot and settings, no unexplained change to golden documents.
+6. **Check reporting:** run `npx tsc --noEmit` plus directly related focused tests (Vitest or Playwright when applicable), and report results, skips and known CI failures separately. **Do not run `npm run build` unless the owner explicitly requests it; prevent Playwright or its server configuration from running a build implicitly.** Do not claim CI passes if a relevant check fails; do not hide existing failures.
+7. **Before/after golden comparison — only for changes that can affect PDF output or layout:** use the same document snapshot and settings and explain any changed golden output. For small UI-only changes, such as menus, use TypeScript, directly related focused tests and **1–2 screenshots** instead; do not require real-PDF or golden-document comparisons for unrelated UI work.
 8. **Owner review:** precise files changed, evidence, remaining limitations, new SHA/PR status and **no merge/deploy** without explicit approval.
 
 Test families should cover Jameel success/unavailability, Mehr, Digital Khatt Arabic, mixed Urdu/Arabic/English, harakat, manual breaks, line-height/Auto leading, unequal margins, five frame kinds, deliberate overlap, >1 page and both printing paths. Use raster tolerances suitable for antialiasing **in addition** to font/coordinate assertions.
