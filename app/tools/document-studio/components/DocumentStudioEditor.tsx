@@ -927,6 +927,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const handleInPageFile = async (file: File) => {
     setInpageError(null);
+    setUploadError(null);
+    setDocxImportNotice(false);
     setIsImporting(true);
     try {
       const { parseInPage, MAX_INPAGE_BYTES } = await import("../utils/inpage/parseInPage");
@@ -962,11 +964,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   // Document Cleaner already uses, and the newly-shared plainTextToDocNode.
   const handleUploadFile = async (file: File) => {
     setUploadError(null);
+    setInpageError(null);
     setDocxImportNotice(false);
 
     const validation = validateFile(file);
     if (!validation.valid) {
-      setUploadError(validation.error || "فائل ناکام ہو گئی / File validation failed.");
+      setUploadError(validation.errorCode === "unsupported" ? "Only .inp, .txt and .docx files are supported." : validation.error || "فائل ناکام ہو گئی / File validation failed.");
       return;
     }
 
@@ -1915,7 +1918,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     <div data-studio-root="true" className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
-      {inpageError ? <p role="alert" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
+      {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
       <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void handleInPageFile(file);
@@ -1925,10 +1928,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <input
         ref={fileInputRef}
         type="file"
-        accept=".txt,.docx"
+        accept=".inp,.txt,.docx"
         onChange={(e) => {
           const f = e.target.files && e.target.files[0];
-          if (f) handleUploadFile(f);
+          if (f) {
+            if (f.name.toLowerCase().endsWith(".inp")) void handleInPageFile(f);
+            else void handleUploadFile(f);
+          }
           e.target.value = "";
         }}
         className="hidden"
@@ -2190,7 +2196,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             />
           ) : null}
           {uploadError && (
-            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+            <div role="alert" data-studio-import-error="true" className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
               {uploadError}
             </div>
           )}
