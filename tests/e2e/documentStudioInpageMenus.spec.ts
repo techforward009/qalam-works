@@ -15,7 +15,7 @@ test.beforeEach(async ({ page, context }) => {
 });
 
 test("InPage top-level order and a ready New action", async ({ page }) => {
-  await expect(page.locator("[data-menu-root]")).toHaveText(["File", "Edit", "View", "Text", "Page", "Utilities", "Window", "Help"]);
+  await expect(page.locator("[data-menu-root]")).toHaveText(["File", "Edit", "View", "Format", "Insert", "Utilities", "Window", "Help"]);
   await root(page, "file").click();
   await action(page, "file.new").click();
   await expect(dropdown(page)).toHaveCount(0);

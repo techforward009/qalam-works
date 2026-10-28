@@ -1,0 +1,190 @@
+{
+  "375": {
+    "box": {
+      "x": 0,
+      "y": 22,
+      "width": 375,
+      "height": 39
+    },
+    "buttons": [
+      {
+        "id": "file",
+        "text": "File",
+        "x": 16,
+        "y": 22,
+        "width": 35.34375,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "edit",
+        "text": "Edit",
+        "x": 51.34375,
+        "y": 22,
+        "width": 36.6875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "view",
+        "text": "View",
+        "x": 88.03125,
+        "y": 22,
+        "width": 41.796875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "format",
+        "text": "Format",
+        "x": 129.828125,
+        "y": 22,
+        "width": 54.015625,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "insert",
+        "text": "Insert",
+        "x": 183.84375,
+        "y": 22,
+        "width": 46.015625,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "tools",
+        "text": "Utilities",
+        "x": 229.859375,
+        "y": 22,
+        "width": 54.671875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "window",
+        "text": "Window",
+        "x": 284.53125,
+        "y": 22,
+        "width": 58.6875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      },
+      {
+        "id": "help",
+        "text": "Help",
+        "x": 0,
+        "y": 41,
+        "width": 40.6875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px 8px"
+      }
+    ],
+    "style": {
+      "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(254, 254, 255) 0px, rgb(229, 234, 245) 7px, rgb(212, 219, 237) 7px, rgb(225, 230, 246) 100%) repeat scroll 0% 0% / auto padding-box border-box",
+      "borderBottom": "1px solid rgb(182, 188, 204)"
+    }
+  },
+  "1280": {
+    "box": {
+      "x": 0,
+      "y": 22,
+      "width": 1280,
+      "height": 19
+    },
+    "buttons": [
+      {
+        "id": "file",
+        "text": "File",
+        "x": 31,
+        "y": 22,
+        "width": 19.34375,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "edit",
+        "text": "Edit",
+        "x": 63,
+        "y": 22,
+        "width": 20.6875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "view",
+        "text": "View",
+        "x": 96,
+        "y": 22,
+        "width": 25.796875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "format",
+        "text": "Format",
+        "x": 136,
+        "y": 22,
+        "width": 38.015625,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "insert",
+        "text": "Insert",
+        "x": 187,
+        "y": 22,
+        "width": 30.015625,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "tools",
+        "text": "Utilities",
+        "x": 231,
+        "y": 22,
+        "width": 38.671875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "window",
+        "text": "Window",
+        "x": 283,
+        "y": 22,
+        "width": 42.6875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      },
+      {
+        "id": "help",
+        "text": "Help",
+        "x": 342,
+        "y": 22,
+        "width": 24.6875,
+        "height": 19,
+        "font": "12px / 18px \"Segoe UI\", Tahoma, sans-serif",
+        "padding": "0px"
+      }
+    ],
+    "style": {
+      "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(254, 254, 255) 0px, rgb(229, 234, 245) 7px, rgb(212, 219, 237) 7px, rgb(225, 230, 246) 100%) repeat scroll 0% 0% / auto padding-box border-box",
+      "borderBottom": "1px solid rgb(182, 188, 204)"
+    }
+  }
+}

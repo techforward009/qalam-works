@@ -287,8 +287,8 @@ describe("document menus", () => {
   it("keeps Page actions wired while future items are non-dispatchable", () => {
     const insert = DOCUMENT_MENU_BAR.find((m) => m.id === "insert");
     expect(collectMenuActionIds(insert?.items ?? [])).toEqual([
-      "insert.pageBreak", "insert.image", "insert.table", "insert.link",
-      "insert.sectionBreakNextPage", "insert.sectionBreakContinuous", "insert.example",
+      "insert.pageBreak", "insert.image", "insert.table",
+      "insert.sectionBreakNextPage", "insert.sectionBreakContinuous",
     ]);
   });
 
@@ -308,7 +308,7 @@ describe("document menus", () => {
       viewportHeight: 800,
       isUr: false,
     });
-    expect(room.left).toBe(288);
+    expect(room.left).toBe(288 - 6);
     const flip = placeFloatingSubmenu({
       triggerRect: { top: 80, left: 980, right: 1228, bottom: 104 },
       parentRect: { left: 980, right: 1228 },
@@ -316,6 +316,6 @@ describe("document menus", () => {
       viewportHeight: 800,
       isUr: false,
     });
-    expect(flip.left).toBe(980 - SUBMENU_WIDTH_PX);
+    expect(flip.left).toBe(980 - SUBMENU_WIDTH_PX + 6);
   });
 });

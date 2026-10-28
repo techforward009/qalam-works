@@ -84,6 +84,7 @@ describe("Phase 3A editor parity", () => {
       "tools.audit",
       "tools.dictation",
       "tools.glossary",
+      "insert.example",
     ]);
   });
 

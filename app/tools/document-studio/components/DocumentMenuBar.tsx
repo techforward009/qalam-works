@@ -15,23 +15,24 @@ import {
   placeFloatingSubmenu,
   setOpenSubmenu,
   SUBMENU_WIDTH_PX,
-  TOP_MENU_WIDTH_PX,
+  MENU_WIDTHS,
   type MenuActionId,
   type MenuId,
   type MenuNode,
   type MenuOpenState,
 } from "../utils/documentMenus";
 
-function topMenuPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSProperties {
+function topMenuPosition(anchor: HTMLElement | null, isUr: boolean, menuId: MenuId): React.CSSProperties {
   if (!anchor || typeof window === "undefined") {
     return { position: "fixed", top: 0, left: 0, visibility: "hidden" };
   }
   const rect = anchor.getBoundingClientRect();
-  const width = Math.min(TOP_MENU_WIDTH_PX, Math.max(1, window.innerWidth - 16));
+  const width = Math.min(MENU_WIDTHS[menuId], Math.max(1, window.innerWidth - 16));
   const pad = 8;
   const maxLeft = Math.max(pad, window.innerWidth - width - pad);
-  const left = Math.min(Math.max(pad, isUr ? rect.right - width : rect.left), maxLeft);
-  const top = Math.max(pad, Math.min(rect.bottom + 2, window.innerHeight - 40));
+  const left = Math.min(Math.max(pad, isUr ? rect.right - width + 7 : rect.left - 7), maxLeft);
+  const barBottom = anchor.closest("[data-studio-menubar]")?.getBoundingClientRect().bottom ?? rect.bottom;
+  const top = Math.max(pad, Math.min(Math.max(rect.bottom, barBottom), window.innerHeight - 40));
   const maxHeight = Math.max(1, window.innerHeight - top - 8);
   return {
     position: "fixed",
@@ -42,10 +43,13 @@ function topMenuPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSPr
     maxHeight,
     overflowX: "hidden",
     overflowY: "auto",
+    ...menuFrame,
   };
 }
 
-const dropdownItemStyle = { position: "relative", height: 22, minHeight: 22, maxHeight: 22, padding: "0 12px 0 28px", fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 12, lineHeight: "22px", color: "#000", direction: "ltr" } as const;
+const menuFrame = { borderStyle: "solid", borderWidth: 1, borderColor: "#fff #808080 #808080 #fff", boxShadow: "1px 1px 0 #c0c0c0, 2px 2px 0 #808080", background: "#f0f0f0" } as const;
+const dropdownItemStyle = { position: "relative", height: 22, minHeight: 22, maxHeight: 22, padding: "0 20px 0 32px", gap: 12, border: 0, fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 12, lineHeight: "22px", color: "#000", direction: "ltr" } as const;
+const labelStyle = { flex: "1 1 auto", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
 
 function MenuItems({
   items, isUr, disabledIds, checkedIds, openSubmenuId, inlineSubmenus,
@@ -62,31 +66,32 @@ function MenuItems({
   onAction: (id: MenuActionId) => void;
 }) {
   return <>{items.map((item, index) => {
+    if (item.type === "section") return <div key={`section-${index}`} role="presentation" data-menu-section style={{ height: 20, padding: "0 20px 0 32px", fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 11, lineHeight: "20px", color: "#606060" }}>{menuLabel(item, isUr)}</div>;
     if (item.type === "separator") {
-      return <div key={`sep-${index}`} role="separator" className="my-1 border-t border-[#a0a0a0] shadow-[0_1px_0_#fff]" />;
+      return <div key={`sep-${index}`} role="separator" className="mx-[3px] my-1 border-t border-[#a0a0a0] shadow-[0_1px_0_#fff]" />;
     }
-    if (item.type === "unavailable") return <button key={item.id} type="button" role="menuitem" disabled aria-disabled="true" title="Coming soon" data-coming-soon="true" data-menu-unavailable={item.id} style={dropdownItemStyle} className="flex w-full items-center text-left cursor-default">
-      <span>{menuLabel(item, isUr)}</span>
-      {item.shortcut ? <span className="ms-auto shrink-0 ps-3 tabular-nums" dir="ltr">{item.shortcut}</span> : null}
+    if (item.type === "unavailable") return <button key={item.id} type="button" role="menuitem" disabled aria-disabled="true" title="Coming soon" data-coming-soon="true" data-menu-row data-menu-unavailable={item.id} style={dropdownItemStyle} className="flex w-full items-center text-left cursor-default">
+      <span data-menu-label style={labelStyle}>{menuLabel(item, isUr)}</span>
+      {item.shortcut ? <span data-menu-shortcut className="shrink-0 tabular-nums" dir="ltr">{item.shortcut}</span> : null}
     </button>;
     if (item.type === "submenu") {
       const open = openSubmenuId === item.id;
       return <div key={item.id} className="relative" onPointerEnter={(event) => {
-        if (event.pointerType === "mouse") onOpenSubmenu(item.id);
+        if (event.pointerType === "mouse" && !inlineSubmenus) onOpenSubmenu(item.id);
       }}>
         <button type="button" role="menuitem" aria-haspopup="true" aria-expanded={open}
-          data-menu-submenu={item.id} style={dropdownItemStyle}
+          data-menu-row data-menu-submenu={item.id} style={{ ...dropdownItemStyle, paddingRight: 26 }}
           className={`flex w-full items-center text-left ${open ? "bg-[#d6dff2]" : "hover:bg-[#d6dff2]"}`}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            // Mouse hover may already have opened it before the click arrives.
-            if (inlineSubmenus && item.id !== "file.download") onToggleSubmenu(item.id);
+            // Narrow menus are tap accordions: do not pre-open them on hover.
+            if (inlineSubmenus) onToggleSubmenu(item.id);
             else onOpenSubmenu(item.id);
             if (event.detail === 0) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-menu-flyout="${item.id}"] [role='menuitem']:not([disabled])`)?.focus());
           }}>
-          <span className="min-w-0 whitespace-nowrap text-left">{menuLabel(item, isUr)}</span>
-          <span aria-hidden="true" className="ms-auto shrink-0">{inlineSubmenus && open ? "▾" : isUr ? "◂" : "▸"}</span>
+          <span data-menu-label style={labelStyle}>{menuLabel(item, isUr)}</span>
+          <span aria-hidden style={{ position: "absolute", right: 11, top: 8, width: 0, height: 0, ...(inlineSubmenus && open ? { borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: "5px solid #000" } : isUr ? { borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderRight: "5px solid #000" } : { borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderLeft: "5px solid #000" }) }} />
         </button>
         {open && inlineSubmenus ? <div role="menu" data-menu-flyout={item.id} className="border-y border-[#a0a0a0] bg-[#f0f0f0] py-0.5">
           <MenuItems items={item.items} isUr={isUr} disabledIds={disabledIds} checkedIds={checkedIds}
@@ -102,13 +107,13 @@ function MenuItems({
       title={comingSoon ? (isUr ? "جلد آ رہا ہے" : "Coming soon") : undefined}
       data-coming-soon={comingSoon ? "true" : undefined}
       aria-disabled={disabled || undefined} aria-checked={checked || undefined}
-      data-menu-action={item.id} style={dropdownItemStyle}
+      data-menu-row data-menu-action={item.id} style={dropdownItemStyle}
       className={`flex w-full items-center text-left ${disabled ? "cursor-default" : "hover:bg-[#d6dff2] focus:bg-[#d6dff2]"}`}
-      onPointerEnter={(event) => { if (event.pointerType === "mouse" && openSubmenuId) onOpenSubmenu(""); }}
+      onPointerEnter={(event) => { if (event.pointerType === "mouse" && !inlineSubmenus && openSubmenuId) onOpenSubmenu(""); }}
       onClick={() => { if (!disabled) onAction(item.id); }}>
-      <span aria-hidden="true" className="absolute left-[8px] top-0">{checked ? "✓" : null}</span>
-      <span className="min-w-0 whitespace-nowrap text-left">{menuLabel(item, isUr)}</span>
-      {item.shortcut ? <span className="absolute right-[12px] top-0 tabular-nums" dir="ltr">{item.shortcut}</span> : null}
+      {checked && item.id !== "view.ruler" ? <span aria-hidden style={{ position: "absolute", left: 6, top: 3, width: 16, height: 16, border: "1px solid #9cb9df", background: "#f8fbff", display: "grid", placeItems: "center" }}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6 L5 9 L10 2" fill="none" stroke="#1455a0" strokeWidth="1.5" /></svg></span> : null}
+      <span data-menu-label style={labelStyle}>{item.id === "view.ruler" && checked ? "Hide Rulers" : menuLabel(item, isUr)}</span>
+      {item.shortcut ? <span data-menu-shortcut className="shrink-0 tabular-nums" dir="ltr">{item.shortcut}</span> : null}
     </button>;
   })}</>;
 }
@@ -197,16 +202,18 @@ export default function DocumentMenuBar({
   const updatePosition = () => {
     const id = openState.menuId;
     if (!id) return;
-    setMenuStyle(topMenuPosition(triggerRefs.current[id] ?? null, isUr));
+    setMenuStyle(topMenuPosition(triggerRefs.current[id] ?? null, isUr, id));
     if (inlineSubmenus || !openState.submenuId || !portalRef.current) return;
     const trigger = portalRef.current.querySelector<HTMLElement>(`[data-menu-submenu="${openState.submenuId}"]`);
     const parentBox = portalRef.current.getBoundingClientRect();
     if (!trigger) return;
+    const submenuWidth = Math.min(openState.submenuId === "edit.preferences" ? 265 : SUBMENU_WIDTH_PX, Math.max(1, window.innerWidth - 16));
     const placed = placeFloatingSubmenu({
       triggerRect: trigger.getBoundingClientRect(),
       parentRect: { left: parentBox.left, right: parentBox.right },
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
+      submenuWidth,
       isUr,
     });
     setSubmenuStyle({
@@ -214,15 +221,24 @@ export default function DocumentMenuBar({
       top: placed.top,
       left: placed.left,
       zIndex: 410,
-      width: SUBMENU_WIDTH_PX,
-      maxHeight: Math.max(120, window.innerHeight - placed.top - 12),
+      width: submenuWidth,
+      maxHeight: Math.max(1, window.innerHeight - placed.top - 8),
       overflowX: "hidden",
       overflowY: "auto",
+      ...menuFrame,
     });
   };
 
   useLayoutEffect(() => {
     updatePosition();
+    if (inlineSubmenus && openState.submenuId && portalRef.current) {
+      const flyout = portalRef.current.querySelector<HTMLElement>(`[data-menu-flyout="${openState.submenuId}"]`);
+      if (flyout) {
+        const inner = flyout.getBoundingClientRect(), outer = portalRef.current.getBoundingClientRect();
+        if (inner.bottom > outer.bottom - 2) portalRef.current.scrollTop += inner.bottom - outer.bottom + 2;
+        else if (inner.top < outer.top + 2) portalRef.current.scrollTop -= outer.top + 2 - inner.top;
+      }
+    }
     if (!openState.menuId || !focusMenuOnOpen.current) return;
     focusMenuOnOpen.current = false;
     portalRef.current?.querySelector<HTMLElement>("[role='menuitem']:not([disabled])")?.focus();
@@ -357,6 +373,13 @@ export default function DocumentMenuBar({
   return (
     <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "Segoe UI, Tahoma, sans-serif", color: "#000" }}>
       <style>{`
+        [data-menu-portaled] [data-menu-row]:not(:disabled):hover,
+        [data-menu-portaled] [data-menu-row]:not(:disabled):focus-visible,
+        [data-menu-portaled] [data-menu-row][aria-expanded="true"] {
+          background: #e6efff !important;
+          box-shadow: inset 0 0 0 1px #9dbff8;
+          outline: none;
+        }
         [data-studio-language-switch] button {
           font-family: Tahoma, Arial, sans-serif !important;
           font-size: 11px !important;
