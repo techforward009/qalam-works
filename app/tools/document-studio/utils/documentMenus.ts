@@ -95,6 +95,8 @@ export type MenuActionId =
   | "format.image.break"
   | "format.image.alt"
   | "format.image.delete"
+  | "window.page"
+  | `window.document:${string}`
   | "window.outline"
   | "window.quality"
   | "window.settings"
@@ -437,7 +439,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     { type: "submenu", id: "view.zoom", labelEn: "More Zoom Levels", labelUr: "مزید زوم", items: [
       ready("view.zoom.75", "75%"), ready("view.zoom.125", "125%"), ready("view.zoom.150", "150%"), ready("view.zoom.300", "300%"), ready("view.zoom.fit-width", "Fit Width"),
     ] },
-    ready("view.pageless", "Pageless"), ready("view.hand", "Hand"), submenu("view", "view.rulerUnit"), separator,
+    ready("view.pages", "Single Page"), ready("view.pageless", "Pageless"), ready("view.hand", "Hand"), submenu("view", "view.rulerUnit"), separator,
     ready("view.outline", "Outline"), ready("view.quality", "Quality and Suggestions"), ready("view.glossary", "Glossary"), ready("view.settings", "Settings"), ready("view.stats", "Statistics"), ready("view.fullscreen", "Full Screen"),
   ] },
   { ...original("format"), items: [
@@ -466,7 +468,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   ] },
   { ...original("window"), items: [
     soon("window.cascade", "Cascade"), soon("window.tile", "Tile"), soon("window.closeAll", "Close All"), separator,
-    soon("window.ribbon", "Ribbon", "F12"), ready("view.pages", "Page"), soon("window.view", "View", "Ctrl+F12"), separator, qalamSection,
+    soon("window.ribbon", "Ribbon", "F12"), ready("window.page", "Page", "Alt+F12"), soon("window.view", "View", "Ctrl+F12"), separator, qalamSection,
     ready("window.outline", "Outline"), ready("window.quality", "Quality"),
   ] },
   { ...original("help"), items: [

@@ -137,6 +137,8 @@ export default function DocumentMenuBar({
   showHome = false,
   endSlot,
   hasUnsavedChanges = false,
+  openDocuments = [],
+  activeDocumentId,
 }: {
   isUr: boolean;
   onAction: (id: MenuActionId) => void;
@@ -145,6 +147,8 @@ export default function DocumentMenuBar({
   showHome?: boolean;
   endSlot?: React.ReactNode;
   hasUnsavedChanges?: boolean;
+  openDocuments?: { id: string; title: string }[];
+  activeDocumentId?: string | null;
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
@@ -167,6 +171,7 @@ export default function DocumentMenuBar({
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "y") id = "file.downloadTxt";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "insert") id = "insert.pageBreak";
+      if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "f12") id = "window.page";
       if (!id) return;
       event.preventDefault(); closeAndAct(id);
     };
@@ -277,7 +282,13 @@ export default function DocumentMenuBar({
     };
   }, [openState.menuId, openState.submenuId, isUr, inlineSubmenus]);
 
-  const openMenu = DOCUMENT_MENU_BAR.find((menu) => menu.id === openState.menuId) ?? null;
+  const baseMenu = DOCUMENT_MENU_BAR.find((menu) => menu.id === openState.menuId) ?? null;
+  const openMenu = baseMenu?.id === "window" && openDocuments.length
+    ? { ...baseMenu, items: [...baseMenu.items, { type: "separator" } as MenuNode,
+        ...openDocuments.map((doc, index): MenuNode => ({ type: "action", id: `window.document:${doc.id}`, labelEn: `${index + 1}  ${doc.title}`, labelUr: `${index + 1}  ${doc.title}` }))] }
+    : baseMenu;
+  const sessionCheckedIds = new Set(checkedIds);
+  if (activeDocumentId) sessionCheckedIds.add(`window.document:${activeDocumentId}`);
   const submenuItems =
     openMenu && openState.submenuId && !inlineSubmenus ? findSubmenuItems(openMenu.items, openState.submenuId) : null;
 
@@ -323,7 +334,7 @@ export default function DocumentMenuBar({
                 items={openMenu.items}
                 isUr={isUr}
                 disabledIds={disabledIds}
-                checkedIds={checkedIds}
+                checkedIds={sessionCheckedIds}
                 openSubmenuId={openState.submenuId}
                 inlineSubmenus={inlineSubmenus}
                 onOpenSubmenu={(id) =>
@@ -354,7 +365,7 @@ export default function DocumentMenuBar({
                   items={submenuItems}
                   isUr={isUr}
                   disabledIds={disabledIds}
-                  checkedIds={checkedIds}
+                  checkedIds={sessionCheckedIds}
                   openSubmenuId={null}
                   inlineSubmenus={false}
                   onOpenSubmenu={() => undefined}
@@ -446,8 +457,14 @@ export default function DocumentMenuBar({
             if (openState.menuId) setOpenState({ menuId: next, submenuId: null });
           } else if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            focusMenuOnOpen.current = true;
-            setOpenState({ menuId: current, submenuId: null });
+            if (openState.menuId === current && portalRef.current) {
+              // The same menu is already open: unchanged state keys do not
+              // rerun the layout effect that normally transfers keyboard focus.
+              portalRef.current.querySelector<HTMLElement>("[role='menuitem']:not([disabled])")?.focus();
+            } else {
+              focusMenuOnOpen.current = true;
+              setOpenState({ menuId: current, submenuId: null });
+            }
           } else if (event.key === "Home") {
             event.preventDefault();
             triggerRefs.current[ids[0]]?.focus();

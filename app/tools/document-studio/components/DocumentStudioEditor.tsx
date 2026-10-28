@@ -1,4 +1,6 @@
 "use client";
+
+import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
 import { migrateDocumentLeading } from "../utils/leading";
 
 
@@ -303,7 +305,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const id = activeDocumentIdRef.current;
     if (!libraryReadyRef.current || !library || !id) return;
     setPendingMetadataWrites(count=>count+1);
-    void library.updateDocument(id, { documentSettings }).catch((err) => {
+    void sessionWrites.current.write(() => library.updateDocument(id, { documentSettings })).catch((err) => {
       console.error("Failed to save document settings:", err);
       setSaveStatus("error");
     }).finally(()=>setPendingMetadataWrites(count=>count-1));
@@ -365,7 +367,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   useEffect(() => {
     documentTitleRef.current = documentTitle;
   }, [documentTitle]);
-  const saveChainRef = useRef(Promise.resolve());
+  const sessionWrites = useRef(createDocumentSessionWrites());
+  const transitionRef = useRef(false);
+  const [switchingDocument, setSwitchingDocument] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const [openDocuments, setOpenDocuments] = useState<{ id: string; title: string }[]>([]);
+  const sessionColumns = useRef(new Map<string, { count: number; gutter: number }>());
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inpageInputRef = useRef<HTMLInputElement>(null);
   const [inpageStories, setInpageStories] = useState<ImportedStory[] | null>(null);
@@ -567,24 +576,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setSaveStatus("saving");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
+      const library = libraryRef.current;
+      const id = activeDocumentIdRef.current;
       saveTimerRef.current = setTimeout(() => {
-        saveChainRef.current = saveChainRef.current.then(async () => {
-          const library = libraryRef.current;
-          const id = activeDocumentIdRef.current;
-          if (!library || !id || !libraryReadyRef.current) return;
-          try {
-            await library.updateDocument(id, {
-              content: editor.getJSON() as DocNode,
-              title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
-              documentSettings: documentSettingsRef.current,
-            });
-            const items = await library.listDocuments();
-            setLibraryItems(items);
-            setSaveStatus("saved");
-          } catch (err) {
-            console.error("Autosave error:", err);
-            setSaveStatus("error");
-          }
+        if (!library || !id || !libraryReadyRef.current) return;
+        const snapshot = {
+          content: editor.getJSON() as DocNode,
+          title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+          documentSettings: documentSettingsRef.current,
+        };
+        void sessionWrites.current.write(() => library.updateDocument(id, snapshot)).then(async () => {
+          setLibraryItems(await library.listDocuments());
+          setSaveStatus("saved");
+        }).catch(err => {
+          console.error("Autosave error:", err);
+          setSaveStatus("error");
         });
       }, AUTOSAVE_DEBOUNCE_MS);
     },
@@ -680,21 +686,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const confirmNewDocument = (draft: NewDocumentDraft) => {
     const pages = pageCountFromNewDocument(draft);
-    setDir(draft.direction);
-    setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
-    setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
-    setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
-    minimumPagesRef.current = pages;
-    setMinimumPages(pages);
-    setViewMode(draft.facingPages ? "facing" : "pages");
-    setViewAnchor(previous=>({page:1,fraction:-1,version:(previous?.version??0)+1}));
-    setZoom(openingDocumentZoom(window.innerWidth));
-    setVisiblePage(1);
     setNewDocOpen(false);
     void createAndOpenDocument({
-      content: contentFromNewDocument(draft),
-      documentSettings: settingsFromNewDocument(draft),
-      minimumPages: pages,
+      content: contentFromNewDocument(draft), documentSettings: settingsFromNewDocument(draft), minimumPages: pages,
+    }).then(created => {
+      if (!created) return;
+      setDir(draft.direction);
+      setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
+      setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
+      setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
+      setViewMode(draft.facingPages ? "facing" : "pages");
+      setViewAnchor(previous => ({ page: 1, fraction: -1, version: (previous?.version ?? 0) + 1 }));
+      setZoom(openingDocumentZoom(window.innerWidth));
+      setVisiblePage(1);
     });
   };
 
@@ -714,6 +718,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+    setOpenDocuments(previous => previous.some(doc => doc.id === record.id)
+      ? previous.map(doc => doc.id === record.id ? { id: record.id, title: record.title } : doc)
+      : [...previous, { id: record.id, title: record.title }]);
     activeDocumentIdRef.current = record.id;
     setActiveDocumentId(record.id);
     saveActiveDocumentId(record.id);
@@ -729,10 +736,15 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     minimumPagesRef.current = pages;
     setMinimumPages(pages);
     writeStoredMinimumPages(record.id, pages);
-    setFrames(readStoredFrames(record.id));
+    const restoredFrames = readStoredFrames(record.id);
+    framesRef.current = restoredFrames;
+    setFrames(restoredFrames);
     if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
       setZoomState("fit-width");
     }
+    const columns = sessionColumns.current.get(record.id);
+    setColumnCount(columns?.count ?? 1);
+    setColumnGutterMm(columns?.gutter ?? STUDIO_DEFAULT_GUTTER_MM);
     setSaveStatus("saved");
     setPreview(null);
     setAlreadyClean(false);
@@ -760,20 +772,57 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (!library || !id || !editor) return;
-    await library.updateDocument(id, {
-      content: editor.getJSON() as DocNode,
-      title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    sessionColumns.current.set(id, { count: columnCount, gutter: columnGutterMm });
+    // Serialize metadata and autosave before taking the final, current snapshot.
+    await sessionWrites.current.drain();
+    const title = sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current);
+    await sessionWrites.current.write(() => library.updateDocument(id, {
+      content: editor.getJSON() as DocNode, title,
       documentSettings: documentSettingsRef.current,
-    });
+    }));
+    // Object/page-floor storage is separate and its old helpers swallow errors.
+    // Probe the shared maps strictly: a denied/corrupt read must not look like
+    // an empty destination and later overwrite that document's saved objects.
+    for (const key of ["qalam-studio-frames-v1", "qalam-studio-minimum-pages-v1"]) {
+      const map: unknown = JSON.parse(window.localStorage.getItem(key) || "{}");
+      if (!map || typeof map !== "object" || Array.isArray(map)) throw new Error("Object storage could not be read");
+    }
+    // Verify writes before permitting a transition, including quota failures.
+    writeStoredFrames(id, framesRef.current);
+    writeStoredMinimumPages(id, minimumPagesRef.current);
+    if (JSON.stringify(readStoredFrames(id)) !== JSON.stringify(framesRef.current)
+      || readStoredMinimumPages(id) !== minimumPagesRef.current) throw new Error("Object settings could not be saved");
+    setOpenDocuments(previous => previous.map(doc => doc.id === id ? { ...doc, title } : doc));
+  };
+
+  const transitionDocument = async (operation: () => Promise<void>) => {
+    if (transitionRef.current || !editor) return false;
+    transitionRef.current = true;
+    setSwitchingDocument(true);
+    setSwitchError(null);
+    const editable = editor.isEditable;
+    editor.setEditable(false);
+    try {
+      await persistActiveNow();
+      await operation();
+      return true;
+    } catch (err) {
+      console.error("Document transition blocked:", err);
+      setSwitchError("The current document could not be saved or the requested document could not be opened. Your edits remain here. Please retry.");
+      setSaveStatus("error");
+      return false;
+    } finally {
+      editor.setEditable(editable);
+      transitionRef.current = false;
+      setSwitchingDocument(false);
+    }
   };
 
   const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings; minimumPages?: number }) => {
     const library = libraryRef.current;
     if (!library) return false;
-    try {
-      if (activeDocumentIdRef.current && editor) {
-        await persistActiveNow();
-      }
+    return transitionDocument(async () => {
       const record = await library.createDocument({
         title: input?.title ?? defaultDocumentTitle(isUrRef.current),
         content: input?.content ?? emptyDocumentContent(dir),
@@ -782,31 +831,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setCanvasTool("text");
       canvasToolRef.current = "text";
       applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
-      await refreshLibraryList(library);
-      return true;
-    } catch (err) {
-      console.error("Failed to create document:", err);
-      setSaveStatus("error");
-      return false;
-    }
+      void refreshLibraryList(library);
+    });
   };
 
   const openLibraryDocument = async (id: string) => {
     const library = libraryRef.current;
-    if (!library || !editor) return;
-    try {
-      if (activeDocumentIdRef.current && activeDocumentIdRef.current !== id) {
-        await persistActiveNow();
-      }
+    if (!library || !editor || transitionRef.current) return;
+    if (activeDocumentIdRef.current === id) { setLibraryOpen(false); return; }
+    await transitionDocument(async () => {
       const record = await library.getDocument(id);
-      if (!record) return;
+      if (!record) throw new Error("Document not found");
       applyRecordToEditor(record);
       setLibraryOpen(false);
-      await refreshLibraryList(library);
-    } catch (err) {
-      console.error("Failed to open document:", err);
-      setSaveStatus("error");
-    }
+      void refreshLibraryList(library);
+    });
   };
 
   const renameLibraryDocument = async (id: string) => {
@@ -817,7 +856,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (next == null) return;
     const title = sanitizeDocumentTitle(next) || defaultDocumentTitle(isUr);
     try {
-      await library.renameDocument(id, title);
+      await sessionWrites.current.write(() => library.renameDocument(id, title));
+      setOpenDocuments(previous => previous.map(doc => doc.id === id ? { ...doc, title } : doc));
       if (id === activeDocumentIdRef.current) {
         setDocumentTitle(title);
         documentTitleRef.current = title;
@@ -841,7 +881,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (!ok) return;
     try {
       const deletingActive = id === activeDocumentIdRef.current;
-      await library.deleteDocument(id);
+      await sessionWrites.current.write(() => library.deleteDocument(id));
+      setOpenDocuments(previous => previous.filter(doc => doc.id !== id));
       const remaining = await library.listDocuments();
       setLibraryItems(remaining);
       if (!deletingActive) return;
@@ -1554,11 +1595,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const next = sanitizeDocumentTitle(documentTitle) || defaultDocumentTitle(isUr);
     setDocumentTitle(next);
     documentTitleRef.current = next;
+    setOpenDocuments(previous => previous.map(doc => doc.id === activeDocumentIdRef.current ? { ...doc, title: next } : doc));
     const library = libraryRef.current;
     const id = activeDocumentIdRef.current;
     if (library && id) {
       setPendingMetadataWrites(count=>count+1);
-      void library.renameDocument(id, next).then(() => refreshLibraryList(library)).catch((err) => {
+      void sessionWrites.current.write(() => library.renameDocument(id, next)).then(() => refreshLibraryList(library)).catch((err) => {
         console.error("Failed to save title:", err);
         setSaveStatus("error");
       }).finally(()=>setPendingMetadataWrites(count=>count-1));
@@ -1697,6 +1739,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const changeFrames = (next: StudioFrame[]) => {
+    framesRef.current = next;
     setFrames(next);
     const id = activeDocumentIdRef.current;
     if (id) writeStoredFrames(id, next);
@@ -1723,6 +1766,16 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const handleMenuAction = (id: MenuActionId) => {
+    if (transitionRef.current) return;
+    if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
+    if (id === "window.page") {
+      // Activate the existing Page workspace, not the Single Pages view mode.
+      setLibraryOpen(false);
+      const scroller = editor?.view.dom.closest<HTMLElement>("[data-studio-scroller]");
+      if (canvasToolRef.current === "text") editor?.commands.focus(undefined, { scrollIntoView: false });
+      else if (scroller) { scroller.tabIndex = -1; scroller.focus({ preventScroll: true }); }
+      return;
+    }
     dispatchDocumentMenuAction(id, editor, {
       save: () => {
         setSaveStatus("saving");
@@ -1915,7 +1968,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
 
   return (
-    <div data-studio-root="true" className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+    <div data-studio-root="true" inert={switchingDocument || undefined} aria-busy={switchingDocument || undefined} className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
@@ -2062,6 +2115,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         </div>
       ) : null}
 
+      {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}
       <DocumentStudioShell
         isUr={isUr}
         fillWindow={fillWindow}
@@ -2071,6 +2125,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             isUr={isUr}
             showHome={fillWindow}
             hasUnsavedChanges={pendingMetadataWrites > 0 || saveStatus === "saving" || saveStatus === "error" || (editingTitle && documentTitle !== documentTitleRef.current) || (storageDurability === "memory" && !isEditorEmpty)}
+            openDocuments={openDocuments}
+            activeDocumentId={activeDocumentId}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
