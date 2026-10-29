@@ -2125,13 +2125,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           columns={columnCount}
           gutter={columnGutterMm}
           facing={viewMode === "facing"}
-          onClose={() => setPageSetupOpen(false)}
+          onClose={() => {setPageSetupOpen(false);document.querySelector<HTMLButtonElement>('[data-menu-root="format"]')?.focus();}}
           onApply={(values: StudioPageSetupValues) => {
             setDocumentSettings(current => ({
               ...current,
               page: {
                 ...current.page,
                 size: values.size,
+                customSizeMm: values.size === current.page.size ? current.page.customSizeMm : undefined,
                 orientation: values.orientation,
                 margins: {
                   preset: "custom",

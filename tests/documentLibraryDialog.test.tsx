@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DocumentLibraryDialog from "../app/tools/document-studio/components/DocumentLibraryDialog";
 
@@ -31,11 +31,14 @@ describe("DocumentLibraryDialog", () => {
         onClose={vi.fn()}
       />,
     );
-    expect(screen.getByText("Document library")).toBeTruthy();
-    expect(screen.getByText("Documents are stored in this browser.")).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("button", { name: "Open" })[1]);
+    expect(screen.getByRole("dialog",{name:"Open"})).toBeTruthy();
+    expect(screen.getByText("Browser storage")).toBeTruthy();
+    const rows=within(screen.getByRole("listbox",{name:"Saved documents"}));
+    fireEvent.click(rows.getByRole("option",{name:/Beta/}));
+    fireEvent.click(screen.getByRole("button", { name: /^Open$/ }));
     expect(onOpen).toHaveBeenCalledWith("2");
-    fireEvent.click(screen.getAllByRole("button", { name: "Rename" })[0]);
+    fireEvent.click(rows.getByRole("option",{name:/Alpha/}));
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     expect(onRename).toHaveBeenCalledWith("1");
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
     expect(onNew).toHaveBeenCalled();

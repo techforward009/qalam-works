@@ -16,7 +16,7 @@ import {
 const FIELD = "data-paragraph-field";
 const inputStyle: CSSProperties = { width: 72, height: 18, boxSizing: "border-box", border: "1px solid #808080", background: "#fff", color: "#000", font: "11px Tahoma, sans-serif", padding: "0 2px" };
 const groupStyle: CSSProperties = { border: "1px solid #808080", margin: 0, padding: "4px 5px 4px", minWidth: 0 };
-const legendStyle: CSSProperties = { padding: "0 3px", font: "11px Tahoma, sans-serif" };
+const legendStyle: CSSProperties = { padding: "0 3px", font: "11px Tahoma, sans-serif", whiteSpace:"nowrap" };
 const buttonStyle: CSSProperties = { width: 65, height: 22, boxSizing: "border-box", background: "#f0f0f0", border: "1px solid #808080", boxShadow: "inset 1px 1px #fff, inset -1px -1px #404040", font: "11px Tahoma, sans-serif", color: "#000" };
 
 function Mark({ text, at }: { text: string; at: number }) {
@@ -24,7 +24,7 @@ function Mark({ text, at }: { text: string; at: number }) {
 }
 
 function Row({ label, at, children }: { label: string; at: number; children: ReactNode }) {
-  return <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 3 }}><span><Mark text={label} at={at} /></span>{children}</label>;
+  return <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4, marginTop: 3 }}><span style={{whiteSpace:"nowrap"}}><Mark text={label} at={at} /></span>{children}</label>;
 }
 
 function MixedBox({ name, accessKey, value, onChange, children }: { name: string; accessKey?: string; value: boolean | null; onChange: (checked: boolean) => void; children: ReactNode }) {
