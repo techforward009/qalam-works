@@ -102,9 +102,40 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByText("Result copied")).toBeTruthy();
   });
 
+  it("shows three source-separated outcomes and measured scientific table", () => {
+    render(<CrescentVisibilityContent />);
+    const states = screen.getByTestId("crescent-three-outcomes");
+    expect(states.querySelectorAll("article")).toHaveLength(3);
+    expect(states.textContent).toContain("Pakistan national criterion");
+    expect(states.textContent).toContain("Official sighting decision");
+    expect(states.textContent).toContain("No reviewed announcement");
+    expect(states.textContent).toContain("Yallop comparison");
+    expect(states.textContent).toContain("1/8");
+    const table = screen.getByTestId("crescent-astronomy-table");
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(4);
+    expect(table.textContent).toContain("9.1");
+    expect(table.textContent).toContain("42.3");
+    expect(screen.getByRole("link", { name: "Share feedback" }).getAttribute("href")).toBe("/feedback?tool=crescent-visibility");
+  });
+
+  it("highlights Ramadan among live month cards without hard-coded dates", async () => {
+    const module = await import("../app/tools/crescent-visibility/utils/upcomingCrescentEvenings");
+    vi.mocked(module.getUpcomingPakistanCrescentEvenings).mockReturnValueOnce([
+      { dateIso: "2027-02-07", evening: { year: 2027, month: 2, day: 7 }, targetHijriYear: 1448, targetHijriMonth: 9, dateSource: "scientific" },
+    ]);
+    render(<CrescentVisibilityContent />);
+    const ramadan = screen.getByTestId("upcoming-crescent-month-0");
+    expect(ramadan.textContent).toContain("Ramadan");
+    expect(ramadan.textContent).toContain("7 February 2027");
+    expect(ramadan.textContent).toContain("View scientific result");
+    expect(ramadan.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(ramadan);
+    expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2027-02-07");
+  });
+
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
-    expect(screen.getByRole("heading", { name: "Moon Sighting" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Moon Sighting — Pakistan" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /Back to Date Converter/i }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("National scientific and official outlook")).toBeTruthy();
     expect(screen.getAllByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
@@ -126,7 +157,7 @@ describe("crescent visibility dashboard", () => {
   it("keeps diagnostics in scientific details and national Urdu wording", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
-    expect(screen.getByRole("heading", { name: "رؤیتِ ہلال" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "رؤیتِ ہلال — پاکستان" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /تاریخ کنورٹر پر واپس/ }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("قومی سائنسی اور سرکاری جائزہ")).toBeTruthy();
     expect(screen.getAllByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔").length).toBeGreaterThan(0);
