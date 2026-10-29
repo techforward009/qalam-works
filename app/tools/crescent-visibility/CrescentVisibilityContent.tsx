@@ -61,7 +61,12 @@ export default function CrescentVisibilityContent() {
   const yallop = useMemo(() => isValidDate ? evaluateYallopNationalReferencePrediction(date) : null, [isValidDate, date.year, date.month, date.day]);
   const authority = useMemo(() => isValidDate ? resolvePakistanOfficialHijriDate(date) : null, [isValidDate, date.year, date.month, date.day]);
   const decision = useMemo(() => isValidDate ? resolvePakistanOfficialSightingDecisionForEvening(date) : null, [isValidDate, date.year, date.month, date.day]);
-  const dateControl = <div className="mt-4 flex flex-wrap items-center gap-2"><label className="text-sm font-semibold" htmlFor="dashboard-date">{ur ? "تاریخ" : "Date"}</label><input id="dashboard-date" aria-label={ur ? "تاریخ تبدیل کریں" : "Change date"} type="date" min="1900-01-01" max="2100-12-31" value={dateInput} onChange={e => selectDate(e.target.value)} className="rounded-lg border px-3 py-2" /></div>;
+  const dateControl = <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#1A3A2A]/15 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+    <div><label className={`block text-sm font-bold text-[#153b29] dark:text-[#e6f0e6] ${ur ? "font-naskh" : ""}`} htmlFor="dashboard-date">{ur ? "کس شام کا چاند دیکھنا ہے؟" : "Which evening would you like to check?"}</label>
+      <p className="mt-1 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? "پاکستانی مقامات کے اصل غروب آفتاب پر سائنسی حساب" : "Scientific calculation at actual local sunset across Pakistan"}</p></div>
+    <input id="dashboard-date" aria-label={ur ? "تاریخ تبدیل کریں" : "Change date"} type="date" min="1900-01-01" max="2100-12-31" value={dateInput} onChange={e => selectDate(e.target.value)}
+      className="min-h-11 w-full max-w-[240px] rounded-xl border border-[#1A3A2A]/20 bg-[#F7F5EF] px-3 py-2 font-semibold text-[#153b29] focus-visible:outline focus-visible:outline-2 dark:border-[#35513d] dark:bg-[#203326] dark:text-white" dir="ltr" />
+  </section>;
   const backToStudio = (
     <div className="mb-6">
       <Link
