@@ -61,8 +61,8 @@ describe("crescent visibility dashboard", () => {
   it("shows a friendly national result with genuine location measurements and a clear non-official label", () => {
     render(<CrescentVisibilityContent />);
     const summary = screen.getByTestId("crescent-simple-result");
-    expect(screen.getByTestId("crescent-simple-details").open).toBe(false);
-    expect(screen.getByTestId("crescent-deep-details").open).toBe(false);
+    expect((screen.getByTestId("crescent-simple-details") as HTMLDetailsElement).open).toBe(false);
+    expect((screen.getByTestId("crescent-deep-details") as HTMLDetailsElement).open).toBe(false);
     expect(summary.textContent).toContain("Pakistan national scientific result");
     expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("Conditions favor crescent visibility");
     expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1/8");
