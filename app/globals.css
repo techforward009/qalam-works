@@ -2162,3 +2162,19 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
   border-right-color: transparent !important;
 } }
 @media print { .ProseMirror[data-studio-facing-editor] blockquote { border-inline-start-color: var(--qalam-quote-border, #d97706); } }
+
+
+/* Crescent Studio: Urdu headings in Gulzar, all Urdu reading text in Mehr.
+   Page-scoped to avoid replacing Quran, editor or other tool fonts.
+   Explicit declarations override older font-naskh utilities in these cards. */
+[data-crescent-ui="ur"] {
+  font-family: var(--qalam-urdu-primary);
+}
+[data-crescent-ui="ur"] :is(p, span, label, button, a, summary, select, option, dt, dd, strong, input) {
+  font-family: var(--qalam-urdu-primary) !important;
+}
+[data-crescent-ui="ur"] :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--qalam-urdu-heading) !important;
+  font-weight: 400;
+  line-height: 2;
+}
