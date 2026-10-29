@@ -1,28 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 export type ImportedStory = { number: number; text: string };
 
 export default function InPageStoriesDialog({ stories, onClose }: { stories: ImportedStory[]; onClose: () => void }) {
-  const close = useRef<HTMLButtonElement>(null);
-  const closeAction = useRef(onClose);
-  closeAction.current = onClose;
   const [copied, setCopied] = useState<number | null>(null);
   const [error, setError] = useState("");
-  useEffect(() => {
-    close.current?.focus();
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") closeAction.current(); };
-    window.addEventListener("keydown", escape);
-    return () => window.removeEventListener("keydown", escape);
-  }, []);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" role="dialog" aria-modal="true" aria-labelledby="inpage-stories-title" dir="ltr">
-      <div className="w-full max-w-lg rounded border border-gray-400 bg-white p-4 text-sm text-black shadow-xl">
-        <h2 id="inpage-stories-title" className="font-semibold">InPage text imported</h2>
-        <p className="my-2">The longest story is open. Layout is not imported in this stage.</p>
-        <p className="mb-2">Other non-empty stories: {stories.length}</p>
-        <ul className="max-h-[50vh] space-y-3 overflow-auto">
+    <section data-studio-inpage-stories-notice="true" className="mx-2 my-1 max-w-3xl rounded border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-800" role="dialog" aria-modal="false" aria-labelledby="inpage-stories-title" dir="ltr"
+      onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="inpage-stories-title" className="font-semibold">InPage text imported</h2>
+          <p>The longest story is open; original text-box placement and page layout are not imported yet.</p>
+        </div>
+        <button type="button" className="shrink-0 border border-slate-400 px-2 py-1" onClick={onClose}>Close</button>
+      </div>
+      <details className="mt-1" open>
+        <summary className="cursor-pointer">Other non-empty stories: {stories.length} (available to copy, not placed on the page)</summary>
+        <ul className="mt-1 max-h-44 space-y-1 overflow-auto">
           {stories.map((story) => (
             <li key={story.number} className="border-t border-gray-200 pt-2">
               <div className="flex items-center justify-between gap-3">
@@ -36,9 +33,8 @@ export default function InPageStoriesDialog({ stories, onClose }: { stories: Imp
             </li>
           ))}
         </ul>
-        {error ? <p role="status" className="mt-2">{error}</p> : null}
-        <div className="mt-3 text-right"><button ref={close} type="button" className="min-h-8 border border-gray-500 px-4" onClick={onClose}>Close</button></div>
-      </div>
-    </div>
+      </details>
+      {error ? <p role="status" className="mt-1">{error}</p> : null}
+    </section>
   );
 }
