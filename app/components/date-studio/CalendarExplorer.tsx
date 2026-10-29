@@ -16,8 +16,8 @@ import {
 import { MonthCalendar } from "./MonthCalendar";
 
 const COPY = {
-  en: { gregorian: "Gregorian", combined: "Pakistan — Gregorian + Hijri", pakistan: "Pakistan", tabular: "Calculated only", note: "Official Pakistan dates are prioritized where verified. * identifies unverified calculated dates." },
-  ur: { gregorian: "عیسوی", combined: "پاکستانی تقویم (عیسوی + ہجری)", pakistan: "پاکستان", tabular: "صرف حسابی", note: "جہاں پاکستانی سرکاری تاریخ مصدقہ ہے، وہ دکھائی گئی ہے۔ * نشان والی تاریخیں حسابی ہیں، سرکاری طور پر تصدیق شدہ نہیں۔" },
+  en: { gregorian: "Gregorian", combined: "Pakistan — Gregorian + Hijri", pakistan: "Pakistan", tabular: "Calculated only", note: "Official Pakistan dates are prioritized where verified. * identifies unverified scientific forecasts or calculated dates." },
+  ur: { gregorian: "عیسوی", combined: "پاکستانی تقویم (عیسوی + ہجری)", pakistan: "پاکستان", tabular: "صرف حسابی", note: "جہاں پاکستانی سرکاری تاریخ مصدقہ ہے، وہ دکھائی گئی ہے۔ * نشان والی تاریخیں سائنسی پیش گوئی یا حسابی ہیں، سرکاری طور پر تصدیق شدہ نہیں۔" },
 };
 
 export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
