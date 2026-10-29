@@ -1,4 +1,4 @@
-import { gregorianToJDN, jdnToGregorian, type DateParts } from "../dateEngine";
+import { convert, gregorianToJDN, jdnToGregorian, type DateParts } from "../dateEngine";
 import { PAKISTAN_OFFICIAL_HIJRI_ANCHORS } from "./pakistanOfficialAnchors";
 import { evaluatePakistanNationalCrescentPrediction } from "../pakistan-crescent/nationalPrediction";
 import type { OfficialHijriMonthAnchor } from "./types";
@@ -78,4 +78,21 @@ export function predictPakistanHijriDate(gregorian: DateParts): DateParts | null
     }
   }
   return null; // Bounded forecasting; older pure tabular view remains available.
+}
+
+/** Reverse lookup for unverified Pakistan dates; never claims an official match. */
+export function predictPakistanGregorianDate(hijri: DateParts): DateParts | null {
+  if (!Number.isInteger(hijri.year) || !Number.isInteger(hijri.month) || !Number.isInteger(hijri.day)
+    || hijri.month < 1 || hijri.month > 12 || hijri.day < 1 || hijri.day > 30) return null;
+  const approximate = convert("hijri", hijri).gregorian;
+  const center = gregorianToJDN(approximate.year, approximate.month, approximate.day);
+  // The tabular conversion is only a search starting point, never the result.
+  for (let offset = -16; offset <= 16; offset++) {
+    const candidate = jdnToGregorian(center + offset);
+    const prediction = predictPakistanHijriDate(candidate);
+    if (prediction?.year === hijri.year && prediction.month === hijri.month && prediction.day === hijri.day) {
+      return candidate;
+    }
+  }
+  return null;
 }
