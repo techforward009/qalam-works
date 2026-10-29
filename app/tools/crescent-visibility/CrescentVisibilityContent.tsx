@@ -11,6 +11,7 @@ import { evaluateYallopNationalReferencePrediction } from "../date-converter/uti
 import { interpretDateStudioMonthStart } from "../date-converter/utils/yallop/dateStudioMonthStart";
 import { NationalEvidencePanel } from "./components/NationalEvidencePanel";
 import { UpcomingCrescentShortcuts } from "./components/UpcomingCrescentShortcuts";
+import { PakistanCrescentQuickResult } from "./components/PakistanCrescentQuickResult";
 
 // Presentation safeguard: re-enable only after an approved Pakistan boundary/mask is available.
 const PAKISTAN_VISIBILITY_MAP_ENABLED = false;
@@ -122,7 +123,14 @@ export default function CrescentVisibilityContent() {
     <UpcomingCrescentShortcuts lang={ur ? "ur" : "en"} today={today} selectedDate={dateInput} onSelect={value => selectDate(value, true)} />
     {dateControl}
     {outsideNewCrescentWindow && <section role="status" className={`mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold leading-7 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 ${ur ? "font-naskh" : ""}`}>{nonCrescentSummary}</section>}
-    <section ref={resultRef} tabIndex={-1} className="mt-7 scroll-mt-24 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-white shadow-xl shadow-[#123326]/15 md:p-8">
+    <div ref={resultRef} tabIndex={-1} className="mt-7 scroll-mt-24">
+      <PakistanCrescentQuickResult date={date} lang={ur ? "ur" : "en"} pakistan={pakistan} yallop={yallop} authority={authority} decision={decision} outsideNewCrescentWindow={outsideNewCrescentWindow} />
+    </div>
+    <div id="crescent-technical-report" className="mt-8 scroll-mt-24">
+      <h2 className={`text-xl font-bold text-[#123326] dark:text-[#f7faf7] ${ur ? "font-naskh" : ""}`}>{ur ? "تفصیلی سائنسی اور سرکاری تحقیق" : "Detailed scientific and official research"}</h2>
+      <p className={`mt-1 text-sm text-[#486155] dark:text-[#c8d5cc] ${ur ? "font-naskh" : ""}`}>{ur ? "اصل ماڈل، پاکستان کے آٹھ مقامات، سرکاری فیصلہ اور تمام فلکیاتی شواہد" : "Original models, eight Pakistan locations, official decision and full astronomy evidence"}</p>
+    </div>
+    <section className="mt-4 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-white shadow-xl shadow-[#123326]/15 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#d7bc7b]">{ur ? "قومی جائزہ" : "National outlook"}</p><p className="mt-3 text-lg text-[#dce8de]">{formatDate(date, "gregorian", lang)}</p></div><span className="rounded-full border border-[#d7bc7b]/50 px-3 py-1 text-xs font-semibold text-[#f1d99e]">{ur ? "سائنسی و سرکاری سیاق" : "Science and authority context"}</span></div>
       {authority ? <><p className="text-sm font-semibold">{authority.authority === "official" ? (ur ? "پاکستان کی سرکاری ہجری تاریخ" : "Pakistan official Hijri date") : (ur ? "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ" : "Reported official Pakistan Hijri date")}</p><p className={`text-2xl font-bold ${ur ? "font-naskh" : ""}`}>{formatDate(authority.hijri, "hijri", lang)}</p></> : <><p className={`text-sm font-semibold ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں" : "Pakistan official Hijri date unavailable"}</p><p className={`mt-1 text-sm ${ur ? "font-naskh" : ""}`}>{ur ? "اس تاریخ کے لیے کوئی جائزہ شدہ سرکاری پاکستانی ہجری تاریخ دستیاب نہیں۔" : "No reviewed official Pakistan Hijri date is available for this date."}</p></>}
       <div className="mt-7 grid gap-3 sm:grid-cols-3">
