@@ -6,6 +6,10 @@ import { INPAGE_UNITS_PER_POINT, MAX_INPAGE_BYTES } from "./parseInPage";
 export type InPageRunAroundEvidence = "explicit-on" | "explicit-off" | "omitted" | "unknown";
 export type InPageObjectCandidate = {
   kind: "text-box-candidate";
+  /** Observed distinct box record profiles 0x0006 / 0x0007. */
+  descriptorSubtype: 6 | 7;
+  /** Raw 0x82 property; not necessarily a zero-based story index. */
+  storyReferenceCode?: number;
   /** Experimental tag 0x0082 within this descriptor. Candidate zero-based story reference, NOT universal. */
   candidateStoryIndex?: number;
   descriptorOffset: number; // position in reconstructed InPage300 stream
@@ -18,7 +22,8 @@ export type InPageObjectCandidate = {
 };
 export type InPageObjectMetadata = { version: 3; candidates: InPageObjectCandidate[] };
 
-const DESCRIPTOR_PREFIX = [0x03, 0x00, 0x06, 0x00, 0x02, 0x00, 0x00, 0x00];
+const DESCRIPTOR_PREFIX_BASE = [0x03, 0x00];
+const DESCRIPTOR_SUFFIX = [0x02, 0x00, 0x00, 0x00];
 const RECORD_MIN_BYTES = 58; // 12-byte header + 46-byte property body
 const MAX_CANDIDATES = 64;
 const MAX_COORD_MM = 2000;
@@ -32,7 +37,11 @@ export function parseInPage300ObjectStream(stream: Uint8Array): InPageObjectMeta
   const view = new DataView(stream.buffer, stream.byteOffset, stream.byteLength);
   const candidates: InPageObjectCandidate[] = [];
   for (let offset = 4; offset + RECORD_MIN_BYTES <= stream.length; offset++) {
-    if (!DESCRIPTOR_PREFIX.every((b, j) => stream[offset + j] === b)) continue;
+    if (!DESCRIPTOR_PREFIX_BASE.every((b, j) => stream[offset + j] === b) ||
+        stream[offset + 3] !== 0 ||
+        (stream[offset + 2] !== 6 && stream[offset + 2] !== 7) ||
+        !DESCRIPTOR_SUFFIX.every((b, j) => stream[offset + 4 + j] === b)) continue;
+    const descriptorSubtype = stream[offset + 2] as 6 | 7;
     const payloadLength = view.getUint32(offset + 8, true);
     if (payloadLength !== 46 && payloadLength !== 50) continue;
     const end = offset + 12 + payloadLength;
@@ -56,10 +65,15 @@ export function parseInPage300ObjectStream(stream: Uint8Array): InPageObjectMeta
     // Tag 0x0082 + uint16LE index correlated with Story 8 in five native
     // box-bearing samples. Read only INSIDE an accepted descriptor, and do
     // not treat the correlation as a universal InPage foreign-key rule.
-    const candidateStoryIndex = stream[offset + 18] === 0x82 && stream[offset + 19] === 0 &&
+    const storyReferenceCode = stream[offset + 18] === 0x82 && stream[offset + 19] === 0 &&
       stream[offset + 22] === 0 && stream[offset + 23] === 0
       ? view.getUint16(offset + 20, true) : undefined;
-    candidates.push({ kind: "text-box-candidate", descriptorOffset: offset,
+    // Only the 0x0006 single-box profile has proven the direct index-7
+    // correlation. In the two-box samples, 0x0007 carries value 9 but
+    // the second box is in story slot 8: do not call 9 a story index.
+    const candidateStoryIndex = descriptorSubtype === 6 ? storyReferenceCode : undefined;
+    candidates.push({ kind: "text-box-candidate", descriptorSubtype, descriptorOffset: offset,
+      ...(storyReferenceCode !== undefined ? { storyReferenceCode } : {}),
       ...(candidateStoryIndex !== undefined && candidateStoryIndex < MAX_CANDIDATES ? { candidateStoryIndex } : {}),
       xMm, yMm, widthMm, heightMm, runAround,
       ...(unknownRunAroundValue === undefined ? {} : { unknownRunAroundValue }),

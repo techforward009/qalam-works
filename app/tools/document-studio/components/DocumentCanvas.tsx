@@ -78,7 +78,7 @@ export default function DocumentCanvas({
   minimumPages = 1,
   frames = [],
   onFramesChange,
-  inPageTentativeBoxPreview,
+  inPageTentativeBoxPreviews = [],
   tool: toolProp,
   englishFont = "Arial Unicode MS",
 }: {
@@ -106,7 +106,7 @@ export default function DocumentCanvas({
   minimumPages?: number;
   frames?: StudioFrame[];
   onFramesChange?: (frames: StudioFrame[]) => void;
-  inPageTentativeBoxPreview?: InPageTentativeBoxPreview | null;
+  inPageTentativeBoxPreviews?: InPageTentativeBoxPreview[];
   tool?: StudioToolId;
   englishFont?: string;
 }) {
@@ -633,27 +633,29 @@ export default function DocumentCanvas({
                             marginRightPx={geometry.marginRightPx}
                           />
                         ) : null}
-                        {isPages && inPageTentativeBoxPreview &&
-                          inPageTentativeBoxPreview.xMm >= 0 && inPageTentativeBoxPreview.yMm >= 0 &&
-                          inPageTentativeBoxPreview.xMm + inPageTentativeBoxPreview.widthMm <= pageLayout.widthMm &&
-                          inPageTentativeBoxPreview.yMm + inPageTentativeBoxPreview.heightMm <= pageLayout.heightMm ? (
-                          <div data-studio-inpage-box-overlay="true" data-story-number={inPageTentativeBoxPreview.storyNumber}
+                        {isPages ? inPageTentativeBoxPreviews.filter(box =>
+                          box.xMm >= 0 && box.yMm >= 0 &&
+                          box.xMm + box.widthMm <= pageLayout.widthMm &&
+                          box.yMm + box.heightMm <= pageLayout.heightMm
+                        ).map(box => (
+                          <div key={box.descriptorOffset} data-studio-inpage-box-overlay="true"
+                            data-story-number={box.storyNumber}
                             className="studio-no-print pointer-events-none absolute z-[9] box-border overflow-hidden border-2 border-dashed border-blue-600 bg-blue-100/30"
                             dir="rtl" aria-label="Experimental InPage text-box story placement (not imported)"
                             style={{
-                              left: mmToPx(inPageTentativeBoxPreview.xMm) + (projection ? facingSlot(0, projection).x : 0),
-                              top: mmToPx(inPageTentativeBoxPreview.yMm) + (projection ? facingSlot(0, projection).y : 0),
-                              width: mmToPx(inPageTentativeBoxPreview.widthMm),
-                              height: mmToPx(inPageTentativeBoxPreview.heightMm),
+                              left: mmToPx(box.xMm) + (projection ? facingSlot(0, projection).x : 0),
+                              top: mmToPx(box.yMm) + (projection ? facingSlot(0, projection).y : 0),
+                              width: mmToPx(box.widthMm),
+                              height: mmToPx(box.heightMm),
                               whiteSpace: "pre-wrap", overflowWrap: "anywhere",
                               fontFamily: editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),
                               fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
                               lineHeight: 1.7, textAlign: "right",
                             }}
                           >
-                            {inPageTentativeBoxPreview.text}
+                            {box.text}
                           </div>
-                        ) : null}
+                        )) : null}
                       </div>
                     </div>
                   </div>

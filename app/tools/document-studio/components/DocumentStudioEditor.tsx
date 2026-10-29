@@ -2081,7 +2081,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                 <li key={box.descriptorOffset}>Box record {box.descriptorOffset}: x={box.xMm.toFixed(2)} mm, y={box.yMm.toFixed(2)} mm; {box.widthMm.toFixed(2)} × {box.heightMm.toFixed(2)} mm; Run Around: {box.runAround === "explicit-on" ? "ON (explicit)" : box.runAround === "explicit-off" ? "OFF (explicit)" : box.runAround === "omitted" ? "not recorded (default unverified)" : "unknown value"}</li>
               ))}
             </ul>
-            <p>Text-box content association is experimental. No persistent frame, page reflow, font fidelity or PDF geometry is changed.</p>
+            <p>Text-box association is experimental; editable import requires a separate click. Original InPage Run Around/page-text reflow and font fidelity are NOT yet supported.</p>
             {inpageTentativeBox ? (
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span>Possible Story {inpageTentativeBox.storyNumber} ↔ box (0x82 tag; unverified):</span>
@@ -2101,7 +2101,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                 )}
               </div>
             ) : (
-              <p>No safe unique non-main story association: no box-content preview.</p>
+              <p>No supported unique story association for this file: no box-content preview.</p>
             )}
           </details>
           <button type="button" aria-label="Dismiss InPage object preview" onClick={() => { setInpageObjectEvidence(null); setInpageTentativeBox(null); setShowInpageTentativeBox(false); }}>×</button>

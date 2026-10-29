@@ -37,6 +37,8 @@ describe("read-only InPage300 object metadata", () => {
     expect(result?.candidates).toHaveLength(1);
     const box = result!.candidates[0];
     expect(box.runAround).toBe(status);
+    expect(box.descriptorSubtype).toBe(6);
+    expect(box.storyReferenceCode).toBe(7);
     expect(box.candidateStoryIndex).toBe(7);
     expect(box.xMm).toBeCloseTo(mm(408568), 8);
     expect(box.yMm).toBeCloseTo(mm(153768), 8);
@@ -58,6 +60,19 @@ describe("read-only InPage300 object metadata", () => {
     actual[18] = 0; // remove exact 0x0082 tag without changing geometry
     const result = parseInPageObjectMetadata(nativeStyle([actual]));
     expect(result?.candidates[0].candidateStoryIndex).toBeUndefined();
+  });
+  it("recognises independent profile 7 text box and preserves its raw reference 9", () => {
+    const second = descriptor({ flag: "omitted", dims: [113387, 283464, 396850, 170078] });
+    second[2] = 7;
+    second.writeUInt16LE(9, 20);
+    const first = descriptor();
+    const parsed = parseInPageObjectMetadata(nativeStyle([first, second]));
+    expect(parsed?.candidates).toHaveLength(2);
+    expect(parsed?.candidates.map(item => item.descriptorSubtype)).toEqual([6, 7]);
+    expect(parsed?.candidates.map(item => item.storyReferenceCode)).toEqual([7, 9]);
+    expect(parsed?.candidates.map(item => item.candidateStoryIndex)).toEqual([7, undefined]);
+    expect(parsed?.candidates[1].xMm).toBeCloseTo(mm(113387), 8);
+    expect(parsed?.candidates[1].yMm).toBeCloseTo(mm(283464), 8);
   });
   it("does not mistake an unrelated 7E sequence for the exact descriptor", () => {
     const bad = descriptor({ flag: "off" }); bad[0] = 0;

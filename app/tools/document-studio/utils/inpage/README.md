@@ -105,3 +105,33 @@ Safety limitations:
 Native multi-box example, source-to-object indices and independent
 selection/reflow evidence are still needed before automatic full-fidelity
 import. Do not merge or deploy until focused real-browser tests pass.
+
+## Verified controlled two-box swap (2026-10-29)
+
+Two separate native InPage 3.1 files supplied by the user:
+`Two_Boxes_A.inp` and `Two_Boxes_B.inp` (private: not checked in).
+
+- DocumentInfo bytes and all 9 decoded stories are identical between files.
+- InPage300 logical stream is 14,460 bytes in both; only 18 byte values changed.
+- Descriptor 9484 has subtype 6, reference `82 00 07 00`; its geometry
+  changes from (115,15,70,30) mm to (20,50,70,30) mm.
+- Descriptor 9542 has subtype 7, reference `82 00 09 00`; its geometry
+  changes from (20,50,70,30) mm to (115,15,70,30) mm.
+- The common main text is story array index 6; the two distinct box
+  texts are indices 7 and 8 (user-facing Story 8 and Story 9).
+- **Crucial:** the second raw reference value 9 is not the literal story
+  index; the array has only 9 entries (0–8). Do not globally interpret
+  `0x82` as a direct zero-based index.
+- A restricted profile-based association is offered only when exactly two
+  native descriptors 6/ref 7 and 7/ref 9 occur in order and the text table
+  matches the nine-story controlled profile, with distinct nonempty texts.
+  Other / ambiguous profiles fail closed, rather than making up links.
+
+This supports optional real editable Qalam StudioFrame creation for both
+boxes (with preserved *observed* source flag), through a separate user click.
+The Run Around flag in the new files is omitted and its default is
+unverified, so do not label these sources as explicit ON. Native wrapping,
+full-layout fidelity and PDF parity remain future work.
+
+The supporting evidence file contains *only* hashes, geometry, offsets and
+lengths, never native user documents or extracted source text.
