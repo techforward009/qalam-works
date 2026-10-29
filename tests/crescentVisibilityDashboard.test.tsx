@@ -83,7 +83,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByRole("main").getAttribute("data-crescent-ui")).toBe("ur");
     expect(screen.getByTestId("upcoming-crescent-month-0").textContent).toContain("جمادی الثانی");
     expect(screen.getByTestId("upcoming-crescent-month-1").textContent).toContain("سائنسی حساب");
-    expect(screen.getAllByText(/چاند نظر آنے کی ضمانت نہیں/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/چاند نظر آنے کی ضمانت نہیں/)).toBeNull();
   });
 
   it("shows a friendly national result with genuine location measurements and a clear non-official label", () => {
@@ -198,7 +198,7 @@ describe("crescent visibility dashboard", () => {
     expect(introduction.className).toContain("text-center");
     const references = screen.getByTestId("crescent-three-reference-cards");
     expect(references.className).toContain("text-center");
-    expect(references.textContent).toContain("صفر مقامات");
+    expect(references.textContent).toContain("کوئی مقام");
     expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("صفر");
     expect(screen.queryByText("آغازِ ماہ کا امکان")).toBeNull();
     expect(screen.queryByText("سرکاری تاریخی فیصلہ")).toBeNull();
