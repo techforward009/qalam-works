@@ -28,7 +28,7 @@ test("RTL trailing space advances the visible caret after a word", async ({ page
   }
   const content = await editor.evaluate(element => {
     const view = (element as HTMLElement & { editor: import("@tiptap/core").Editor }).editor;
-    return view.getJSON().content?.[0]?.content?.map(node => node.text ?? "").join("") ?? "";
+    return view.state.doc.textContent;
   });
   expect(content.endsWith("سلام   ")).toBe(true);
   // Real spaces are present in the document; the workaround is only caret paint.
