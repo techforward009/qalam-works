@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLanguage } from "../../lib/language-context";
 import { formatDate, validateDate, type DateParts } from "../date-converter/utils/dateEngine";
@@ -10,6 +10,7 @@ import { evaluatePakistanNationalCrescentPrediction } from "../date-converter/ut
 import { evaluateYallopNationalReferencePrediction } from "../date-converter/utils/yallop/nationalReferencePrediction";
 import { interpretDateStudioMonthStart } from "../date-converter/utils/yallop/dateStudioMonthStart";
 import { NationalEvidencePanel } from "./components/NationalEvidencePanel";
+import { UpcomingCrescentShortcuts } from "./components/UpcomingCrescentShortcuts";
 
 // Presentation safeguard: re-enable only after an approved Pakistan boundary/mask is available.
 const PAKISTAN_VISIBILITY_MAP_ENABLED = false;
@@ -25,7 +26,33 @@ const URDU_LOCATION_NAMES: Record<string, string> = { gilgit: "گلگت", peshaw
 export default function CrescentVisibilityContent() {
   const { language: lang } = useLanguage();
   const ur = lang === "ur";
-  const [dateInput, setDateInput] = useState(() => iso(pakistanToday()));
+  const [today] = useState(pakistanToday);
+  const [dateInput, setDateInput] = useState(() => iso(today));
+  const resultRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const syncFromAddress = () => {
+      const requested = new URLSearchParams(window.location.search).get("date");
+      if (requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && validateDate("gregorian", parse(requested)) === null) {
+        setDateInput(requested);
+      } else {
+        setDateInput(iso(today));
+      }
+    };
+    syncFromAddress();
+    window.addEventListener("popstate", syncFromAddress);
+    return () => window.removeEventListener("popstate", syncFromAddress);
+  }, []);
+  const selectDate = (value: string, jumpToResults = false) => {
+    setDateInput(value);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (value && validateDate("gregorian", parse(value)) === null) url.searchParams.set("date", value);
+    else url.searchParams.delete("date");
+    const nextUrl = url.pathname + url.search + url.hash;
+    if (jumpToResults) window.history.pushState(null, "", nextUrl);
+    else window.history.replaceState(null, "", nextUrl);
+    if (jumpToResults) window.requestAnimationFrame(() => resultRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
+  };
   const [isYallopHelpOpen, setYallopHelpOpen] = useState(false);
   const date = parse(dateInput);
   const isValidDate = validateDate("gregorian", date) === null;
@@ -33,7 +60,7 @@ export default function CrescentVisibilityContent() {
   const yallop = useMemo(() => isValidDate ? evaluateYallopNationalReferencePrediction(date) : null, [isValidDate, date.year, date.month, date.day]);
   const authority = useMemo(() => isValidDate ? resolvePakistanOfficialHijriDate(date) : null, [isValidDate, date.year, date.month, date.day]);
   const decision = useMemo(() => isValidDate ? resolvePakistanOfficialSightingDecisionForEvening(date) : null, [isValidDate, date.year, date.month, date.day]);
-  const dateControl = <div className="mt-4 flex flex-wrap items-center gap-2"><label className="text-sm font-semibold" htmlFor="dashboard-date">{ur ? "تاریخ" : "Date"}</label><input id="dashboard-date" aria-label={ur ? "تاریخ تبدیل کریں" : "Change date"} type="date" min="1900-01-01" max="2100-12-31" value={dateInput} onChange={e => setDateInput(e.target.value)} className="rounded-lg border px-3 py-2" /></div>;
+  const dateControl = <div className="mt-4 flex flex-wrap items-center gap-2"><label className="text-sm font-semibold" htmlFor="dashboard-date">{ur ? "تاریخ" : "Date"}</label><input id="dashboard-date" aria-label={ur ? "تاریخ تبدیل کریں" : "Change date"} type="date" min="1900-01-01" max="2100-12-31" value={dateInput} onChange={e => selectDate(e.target.value)} className="rounded-lg border px-3 py-2" /></div>;
   const backToStudio = (
     <div className="mb-6">
       <Link
@@ -92,9 +119,10 @@ export default function CrescentVisibilityContent() {
     {backToStudio}
     <header className="max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#9a7438]">Qalam Works</p><h1 className={`mt-3 text-4xl font-bold tracking-tight text-[#123326] md:text-5xl dark:text-[#f7faf7] ${ur ? "font-naskh" : ""}`}>{ur ? "رؤیتِ ہلال" : "Moon Sighting"}</h1><p className={`mt-3 text-lg text-[#486155] dark:text-[#c8d5cc] ${ur ? "font-naskh" : ""}`}>{ur ? "قومی سائنسی اور سرکاری جائزہ" : "National scientific and official outlook"}</p></header>
     <section className={`mt-5 max-w-3xl text-sm leading-7 text-muted-foreground ${ur ? "font-naskh" : ""}`}>{ur ? "سرکاری فیصلہ پورے پاکستان سے موصول ہونے والی معتبر اور قابلِ قبول شہادتوں کی بنیاد پر کیا جاتا ہے۔ یہ صفحہ مقررہ قومی مقامات کے فلکیاتی حالات کا سائنسی جائزہ پیش کرتا ہے۔" : "Pakistan's official decision is based on credible accepted testimony from across the country. This page presents a scientific outlook based on prescribed national reference locations."}</section>
+    <UpcomingCrescentShortcuts lang={ur ? "ur" : "en"} today={today} selectedDate={dateInput} onSelect={value => selectDate(value, true)} />
     {dateControl}
     {outsideNewCrescentWindow && <section role="status" className={`mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold leading-7 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 ${ur ? "font-naskh" : ""}`}>{nonCrescentSummary}</section>}
-    <section className="mt-7 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-white shadow-xl shadow-[#123326]/15 md:p-8">
+    <section ref={resultRef} tabIndex={-1} className="mt-7 scroll-mt-24 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-white shadow-xl shadow-[#123326]/15 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#d7bc7b]">{ur ? "قومی جائزہ" : "National outlook"}</p><p className="mt-3 text-lg text-[#dce8de]">{formatDate(date, "gregorian", lang)}</p></div><span className="rounded-full border border-[#d7bc7b]/50 px-3 py-1 text-xs font-semibold text-[#f1d99e]">{ur ? "سائنسی و سرکاری سیاق" : "Science and authority context"}</span></div>
       {authority ? <><p className="text-sm font-semibold">{authority.authority === "official" ? (ur ? "پاکستان کی سرکاری ہجری تاریخ" : "Pakistan official Hijri date") : (ur ? "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ" : "Reported official Pakistan Hijri date")}</p><p className={`text-2xl font-bold ${ur ? "font-naskh" : ""}`}>{formatDate(authority.hijri, "hijri", lang)}</p></> : <><p className={`text-sm font-semibold ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں" : "Pakistan official Hijri date unavailable"}</p><p className={`mt-1 text-sm ${ur ? "font-naskh" : ""}`}>{ur ? "اس تاریخ کے لیے کوئی جائزہ شدہ سرکاری پاکستانی ہجری تاریخ دستیاب نہیں۔" : "No reviewed official Pakistan Hijri date is available for this date."}</p></>}
       <div className="mt-7 grid gap-3 sm:grid-cols-3">
