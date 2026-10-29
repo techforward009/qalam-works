@@ -64,7 +64,7 @@ export function UpcomingCrescentShortcuts({
                 <span className="sr-only">
                   {entry.dateSource === "scientific"
                     ? (ur ? "متوقع تاریخ — سائنسی حساب" : "Forecast date — scientific")
-                    : (ur ? "۲۹ تاریخ — مصدقہ پاکستانی تقویم" : "Day 29 — reviewed Pakistan calendar")}
+                    : (ur ? "29 تاریخ — مصدقہ پاکستانی تقویم" : "Day 29 — reviewed Pakistan calendar")}
                 </span>
                 <span className={"block " + (selected ? "text-[#f1d99e]" : "text-[#315c40] dark:text-[#bde2c7]")}>
                   {ur ? "نتیجہ دیکھیں ←" : "See result →"}
