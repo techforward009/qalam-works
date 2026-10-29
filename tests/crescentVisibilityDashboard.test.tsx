@@ -132,7 +132,7 @@ describe("crescent visibility dashboard", () => {
     expect(ramadan.textContent).toContain("Ramadan");
     expect(ramadan.textContent).toContain("7 February 2027");
     expect(ramadan.textContent).toContain("See result");
-    expect(ramadan.getAttribute("aria-pressed")).toBe("false");
+    expect(ramadan.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(ramadan);
     expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2027-02-07");
   });
