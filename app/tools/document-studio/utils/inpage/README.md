@@ -20,3 +20,32 @@ It has no filesystem, UI, network, or document-editor dependencies.
 The character map's upstream MIT notice is in `LICENSE.inpage-format.txt`.
 `cfb` is Apache-2.0. Layout, styles, images, and frame positions are not imported.
 For later layout stages, InPage units are 1/2000 point (`INPAGE_UNITS_PER_POINT`).
+
+## Experimental, read-only InPage300 object metadata (2026-10-29)
+
+`parseInPageObjectMetadata(buffer)` is an **optional, fail-soft** recognizer for a
+very specific, native InPage300 object descriptor profile. It does NOT import,
+persist, render or reflow text boxes. The normal text importer is unchanged.
+
+- Requires a valid OLE2 container, `DocumentInfo`, exactly one `InPage300`
+  main stream, and the observed InPage300 header.
+- Matches the measured 8-byte descriptor prefix, bounded 46/50-byte body
+  lengths and four sequential little-endian `00 7E`–`03 7E` geometry tags.
+  Units are 1/2000 point; coordinates are relative to the logical stream.
+- `0F 7E 01 00` = **explicit ON** and `0F 7E 00 00` = **explicit OFF**
+  in the two tested InPage 3.1 ON/OFF pairs.
+  Missing flag = **omitted**, NOT universally ON. Unknown explicit values
+  remain **unknown**, never silently coerced.
+- Coordinates/size are diagnostic candidates, not a verified association with
+  a particular story, text run, stacking order, or image. Other InPage profiles
+  may have different descriptors.
+- Parsing is bounded, read-only and optional; invalid/unsupported data cannot
+  prevent normal story import. The UI shows an expandable, dismissible metadata
+  notice only when candidates are found. It does NOT place boxes or promise
+  faithful visual import.
+- Synthetic tests are committed. The owner's four original native .INP samples
+  were checked **locally but are NOT committed**; there is no multi-object,
+  mixed image/text or independent native save/reopen guarantee yet.
+
+Do not make this record scanner a general-purpose INP specification, and do
+not turn on visual Run Around or PDF wrapping from this evidence alone.

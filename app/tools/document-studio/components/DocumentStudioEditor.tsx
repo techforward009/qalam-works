@@ -385,6 +385,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const inpageInputRef = useRef<HTMLInputElement>(null);
   const [inpageStories, setInpageStories] = useState<ImportedStory[] | null>(null);
   const [inpageError, setInpageError] = useState<string | null>(null);
+  // Research-only preview: recognises bounded native descriptors but never
+  // creates page objects or changes text flow, storage or PDF.
+  const [inpageObjectEvidence, setInpageObjectEvidence] = useState<
+    import("../utils/inpage/parseInPageObjectMetadata").InPageObjectMetadata | null
+  >(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -987,6 +992,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const handleInPageFile = async (file: File) => {
     setInpageError(null);
+    setInpageObjectEvidence(null);
     setUploadError(null);
     setDocxImportNotice(false);
     setIsImporting(true);
@@ -995,6 +1001,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       if (file.size > MAX_INPAGE_BYTES) throw new Error("InPage files must be 32 MB or smaller.");
       const buffer = await file.arrayBuffer();
       const parsed = parseInPage(buffer);
+      const { parseInPageObjectMetadata } = await import("../utils/inpage/parseInPageObjectMetadata");
+      const possibleBoxes = parseInPageObjectMetadata(buffer);
       const { parseInPageSetup } = await import("../utils/inpage/parseInPageSetup");
       const { settingsFromInPageSetup } = await import("../utils/inpage/inpageSetupSettings");
       const setup = parseInPageSetup(buffer);
@@ -1009,6 +1017,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       if (!created) throw new Error("The imported document could not be saved in this browser.");
       setLibraryOpen(false);
       setInpageStories(stories.filter((story) => story !== longest && story.text.trim().length > 0));
+      setInpageObjectEvidence(possibleBoxes?.candidates.length ? possibleBoxes : null);
     } catch (error) {
       setLibraryOpen(false);
       setInpageError(error instanceof Error ? error.message : "Failed to import InPage text.");
@@ -2023,6 +2032,20 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
+      {inpageObjectEvidence?.candidates.length ? (
+        <div data-studio-inpage-objects-preview="true" dir="ltr" className="mx-2 my-1 flex items-start gap-2 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700">
+          <details className="min-w-0 flex-1">
+            <summary className="cursor-pointer">InPage 3.1: {inpageObjectEvidence.candidates.length} possible text box(es) recognised — geometry preview only; not placed or wrapped.</summary>
+            <ul className="mt-1 list-inside list-disc">
+              {inpageObjectEvidence.candidates.map((box) => (
+                <li key={box.descriptorOffset}>Box record {box.descriptorOffset}: x={box.xMm.toFixed(2)} mm, y={box.yMm.toFixed(2)} mm; {box.widthMm.toFixed(2)} × {box.heightMm.toFixed(2)} mm; Run Around: {box.runAround === "explicit-on" ? "ON (explicit)" : box.runAround === "explicit-off" ? "OFF (explicit)" : box.runAround === "omitted" ? "not recorded (default unverified)" : "unknown value"}</li>
+              ))}
+            </ul>
+            <p>Text-box contents, layering and page reflow have NOT been imported. No PDF geometry is changed.</p>
+          </details>
+          <button type="button" aria-label="Dismiss InPage object preview" onClick={() => setInpageObjectEvidence(null)}>×</button>
+        </div>
+      ) : null}
       <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void handleInPageFile(file);
