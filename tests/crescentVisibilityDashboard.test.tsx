@@ -68,7 +68,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1 of 8");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("9.1");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("42.3");
-    expect(summary.textContent).toContain("not an official announcement");
+    expect(summary.textContent).toContain("Central Ruet-e-Hilal Committee makes the official decision");
     expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-simple-details");
     expect(screen.getByText("Detailed scientific and official research")).toBeTruthy();
     expect(screen.getByTestId("crescent-quick-location")).toBeTruthy();
@@ -248,7 +248,7 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />);
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-02-28" } });
     expect(screen.getAllByText("10 Ramadan 1447 AH").length).toBeGreaterThan(0);
-    expect(screen.getByTestId("crescent-predicted-first-day")).toBeNull();
+    expect(screen.queryByTestId("crescent-predicted-first-day")).toBeNull();
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
     expect(screen.getByTestId("crescent-simple-headline").textContent).toContain("Not a new crescent evening");
