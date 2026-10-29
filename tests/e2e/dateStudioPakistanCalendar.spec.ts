@@ -288,7 +288,7 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     expect(measurements.monthFont).toContain("Gulzar");
     expect(parseFloat(measurements.monthSize)).toBeGreaterThan(22);
     const columns = measurements.computedGrid.split(" ").length;
-    expect(columns).toBe(measurements.viewport >= 640 ? 2 : 1);
+    expect(columns).toBe(measurements.viewport >= 900 ? 3 : measurements.viewport >= 640 ? 2 : 1);
     for (const box of measurements.cardBounds) {
       expect(box.height).toBeGreaterThanOrEqual(156);
       expect(box.contentLeft).toBeGreaterThanOrEqual(box.cardLeft - 1);
@@ -323,6 +323,19 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     expect(pageText).not.toContain("۰ مقامات");
     const tomorrow = page.getByTestId("crescent-next-evening");
     await expect(tomorrow).toContainText("11 نومبر 2026");
+    const city = page.getByTestId("crescent-visible-city-selector");
+    await expect(city).toBeVisible();
+    const citySelect = city.getByRole("combobox");
+    await expect(citySelect.locator("option")).toHaveCount(8);
+    await expect(citySelect).toHaveValue("karachi");
+    await expect(tomorrow).toContainText("کراچی میں اسی شام کے حقیقی حسابی اعداد");
+    const beforeCityFigures = await page.getByTestId("crescent-next-evening-metrics").textContent();
+    await citySelect.selectOption("lahore");
+    await expect(tomorrow).toContainText("لاہور میں اسی شام کے حقیقی حسابی اعداد");
+    await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
+    const afterCityFigures = await page.getByTestId("crescent-next-evening-metrics").textContent();
+    expect(afterCityFigures).not.toBe(beforeCityFigures);
+    await citySelect.selectOption("karachi");
     await expect(page.getByTestId("crescent-next-evening-count")).toContainText("پاکستان کے آٹھ مقامات");
     await expect(page.getByTestId("crescent-next-evening-metrics").locator("div")).toHaveCount(4);
     await expect(page.getByTestId("crescent-next-evening-metrics")).not.toContainText("—");
@@ -330,6 +343,22 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     await page.getByTestId("crescent-next-evening-link").click();
     await expect(page.locator("#dashboard-date")).toHaveValue("2026-11-11");
     await expect(page).toHaveURL(/date=2026-11-11/);
+  });
+
+  test("three Urdu month cards per desktop row with Western Gregorian date figures", async ({ page }) => {
+    await page.setViewportSize({ width: 1006, height: 820 });
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const months = page.getByTestId("upcoming-crescent-months");
+    const cards = months.locator("[data-crescent-month-grid] button");
+    await expect(cards).toHaveCount(6);
+    const gridCols = await months.locator("[data-crescent-month-grid]").evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+    expect(gridCols).toBe(3);
+    const dateLabels = ["10 نومبر 2026", "10 دسمبر 2026", "8 جنوری 2027", "7 فروری 2027", "8 مارچ 2027", "7 اپریل 2027"];
+    for (let i = 0; i < dateLabels.length; i++) {
+      await expect(cards.nth(i)).toContainText(dateLabels[i]);
+    }
+    const allCardText = await cards.allTextContents();
+    for (const label of allCardText) expect(label).not.toMatch(/[۰-۹]/);
   });
 
   test("uses the exact Thursday first-day sentence, Gulzar titles and Mehr text without a duplicate feedback banner", async ({ page }, testInfo) => {
@@ -340,6 +369,13 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     const card = page.getByTestId("crescent-predicted-first-day");
     await expect(card).toContainText(sentence);
     await expect(card.locator("strong, b")).toHaveCount(0);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const forecastLayout = await card.locator("[data-crescent-forecast]").evaluate(el => {
+      const style = getComputedStyle(el);
+      return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), scrollWidth: el.scrollWidth, clientWidth: el.clientWidth };
+    });
+    expect(forecastLayout.height).toBeLessThan(forecastLayout.lineHeight * 1.5);
+    expect(forecastLayout.scrollWidth).toBeLessThanOrEqual(forecastLayout.clientWidth + 2);
     await expect(card.locator("[data-crescent-forecast] bdi")).toHaveText(["1448", "12", "2026"]);
     const forecastWeight = await card.locator("[data-crescent-forecast]").evaluate(el => getComputedStyle(el).fontWeight);
     expect(Number(forecastWeight)).toBe(400);
