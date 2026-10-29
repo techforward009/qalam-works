@@ -12,6 +12,7 @@ import { interpretDateStudioMonthStart } from "../date-converter/utils/yallop/da
 import { NationalEvidencePanel } from "./components/NationalEvidencePanel";
 import { UpcomingCrescentShortcuts } from "./components/UpcomingCrescentShortcuts";
 import { PakistanCrescentQuickResult } from "./components/PakistanCrescentQuickResult";
+import { getUpcomingPakistanCrescentEvenings } from "./utils/upcomingCrescentEvenings";
 
 // Presentation safeguard: re-enable only after an approved Pakistan boundary/mask is available.
 const PAKISTAN_VISIBILITY_MAP_ENABLED = false;
@@ -28,7 +29,7 @@ export default function CrescentVisibilityContent() {
   const { language: lang } = useLanguage();
   const ur = lang === "ur";
   const [today] = useState(pakistanToday);
-  const [dateInput, setDateInput] = useState(() => iso(today));
+  const [dateInput, setDateInput] = useState(() => getUpcomingPakistanCrescentEvenings(today, 1)[0]?.dateIso ?? iso(today));
   const resultRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const syncFromAddress = () => {
@@ -36,7 +37,7 @@ export default function CrescentVisibilityContent() {
       if (requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && validateDate("gregorian", parse(requested)) === null) {
         setDateInput(requested);
       } else {
-        setDateInput(iso(today));
+        setDateInput(getUpcomingPakistanCrescentEvenings(today, 1)[0]?.dateIso ?? iso(today));
       }
     };
     syncFromAddress();
@@ -124,14 +125,15 @@ export default function CrescentVisibilityContent() {
   return <main className="mx-auto max-w-[1080px] px-4 py-12" dir={ur ? "rtl" : "ltr"}>
     {backToStudio}
     <header className="relative max-w-none overflow-hidden rounded-3xl bg-gradient-to-l from-[#123326] via-[#174f3a] to-[#122c37] px-6 py-9 text-white shadow-lg sm:px-9 sm:py-11"><div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-14 h-56 w-56 rounded-full bg-[#B8935A]/15 blur-3xl" /><div className="relative"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f1d99e]">Qalam Works</p><h1 className={`mt-3 text-3xl font-bold leading-relaxed tracking-tight sm:text-4xl ${ur ? "font-naskh" : ""}`}>{ur ? "رؤیتِ ہلال — پاکستان" : "Moon Sighting — Pakistan"}</h1><p className={`mt-3 text-base text-[#e3eee4] ${ur ? "font-naskh" : ""}`}>{ur ? "قومی سائنسی اور سرکاری جائزہ" : "National scientific and official outlook"}</p></div></header>
-    <section className={`mt-5 max-w-3xl text-sm leading-7 text-muted-foreground ${ur ? "font-naskh" : ""}`}>{ur ? "سرکاری فیصلہ پورے پاکستان سے موصول ہونے والی معتبر اور قابلِ قبول شہادتوں کی بنیاد پر کیا جاتا ہے۔ یہ صفحہ مقررہ قومی مقامات کے فلکیاتی حالات کا سائنسی جائزہ پیش کرتا ہے۔" : "Pakistan's official decision is based on credible accepted testimony from across the country. This page presents a scientific outlook based on prescribed national reference locations."}</section>
+    <section className={`mt-5 max-w-3xl text-sm leading-7 text-muted-foreground ${ur ? "font-naskh" : ""}`}>{ur ? "مہینہ چنیں اور دیکھیں کہ پاکستان میں چاند نظر آنے کے کیا امکانات ہیں۔" : "Choose a lunar month to see whether the crescent may be visible in Pakistan."}</section>
     <UpcomingCrescentShortcuts lang={ur ? "ur" : "en"} today={today} selectedDate={dateInput} onSelect={value => selectDate(value, true)} />
     {dateControl}
-    {outsideNewCrescentWindow && <section role="status" className={`mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold leading-7 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 ${ur ? "font-naskh" : ""}`}>{nonCrescentSummary}</section>}
     <div ref={resultRef} tabIndex={-1} className="mt-7 scroll-mt-24">
       <PakistanCrescentQuickResult date={date} lang={ur ? "ur" : "en"} pakistan={pakistan} yallop={yallop} authority={authority} decision={decision} outsideNewCrescentWindow={outsideNewCrescentWindow} />
     </div>
-    <div id="crescent-technical-report" className="mt-8 scroll-mt-24">
+    <details id="crescent-technical-report" data-testid="crescent-deep-details" className="mt-6 scroll-mt-24 rounded-2xl border border-[#1A3A2A]/15 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e] sm:p-6">
+      <summary className={`cursor-pointer text-base font-bold text-[#153b29] dark:text-[#e6f0e6] ${ur ? "font-naskh" : ""}`}>{ur ? "مکمل تحقیق اور سرکاری حوالہ جات دیکھیں" : "View the complete research and official sources"}</summary>
+      <div className="mt-5">
       <h2 className={`text-xl font-bold text-[#123326] dark:text-[#f7faf7] ${ur ? "font-naskh" : ""}`}>{ur ? "تفصیلی سائنسی اور سرکاری تحقیق" : "Detailed scientific and official research"}</h2>
       <p className={`mt-1 text-sm text-[#486155] dark:text-[#c8d5cc] ${ur ? "font-naskh" : ""}`}>{ur ? "اصل ماڈل، پاکستان کے آٹھ مقامات، سرکاری فیصلہ اور تمام فلکیاتی شواہد" : "Original models, eight Pakistan locations, official decision and full astronomy evidence"}</p>
     </div>
@@ -194,6 +196,7 @@ export default function CrescentVisibilityContent() {
     {month && authority && !decision && (authority.hijri.day === 29 || authority.hijri.day === 30) && <section className="mt-4 rounded-xl border p-4"><h2 className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "آغازِ ماہ کا امکان" : "Month-start implication"}</h2><p className={ur ? "font-naskh" : ""}>{month.state === "day30_forced_next_month" ? (ur ? "سرکاری قمری سیاق کے مطابق کل نئے مہینے کی پہلی تاریخ ہے۔" : "Authoritative calendar context makes tomorrow the first day of the next month.") : month.state === "day29_qualifies" ? (ur ? "سائنسی نتائج کے مطابق کل آغازِ ماہ ہو سکتا ہے؛ حتمی فیصلہ سرکاری ہوگا۔" : "Scientific visibility may support next-day month start; an official decision remains required.") : (ur ? "کوئی سرکاری آغازِ ماہ کا نتیجہ اخذ نہیں کیا گیا۔" : "No official month-start conclusion is inferred.")}</p></section>}
     {!decision && <NationalEvidencePanel decision={decision} lang={lang} />}
     <details className="mt-6"><summary className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "مزید سائنسی تفصیلات" : "Scientific details"}</summary><p className={`mt-2 ${ur ? "font-naskh" : ""}`}>{ur ? "سائنسی پیش گوئیاں سرکاری رویتِ ہلال کا اعلان نہیں ہیں۔" : "Scientific predictions are not official moon-sighting declarations."}</p><div className="mt-3 grid gap-2 md:grid-cols-2" data-testid="scientific-location-grid">{pakistan.locations.map(({ observer, prediction }, index) => { const yallopPrediction = yallop.locations[index].prediction; const evaluatedPakistan = prediction.status === "evaluated"; const evaluatedYallop = yallopPrediction.status === "evaluated"; const passes = evaluatedPakistan && prediction.criterion.qualifies; return <div key={observer.id} className="rounded-lg border p-3 text-sm"><div className="flex items-center justify-between gap-2"><strong>{ur ? (URDU_LOCATION_NAMES[observer.id] ?? observer.name) : observer.name}</strong><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${passes ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100" : "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100"}`}>{passes ? (ur ? "معیار پورا" : "Pass") : (ur ? "معیار پورا نہیں" : "Fail")}</span></div>{evaluatedPakistan && <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1"><dt>{ur ? "ارتفاع" : "Altitude"}</dt><dd><span dir="ltr">{prediction.criterion.altitudeDeg.toFixed(2)}°</span></dd><dt>{ur ? "ہلال کی چوڑائی" : "Crescent width"}</dt><dd><span dir="ltr">{prediction.criterion.widthArcMin.toFixed(3)}′</span></dd><dt>{ur ? "روشن حصہ" : "Illumination"}</dt><dd><span dir="ltr">{prediction.criterion.illuminationPercent.toFixed(2)}%</span></dd><dt>{ur ? "زاویائی فاصلہ" : "Elongation"}</dt><dd><span dir="ltr">{prediction.criterion.elongationDeg.toFixed(2)}°</span></dd><dt>{ur ? "غروب کا وقفہ" : "Lag"}</dt><dd><span dir="ltr">{prediction.criterion.lagMinutes.toFixed(1)} min</span></dd></dl>}<div className="mt-2 flex items-center gap-2"><span>{ur ? "یالوپ" : "Yallop"}:</span>{evaluatedYallop ? <><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${classTone(yallopPrediction.criterion.visibilityClass)}`}>{ur ? "درجہ " : "Class "}{yallopPrediction.criterion.visibilityClass}</span><span dir="ltr">(q = {qText(yallopPrediction.criterion.q)})</span></> : <span>{ur ? "دستیاب نہیں" : "unavailable"}</span>}</div></div>; })}</div></details>
+    </details>
     <section className="mt-8 flex flex-col items-start justify-between gap-4 rounded-3xl bg-gradient-to-l from-[#123326] to-[#245b43] p-6 text-white shadow-sm sm:flex-row sm:items-center sm:p-8" aria-label={ur ? "رائے و تجاویز" : "Share your feedback"}>
       <div>
         <h2 className={`text-xl font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "کیا یہ معلومات آپ کے لیے مفید رہیں؟" : "Was this information useful?"}</h2>
