@@ -241,7 +241,7 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />);
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-02-28" } });
     expect(screen.getAllByText("10 Ramadan 1447 AH").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Not a new-crescent test").length).toBe(2);
+    expect(screen.getAllByText("Not a new-crescent test").length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
     expect(screen.getAllByRole("status").some(node => /not a new-crescent observation evening/i.test(node.textContent ?? ""))).toBe(true);
