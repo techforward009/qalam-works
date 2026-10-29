@@ -29,7 +29,7 @@ export default function CrescentVisibilityContent() {
   const ur = lang === "ur";
   const [today] = useState(pakistanToday);
   const [dateInput, setDateInput] = useState(() => iso(today));
-  const resultRef = useRef<HTMLElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const syncFromAddress = () => {
       const requested = new URLSearchParams(window.location.search).get("date");
