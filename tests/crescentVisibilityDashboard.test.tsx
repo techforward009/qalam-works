@@ -16,9 +16,48 @@ vi.mock("../app/tools/date-converter/utils/pakistan-crescent/nationalPrediction"
 vi.mock("../app/tools/date-converter/utils/yallop/nationalReferencePrediction", () => ({ evaluateYallopNationalReferencePrediction: vi.fn(() => ({ locations: yallopLocations, anyAcceptedByPolicy: true, classCounts: yallopClassCounts })) }));
 vi.mock("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate", () => ({ resolvePakistanOfficialHijriDate: vi.fn(() => null) }));
 vi.mock("../app/tools/date-converter/utils/hijri-authority/resolveOfficialSightingDecision", () => ({ resolvePakistanOfficialSightingDecisionForEvening: vi.fn(() => null) }));
+vi.mock("../app/tools/crescent-visibility/utils/upcomingCrescentEvenings", () => ({
+  getUpcomingPakistanCrescentEvenings: vi.fn(() => [
+    { dateIso: "2026-11-10", evening: { year: 2026, month: 11, day: 10 }, targetHijriYear: 1448, targetHijriMonth: 6, dateSource: "official" },
+    { dateIso: "2026-12-10", evening: { year: 2026, month: 12, day: 10 }, targetHijriYear: 1448, targetHijriMonth: 7, dateSource: "scientific" },
+  ]),
+}));
 
 describe("crescent visibility dashboard", () => {
+  afterEach(() => { window.history.replaceState(null, "", "/tools/crescent-visibility"); });
   afterEach(() => { locale.language = "en"; locations.forEach((location, index) => { location.prediction.criterion.qualifies = index === 0; }); yallopLocations.forEach((location, index) => { location.prediction.criterion.visibilityClass = index === 0 ? "A" : "C"; location.prediction.acceptedByPolicy = index === 0; }); Object.assign(yallopClassCounts, { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 }); });
+  it("jumps to a chosen upcoming lunar month and updates the shareable selected evening", () => {
+    render(<CrescentVisibilityContent />);
+    const shortcuts = screen.getByTestId("upcoming-crescent-months");
+    expect(shortcuts.querySelectorAll("button")).toHaveLength(2);
+    const nextMonth = screen.getByTestId("upcoming-crescent-month-0");
+    expect(nextMonth.getAttribute("aria-label")).toContain("Jumada al-Thani 1448");
+    fireEvent.click(nextMonth);
+    expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2026-11-10");
+    expect(window.location.search).toBe("?date=2026-11-10");
+    expect(nextMonth.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByTestId("upcoming-crescent-month-1"));
+    expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2026-12-10");
+    expect(window.location.search).toBe("?date=2026-12-10");
+    expect(screen.getAllByText("10 December 2026").length).toBeGreaterThan(0);
+  });
+
+  it("opens a bookmarked observation date and retains the date picker", async () => {
+    window.history.replaceState(null, "", "/tools/crescent-visibility?date=2026-12-10");
+    render(<CrescentVisibilityContent />);
+    await waitFor(() => expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2026-12-10"));
+    expect(screen.getByTestId("upcoming-crescent-month-1").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("shows Urdu month names for the shortcut without treating predictions as official", () => {
+    locale.language = "ur";
+    render(<CrescentVisibilityContent />);
+    expect(screen.getByText("آنے والے مہینوں کے چاند کی رؤیت")).toBeTruthy();
+    expect(screen.getByTestId("upcoming-crescent-month-0").textContent).toContain("جمادی الثانی");
+    expect(screen.getByTestId("upcoming-crescent-month-1").textContent).toContain("سائنسی حساب");
+    expect(screen.getByText(/چاند نظر آنے کی ضمانت نہیں/)).toBeTruthy();
+  });
+
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Moon Sighting" })).toBeTruthy();
