@@ -39,7 +39,7 @@ describe("Pakistan-first public Date Studio presentation", () => {
     const find = (month: number, day: number) => model.months[month - 1].weeks
       .flatMap(w => w.cells).find(c => c.inCurrentMonth && c.gregorian.day === day);
     expect(find(2, 28)?.hijriSource).toBe("official");
-    expect(find(11, 15)?.hijriSource).toBe("tabular");
+    expect(find(11, 15)?.hijriSource).toBe("scientific");
     const maker = source("app/tools/calendar-maker/CalendarMakerContent.tsx");
     expect(maker).toContain('useState<DisplayHijriPolicy>("pakistan")');
     expect(maker).toContain("پاکستانی تقویم ساز");
