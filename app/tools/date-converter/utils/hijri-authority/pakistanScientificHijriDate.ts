@@ -29,7 +29,8 @@ function crescentQualifiesOnEvening(dayJdn: number): boolean | null {
   if (eveningCache.has(dayJdn)) return eveningCache.get(dayJdn)!;
   const result = evaluatePakistanNationalCrescentPrediction(jdnToGregorian(dayJdn));
   // Missing astronomical evidence is not evidence that the crescent failed.
-  const qualifies = result.locations.every(({ prediction }) => prediction.status === "evaluated")
+  const qualifies = result.locations.every(({ prediction }) =>
+    prediction.status === "evaluated" || prediction.status === "moonset-before-or-at-sunset")
     ? result.qualifies : null;
   eveningCache.set(dayJdn, qualifies);
   return qualifies;
@@ -53,6 +54,7 @@ export function predictPakistanHijriDate(gregorian: DateParts): DateParts | null
   const officialStart = gregorianToJDN(anchor.officialDayOneGregorian.year, anchor.officialDayOneGregorian.month, anchor.officialDayOneGregorian.day);
   const officialEnd = gregorianToJDN(anchor.coverageEndGregorian.year, anchor.coverageEndGregorian.month, anchor.coverageEndGregorian.day);
   if (requested <= officialEnd) return null; // The official resolver owns these days.
+  if (requested - officialStart > MAX_FORECAST_MONTHS * 30) return null;
 
   let starts = monthCache.get(anchor.id);
   if (!starts) {
