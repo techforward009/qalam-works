@@ -129,7 +129,7 @@ export default function CrescentVisibilityContent() {
     <UpcomingCrescentShortcuts lang={ur ? "ur" : "en"} today={today} selectedDate={dateInput} onSelect={value => selectDate(value, true)} />
     {dateControl}
     <div ref={resultRef} tabIndex={-1} className="mt-7 scroll-mt-24">
-      <PakistanCrescentQuickResult date={date} lang={ur ? "ur" : "en"} pakistan={pakistan} yallop={yallop} authority={authority} decision={decision} outsideNewCrescentWindow={outsideNewCrescentWindow} />
+      <PakistanCrescentQuickResult date={date} lang={ur ? "ur" : "en"} pakistan={pakistan} yallop={yallop} decision={decision} outsideNewCrescentWindow={outsideNewCrescentWindow} />
     </div>
     <details id="crescent-technical-report" data-testid="crescent-deep-details" className="mt-6 scroll-mt-24 rounded-2xl border border-[#1A3A2A]/15 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e] sm:p-6">
       <summary className={`cursor-pointer text-base font-bold text-[#153b29] dark:text-[#e6f0e6] ${ur ? "font-naskh" : ""}`}>{ur ? "مکمل تحقیق اور سرکاری حوالہ جات دیکھیں" : "View the complete research and official sources"}</summary>
