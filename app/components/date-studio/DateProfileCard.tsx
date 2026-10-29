@@ -5,6 +5,7 @@ import type { DateEvent } from "@/app/tools/date-converter/utils/dateEvents";
 import type { DateProfile } from "@/app/tools/date-converter/utils/dateProfile";
 import { SOLAR_MONTHS_EN, SOLAR_MONTHS_UR } from "@/app/tools/date-converter/utils/dateEngine";
 import { PakistanDateResult } from "@/app/tools/date-converter/components/PakistanDateResult";
+import { resolveDisplayHijriDate } from "@/app/tools/date-converter/utils/hijri-authority/displayHijriDate";
 import { CalendarLinksCard } from "./CalendarLinksCard";
 import { DateFactsCard } from "./DateFactsCard";
 import { HistoricalContext } from "./HistoricalContext";
@@ -37,7 +38,8 @@ export function DateProfileCard({ profile, events = [] }: {
   const isUr = lang === "ur";
   const naskh = isUr ? "font-naskh" : "";
   const official = profile.pakistanOfficialHijri;
-  const primaryHijri = official?.hijri ?? profile.hijri;
+  const display = resolveDisplayHijriDate(profile.gregorian);
+  const primaryHijri = display.hijri;
 
   let status: string;
   if (profile.futureState === "today") {
@@ -65,6 +67,7 @@ export function DateProfileCard({ profile, events = [] }: {
         gregorian={profile.gregorian}
         hijri={primaryHijri}
         reviewed={official ?? null}
+        source={display.source === "scientific" ? "scientific" : "tabular"}
         weekday={profile.weekday[lang]}
         lang={lang}
       />
