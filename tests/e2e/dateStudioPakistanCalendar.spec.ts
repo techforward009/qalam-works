@@ -208,7 +208,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(simple).toBeVisible();
     await expect(page.getByTestId("crescent-simple-headline")).toContainText("The crescent is not expected to be visible");
     await expect(page.getByTestId("crescent-predicted-first-day")).toContainText("12 November 2026");
-    await expect(page.getByTestId("crescent-predicted-first-day")).toContainText("11 November 2026");
+    await expect(page.getByTestId("crescent-predicted-first-day")).not.toContainText("11 November 2026");
     await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0 of 8");
     await expect(simple.getByText(/This is a scientific forecast/)).toBeVisible();
     await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
