@@ -72,7 +72,7 @@ describe("read-only InPage300 object metadata", () => {
   });
   it("leaves legacy, damaged, text-only and oversized files unsupported", () => {
     expect(parseInPageObjectMetadata(legacyInpage([[4, 0x81]]))).toBeNull();
-    expect(parseInPageObjectMetadata(unicodeInpage([["سلام"]]))?.candidates).toEqual([]);
+    expect(parseInPageObjectMetadata(unicodeInpage([["سلام"]]))).toBeNull();
     expect(parseInPageObjectMetadata(new Uint8Array([0, 0, 3, 0]))).toBeNull();
     expect(parseInPageObjectMetadata(new Uint8Array(33 * 1024 * 1024))).toBeNull();
   });
