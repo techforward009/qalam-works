@@ -739,6 +739,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+    // Object evidence is a transient observation about the just-imported source;
+    // never show it under a different, previously saved document.
+    setInpageObjectEvidence(null);
     formattingSafety.current?.documentChanged();
     setFormattingNotice(0);
     setCharacterOpen(false); setParagraphOpen(false);
