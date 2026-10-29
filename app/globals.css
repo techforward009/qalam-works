@@ -2187,6 +2187,18 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
   line-height: 2 !important;
   letter-spacing: 0 !important;
 }
+/* The introductory sentence is a centred Mehr paragraph, not a Naskh label. */
+[data-crescent-ui="ur"] [data-crescent-intro] {
+  font-family: "Mehr Nastaliq Web", var(--qalam-urdu-primary) !important;
+  font-size: 22px !important;
+  line-height: 2.25 !important;
+  text-align: center !important;
+  margin-inline: auto;
+}
+[data-crescent-ui="ur"] [data-crescent-intro] * {
+  font-family: "Mehr Nastaliq Web", var(--qalam-urdu-primary) !important;
+  text-align: center !important;
+}
 [data-crescent-ui="ur"] h1 { font-size: 34px !important; }
 [data-crescent-ui="ur"] h2 { font-size: 29px !important; }
 [data-crescent-ui="ur"] [data-crescent-month-title] {
