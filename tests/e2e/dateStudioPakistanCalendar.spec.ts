@@ -249,6 +249,55 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     await page.addInitScript(() => localStorage.setItem("qalam-site-language", "ur"));
   });
 
+  test("keeps Mehr at 22px and month cards readable at screenshot and mobile widths", async ({ page }, testInfo) => {
+    if (testInfo.project.name === "desktop-chrome") {
+      await page.setViewportSize({ width: 1006, height: 820 });
+    }
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const main = page.locator('main[data-crescent-ui="ur"]');
+    const section = page.getByTestId("upcoming-crescent-months");
+    const grid = section.locator("[data-crescent-month-grid]");
+    await expect(section).toBeVisible();
+    await expect(grid.locator("button")).toHaveCount(6);
+    const measurements = await section.evaluate((sectionElement) => {
+      const gridElement = sectionElement.querySelector("[data-crescent-month-grid]") as HTMLElement;
+      const button = gridElement.querySelector("button") as HTMLButtonElement;
+      const monthTitle = button.querySelector("[data-crescent-month-title]") as HTMLElement;
+      const date = button.children[1] as HTMLElement;
+      const cardBounds = Array.from(gridElement.querySelectorAll("button")).map(item => {
+        const card = item.getBoundingClientRect();
+        const content = item.querySelector("[data-crescent-month-title]")!.getBoundingClientRect();
+        return { cardRight: card.right, cardLeft: card.left, contentRight: content.right, contentLeft: content.left, height: card.height, width: card.width };
+      });
+      return {
+        viewport: window.innerWidth,
+        computedGrid: getComputedStyle(gridElement).gridTemplateColumns,
+        monthFont: getComputedStyle(monthTitle).fontFamily,
+        monthSize: getComputedStyle(monthTitle).fontSize,
+        cardFont: getComputedStyle(button).fontFamily,
+        cardSize: getComputedStyle(button).fontSize,
+        dateSize: getComputedStyle(date).fontSize,
+        bodySize: getComputedStyle(sectionElement.querySelector("p")!).fontSize,
+        cardBounds,
+      };
+    });
+    expect(measurements.cardFont).toContain("Mehr Nastaliq Web");
+    expect(measurements.cardSize).toBe("22px");
+    expect(measurements.bodySize).toBe("22px");
+    expect(measurements.dateSize).toBe("22px");
+    expect(measurements.monthFont).toContain("Gulzar");
+    expect(parseFloat(measurements.monthSize)).toBeGreaterThan(22);
+    const columns = measurements.computedGrid.split(" ").length;
+    expect(columns).toBe(measurements.viewport >= 640 ? 2 : 1);
+    for (const box of measurements.cardBounds) {
+      expect(box.height).toBeGreaterThanOrEqual(156);
+      expect(box.contentLeft).toBeGreaterThanOrEqual(box.cardLeft - 1);
+      expect(box.contentRight).toBeLessThanOrEqual(box.cardRight + 1);
+    }
+    expect(await main.evaluate(el => el.scrollWidth <= el.clientWidth + 2)).toBe(true);
+    await section.screenshot({ path: testInfo.outputPath("urdu-22px-mehr-readable-month-cards.png") });
+  });
+
   test("uses the exact Thursday first-day sentence, Gulzar titles and Mehr text without a duplicate feedback banner", async ({ page }, testInfo) => {
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     const main = page.locator('main[data-crescent-ui="ur"]');
