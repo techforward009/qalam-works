@@ -81,7 +81,7 @@ export function UpcomingCrescentShortcuts({
       )}
       <p className={"mt-3 text-xs leading-6 text-[#486155] dark:text-[#c8d5cc] " + (ur ? "font-naskh" : "")}>
         {ur
-          ? "یہ قمری مہینے کی ۲۹ویں شام ہے، چاند نظر آنے کی ضمانت نہیں۔ سرکاری فیصلہ مرکزی رؤیتِ ہلال کمیٹی کرے گی۔"
+          ? "منتخب تاریخ کا سائنسی حساب دیکھیں۔ سرکاری فیصلہ مرکزی رؤیتِ ہلال کمیٹی پاکستان کرے گی۔"
           : "These are day-29 observation evenings, not guarantees of visibility. Pakistan's Central Ruet-e-Hilal Committee makes the official decision."}
       </p>
     </section>
