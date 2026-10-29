@@ -63,13 +63,13 @@ describe("crescent visibility dashboard", () => {
     const summary = screen.getByTestId("crescent-simple-result");
     expect((screen.getByTestId("crescent-simple-details") as HTMLDetailsElement).open).toBe(false);
     expect((screen.getByTestId("crescent-deep-details") as HTMLDetailsElement).open).toBe(false);
-    expect(summary.textContent).toContain("Pakistan national scientific result");
-    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("Conditions favor crescent visibility");
-    expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1/8");
+    expect(summary.textContent).toContain("Crescent visibility in Pakistan");
+    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("The crescent may be visible");
+    expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1 of 8");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("9.1");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("42.3");
-    expect(summary.textContent).toContain("not an official moon-sighting declaration");
-    expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-technical-report");
+    expect(summary.textContent).toContain("not an official announcement");
+    expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-simple-details");
     expect(screen.getByText("Detailed scientific and official research")).toBeTruthy();
     expect(screen.getByTestId("crescent-quick-location")).toBeTruthy();
   });
@@ -82,7 +82,7 @@ describe("crescent visibility dashboard", () => {
       fireEvent.change(choice, { target: { value: "peshawar" } });
       expect(choice.value).toBe("peshawar");
       expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("12.7");
-      expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1/8");
+      expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1 of 8");
     } finally {
       locations[1].prediction.criterion.elongationDeg = 9.11;
     }
@@ -98,7 +98,7 @@ describe("crescent visibility dashboard", () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const copy = String(writeText.mock.calls[0]?.[0] ?? "");
     expect(copy).toContain("2026-11-10");
-    expect(copy).toContain("1/8");
+    expect(copy).toContain("The crescent may be visible");
     expect(copy).toContain("not an official announcement");
     expect(copy).toContain("qalamworks.com/tools/crescent-visibility?date=2026-11-10");
     expect(screen.getByText("Result copied")).toBeTruthy();
@@ -107,16 +107,16 @@ describe("crescent visibility dashboard", () => {
   it("shows three source-separated outcomes and measured scientific table", () => {
     render(<CrescentVisibilityContent />);
     const states = screen.getByTestId("crescent-three-outcomes");
-    expect(states.querySelectorAll("article")).toHaveLength(3);
-    expect(states.textContent).toContain("Pakistan national criterion");
-    expect(states.textContent).toContain("Official sighting decision");
+    expect(states.querySelectorAll("p")).toHaveLength(3);
+    expect(states.textContent).toContain("Pakistan:");
+    expect(states.textContent).toContain("Official decision:");
     expect(states.textContent).toContain("No reviewed announcement");
-    expect(states.textContent).toContain("Yallop comparison");
-    expect(states.textContent).toContain("1/8");
-    const table = screen.getByTestId("crescent-astronomy-table");
-    expect(table.querySelectorAll("tbody tr")).toHaveLength(4);
-    expect(table.textContent).toContain("9.1");
-    expect(table.textContent).toContain("42.3");
+    expect(states.textContent).toContain("Second scientific check:");
+    expect(states.textContent).toContain("1 of 8");
+    const measures = screen.getByTestId("crescent-simple-metrics");
+    expect(measures.querySelectorAll("div")).toHaveLength(4);
+    expect(measures.textContent).toContain("9.1");
+    expect(measures.textContent).toContain("42.3");
     expect(screen.getByRole("link", { name: "Share feedback" }).getAttribute("href")).toBe("/feedback?tool=crescent-visibility");
   });
 
@@ -248,10 +248,10 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />);
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-02-28" } });
     expect(screen.getAllByText("10 Ramadan 1447 AH").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Not a new-crescent test").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId("crescent-predicted-first-day")).toBeNull();
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
-    expect(screen.getByTestId("crescent-simple-headline").textContent).toContain("This is not the new-moon evening");
+    expect(screen.getByTestId("crescent-simple-headline").textContent).toContain("Not a new crescent evening");
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
   });
 
