@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { dateDigits } from "../../date-converter/utils/pakistanDateShare";
 import { formatDate, monthName, type DateParts } from "../../date-converter/utils/dateEngine";
 import { getUpcomingPakistanCrescentEvenings } from "../utils/upcomingCrescentEvenings";
 
@@ -32,7 +31,7 @@ export function UpcomingCrescentShortcuts({
           : "Tap a month to see the prediction for that evening."}
       </p>
       {upcoming.length ? (
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2" data-crescent-month-grid>
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 min-[900px]:grid-cols-3" data-crescent-month-grid>
           {upcoming.map((entry, index) => {
             const selected = selectedDate === entry.dateIso;
             const targetMonth = monthName("hijri", entry.targetHijriMonth, lang);
@@ -42,7 +41,7 @@ export function UpcomingCrescentShortcuts({
                 type="button"
                 aria-pressed={selected}
                 aria-label={ur
-                  ? `${targetMonth} ${dateDigits(String(entry.targetHijriYear), lang)}، متوقع شام ${dateDigits(formatDate(entry.evening, "gregorian", lang), lang)}`
+                  ? `${targetMonth} ${entry.targetHijriYear}، متوقع شام ${formatDate(entry.evening, "gregorian", lang)}`
                   : `${targetMonth} ${entry.targetHijriYear}, expected evening ${formatDate(entry.evening, "gregorian", lang)}`}
                 data-testid={"upcoming-crescent-month-" + index}
                 onClick={() => onSelect(entry.dateIso)}
@@ -53,14 +52,14 @@ export function UpcomingCrescentShortcuts({
                       "border-[#1A3A2A]/10 bg-white text-[#123326] hover:border-[#B8935A] dark:border-[#35513d] dark:bg-[#1b2c20] dark:text-[#f5f8f4]")}>
                 <span className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <span data-crescent-month-title className="block">
-                    {targetMonth} {dateDigits(String(entry.targetHijriYear), lang)}
+                    {targetMonth} {entry.targetHijriYear}
                   </span>
                   {index === 0 && <span className={"rounded-full px-3 py-1 " + (selected ? "bg-white/15 text-[#e3d2a9]" : "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200")}>
                     {ur ? "اگلا چاند" : "Next crescent"}
                   </span>}
                 </span>
                 <span className={"block " + (selected ? "text-[#dce8de]" : "text-[#486155] dark:text-[#c8d5cc]")}>
-                  {dateDigits(formatDate(entry.evening, "gregorian", lang), lang)}
+                  {formatDate(entry.evening, "gregorian", lang)}
                 </span>
                 <span className="sr-only">
                   {entry.dateSource === "scientific"
