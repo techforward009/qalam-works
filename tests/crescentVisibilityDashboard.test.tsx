@@ -131,7 +131,7 @@ describe("crescent visibility dashboard", () => {
     const ramadan = screen.getByTestId("upcoming-crescent-month-0");
     expect(ramadan.textContent).toContain("Ramadan");
     expect(ramadan.textContent).toContain("7 February 2027");
-    expect(ramadan.textContent).toContain("View scientific result");
+    expect(ramadan.textContent).toContain("See result");
     expect(ramadan.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(ramadan);
     expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2027-02-07");
