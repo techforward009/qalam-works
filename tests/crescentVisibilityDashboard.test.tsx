@@ -52,7 +52,7 @@ describe("crescent visibility dashboard", () => {
   it("shows Urdu month names for the shortcut without treating predictions as official", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
-    expect(screen.getByText("آنے والے مہینوں کے چاند کی رؤیت")).toBeTruthy();
+    expect(screen.getByText("کس مہینے کا چاند دیکھنا ہے؟")).toBeTruthy();
     expect(screen.getByTestId("upcoming-crescent-month-0").textContent).toContain("جمادی الثانی");
     expect(screen.getByTestId("upcoming-crescent-month-1").textContent).toContain("سائنسی حساب");
     expect(screen.getAllByText(/چاند نظر آنے کی ضمانت نہیں/).length).toBeGreaterThan(0);
@@ -61,13 +61,15 @@ describe("crescent visibility dashboard", () => {
   it("shows a friendly national result with genuine location measurements and a clear non-official label", () => {
     render(<CrescentVisibilityContent />);
     const summary = screen.getByTestId("crescent-simple-result");
+    expect(screen.getByTestId("crescent-simple-details").open).toBe(false);
+    expect(screen.getByTestId("crescent-deep-details").open).toBe(false);
     expect(summary.textContent).toContain("Pakistan national scientific result");
-    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("Scientific criterion is met");
+    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("Conditions favor crescent visibility");
     expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1/8");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("9.1");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("42.3");
     expect(summary.textContent).toContain("not an official moon-sighting declaration");
-    expect(screen.getByRole("link", { name: "Full scientific research" }).getAttribute("href")).toBe("#crescent-technical-report");
+    expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-technical-report");
     expect(screen.getByText("Detailed scientific and official research")).toBeTruthy();
     expect(screen.getByTestId("crescent-quick-location")).toBeTruthy();
   });
@@ -136,6 +138,7 @@ describe("crescent visibility dashboard", () => {
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Moon Sighting — Pakistan" })).toBeTruthy();
+    fireEvent.click(screen.getByText("View the complete research and official sources"));
     expect(screen.getByRole("link", { name: /Back to Date Converter/i }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("National scientific and official outlook")).toBeTruthy();
     expect(screen.getAllByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
@@ -158,6 +161,7 @@ describe("crescent visibility dashboard", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "رؤیتِ ہلال — پاکستان" })).toBeTruthy();
+    fireEvent.click(screen.getByText("مکمل تحقیق اور سرکاری حوالہ جات دیکھیں"));
     expect(screen.getByRole("link", { name: /تاریخ کنورٹر پر واپس/ }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("قومی سائنسی اور سرکاری جائزہ")).toBeTruthy();
     expect(screen.getAllByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔").length).toBeGreaterThan(0);
@@ -173,6 +177,7 @@ describe("crescent visibility dashboard", () => {
 
   it("renders readable Pakistan and Yallop diagnostic badges with formatted scientific values", () => {
     render(<CrescentVisibilityContent />);
+    fireEvent.click(screen.getByText("View the complete research and official sources"));
     fireEvent.click(screen.getByText("Scientific details"));
     expect(screen.getAllByText("Pass").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Fail").length).toBeGreaterThan(0);
@@ -244,7 +249,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getAllByText("Not a new-crescent test").length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
-    expect(screen.getAllByRole("status").some(node => /not a new-crescent observation evening/i.test(node.textContent ?? ""))).toBe(true);
+    expect(screen.getByTestId("crescent-simple-headline").textContent).toContain("This is not the new-moon evening");
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
   });
 
@@ -265,6 +270,7 @@ describe("crescent visibility dashboard", () => {
     vi.mocked(decision.resolvePakistanOfficialSightingDecisionForEvening).mockImplementation(date => date.day === 12 ? reviewedDecision : null);
     render(<CrescentVisibilityContent />);
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-09-12" } });
+    fireEvent.click(screen.getByText("View the complete research and official sources"));
     expect(screen.getByRole("heading", { name: "Official Pakistan moon-sighting decision" })).toBeTruthy();
     expect(screen.getByText("Crescent not sighted.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-09-13" } });
