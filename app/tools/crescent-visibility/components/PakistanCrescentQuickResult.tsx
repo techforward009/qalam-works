@@ -14,7 +14,7 @@ const URDU_NAMES: Record<string, string> = {
   muzaffarabad: "مظفرآباد", quetta: "کوئٹہ", karachi: "کراچی", jiwani: "جیوانی",
 };
 const number = (value: number) => value.toFixed(1);
-const dateLabel = (d: DateParts, lang: "ur" | "en") => dateDigits(formatDate(d, "gregorian", lang), lang);
+const dateLabel = (d: DateParts, lang: "ur" | "en") => formatDate(d, "gregorian", lang);
 
 export function PakistanCrescentQuickResult({
   date, lang, pakistan, yallop, decision, outsideNewCrescentWindow,
@@ -125,6 +125,17 @@ export function PakistanCrescentQuickResult({
         <p className="mt-2 text-sm text-[#587060] dark:text-[#b6cbb9]">{dateLabel(date, lang)}</p>
         <h2 data-testid="crescent-simple-headline" className={`mt-3 text-2xl font-bold leading-relaxed sm:text-3xl ${state === "favorable" ? "text-emerald-800 dark:text-emerald-300" : state === "unfavorable" ? "text-rose-800 dark:text-rose-300" : "text-[#153b29] dark:text-[#f0f7f0]"} ${ur ? "font-naskh" : ""}`}>{headline}</h2>
         <p className={`mx-auto mt-2 max-w-xl text-base leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
+        <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-3 rounded-xl border border-[#1A3A2A]/15 bg-white px-4 py-3 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white" data-testid="crescent-visible-city-selector">
+          <label htmlFor="crescent-observer-city">{ur ? "اپنا شہر منتخب کریں:" : "Choose your city:"}</label>
+          <select id="crescent-observer-city" data-testid="crescent-quick-location"
+            value={selected?.observer.id ?? ""}
+            onChange={event => setLocationId(event.target.value)}
+            className="min-h-11 max-w-full rounded-lg border border-[#1A3A2A]/20 bg-[#F7F5EF] px-3 py-2 text-[#153b29] dark:border-[#35513d] dark:bg-[#162a1e] dark:text-white">
+            {pakistan.locations.map(({ observer }) => <option key={observer.id} value={observer.id}>
+              {ur ? URDU_NAMES[observer.id] ?? observer.name : observer.name}
+            </option>)}
+          </select>
+        </div>
         {outlook && nextEveningScience && <section data-testid="crescent-next-evening" className="mx-auto mt-5 max-w-2xl rounded-2xl border border-[#1A3A2A]/20 bg-white px-4 py-5 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
           <h3 className="text-center">{ur ? `${formatDate(outlook.dayThirty, "gregorian", lang)} کی شام کا سائنسی جائزہ` : `Scientific outlook for the evening of ${dateLabel(outlook.dayThirty, lang)}`}</h3>
           <p className="mt-2 text-center" data-testid="crescent-next-evening-status">{nextEveningStatus}</p>
@@ -153,7 +164,7 @@ export function PakistanCrescentQuickResult({
             {ur ? "11 نومبر کے تمام مقامات کا حساب دیکھیں" : "View all locations for the next evening"}
           </a>
         </section>}
-        {outlook && !officialSighting && <div data-testid="crescent-predicted-first-day" className="mx-auto mt-5 max-w-xl rounded-2xl border border-[#1A3A2A]/15 bg-white px-4 py-4 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
+        {outlook && !officialSighting && <div data-testid="crescent-predicted-first-day" className="mx-auto mt-5 w-full rounded-2xl border border-[#1A3A2A]/15 bg-white px-4 py-4 sm:px-6 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
           <p data-crescent-forecast className="text-lg font-normal leading-9">{ur && outlook
             ? <>ہمارے سائنسی حساب سے {targetName} <bdi dir="ltr">{outlook.nextHijriYear}</bdi> کی پہلی تاریخ <bdi dir="ltr">{outlook.dayOne.day}</bdi> {monthName("gregorian", outlook.dayOne.month, "ur")} <bdi dir="ltr">{outlook.dayOne.year}</bdi>ء بروز {weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()]} ہوگی۔</>
             : firstDayText}</p>
@@ -185,14 +196,9 @@ export function PakistanCrescentQuickResult({
           <p><strong>{ur ? "دوسرے سائنسی حساب سے:" : "Second scientific check:"}</strong> {ur ? `آٹھ میں سے ${publicCount(yallopAccepted)} مقامات پر حالات موافق ہیں۔` : `Conditions are favorable at ${yallopAccepted} of 8 locations.`}</p>
         </div>
         <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 p-4 dark:border-[#35513d]">
-          <label className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-[#315c40] dark:text-[#cfddd1]">
-            <span>{ur ? "کس شہر کے اعداد دیکھنا چاہیں گے؟" : "Which city's measurements?"}</span>
-            <select data-testid="crescent-quick-location" aria-label={ur ? "فلکیاتی اعداد کے لیے مقام منتخب کریں" : "Choose location for astronomical values"}
-              value={selected?.observer.id ?? ""} onChange={event => setLocationId(event.target.value)}
-              className="rounded-lg border border-[#1A3A2A]/20 bg-white px-3 py-2 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
-              {pakistan.locations.map(({ observer }) => <option key={observer.id} value={observer.id}>{ur ? URDU_NAMES[observer.id] ?? observer.name : observer.name}</option>)}
-            </select>
-          </label>
+          <p className="text-center text-[#315c40] dark:text-[#cfddd1]">
+            {ur ? `منتخب شہر: ${localName}` : `Selected city: ${localName}`}
+          </p>
           <p className="mt-2 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? `${localName} کے اصل فلکیاتی اعداد؛ قومی نتیجہ نہیں بدلتا۔` : `Real measurements for ${localName}; the national conclusion does not change.`}</p>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4" data-testid="crescent-simple-metrics">
             {measures.map(item => <div key={item.label} data-crescent-measure className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#203326]">
