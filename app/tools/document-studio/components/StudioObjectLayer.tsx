@@ -9,6 +9,7 @@ import { getQalamPaginationState } from "../extensions/QalamPagination";
 import {hardBreakLineTop} from "../utils/hardBreakLineGrid";
 import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
+import { frameAppearance, patchSelectedFrames, type FrameAppearance } from "../utils/objectToolbar";
 import { StudioTextFrame } from "./StudioTextFrame";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { Editor } from "@tiptap/react";
@@ -27,6 +28,7 @@ export type StudioFrame = {
   /** Line runs the other diagonal when true. */
   flip: boolean;
   text: string;
+  appearance?: FrameAppearance;
   typography?: DocumentStudioSettings["typography"];
   /** Proven single-box InPage300 source, not proof of a full page reflow.
    * Persisted as metadata; the editor must never pretend Run Around is applied. */
@@ -53,14 +55,15 @@ export function readStoredFrames(id: string): StudioFrame[] {
   }
 }
 
-export function writeStoredFrames(id: string, frames: StudioFrame[]): void {
-  if (typeof window === "undefined" || !id) return;
+export function writeStoredFrames(id: string, frames: StudioFrame[]): boolean {
+  if (typeof window === "undefined" || !id) return false;
   try {
     const map = JSON.parse(window.localStorage.getItem(FRAME_KEY) || "{}") as Record<string, unknown>;
     map[id] = frames;
     window.localStorage.setItem(FRAME_KEY, JSON.stringify(map));
+    return true;
   } catch {
-    /* private mode */
+    return false;
   }
 }
 
@@ -86,6 +89,8 @@ export function StudioObjectLayer({
   frames,
   onFramesChange,
   onToolAction,
+  selected,
+  onSelectionChange: setSelected,
   pageCount,
   pageWidthPx,
   pageHeightPx,
@@ -96,6 +101,8 @@ export function StudioObjectLayer({
   zoom = 1,
   projection: projectionProp,
 }: {
+  selected: string[];
+  onSelectionChange: (ids: string[]) => void;
   editor: Editor | null;
   tool: StudioToolId;
   frames: StudioFrame[];
@@ -112,7 +119,6 @@ export function StudioObjectLayer({
   marginRightPx: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<string[]>([]);
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
@@ -145,7 +151,7 @@ export function StudioObjectLayer({
       if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-frame]")) setSelected([]);
     };
     const clearOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !(event.target instanceof Element && event.target.closest("[data-studio-object-toolbar]"))) {
         setSelected([]);
         setDraft(null);
         dragRef.current = null;
@@ -157,7 +163,7 @@ export function StudioObjectLayer({
       document.removeEventListener("pointerdown", clearOnEmpty, true);
       document.removeEventListener("keydown", clearOnEscape, true);
     };
-  }, []);
+  }, [setSelected]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -228,6 +234,7 @@ export function StudioObjectLayer({
       text: "",
       typography,
     };
+    if (!patchSelectedFrames([frame], [frame.id], {}, { widthMm:pageWidthPx/PX_PER_MM, heightMm:pageHeightPx/PX_PER_MM })) return;
     if (tool === "textbox") pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
     setSelected([frame.id]);
@@ -239,7 +246,7 @@ export function StudioObjectLayer({
       ref={rootRef}
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
-      style={{ width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
+      style={{ left: 0, right: projectionProp ? "auto" : undefined, width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => {
         if (tool === "select") {
@@ -273,10 +280,11 @@ export function StudioObjectLayer({
           const dx = (point.x - drag.x) / PX_PER_MM;
           const dy = (point.y - drag.y) / PX_PER_MM;
           const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
-          onChangeRef.current(framesRef.current.map((frame) => {
+          const next = framesRef.current.map((frame) => {
             const original = moved.get(frame.id);
             return original ? { ...frame, xMm: original.xMm + dx, yMm: original.yMm + dy } : frame;
-          }));
+          });
+          if (patchSelectedFrames(next, drag.frames.map(frame=>frame.id), {}, {widthMm:pageWidthPx/PX_PER_MM,heightMm:pageHeightPx/PX_PER_MM})) onChangeRef.current(next);
           return;
         }
         const frame = frames.find((item) => item.id === drag.id);
@@ -297,12 +305,13 @@ export function StudioObjectLayer({
         if (drag.edge.includes("s")) y2 = point.y;
         const x = Math.min(x1, x2);
         const y = Math.min(y1, y2);
-        updateFrame(frame.id, {
+        const patch = {
           xMm: x / PX_PER_MM,
           yMm: (y - origin) / PX_PER_MM,
           wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
           hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
-        });
+        };
+        if (patchSelectedFrames(framesRef.current,[frame.id],patch,{widthMm:pageWidthPx/PX_PER_MM,heightMm:pageHeightPx/PX_PER_MM})) updateFrame(frame.id,patch);
       }}
       onPointerCancel={() => { dragRef.current = null; setDraft(null); }}
       onPointerUp={(event) => {
@@ -457,13 +466,15 @@ function FrameShape({
   onText: (text: string) => void;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame text={frame.text} typography={frame.typography} editable={editable} onFocus={onTextFocus} onText={onText} />;
+    return <StudioTextFrame appearance={frame.appearance} text={frame.text} typography={frame.typography} editable={editable} onFocus={onTextFocus} onText={onText} />;
   }
-  // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
-  const inset = 0.5;
-  const innerWidth = Math.max(0, width - 1);
-  const innerHeight = Math.max(0, height - 1);
-  const stroke = { fill: "none", stroke: "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" } as const;
+  // Match the physical point-sized print stroke, inset inside the frame.
+  const appearance = frameAppearance(frame);
+  const strokeWidth = appearance.border ? appearance.borderWidthPt * 4 / 3 : 0;
+  const stroke = { fill: appearance.fill ?? "none", stroke: appearance.borderColor, strokeWidth, strokeDasharray: appearance.borderStyle === "dashed" ? `${strokeWidth*4} ${strokeWidth*2}` : appearance.borderStyle === "dotted" ? `${strokeWidth} ${strokeWidth*2}` : undefined };
+
+  const inset = strokeWidth/2;
+  const innerWidth = Math.max(0,width-strokeWidth), innerHeight = Math.max(0,height-strokeWidth);
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden>
       {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} /> : null}

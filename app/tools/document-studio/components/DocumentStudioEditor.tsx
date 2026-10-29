@@ -136,6 +136,8 @@ import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fon
 import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { AllahAutoMarks } from "../extensions/AllahAutoMarks";
 import { QalamPagination } from "../extensions/QalamPagination";
+import StudioObjectToolbar from "./StudioObjectToolbar";
+import { patchSelectedFrames, frameAppearance, type FramePropertyPatch } from "../utils/objectToolbar";
 import DocumentToolbar from "./DocumentToolbar";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
@@ -280,6 +282,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [minimumPages, setMinimumPages] = useState(1);
   const minimumPagesRef = useRef(1);
   const [frames, setFrames] = useState<StudioFrame[]>([]);
+  const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
+
   const [canvasTool, setCanvasTool] = useState<StudioToolId>("text");
   const canvasToolRef = useRef(canvasTool);
   canvasToolRef.current = canvasTool;
@@ -744,6 +748,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
     // Object evidence is a transient observation about the just-imported source;
     // never show it under a different, previously saved document.
+    setSelectedFrameIds([]);
     setInpageObjectEvidence(null);
     setInpageTentativeBoxes([]);
     setShowInpageTentativeBox(false);
@@ -1804,17 +1809,49 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const onCanvasTool = (id: StudioToolId) => {
+    setSelectedFrameIds([]);
     setCanvasTool(id);
     if (id === "select" && editor) {
       editor.commands.blur();
     }
   };
 
-  const changeFrames = (next: StudioFrame[]) => {
+  useEffect(() => { setSelectedFrameIds([]); }, [viewMode]);
+  useEffect(() => { setSelectedFrameIds(previous => {
+    const valid = previous.filter(id => frames.some(frame => frame.id === id));
+    return valid.length === previous.length ? previous : valid;
+  }); }, [frames]);
+  const selectedObjects = canvasTool === "select" ? frames.filter(frame => selectedFrameIds.includes(frame.id)) : [];
+  const commitObjectProperties = (patch: FramePropertyPatch) => {
+    const id = activeDocumentIdRef.current;
+    if (!id || id !== activeDocumentId || transitionRef.current || canvasTool !== "select" || !selectedFrameIds.length) return false;
+    // Validate the whole selection before persisting anything. Appearance patches
+    // are merged independently so a mixed selection retains its other values.
+    let next: StudioFrame[] | null = framesRef.current;
+    for (const selectedId of selectedFrameIds) {
+      const original = next.find(frame => frame.id === selectedId);
+      if (!original) return false;
+      const { appearance, ...geometry } = patch;
+      next = patchSelectedFrames(next, [selectedId], { ...geometry, ...(appearance ? { appearance: { ...frameAppearance(original), ...appearance } } : {}) }, pageLayout);
+      if (!next) return false;
+    }
+    if (!writeStoredFrames(id, next) || JSON.stringify(readStoredFrames(id)) !== JSON.stringify(next)) {
+      setImageError("Object changes could not be saved. Nothing was changed.");
+      return false;
+    }
     framesRef.current = next;
     setFrames(next);
+    return true;
+  };
+
+  const changeFrames = (next: StudioFrame[]) => {
     const id = activeDocumentIdRef.current;
-    if (id) writeStoredFrames(id, next);
+    if (id && !writeStoredFrames(id, next)) {
+      setImageError("Object changes could not be saved. Nothing was changed.");
+      return;
+    }
+    framesRef.current = next;
+    setFrames(next);
   };
 
   const importTentativeInPageTextBox = async () => {
@@ -2309,7 +2346,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <DocumentToolbar
+          selectedObjects.length ? <StudioObjectToolbar frames={selectedObjects} onCommit={commitObjectProperties} /> : <DocumentToolbar
             editor={editor}
             dir={dir}
             setDir={setDir}
@@ -2453,6 +2490,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             columnCount={columnCount}
             columnGutterMm={columnGutterMm}
             minimumPages={minimumPages}
+            selectedFrameIds={selectedFrameIds}
+            onFrameSelectionChange={setSelectedFrameIds}
             frames={frames}
             onFramesChange={changeFrames}
             inPageTentativeBoxPreviews={showInpageTentativeBox ? inpageTentativeBoxes : []}

@@ -6,7 +6,7 @@ export const FORMATTING_TARGET_CHANGE = 'studio-formatting-target-change';
 type FormattingTarget = Readonly<{ owner: 'story' | 'frame' | 'none'; input: HTMLTextAreaElement | null }>;
 const targets = new WeakMap<HTMLElement, FormattingTarget>();
 export function isFormattingSurface(target: Element | null): boolean {
-  return Boolean(target?.closest('[data-studio-toolbar], [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [data-menu-root], [data-menu-dropdown], [data-studio-formatting-notice]'));
+  return Boolean(target?.closest('[data-studio-toolbar], [data-studio-object-toolbar], [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [data-menu-root], [data-menu-dropdown], [data-studio-formatting-notice]'));
 }
 export function readFormattingTarget(element: HTMLElement): FormattingTarget | undefined {
   const root = element.closest<HTMLElement>('[data-studio-root]');
