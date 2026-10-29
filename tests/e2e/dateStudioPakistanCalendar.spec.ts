@@ -202,4 +202,21 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
   });
 
+  test("simple Pakistan crescent card uses live scientific facts and preserves the full research", async ({ page }, testInfo) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const simple = page.getByTestId("crescent-simple-result");
+    await expect(simple).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-headline")).toContainText("Scientific criterion is not met");
+    await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0/8");
+    await expect(simple.getByText("This prediction is not an official moon-sighting declaration.")).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-metrics").getByText("13.2")).toHaveCount(0);
+    await page.getByTestId("crescent-quick-location").selectOption("lahore");
+    await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
+    await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0/8");
+    await simple.getByRole("link", { name: "Full scientific research" }).click();
+    await expect(page.getByText("Detailed scientific and official research")).toBeVisible();
+    await expect(page.getByText("Pakistan national scientific criterion")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("crescent-quick-result.png"), fullPage: true });
+  });
+
 });
