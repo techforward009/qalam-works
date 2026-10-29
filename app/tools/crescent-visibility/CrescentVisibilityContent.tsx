@@ -49,7 +49,7 @@ export default function CrescentVisibilityContent() {
     const nextUrl = url.pathname + url.search + url.hash;
     if (jumpToResults) window.history.pushState(null, "", nextUrl);
     else window.history.replaceState(null, "", nextUrl);
-    if (jumpToResults) window.requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    if (jumpToResults) window.requestAnimationFrame(() => resultRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
   };
   const [isYallopHelpOpen, setYallopHelpOpen] = useState(false);
   const date = parse(dateInput);
