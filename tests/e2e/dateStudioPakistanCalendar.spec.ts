@@ -194,7 +194,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(rajab).toBeVisible();
     await rajab.click();
     const selected = await page.locator("#dashboard-date").inputValue();
-    expect(selected).toMatch(/^2026-12-\\d{2}$/);
+    expect(selected).toMatch(/^2026-12-\d{2}$/);
     await expect(page).toHaveURL(new RegExp("date=" + selected));
     await expect(rajab).toHaveAttribute("aria-pressed", "true");
     await page.reload();
