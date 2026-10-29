@@ -76,6 +76,8 @@ export default function DocumentCanvas({
   columnCount = 1,
   columnGutterMm = 0,
   minimumPages = 1,
+  selectedFrameIds = [],
+  onFrameSelectionChange,
   frames = [],
   onFramesChange,
   inPageTentativeBoxPreviews = [],
@@ -104,6 +106,8 @@ export default function DocumentCanvas({
   columnCount?: number;
   columnGutterMm?: number;
   minimumPages?: number;
+  selectedFrameIds?: string[];
+  onFrameSelectionChange?: (ids:string[])=>void;
   frames?: StudioFrame[];
   onFramesChange?: (frames: StudioFrame[]) => void;
   inPageTentativeBoxPreviews?: InPageTentativeBoxPreview[];
@@ -621,6 +625,8 @@ export default function DocumentCanvas({
                           <StudioObjectLayer zoom={zoomFactor} projection={projection}
                             editor={editor}
                             tool={tool}
+                            selected={selectedFrameIds}
+                            onSelectionChange={onFrameSelectionChange ?? (() => undefined)}
                             frames={frames}
                             typography={documentSettings.typography}
                             onFramesChange={onFramesChange ?? (() => undefined)}
