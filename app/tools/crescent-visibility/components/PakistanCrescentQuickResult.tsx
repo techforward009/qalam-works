@@ -39,6 +39,8 @@ export function PakistanCrescentQuickResult({
     ? (Date.parse(sunset) - Date.parse(reference.snapshot.conjunctionUtc)) / 3600000 : null;
   const qualified = pakistan.locations.filter(({ prediction }) =>
     prediction.status === "evaluated" && prediction.criterion.qualifies).length;
+  const yallopAccepted = yallop.locations.filter(({ prediction }) => prediction.status === "evaluated" && prediction.acceptedByPolicy).length;
+  const yallopIncomplete = yallop.locations.some(({ prediction }) => prediction.status === "no-sunset" || prediction.status === "no-moonset");
   const incomplete = pakistan.locations.some(({ prediction }) =>
     prediction.status === "no-sunset" || prediction.status === "no-moonset");
   const state = outsideNewCrescentWindow ? "not-new" :
@@ -112,6 +114,24 @@ export function PakistanCrescentQuickResult({
         </p>}
       </div>
 
+      <div className="grid gap-3 px-5 pt-5 sm:grid-cols-3 sm:px-8" data-testid="crescent-three-outcomes">
+        <article className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
+          <h3 className="text-xs font-bold text-emerald-900 dark:text-emerald-200">{ur ? "پاکستانی قومی معیار" : "Pakistan national criterion"}</h3>
+          <p className="mt-2 text-lg font-bold text-emerald-950 dark:text-emerald-100">{outsideNewCrescentWindow ? (ur ? "نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : status}</p>
+          <p className="mt-1 text-xs leading-6 text-emerald-900 dark:text-emerald-200">{outsideNewCrescentWindow ? (ur ? "یہ صرف فلکیاتی معلومات ہیں۔" : "Astronomical information only.") : `${dateDigits(String(qualified), lang)}/${dateDigits("8", lang)} ${ur ? "قومی مشاہداتی مقامات" : "national reference locations"}`}</p>
+        </article>
+        <article className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+          <h3 className="text-xs font-bold text-amber-900 dark:text-amber-200">{ur ? "سرکاری رؤیتِ ہلال فیصلہ" : "Official sighting decision"}</h3>
+          <p className="mt-2 text-lg font-bold text-amber-950 dark:text-amber-100">{decision?.sightingDecision === "sighted" ? (ur ? "چاند نظر آیا" : "Crescent sighted") : decision?.sightingDecision === "not-sighted" ? (ur ? "چاند نظر نہیں آیا" : "Crescent not sighted") : (ur ? "مصدقہ اعلان دستیاب نہیں" : "No reviewed announcement")}</p>
+          <p className="mt-1 text-xs leading-6 text-amber-900 dark:text-amber-200">{decision ? (ur ? "مرکزی کمیٹی کے دستیاب اعلان کے مطابق" : "Based on the reviewed committee announcement") : (ur ? "سائنسی پیش گوئی سرکاری فیصلہ نہیں۔" : "The scientific forecast is not an official decision.")}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-800/70">
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200">{ur ? "یالوپ کا تقابلی ماڈل" : "Yallop comparison"}</h3>
+          <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">{outsideNewCrescentWindow ? (ur ? "نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : yallopAccepted > 0 ? (ur ? "کچھ مقامات موافق" : "Favorable at some sites") : yallopIncomplete ? (ur ? "اعداد نامکمل" : "Incomplete evaluation") : (ur ? "موافق نہیں" : "Not favorable")}</p>
+          <p className="mt-1 text-xs leading-6 text-slate-600 dark:text-slate-300">{outsideNewCrescentWindow ? (ur ? "صرف حوالہ جاتی ماڈل" : "Reference model only") : `${dateDigits(String(yallopAccepted), lang)}/${dateDigits("8", lang)} ${ur ? "حوالہ جاتی مقامات" : "reference locations"}`}</p>
+        </article>
+      </div>
+
       <div className="px-5 py-5 sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -141,6 +161,22 @@ export function PakistanCrescentQuickResult({
         <p className="mt-3 text-xs leading-6 text-[#587060] dark:text-[#b6cbb9]">
           {ur ? "— کا مطلب ہے کہ اس مقام کے لیے متعلقہ سائنسی عدد دستیاب نہیں۔" : "— means the relevant scientific measurement is unavailable for this location."}
         </p>
+        <details className="mt-4 rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d]">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-[#153b29] dark:text-[#e6f0e6]">{ur ? "فلکیاتی اعداد جدول میں دیکھیں" : "View astronomical measurements as a table"}</summary>
+          <div className="overflow-x-auto px-4 pb-4">
+            <table className="w-full min-w-[320px] text-sm" data-testid="crescent-astronomy-table">
+              <thead><tr className="border-b text-start text-[#486155] dark:text-[#cfddd1]"><th scope="col" className="py-2 text-start">{ur ? "فلکیاتی مقدار" : "Astronomical parameter"}</th><th scope="col" className="py-2 text-start">{ur ? "حقیقی حسابی قدر" : "Calculated value"}</th><th scope="col" className="py-2 text-start">{ur ? "حیثیت" : "Status"}</th></tr></thead>
+              <tbody className="divide-y divide-[#1A3A2A]/10 dark:divide-[#35513d]">
+                {[
+                  { label: ur ? "چاند کی عمر" : "Moon age", value: age !== null && Number.isFinite(age) && age >= 0 ? `${n(age, lang)} ${ur ? "گھنٹے" : "h"}` : null },
+                  { label: ur ? "زاویائی فاصلہ" : "Elongation", value: measured ? `${n(measured.elongationDeg, lang)}°` : null },
+                  { label: ur ? "غروب کا وقفہ" : "Moon lag", value: measured ? `${n(measured.lagMinutes, lang)} ${ur ? "منٹ" : "min"}` : null },
+                  { label: ur ? "افق سے بلندی" : "Altitude", value: measured ? `${n(measured.altitudeDeg, lang)}°` : null },
+                ].map(row => <tr key={row.label} className="text-[#153b29] dark:text-[#e6f0e6]"><th scope="row" className="py-2 pe-3 text-start font-medium">{row.label}</th><td className="py-2 pe-3" dir="auto">{row.value ?? "—"}</td><td className="py-2 text-xs">{row.value ? (ur ? "محسوب" : "Calculated") : (ur ? "دستیاب نہیں" : "Unavailable")}</td></tr>)}
+              </tbody>
+            </table>
+          </div>
+        </details>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button type="button" data-testid="crescent-share-result" onClick={() => void share()}
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1A3A2A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2e6546] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-[#2e6546]">
