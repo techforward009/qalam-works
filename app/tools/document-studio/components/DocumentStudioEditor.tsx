@@ -156,6 +156,7 @@ import QalamAiPanel from "./QalamAiPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import DocumentLibraryDialog from "./DocumentLibraryDialog";
 import StudioPageSetupDialog, { type StudioPageSetupValues } from "./StudioPageSetupDialog";
+import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import InPageStoriesDialog, { type ImportedStory } from "./InPageStoriesDialog";
 import {
   getDocumentLibrary,
@@ -291,6 +292,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [paragraphOpen,setParagraphOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
+  const tableDialogDrag = useMovableStudioDialog<HTMLFormElement>();
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -2210,9 +2212,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           <form
             className={`w-full max-w-sm rounded-xl border border-[#1A3A2A]/15 bg-[#FFFCF6] p-5 shadow-xl ${isUr ? "font-naskh" : ""}`}
             dir={isUr ? "rtl" : "ltr"}
+            ref={tableDialogDrag.dialogRef}
+            style={tableDialogDrag.style}
             onSubmit={(event) => { event.preventDefault(); insertTable(); }}
           >
-            <h2 className="text-base font-semibold text-[#1A3A2A]">{isUr ? "جدول شامل کریں" : "Insert table"}</h2>
+            <h2 {...tableDialogDrag.handleProps} style={tableDialogDrag.handleProps.style} className="text-base font-semibold text-[#1A3A2A]">{isUr ? "جدول شامل کریں" : "Insert table"}</h2>
             <p className="mt-1 text-sm text-[#3D5A47]">{isUr ? "قطاریں اور ستون منتخب کریں۔" : "Choose rows and columns."}</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <label className="text-sm font-medium text-[#1A3A2A]">
