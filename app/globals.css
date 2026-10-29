@@ -2169,12 +2169,32 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
    Explicit declarations override older font-naskh utilities in these cards. */
 [data-crescent-ui="ur"] {
   font-family: var(--qalam-urdu-primary);
+  font-size: 22px;
+  line-height: 1.9;
 }
-[data-crescent-ui="ur"] :is(p, span, label, button, a, summary, select, option, dt, dd, strong, input) {
+/* Fixed, readable 22px Mehr for the entire Urdu moon-sighting interface.
+   Tailwind text-xs/sm classes previously left every month card unreadably tiny. */
+[data-crescent-ui="ur"] :is(p, span, label, button, a, summary, select, option, dt, dd, strong, input, li, th, td) {
   font-family: var(--qalam-urdu-primary) !important;
+  font-size: 22px !important;
+  line-height: 1.9 !important;
+  letter-spacing: 0 !important;
 }
 [data-crescent-ui="ur"] :is(h1, h2, h3, h4, h5, h6) {
   font-family: var(--qalam-urdu-heading) !important;
-  font-weight: 400;
-  line-height: 2;
+  font-size: 26px !important;
+  font-weight: 400 !important;
+  line-height: 2 !important;
+  letter-spacing: 0 !important;
+}
+[data-crescent-ui="ur"] h1 { font-size: 34px !important; }
+[data-crescent-ui="ur"] h2 { font-size: 29px !important; }
+[data-crescent-ui="ur"] [data-crescent-month-title] {
+  font-family: var(--qalam-urdu-heading) !important;
+  font-size: 27px !important;
+  line-height: 1.75 !important;
+}
+@media (max-width: 640px) {
+  [data-crescent-ui="ur"] h1 { font-size: 30px !important; }
+  [data-crescent-ui="ur"] h2 { font-size: 27px !important; }
 }
