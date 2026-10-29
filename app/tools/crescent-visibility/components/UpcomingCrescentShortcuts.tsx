@@ -79,7 +79,7 @@ export function UpcomingCrescentShortcuts({
           {ur ? "اس مدت کے لیے قابلِ اعتماد قمری تاریخ دستیاب نہیں؛ براہِ کرم نیچے اپنی تاریخ منتخب کریں۔" : "No verified or supported forecast dates are available in this period. Choose a date below."}
         </p>
       )}
-      <p className={"mt-3 text-xs leading-6 text-[#486155] dark:text-[#c8d5cc] " + (ur ? "font-naskh" : "")}>
+      <p data-crescent-month-note className={"mx-auto mt-5 max-w-4xl text-center text-[#486155] dark:text-[#c8d5cc] " + (ur ? "font-naskh" : "")}>
         {ur
           ? "منتخب تاریخ کا سائنسی حساب دیکھیں۔ سرکاری فیصلہ مرکزی رؤیتِ ہلال کمیٹی پاکستان کرے گی۔"
           : "These are day-29 observation evenings, not guarantees of visibility. Pakistan's Central Ruet-e-Hilal Committee makes the official decision."}
