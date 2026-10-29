@@ -171,10 +171,10 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({path:testInfo.outputPath("pk-2026-shareable-primary-result.png"),fullPage:true});
   });
 
-  test("unknown Pakistan lunar month is explicitly calculated and has no fabricated citation", async ({page}) => {
+  test("unverified Pakistan date uses the science forecast, never a fabricated official citation", async ({page}) => {
     await page.goto("/tools/date-converter?calendar=gregorian&day=4&month=11&year=2027");
     await expect(page.getByTestId("pakistan-primary-result")).toBeVisible();
-    await expect(page.getByTestId("pakistan-hijri-status")).toContainText("Calculated");
+    await expect(page.getByTestId("pakistan-hijri-status")).toContainText("Prediction using Pakistan crescent-visibility criteria; not an official declaration");
     await page.locator('[data-testid="pakistan-primary-result"] details summary').click();
     await expect(page.getByTestId("pakistan-source-link")).toHaveCount(0);
   });

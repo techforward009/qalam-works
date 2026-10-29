@@ -19,10 +19,22 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
     expect(convert("gregorian", date).hijri.day).toBe(12);
   });
 
+  it("uses 30 Jumada I on November 11 and 1 Jumada II on November 12, both non-official", () => {
+    expect(find(2026, 11, 10)).toMatchObject({
+      hijri: { year: 1448, month: 5, day: 29 }, hijriSource: "official",
+    });
+    expect(find(2026, 11, 11)).toMatchObject({
+      hijri: { year: 1448, month: 5, day: 30 }, hijriSource: "scientific",
+    });
+    expect(find(2026, 11, 12)).toMatchObject({
+      hijri: { year: 1448, month: 6, day: 1 }, hijriSource: "scientific",
+    });
+  });
+
   it("never misrepresents unverified dates as official", () => {
     expect(find(2026, 1, 19).hijriSource).toBe("official");
-    expect(find(2026, 11, 15).hijriSource).toBe("tabular");
-    expect(resolveDisplayHijriDate({ year: 2026, month: 11, day: 15 })).toMatchObject({ source: "tabular" });
+    expect(find(2026, 11, 15).hijriSource).toBe("scientific");
+    expect(resolveDisplayHijriDate({ year: 2026, month: 11, day: 15 })).toMatchObject({ source: "scientific" });
   });
 
   it("does not silently stitch or overwrite official month boundaries in annual view", () => {

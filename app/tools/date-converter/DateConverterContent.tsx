@@ -43,6 +43,7 @@ import { YallopIntegration, type DateStudioMethod } from "./components/YallopInt
 import { PakistanDateResult } from "./components/PakistanDateResult";
 import { resolvePakistanOfficialGregorianDate, resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
 import { resolveDisplayHijriDate } from "./utils/hijri-authority/displayHijriDate";
+import { predictPakistanGregorianDate } from "./utils/hijri-authority/pakistanScientificHijriDate";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -402,13 +403,16 @@ export default function DateConverterContent({
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
     // A reviewed Pakistan month can have 30 days even when the tabular month has 29.
     const reviewedGregorian = calendar === "hijri" ? resolvePakistanOfficialGregorianDate(parts) : null;
-    const err = reviewedGregorian ? null : validateDate(calendar, parts);
+    const scientificGregorian = calendar === "hijri" && !reviewedGregorian ? predictPakistanGregorianDate(parts) : null;
+    const pakistanGregorian = reviewedGregorian ?? scientificGregorian;
+    const err = pakistanGregorian ? null : validateDate(calendar, parts);
     if (err) errMsg = `${t.invalidDate}: ${err.message}`;
-    else result = reviewedGregorian ? convert("gregorian", reviewedGregorian) : convert(calendar, parts);
+    else result = pakistanGregorian ? convert("gregorian", pakistanGregorian) : convert(calendar, parts);
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
   const pakistanOfficialHijri = result ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
+  const pakistanDisplayHijri = result ? resolveDisplayHijriDate(result.gregorian) : null;
   const weekdayName = intelligence
     ? (isUr ? WEEKDAYS_UR[intelligence.weekdayIndex] : WEEKDAYS_EN[intelligence.weekdayIndex])
     : "";
@@ -770,8 +774,9 @@ export default function DateConverterContent({
                   <PakistanDateResult
                     key={isoDate(result.gregorian)}
                     gregorian={result.gregorian}
-                    hijri={pakistanOfficialHijri?.hijri ?? result.hijri}
+                    hijri={pakistanDisplayHijri?.hijri ?? result.hijri}
                     reviewed={pakistanOfficialHijri}
+                    source={pakistanDisplayHijri?.source === "scientific" ? "scientific" : "tabular"}
                     weekday={weekdayName}
                     lang={lang}
                   />
