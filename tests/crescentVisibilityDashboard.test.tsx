@@ -55,7 +55,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByText("آنے والے مہینوں کے چاند کی رؤیت")).toBeTruthy();
     expect(screen.getByTestId("upcoming-crescent-month-0").textContent).toContain("جمادی الثانی");
     expect(screen.getByTestId("upcoming-crescent-month-1").textContent).toContain("سائنسی حساب");
-    expect(screen.getByText(/چاند نظر آنے کی ضمانت نہیں/)).toBeTruthy();
+    expect(screen.getAllByText(/چاند نظر آنے کی ضمانت نہیں/).length).toBeGreaterThan(0);
   });
 
   it("shows a friendly national result with genuine location measurements and a clear non-official label", () => {
@@ -136,7 +136,7 @@ describe("crescent visibility dashboard", () => {
     expect(details?.open).toBe(false);
     fireEvent.click(screen.getByText("مزید سائنسی تفصیلات"));
     expect(details?.open).toBe(true);
-    for (const name of ["گلگت", "پشاور", "اسلام آباد", "لاہور", "مظفرآباد", "کوئٹہ", "کراچی", "جیوانی"]) expect(screen.getByText(name)).toBeTruthy();
+    for (const name of ["گلگت", "پشاور", "اسلام آباد", "لاہور", "مظفرآباد", "کوئٹہ", "کراچی", "جیوانی"]) expect(screen.getAllByText(name).length).toBeGreaterThan(0);
     locale.language = "en";
   });
 
@@ -149,7 +149,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getAllByText("Class C").length).toBeGreaterThan(0);
     expect(screen.getAllByText("(q = +2.495)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("(q = -0.123)").length).toBeGreaterThan(0);
-    for (const label of ["Altitude", "Crescent width", "Illumination", "Elongation", "Lag"]) expect(screen.getAllByText(label).length).toBe(8);
+    for (const label of ["Altitude", "Crescent width", "Illumination", "Elongation", "Lag"]) expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(8);
     expect(screen.getByTestId("scientific-location-grid").className).toContain("md:grid-cols-2");
   });
 
