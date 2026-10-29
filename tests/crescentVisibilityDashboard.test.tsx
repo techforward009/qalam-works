@@ -176,7 +176,8 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getAllByRole("heading", { name: "International crescent-visibility model" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("1 of 8 reference locations have favorable visibility conditions.").length).toBeGreaterThan(0);
     expect(screen.getByText("Pakistan official Hijri date unavailable")).toBeTruthy();
-    expect(screen.getByText("Official historical decision")).toBeTruthy();
+    expect(screen.queryByText("Official historical decision")).toBeNull();
+    expect(screen.queryByText("Month-start implication")).toBeNull();
     expect(screen.queryByText(/Pakistan-wide crescent visibility map is temporarily unavailable/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Karachi" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Islamabad" })).toBeNull();
@@ -185,6 +186,27 @@ describe("crescent visibility dashboard", () => {
     expect(screen.queryByText(/Calculated Hijri date/)).toBeNull();
     expect(screen.queryByLabelText("Pakistan-wide scientific visibility map")).toBeNull();
     expect(screen.queryByText(/winner|accuracy|correct method|wrong method/i)).toBeNull();
+  });
+
+  it("centers Urdu introductory guidance and reference cards, removes repetitive sections and writes صفر", () => {
+    locale.language = "ur";
+    locations.forEach(location => { location.prediction.criterion.qualifies = false; });
+    yallopLocations.forEach(location => { location.prediction.acceptedByPolicy = false; });
+    render(<CrescentVisibilityContent />);
+    const introduction = screen.getByText("مہینہ چنیں اور دیکھیں کہ پاکستان میں چاند نظر آنے کے کیا امکانات ہیں۔");
+    expect(introduction.getAttribute("data-crescent-intro")).not.toBeNull();
+    expect(introduction.className).toContain("text-center");
+    const references = screen.getByTestId("crescent-three-reference-cards");
+    expect(references.className).toContain("text-center");
+    expect(references.textContent).toContain("صفر مقامات");
+    expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("صفر");
+    expect(screen.queryByText("آغازِ ماہ کا امکان")).toBeNull();
+    expect(screen.queryByText("سرکاری تاریخی فیصلہ")).toBeNull();
+    const text = screen.getByRole("main").textContent ?? "";
+    expect(text).not.toContain("چاند نظر آنے کی ضمانت نہیں");
+    expect(text).not.toContain("یہ ہمارا سائنسی اندازہ ہے؛");
+    expect(text).not.toContain("۰ مقامات");
+    expect(text).not.toContain("کوئی سرکاری آغازِ ماہ کا نتیجہ اخذ نہیں کیا گیا");
   });
 
   it("keeps diagnostics in scientific details and national Urdu wording", () => {
