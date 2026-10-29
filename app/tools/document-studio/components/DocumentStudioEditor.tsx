@@ -156,6 +156,7 @@ import QalamAiPanel from "./QalamAiPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import DocumentLibraryDialog from "./DocumentLibraryDialog";
 import InPageStoriesDialog, { type ImportedStory } from "./InPageStoriesDialog";
+import type { InPageTentativeBoxPreview } from "../utils/inpage/associateInPageStory";
 import {
   getDocumentLibrary,
   migrateLegacyDraftIfNeeded,
@@ -385,6 +386,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const inpageInputRef = useRef<HTMLInputElement>(null);
   const [inpageStories, setInpageStories] = useState<ImportedStory[] | null>(null);
   const [inpageError, setInpageError] = useState<string | null>(null);
+  // Research-only preview: recognises bounded native descriptors but never
+  // creates page objects or changes text flow, storage or PDF.
+  const [inpageObjectEvidence, setInpageObjectEvidence] = useState<
+    import("../utils/inpage/parseInPageObjectMetadata").InPageObjectMetadata | null
+  >(null);
+  const [inpageTentativeBoxes, setInpageTentativeBoxes] = useState<InPageTentativeBoxPreview[]>([]);
+  const [showInpageTentativeBox, setShowInpageTentativeBox] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -734,6 +742,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+    // Object evidence is a transient observation about the just-imported source;
+    // never show it under a different, previously saved document.
+    setInpageObjectEvidence(null);
+    setInpageTentativeBoxes([]);
+    setShowInpageTentativeBox(false);
     formattingSafety.current?.documentChanged();
     setFormattingNotice(0);
     setCharacterOpen(false); setParagraphOpen(false);
@@ -987,6 +1000,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const handleInPageFile = async (file: File) => {
     setInpageError(null);
+    setInpageObjectEvidence(null);
+    setInpageTentativeBoxes([]);
+    setShowInpageTentativeBox(false);
     setUploadError(null);
     setDocxImportNotice(false);
     setIsImporting(true);
@@ -995,12 +1011,16 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       if (file.size > MAX_INPAGE_BYTES) throw new Error("InPage files must be 32 MB or smaller.");
       const buffer = await file.arrayBuffer();
       const parsed = parseInPage(buffer);
+      const { parseInPageObjectMetadata } = await import("../utils/inpage/parseInPageObjectMetadata");
+      const possibleBoxes = parseInPageObjectMetadata(buffer);
+      const { associateObservedInPageBoxStories } = await import("../utils/inpage/associateInPageStory");
       const { parseInPageSetup } = await import("../utils/inpage/parseInPageSetup");
       const { settingsFromInPageSetup } = await import("../utils/inpage/inpageSetupSettings");
       const setup = parseInPageSetup(buffer);
       const stories = parsed.stories.map((paragraphs, index) => ({ number: index + 1, text: paragraphs.join("\n") }));
       const longest = stories.reduce((best, story) => story.text.length > best.text.length ? story : best, stories[0]);
       if (!longest) throw new Error("No stories were found in this InPage file.");
+      const tentativeBoxes = associateObservedInPageBoxStories(possibleBoxes, parsed.stories, stories.indexOf(longest));
       const created = await createAndOpenDocument({
         title: file.name.replace(/\.inp$/i, "") || "InPage import",
         content: plainTextToDocNodeWithDir(longest.text, "rtl"),
@@ -1009,6 +1029,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       if (!created) throw new Error("The imported document could not be saved in this browser.");
       setLibraryOpen(false);
       setInpageStories(stories.filter((story) => story !== longest && story.text.trim().length > 0));
+      setInpageObjectEvidence(possibleBoxes?.candidates.length ? possibleBoxes : null);
+      setInpageTentativeBoxes(tentativeBoxes);
+      setShowInpageTentativeBox(false);
     } catch (error) {
       setLibraryOpen(false);
       setInpageError(error instanceof Error ? error.message : "Failed to import InPage text.");
@@ -1794,6 +1817,40 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (id) writeStoredFrames(id, next);
   };
 
+  const importTentativeInPageTextBox = async () => {
+    const id = activeDocumentIdRef.current;
+    if (!id || !inpageTentativeBoxes.length || transitionRef.current) return;
+    const { makeEditableInPageFrame } = await import("../utils/inpage/associateInPageStory");
+    if (activeDocumentIdRef.current !== id || transitionRef.current) return;
+    const proposed = inpageTentativeBoxes.map(box => makeEditableInPageFrame(box, id, pageLayout));
+    if (proposed.some(frame => !frame)) {
+      setInpageError("One or more inferred InPage boxes fall outside this page. Nothing was imported.");
+      return;
+    }
+    const candidates = proposed.filter((frame): frame is StudioFrame => frame !== null);
+    if (new Set(candidates.map(frame => frame.id)).size !== candidates.length) {
+      setInpageError("InPage box IDs are ambiguous. Nothing was imported.");
+      return;
+    }
+    const before = framesRef.current;
+    const toAdd = candidates.filter(frame => !before.some(existing => existing.id === frame.id));
+    if (!toAdd.length) return;
+    changeFrames([...before, ...toAdd]);
+    const persisted = readStoredFrames(id);
+    if (toAdd.some(frame => !persisted.some(saved =>
+      saved.id === frame.id && saved.text === frame.text &&
+      saved.inPageSource?.descriptorOffset === frame.inPageSource?.descriptorOffset))) {
+      framesRef.current = before;
+      setFrames(before);
+      writeStoredFrames(id, before);
+      setInpageError("One or more boxes could not be saved. The import was cancelled.");
+      return;
+    }
+    setInpageError(null);
+    setShowInpageTentativeBox(false);
+    setCanvasTool("text");
+  };
+
   const insertTable = () => {
     if (!editor) return;
     editor.chain().focus().insertTable({
@@ -2023,12 +2080,56 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
+      {inpageObjectEvidence?.candidates.length ? (
+        <div data-studio-inpage-objects-preview="true" dir="ltr" className="mx-2 my-1 flex items-start gap-2 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700">
+          <details className="min-w-0 flex-1">
+            <summary className="cursor-pointer">InPage 3.1: {inpageObjectEvidence.candidates.length} possible text box(es) recognised — {inpageTentativeBoxes.length > 0 && inpageTentativeBoxes.every(box => frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset)) ? "editable boxes saved; Run Around not applied" : "placement preview only; Run Around not applied"}.</summary>
+            <ul className="mt-1 list-inside list-disc">
+              {inpageObjectEvidence.candidates.map((box) => (
+                <li key={box.descriptorOffset}>Box record {box.descriptorOffset}: x={box.xMm.toFixed(2)} mm, y={box.yMm.toFixed(2)} mm; {box.widthMm.toFixed(2)} × {box.heightMm.toFixed(2)} mm; Run Around: {box.runAround === "explicit-on" ? "ON (explicit)" : box.runAround === "explicit-off" ? "OFF (explicit)" : box.runAround === "omitted" ? "not recorded (default unverified)" : "unknown value"}</li>
+              ))}
+            </ul>
+            <p>Text-box association is experimental; editable import requires a separate click. Original InPage Run Around/page-text reflow and font fidelity are NOT yet supported.</p>
+            {inpageTentativeBoxes.length ? (
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span>{inpageTentativeBoxes.length} possible box/story match(es), based on observed 0x82 profile (not general InPage import):</span>
+                {inpageTentativeBoxes.some(box => !frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset)) ? (
+                  <button type="button" data-studio-toggle-inpage-box-preview="true"
+                    className="rounded border border-slate-400 bg-white px-2 py-1"
+                    onClick={() => setShowInpageTentativeBox(value => !value)}>
+                    {showInpageTentativeBox ? "Hide experimental placement" : "Show experimental placement"}
+                  </button>
+                ) : null}
+                {inpageTentativeBoxes.every(box => frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset)) ? (
+                  <span data-studio-inpage-box-imported="true">
+                    {inpageTentativeBoxes.length} editable box(es) saved. Original Run Around values retained, but page-text reflow is NOT implemented.
+                  </span>
+                ) : (
+                  <button type="button" data-studio-import-inpage-editable-box="true"
+                    className="rounded border border-slate-600 bg-white px-2 py-1 font-medium"
+                    onClick={() => { void importTentativeInPageTextBox(); }}>
+                    Import {inpageTentativeBoxes.length} editable text box(es) (experimental; no page-text reflow)
+                  </button>
+                )}
+              </div>            ) : (
+              <p>No supported unique story association for this file: no box-content preview.</p>
+            )}
+          </details>
+          <button type="button" aria-label="Dismiss InPage object preview" onClick={() => { setInpageObjectEvidence(null); setInpageTentativeBoxes([]); setShowInpageTentativeBox(false); }}>×</button>
+        </div>
+      ) : null}
       <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void handleInPageFile(file);
         event.target.value = "";
       }} />
-      {inpageStories !== null ? <InPageStoriesDialog stories={inpageStories} onClose={() => setInpageStories(null)} /> : null}
+      {inpageStories !== null ? <InPageStoriesDialog
+        stories={inpageStories}
+        convertedStoryNumbers={inpageTentativeBoxes
+          .filter(box => frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset))
+          .map(box => box.storyNumber)}
+        onClose={() => setInpageStories(null)}
+      /> : null}
       <input
         ref={fileInputRef}
         type="file"
@@ -2354,6 +2455,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             minimumPages={minimumPages}
             frames={frames}
             onFramesChange={changeFrames}
+            inPageTentativeBoxPreviews={showInpageTentativeBox ? inpageTentativeBoxes : []}
             englishFont={englishFont}
             tool={canvasTool}
             onToolAction={onCanvasTool}

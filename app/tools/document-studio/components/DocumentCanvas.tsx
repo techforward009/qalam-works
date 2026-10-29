@@ -41,6 +41,7 @@ import { MarginGuides } from "./MarginGuides";
 import { InPageToolPalette, type StudioToolId } from "./InPageToolPalette";
 import { WindowRuler } from "./WindowRuler";
 import { StudioObjectLayer, type StudioFrame } from "./StudioObjectLayer";
+import type { InPageTentativeBoxPreview } from "../utils/inpage/associateInPageStory";
 import {
   INPAGE_HSCROLL_PX,
   INPAGE_RULER_BAR_PX,
@@ -77,6 +78,7 @@ export default function DocumentCanvas({
   minimumPages = 1,
   frames = [],
   onFramesChange,
+  inPageTentativeBoxPreviews = [],
   tool: toolProp,
   englishFont = "Arial Unicode MS",
 }: {
@@ -104,6 +106,7 @@ export default function DocumentCanvas({
   minimumPages?: number;
   frames?: StudioFrame[];
   onFramesChange?: (frames: StudioFrame[]) => void;
+  inPageTentativeBoxPreviews?: InPageTentativeBoxPreview[];
   tool?: StudioToolId;
   englishFont?: string;
 }) {
@@ -630,6 +633,32 @@ export default function DocumentCanvas({
                             marginRightPx={geometry.marginRightPx}
                           />
                         ) : null}
+                        {isPages ? inPageTentativeBoxPreviews.filter(box =>
+                          // Never paint a speculative, nonprinting copy on top
+                          // of an actual editable StudioFrame from this record.
+                          !frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset) &&
+                          box.xMm >= 0 && box.yMm >= 0 &&
+                          box.xMm + box.widthMm <= pageLayout.widthMm &&
+                          box.yMm + box.heightMm <= pageLayout.heightMm
+                        ).map(box => (
+                          <div key={box.descriptorOffset} data-studio-inpage-box-overlay="true"
+                            data-story-number={box.storyNumber}
+                            className="studio-no-print pointer-events-none absolute z-[9] box-border overflow-hidden border-2 border-dashed border-blue-600 bg-blue-100/30"
+                            dir="rtl" aria-label="Experimental InPage text-box story placement (not imported)"
+                            style={{
+                              left: mmToPx(box.xMm) + (projection ? facingSlot(0, projection).x : 0),
+                              top: mmToPx(box.yMm) + (projection ? facingSlot(0, projection).y : 0),
+                              width: mmToPx(box.widthMm),
+                              height: mmToPx(box.heightMm),
+                              whiteSpace: "pre-wrap", overflowWrap: "anywhere",
+                              fontFamily: editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),
+                              fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
+                              lineHeight: 1.7, textAlign: "right",
+                            }}
+                          >
+                            {box.text}
+                          </div>
+                        )) : null}
                       </div>
                     </div>
                   </div>

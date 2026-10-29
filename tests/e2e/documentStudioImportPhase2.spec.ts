@@ -29,6 +29,11 @@ test("File Import opens the existing real InPage fixture with Urdu and A5 page s
   await importFile(page, path.resolve("tests/fixtures/inpage/hadiyat.inp"));
   const imported = page.getByRole("dialog", { name: "InPage text imported", exact: true });
   await expect(imported).toBeVisible();
+  // A secondary story should remain accessible without a modal backdrop
+  // hiding the editable page or any separate object-metadata preview.
+  await expect(imported).toHaveAttribute("aria-modal", "false");
+  await expect(imported).toHaveAttribute("data-studio-inpage-stories-notice", "true");
+  await expect(page.locator(".ProseMirror")).toBeEditable();
   await expect(page.locator(".ProseMirror")).toContainText("تعقیبات نماز پنجگانہ");
   await expect(page.locator(".ProseMirror")).toContainText("ایام ہفتہ کے اعمال");
   await expect(imported.getByRole("button", { name: "Copy story 6", exact: true })).toBeVisible();

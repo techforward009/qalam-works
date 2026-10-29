@@ -20,3 +20,118 @@ It has no filesystem, UI, network, or document-editor dependencies.
 The character map's upstream MIT notice is in `LICENSE.inpage-format.txt`.
 `cfb` is Apache-2.0. Layout, styles, images, and frame positions are not imported.
 For later layout stages, InPage units are 1/2000 point (`INPAGE_UNITS_PER_POINT`).
+
+## Experimental, read-only InPage300 object metadata (2026-10-29)
+
+`parseInPageObjectMetadata(buffer)` is an **optional, fail-soft** recognizer for a
+very specific, native InPage300 object descriptor profile. It does NOT import,
+persist, render or reflow text boxes. The normal text importer is unchanged.
+
+- Requires a valid OLE2 container, `DocumentInfo`, exactly one `InPage300`
+  main stream, and the observed InPage300 header.
+- Matches the measured 8-byte descriptor prefix, bounded 46/50-byte body
+  lengths and four sequential little-endian `00 7E`–`03 7E` geometry tags.
+  Units are 1/2000 point; coordinates are relative to the logical stream.
+- `0F 7E 01 00` = **explicit ON** and `0F 7E 00 00` = **explicit OFF**
+  in the two tested InPage 3.1 ON/OFF pairs.
+  Missing flag = **omitted**, NOT universally ON. Unknown explicit values
+  remain **unknown**, never silently coerced.
+- Coordinates/size are diagnostic candidates, not a verified association with
+  a particular story, text run, stacking order, or image. Other InPage profiles
+  may have different descriptors.
+- Parsing is bounded, read-only and optional; invalid/unsupported data cannot
+  prevent normal story import. The UI shows an expandable, dismissible metadata
+  notice only when candidates are found. It does NOT place boxes or promise
+  faithful visual import.
+- Synthetic tests are committed. The owner's four original native .INP samples
+  were checked **locally but are NOT committed**; there is no multi-object,
+  mixed image/text or independent native save/reopen guarantee yet.
+
+Do not make this record scanner a general-purpose INP specification, and do
+not turn on visual Run Around or PDF wrapping from this evidence alone.
+
+## Experimental story-reference association (2026-10-29, NOT final import)
+
+In five locally inspected native InPage300 text-box samples, a bounded
+46/50-byte object descriptor contains `82 00 07 00` at descriptor+18.
+The native story list has 8 entries, and zero-based index 7 points at the
+text typed into the box in all five. The four controlled RunAround ON/OFF
+files also have a different, longer main story; the independent box-only
+sample's longest story is itself #8. **Never duplicate the longest story
+into a frame.** This is a strong correlation, not yet a proven general
+foreign-key format (all box-bearing specimens use the same index).
+
+`associateOneInPageBoxStory` therefore fails closed when there is no
+unique candidate, an absent/invalid reference, no distinct nonempty secondary
+story, or a potential duplicate of the main story. Its output is displayed
+ONLY after a user explicitly chooses "Show experimental placement".
+The dashed blue visual overlay is `studio-no-print`, pointer-events-none,
+ephemeral, and nonpersistent. It is not a StudioFrame, never changes the
+TipTap document, frames storage, Run Around/reflow, or PDF. It may use a
+different font/line wrap from native InPage; it is a placement experiment.
+
+Further proof before editable frame import: supply TWO differently-worded
+boxes in one native source and a second source with those boxes moved/swapped.
+Confirm different `0x82` references and object indices; then test native
+text/body fidelity, z-order, multi-page behavior, layouts and PDFs. Without
+those records, **do not automatically import editable frames**.
+
+## Experimental editable single-box import (2026-10-29)
+
+After a safe single-box association, the user can explicitly select
+**"Import editable text box (experimental)"**. This creates a real Qalam
+`StudioFrame` on page 1, with the independently decoded story text, native
+x/y/width/height geometry and the original *declared* Run Around flag
+stored in optional `inPageSource` metadata. This is a **one-way conversion
+to Qalam's editable text box**, not a complete native InPage layout importer.
+
+Safety limitations:
+- Only one bounded InPage300 descriptor with a unique, nonempty, non-main
+  story reference qualifies. Ambiguous/multi-box references are NOT converted.
+- The user must click; no unreviewed automatic insertion.
+- Geometry must fit completely within the imported document's page.
+- All original stories remain accessible. The main story is not altered;
+  duplicate imports of the same native record are blocked.
+- Frames persist through Qalam's existing per-document localStorage frame map.
+  Failed writes do not count as successful conversion.
+- InPage Run Around **ON/OFF is retained as metadata only**; Qalam's story
+  text layout engine does not yet wrap its real document text around arbitrary
+  boxes. Current editor/PDF may overlap text at the original box position.
+  Do not claim pixel-perfect InPage fidelity, native frame stacking, or PDF
+  Run Around. Only the already-supported Qalam frame text is editable.
+- Importer never changes unrelated documents, font files, PDF engine,
+  storage schemas, or InPage source bytes.
+
+Native multi-box example, source-to-object indices and independent
+selection/reflow evidence are still needed before automatic full-fidelity
+import. Do not merge or deploy until focused real-browser tests pass.
+
+## Verified controlled two-box swap (2026-10-29)
+
+Two separate native InPage 3.1 files supplied by the user:
+`Two_Boxes_A.inp` and `Two_Boxes_B.inp` (private: not checked in).
+
+- DocumentInfo bytes and all 9 decoded stories are identical between files.
+- InPage300 logical stream is 14,460 bytes in both; only 18 byte values changed.
+- Descriptor 9484 has subtype 6, reference `82 00 07 00`; its geometry
+  changes from (115,15,70,30) mm to (20,50,70,30) mm.
+- Descriptor 9542 has subtype 7, reference `82 00 09 00`; its geometry
+  changes from (20,50,70,30) mm to (115,15,70,30) mm.
+- The common main text is story array index 6; the two distinct box
+  texts are indices 7 and 8 (user-facing Story 8 and Story 9).
+- **Crucial:** the second raw reference value 9 is not the literal story
+  index; the array has only 9 entries (0–8). Do not globally interpret
+  `0x82` as a direct zero-based index.
+- A restricted profile-based association is offered only when exactly two
+  native descriptors 6/ref 7 and 7/ref 9 occur in order and the text table
+  matches the nine-story controlled profile, with distinct nonempty texts.
+  Other / ambiguous profiles fail closed, rather than making up links.
+
+This supports optional real editable Qalam StudioFrame creation for both
+boxes (with preserved *observed* source flag), through a separate user click.
+The Run Around flag in the new files is omitted and its default is
+unverified, so do not label these sources as explicit ON. Native wrapping,
+full-layout fidelity and PDF parity remain future work.
+
+The supporting evidence file contains *only* hashes, geometry, offsets and
+lengths, never native user documents or extracted source text.
