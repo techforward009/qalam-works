@@ -4,6 +4,7 @@ import { resolveDisplayHijriDate } from "../app/tools/date-converter/utils/hijri
 import { getReviewedPakistanHijriMonth } from "../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriMonth";
 import { convert } from "../app/tools/date-converter/utils/dateEngine";
 import { buildCalendarHtml } from "../app/tools/calendar-maker/utils/buildCalendarHtml";
+import { getUpcomingPakistanCrescentEvenings } from "../app/tools/crescent-visibility/utils/upcomingCrescentEvenings";
 
 const find = (year: number, month: number, day: number, policy: "pakistan" | "tabular" = "pakistan") =>
   buildCalendarMonth(year, month, "gregorian-hijri", "monday", 0, policy)
@@ -17,6 +18,25 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
     expect(find(2026, 2, 28)).toMatchObject({ hijri: { year: 1447, month: 9, day: 10 }, hijriSource: "official" });
     expect(find(2026, 2, 28, "tabular")).toMatchObject({ hijri: { year: 1447, month: 9, day: 12 }, hijriSource: "tabular" });
     expect(convert("gregorian", date).hijri.day).toBe(12);
+  });
+
+  it("lists the next six crescent observation evenings, starting with Jumada II on November 10", () => {
+    const next = getUpcomingPakistanCrescentEvenings({ year: 2026, month: 10, day: 29 });
+    expect(next).toHaveLength(6);
+    expect(next[0]).toMatchObject({
+      dateIso: "2026-11-10", targetHijriMonth: 6, targetHijriYear: 1448, dateSource: "official",
+    });
+    expect(next[1]).toMatchObject({ targetHijriMonth: 7, targetHijriYear: 1448, dateSource: "scientific" });
+    expect(next.every(item => item.dateIso >= "2026-10-29")).toBe(true);
+    expect(new Set(next.map(item => item.targetHijriYear + "/" + item.targetHijriMonth)).size).toBe(6);
+    for (const item of next) {
+      const date = resolveDisplayHijriDate(item.evening);
+      expect(date.hijri.day).toBe(29);
+      expect(date.source).toBe(item.dateSource);
+    }
+    const after = getUpcomingPakistanCrescentEvenings({ year: 2026, month: 11, day: 11 }, 2);
+    expect(after[0].targetHijriMonth).toBe(7);
+    expect(getUpcomingPakistanCrescentEvenings({ year: 2099, month: 1, day: 1 })).toEqual([]);
   });
 
   it("uses 30 Jumada I on November 11 and 1 Jumada II on November 12, both non-official", () => {
