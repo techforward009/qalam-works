@@ -409,6 +409,7 @@ export default function DateConverterContent({
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
   const pakistanOfficialHijri = result ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
+  const pakistanDisplayHijri = result ? resolveDisplayHijriDate(result.gregorian) : null;
   const weekdayName = intelligence
     ? (isUr ? WEEKDAYS_UR[intelligence.weekdayIndex] : WEEKDAYS_EN[intelligence.weekdayIndex])
     : "";
@@ -770,8 +771,9 @@ export default function DateConverterContent({
                   <PakistanDateResult
                     key={isoDate(result.gregorian)}
                     gregorian={result.gregorian}
-                    hijri={pakistanOfficialHijri?.hijri ?? result.hijri}
+                    hijri={pakistanDisplayHijri?.hijri ?? result.hijri}
                     reviewed={pakistanOfficialHijri}
+                    source={pakistanDisplayHijri?.source === "scientific" ? "scientific" : "tabular"}
                     weekday={weekdayName}
                     lang={lang}
                   />
