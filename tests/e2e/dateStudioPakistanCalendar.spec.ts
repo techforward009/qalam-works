@@ -243,3 +243,33 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
   });
 
 });
+
+test.describe("Crescent result — Urdu typography and concise forecast", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("qalam-site-language", "ur"));
+  });
+
+  test("uses the exact Thursday first-day sentence, Gulzar titles and Mehr text without a duplicate feedback banner", async ({ page }, testInfo) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const main = page.locator('main[data-crescent-ui="ur"]');
+    await expect(main).toBeVisible();
+    const sentence = "ہمارے سائنسی حساب سے جمادی الثانی ۱۴۴۸ کی پہلی تاریخ ۱۲ نومبر ۲۰۲۶ء بروز جمعرات ہوگی۔";
+    const card = page.getByTestId("crescent-predicted-first-day");
+    await expect(card).toContainText(sentence);
+    await expect(card).not.toContainText("۱۱ نومبر");
+    await expect(card).not.toContainText("۳۰ دن پورے");
+    await expect(main.getByRole("link", { name: "اپنی رائے دیں" })).toHaveCount(0);
+    await expect(main.getByText("کیا یہ معلومات آپ کے لیے مفید رہیں؟")).toHaveCount(0);
+    const fonts = await main.evaluate(element => ({
+      heading: getComputedStyle(element.querySelector("h1")!).fontFamily,
+      paragraph: getComputedStyle(element.querySelector("p")!).fontFamily,
+      result: getComputedStyle(element.querySelector('[data-testid="crescent-predicted-first-day"] p')!).fontFamily,
+      monthButton: getComputedStyle(element.querySelector('[data-testid="upcoming-crescent-month-0"]')!).fontFamily,
+    }));
+    expect(fonts.heading).toContain("Gulzar");
+    expect(fonts.paragraph).toContain("Mehr Nastaliq Web");
+    expect(fonts.result).toContain("Mehr Nastaliq Web");
+    expect(fonts.monthButton).toContain("Mehr Nastaliq Web");
+    await page.screenshot({ path: testInfo.outputPath("urdu-crescent-gulzar-mehr-forecast.png"), fullPage: true });
+  });
+});
