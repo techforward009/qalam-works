@@ -235,6 +235,9 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("crescent-three-outcomes")).not.toBeVisible();
     await expect(page.getByText("Detailed scientific and official research")).not.toBeVisible();
     await page.getByRole("link", { name: "More details" }).click();
+    await expect(page.getByTestId("crescent-simple-details")).toHaveAttribute("open");
+    await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
+    await page.getByRole("link", { name: "Original research and sources" }).click();
     await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
     await expect(page.getByText("Detailed scientific and official research")).toBeVisible();
   });
