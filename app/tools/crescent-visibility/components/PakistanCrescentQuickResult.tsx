@@ -45,6 +45,11 @@ export function PakistanCrescentQuickResult({
     prediction.status === "no-sunset" || prediction.status === "no-moonset");
   const state = outsideNewCrescentWindow ? "not-new" :
     qualified > 0 ? "favorable" : incomplete ? "incomplete" : "unfavorable";
+  const friendlyHeadline = state === "not-new"
+    ? (ur ? "یہ چاند دیکھنے کی صحیح شام نہیں" : "This is not the new-moon evening")
+    : state === "favorable" ? (ur ? "چاند نظر آنے کے حالات موافق ہیں" : "Conditions favor crescent visibility")
+    : state === "incomplete" ? (ur ? "ابھی واضح اندازہ دستیاب نہیں" : "No clear prediction is available yet")
+    : (ur ? "چاند نظر آنے کے حالات موافق نہیں" : "Conditions do not favor crescent visibility");
   const status = state === "not-new" ? (ur ? "یہ نئے ہلال کی شام نہیں ہے" : "Not a new-crescent evening")
     : state === "favorable" ? (ur ? "سائنسی معیار پورا ہوتا ہے" : "Scientific criterion is met")
     : state === "incomplete" ? (ur ? "سائنسی جانچ نامکمل ہے" : "Scientific evaluation is incomplete")
@@ -100,11 +105,11 @@ export function PakistanCrescentQuickResult({
         </span>
         <p className="mt-2 text-sm text-[#587060] dark:text-[#b6cbb9]">{dateDigits(formatDate(date, "gregorian", lang), lang)}</p>
         <h2 data-testid="crescent-simple-headline" className={`mt-3 text-2xl font-bold leading-relaxed sm:text-3xl ${state === "favorable" ? "text-emerald-800 dark:text-emerald-300" : state === "unfavorable" ? "text-rose-800 dark:text-rose-300" : "text-[#153b29] dark:text-[#f0f7f0]"} ${ur ? "font-naskh" : ""}`}>
-          {status}
+          {friendlyHeadline}
         </h2>
-        <p className={`mx-auto mt-2 max-w-xl text-sm leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
-        {!outsideNewCrescentWindow && <p data-testid="crescent-simple-national-count" className="mt-3 font-bold text-[#234b34] dark:text-[#e0ecdf]" dir="auto">
-          {ur ? "پاکستانی مقامات: " : "Pakistan locations: "}<span dir="ltr">{qualified}/8</span>
+        <p className={`mx-auto mt-2 max-w-xl text-base leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
+        {!outsideNewCrescentWindow && <p data-testid="crescent-simple-national-count" className="mt-3 text-sm font-semibold text-[#234b34] dark:text-[#e0ecdf]" dir="auto">
+          {ur ? "پاکستان کے منتخب ۸ مقامات میں سے: " : "Of 8 Pakistan reference sites: "}<span dir="ltr">{qualified}/8</span>
         </p>}
         {decision ? <p className="mx-auto mt-4 max-w-lg rounded-lg border border-[#B8935A]/45 px-3 py-2 text-sm font-semibold text-[#775724] dark:text-[#efdfa9]" data-testid="crescent-simple-official">
           {ur ? "سرکاری اعلان: " : "Official declaration: "}
@@ -114,7 +119,24 @@ export function PakistanCrescentQuickResult({
         </p>}
       </div>
 
-      <div className="grid gap-3 px-5 pt-5 sm:grid-cols-3 sm:px-8" data-testid="crescent-three-outcomes">
+      <div className="flex flex-wrap items-center justify-center gap-3 px-5 py-5 sm:px-8">
+        <button type="button" data-testid="crescent-share-result" onClick={() => void share()}
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1A3A2A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2e6546] dark:bg-[#2e6546]">
+          {shareStatus === "copied" ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+          {shareStatus === "copied" ? (ur ? "نتیجہ کاپی ہوگیا" : "Result copied") : (ur ? "نتیجہ شیئر کریں" : "Share result")}
+        </button>
+        <a href="#crescent-technical-report" onClick={() => {
+          const details = document.getElementById("crescent-technical-report") as HTMLDetailsElement | null;
+          if (details) details.open = true;
+        }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1A3A2A]/20 px-4 py-2.5 text-sm font-semibold text-[#1A3A2A] dark:border-[#35513d] dark:text-[#e9f2e9]">
+          <Clipboard className="h-4 w-4" />{ur ? "مزید تفصیل" : "More details"}
+        </a>
+        {shareStatus === "failed" && <p role="alert" className="w-full text-center text-sm text-rose-700 dark:text-rose-300">{ur ? "شیئر نہیں ہو سکا۔ دوبارہ کوشش کریں۔" : "Could not share. Please try again."}</p>}
+      </div>
+
+      <details data-testid="crescent-simple-details" className="border-t border-[#1A3A2A]/10 px-5 pb-5 dark:border-[#35513d] sm:px-8">
+        <summary className="cursor-pointer py-4 text-sm font-bold text-[#315c40] dark:text-[#c3e0c5]">{ur ? "یہ اندازہ کیسے لگایا گیا؟" : "How was this predicted?"}</summary>
+      <div className="grid gap-3 pt-2 sm:grid-cols-3" data-testid="crescent-three-outcomes">
         <article className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
           <h3 className="text-xs font-bold text-emerald-900 dark:text-emerald-200">{ur ? "پاکستانی قومی معیار" : "Pakistan national criterion"}</h3>
           <p className="mt-2 text-lg font-bold text-emerald-950 dark:text-emerald-100">{outsideNewCrescentWindow ? (ur ? "نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : status}</p>
@@ -177,20 +199,8 @@ export function PakistanCrescentQuickResult({
             </table>
           </div>
         </details>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button type="button" data-testid="crescent-share-result" onClick={() => void share()}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1A3A2A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2e6546] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-[#2e6546]">
-            {shareStatus === "copied" ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-            {shareStatus === "copied" ? (ur ? "نتیجہ کاپی ہوگیا" : "Result copied") : (ur ? "نتیجہ شیئر کریں" : "Share result")}
-          </button>
-          <a href="#crescent-technical-report" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1A3A2A]/20 px-4 py-2.5 text-sm font-semibold text-[#1A3A2A] hover:bg-[#F7F5EF] dark:border-[#35513d] dark:text-[#e9f2e9]">
-            <Clipboard className="h-4 w-4" />{ur ? "مکمل سائنسی تحقیق" : "Full scientific research"}
-          </a>
-        </div>
-        {shareStatus === "failed" && <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">
-          {ur ? "شیئر نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔" : "Could not share. Please try again."}
-        </p>}
       </div>
+      </details>>
     </section>
   );
 }
