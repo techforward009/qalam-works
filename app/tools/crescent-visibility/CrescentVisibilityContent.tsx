@@ -32,7 +32,7 @@ export default function CrescentVisibilityContent() {
   useEffect(() => {
     const syncFromAddress = () => {
       const requested = new URLSearchParams(window.location.search).get("date");
-      if (requested && /^\\d{4}-\\d{2}-\\d{2}$/.test(requested) && validateDate("gregorian", parse(requested)) === null) {
+      if (requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && validateDate("gregorian", parse(requested)) === null) {
         setDateInput(requested);
       }
     };
