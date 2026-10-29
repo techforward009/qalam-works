@@ -298,6 +298,40 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     await section.screenshot({ path: testInfo.outputPath("urdu-22px-mehr-readable-month-cards.png") });
   });
 
+  test("centres Mehr introduction and evidence cards and independently explains 11 November", async ({ page }, testInfo) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const main = page.locator('main[data-crescent-ui="ur"]');
+    const introduction = main.locator("[data-crescent-intro]");
+    await expect(introduction).toContainText("مہینہ چنیں اور دیکھیں");
+    const introStyle = await introduction.evaluate(el => ({
+      font: getComputedStyle(el).fontFamily,
+      size: getComputedStyle(el).fontSize,
+      align: getComputedStyle(el).textAlign,
+    }));
+    expect(introStyle.font).toContain("Mehr Nastaliq Web");
+    expect(introStyle.size).toBe("22px");
+    expect(introStyle.align).toBe("center");
+    await page.getByTestId("crescent-deep-details").locator(":scope > summary").click();
+    const cards = page.getByTestId("crescent-three-reference-cards");
+    await expect(cards.locator("article")).toHaveCount(3);
+    expect(await cards.locator("article").first().evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+    await expect(main.getByText("آغازِ ماہ کا امکان")).toHaveCount(0);
+    await expect(main.getByText("سرکاری تاریخی فیصلہ")).toHaveCount(0);
+    const pageText = await main.textContent();
+    expect(pageText).not.toContain("چاند نظر آنے کی ضمانت نہیں");
+    expect(pageText).not.toContain("یہ ہمارا سائنسی اندازہ ہے؛");
+    expect(pageText).not.toContain("۰ مقامات");
+    const tomorrow = page.getByTestId("crescent-next-evening");
+    await expect(tomorrow).toContainText("۱۱ نومبر ۲۰۲۶");
+    await expect(page.getByTestId("crescent-next-evening-count")).toContainText("پاکستان کے آٹھ مقامات");
+    await expect(page.getByTestId("crescent-next-evening-metrics").locator("div")).toHaveCount(4);
+    await expect(page.getByTestId("crescent-next-evening-metrics")).not.toContainText("—");
+    await tomorrow.screenshot({ path: testInfo.outputPath("nov-11-real-astronomy-from-nov-10.png") });
+    await page.getByTestId("crescent-next-evening-link").click();
+    await expect(page.locator("#dashboard-date")).toHaveValue("2026-11-11");
+    await expect(page).toHaveURL(/date=2026-11-11/);
+  });
+
   test("uses the exact Thursday first-day sentence, Gulzar titles and Mehr text without a duplicate feedback banner", async ({ page }, testInfo) => {
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     const main = page.locator('main[data-crescent-ui="ur"]');
