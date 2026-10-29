@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useState, type CSSProperties, type FormEvent } from "react";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { clampMarginMm, resolvePageDimensions, type PageOrientation, type PageSizeId } from "../utils/pageLayout";
+import { useMovableStudioDialog } from "./useMovableStudioDialog";
 
 export type StudioPageSetupValues = {
   size: PageSizeId;
@@ -29,9 +30,10 @@ export default function StudioPageSetupDialog({ settings, direction, columns, gu
     right:direction==="rtl"?margins.startMm:margins.endMm,
     top:margins.topMm,bottom:margins.bottomMm,columns,gutter,facing,
   }));
-  const root=useRef<HTMLFormElement>(null);
+  const drag=useMovableStudioDialog<HTMLFormElement>();
+  const root=drag.dialogRef;
   const [scale,setScale]=useState(1);
-  useLayoutEffect(()=>{const update=()=>setScale(Math.min(1,(window.innerWidth-16)/392,(window.innerHeight-16)/216));update();window.addEventListener("resize",update);return()=>window.removeEventListener("resize",update);},[]);
+  useLayoutEffect(()=>{const update=()=>setScale(Math.min(1,(window.innerWidth-16)/392,(window.innerHeight-16)/190));update();window.addEventListener("resize",update);return()=>window.removeEventListener("resize",update);},[]);
   const [marginText,setMarginText]=useState(()=>({left:`${draft.left}mm`,right:`${draft.right}mm`,top:`${draft.top}mm`,bottom:`${draft.bottom}mm`}));
   const [error,setError]=useState('');
   const [help,setHelp]=useState(false);
@@ -57,8 +59,8 @@ export default function StudioPageSetupDialog({ settings, direction, columns, gu
           if(index>=0){event.preventDefault();controls[(index+(event.shiftKey?controls.length-1:1))%controls.length]?.focus();}
         }
       }}
-      style={{position:"relative",width:392,minWidth:392,transform:`scale(${scale})`,justifySelf:"center",height:216,overflow:"auto",background:"#f0f0f0",color:"#000",border:"7px solid rgb(164,181,199)",outline:"1px solid #191e23",borderRadius:5,boxShadow:"0 2px 8px #3337,inset 1px 1px #fff",font:"11px Tahoma,Arial,sans-serif",boxSizing:"border-box"}}>
-      <div style={{position:"absolute",top:0,left:0,right:0,height:23,background:"linear-gradient(#ecf7ff,#c6e3fa)",padding:"5px 9px",boxSizing:"border-box"}}>Page Setup</div>
+      style={{position:"relative",width:392,minWidth:392,transform:`${drag.style.transform} scale(${scale})`,justifySelf:"center",height:183,overflow:"hidden",background:"#f0f0f0",color:"#000",border:"7px solid rgb(164,181,199)",outline:"1px solid #191e23",borderRadius:5,boxShadow:"0 2px 8px #3337,inset 1px 1px #fff",font:"11px Tahoma,Arial,sans-serif",boxSizing:"border-box"}}>
+      <div {...drag.handleProps} style={{...drag.handleProps.style,position:"absolute",top:0,left:0,right:0,height:23,background:"linear-gradient(#ecf7ff,#c6e3fa)",padding:"5px 9px",boxSizing:"border-box"}}>Page Setup</div>
       <button type="button" aria-label="Close" onClick={onClose} style={{position:"absolute",right:6,top:2,width:47,height:19,background:"linear-gradient(#f1aaaa,#bb3d31)",border:"1px solid #a23b30",color:"#fff",cursor:"pointer"}}>×</button>
       <fieldset style={{...group,left:0,top:23,width:124,height:140}}><legend>Page</legend>
         <select aria-label="Page size" style={{...field,width:112}} value={draft.size} onChange={e=>set({size:e.target.value as PageSizeId})}>{sizes.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select>
@@ -87,9 +89,8 @@ export default function StudioPageSetupDialog({ settings, direction, columns, gu
         <button type="button" style={btn} onClick={onClose}>Cancel</button>
         <button type="button" style={btn} onClick={()=>setHelp(v=>!v)}>Help</button>
       </div>
-      <p data-page-setup-capabilities style={{position:"absolute",left:0,right:0,bottom:0,margin:0,fontSize:10,lineHeight:"12px",padding:3,borderTop:"1px solid #aaa"}}>Facing Pages is view only. Duplex printing and mirrored margins are unavailable. Columns are session-only guides, not text columns.</p>
-      {error?<div role="alert" style={{position:"absolute",left:0,right:0,bottom:30,background:"#ffffdf",border:"1px solid #a00",padding:3}}>{error}</div>:null}
-      {help?<div role="status" style={{position:"absolute",left:5,right:72,bottom:30,background:"#ffffdf",border:"1px solid #ccc",padding:2}}>Page size and physical margins are saved; text is preserved. Facing view and column guides do not affect PDF layout.</div>:null}
+      {error?<div role="alert" style={{position:"absolute",left:0,right:0,bottom:0,background:"#ffffdf",border:"1px solid #a00",padding:3}}>{error}</div>:null}
+      {help?<div role="status" style={{position:"absolute",left:5,right:72,bottom:0,background:"#ffffdf",border:"1px solid #ccc",padding:2}}>Page size and margins are saved. Facing Pages changes only the view; duplex/mirrored margins and PDF columns are not yet supported.</div>:null}
     </form>
   </div>;
 }

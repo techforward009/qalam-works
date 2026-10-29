@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
 import { clampMarginMm, resolvePageDimensions, type PageOrientation, type PageSizeId } from "../utils/pageLayout";
 import type { DocNode } from "../utils/extractPlainText";
@@ -200,6 +201,9 @@ export default function NewDocumentDialog({
   onCancel: () => void;
   onConfirm: (draft: NewDocumentDraft) => void;
 }) {
+  const drag = useMovableStudioDialog<HTMLFormElement>();
+  const [scale, setScale] = useState(1);
+  useEffect(() => { const update = () => setScale(Math.min(1, (window.innerWidth - 16) / 402, (window.innerHeight - 16) / 218)); update(); window.addEventListener("resize", update); return () => window.removeEventListener("resize", update); }, []);
   const [draft, setDraft] = useState<NewDocumentDraft>(defaultNewDocumentDraft);
   const [helpNote, setHelpNote] = useState<string | null>(null);
   const dims = resolvePageDimensions(draft.size, draft.orientation);
@@ -221,10 +225,10 @@ export default function NewDocumentDialog({
 
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center" style={{ background: "#ababab" }} data-studio-new-document="true">
-      <form role="dialog" aria-modal="true" aria-label="New Document" className="text-black" dir="ltr"
-        style={{ position: "relative", width: 402, height: 218, boxSizing: "border-box", background: "#f0f0f0", border: "7px solid rgb(164, 181, 199)", outline: "1px solid #191e23", boxShadow: "0 3px 14px rgba(0,0,0,0.5)", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}
+      <form ref={drag.dialogRef} role="dialog" aria-modal="true" aria-label="New Document" className="text-black" dir="ltr"
+        style={{ position: "relative", transform: `${drag.style.transform} scale(${scale})`, width: 402, height: 218, boxSizing: "border-box", background: "#f0f0f0", border: "7px solid rgb(164, 181, 199)", outline: "1px solid #191e23", boxShadow: "0 3px 14px rgba(0,0,0,0.5)", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}
         onSubmit={(event) => { event.preventDefault(); onConfirm(draft); }}>
-        <div className="flex items-center" style={{ height: 20, paddingLeft: 1, background: "#a4b5c7", fontSize: 11, fontWeight: 400 }} data-studio-new-document-title="true">New Document</div>
+        <div {...drag.handleProps} className="flex items-center" style={{ ...drag.handleProps.style, height: 20, paddingLeft: 1, background: "#a4b5c7", fontSize: 11, fontWeight: 400 }} data-studio-new-document-title="true">New Document</div>
         <fieldset className={groupCls} style={{ ...groupStyle, left: 7, top: 31, width: 120, height: 165 }} data-studio-dialog-group="page">
           <legend className={labelCls}>Page</legend>
           <select className="box-border h-[18px] border-0" style={{ ...selectStyle, width: 112 }} aria-label="Page size" value={draft.size} onChange={(event) => set({ size: event.target.value as PageSizeId })}>

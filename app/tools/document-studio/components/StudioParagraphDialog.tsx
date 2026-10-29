@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot } from "../utils/inpageToolbar";
+import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import {
   PARAGRAPH_ALIGNS,
@@ -38,7 +39,8 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
   const initial = useRef(form);
   const [error, setError] = useState("");
   const [help, setHelp] = useState(false);
-  const root = useRef<HTMLFormElement>(null);
+  const drag = useMovableStudioDialog<HTMLFormElement>();
+  const root = drag.dialogRef;
   const patch = (next: Partial<ParagraphForm>) => setForm((current) => ({ ...current, ...next }));
   const close = () => { onClose(); if (!editor.isDestroyed) editor.view.focus(); };
   const apply = () => {
@@ -63,8 +65,8 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
     next?.focus();
   };
   return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={(event) => event.stopPropagation()}>
-    <form ref={root} role="dialog" aria-modal="true" aria-label="Paragraph Preferences" data-studio-paragraph-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ width: "min(370px, 100%)", maxHeight: "calc(100vh - 24px)", overflow: "auto", background: "#f0f0f0", color: "#000", border: "1px solid #fff", boxShadow: "inset -1px -1px #808080, 1px 1px 0 #000, 1px 4px 12px rgba(0,0,0,.25)", font: "11px Tahoma, sans-serif", padding: 7 }}>
-      <div data-studio-paragraph-title="true" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 22, paddingLeft: 5, background: "linear-gradient(90deg, #D5EAFD, #F2FAFF)", marginBottom: 5, border: "1px solid #8DA8C1" }}>
+    <form ref={root} role="dialog" aria-modal="true" aria-label="Paragraph Preferences" data-studio-paragraph-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ ...drag.style, width: "min(365px, 100%)", minHeight: "min(292px, calc(100vh - 24px))", maxHeight: "calc(100vh - 24px)", overflow: "auto", background: "#f0f0f0", color: "#000", border: "1px solid #fff", boxShadow: "inset -1px -1px #808080, 1px 1px 0 #000, 1px 4px 12px rgba(0,0,0,.25)", font: "11px Tahoma, sans-serif", padding: 7 }}>
+      <div {...drag.handleProps} data-studio-paragraph-title="true" style={{ ...drag.handleProps.style, display: "flex", alignItems: "center", justifyContent: "space-between", height: 22, paddingLeft: 5, background: "linear-gradient(90deg, #D5EAFD, #F2FAFF)", marginBottom: 5, border: "1px solid #8DA8C1" }}>
         <span style={{ fontWeight: 700 }}>Paragraph Preferences</span>
         <button type="button" aria-label="Close" tabIndex={-1} onClick={close} style={{ ...buttonStyle, width: 29, height: 18, lineHeight: "12px", background: "linear-gradient(#F6CDCD,#C94B40)", color: "#fff", fontWeight: 700 }}>×</button>
       </div>

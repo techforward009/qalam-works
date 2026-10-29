@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useMovableStudioDialog } from "./useMovableStudioDialog";
 
 const buttonStyle = {
   minHeight: 26, padding: "3px 10px", border: "1px solid #696969", borderRadius: 0,
@@ -18,7 +19,8 @@ export default function StudioPdfRecoveryDialog({ isUr, recoverable, error, onCl
   onPrint: () => Promise<void>;
 }) {
   const id = useId();
-  const root = useRef<HTMLDivElement>(null);
+  const drag = useMovableStudioDialog<HTMLDivElement>();
+  const root = drag.dialogRef;
   const primary = useRef<HTMLButtonElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const printRequested = useRef(false);
@@ -60,7 +62,7 @@ export default function StudioPdfRecoveryDialog({ isUr, recoverable, error, onCl
       [data-studio-pdf-recovery] button:focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
       [data-studio-pdf-recovery] button:disabled { color: #808080 !important; cursor: default; }`}</style>
     <div ref={root} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-message`} dir={isUr ? "rtl" : "ltr"}
-      style={{ width: 390, maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 16px)", overflowY: "auto", boxSizing: "border-box", border: "1px solid #808080", borderRadius: 0, padding: 3, background: "#f0f0f0", color: "#000", boxShadow: "inset 1px 1px #fff, inset -1px -1px #a0a0a0, 2px 2px 4px #0005", fontFamily: "Tahoma, 'Segoe UI', sans-serif", fontSize: isUr ? 13 : 12 }}
+      style={{ ...drag.style, width: 390, maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 16px)", overflowY: "auto", boxSizing: "border-box", border: "1px solid #808080", borderRadius: 0, padding: 3, background: "#f0f0f0", color: "#000", boxShadow: "inset 1px 1px #fff, inset -1px -1px #a0a0a0, 2px 2px 4px #0005", fontFamily: "Tahoma, 'Segoe UI', sans-serif", fontSize: isUr ? 13 : 12 }}
       onKeyDown={event => {
         // Modal keystrokes must not reach document formatting/zoom handlers.
         event.stopPropagation();
@@ -72,7 +74,7 @@ export default function StudioPdfRecoveryDialog({ isUr, recoverable, error, onCl
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
         }
       }}>
-      <div style={{ background: "#d8d8d8", borderBottom: "1px solid #a0a0a0", padding: "2px 5px", fontSize: 11, lineHeight: "18px" }} dir="ltr">Qalam Page</div>
+      <div {...drag.handleProps} style={{ ...drag.handleProps.style, background: "#d8d8d8", borderBottom: "1px solid #a0a0a0", padding: "2px 5px", fontSize: 11, lineHeight: "18px" }} dir="ltr">Qalam Page</div>
       <div style={{ padding: "10px 10px 8px", display: "flex", alignItems: "flex-start", gap: 10 }}>
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 2 }}><path d="M10 2 19 18H1Z" fill="#f0f0f0" stroke="#000" /><path d="M10 7v5" stroke="#000" strokeWidth="2" /><path d="M9 14h2v2H9Z" fill="#000" /></svg>
         <div style={{ minWidth: 0, lineHeight: isUr ? "1.9" : "1.5", overflowWrap: "anywhere" }}>

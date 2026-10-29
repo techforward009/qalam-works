@@ -387,6 +387,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const inpageInputRef = useRef<HTMLInputElement>(null);
   const [inpageStories, setInpageStories] = useState<ImportedStory[] | null>(null);
   const [inpageError, setInpageError] = useState<string | null>(null);
+  const [inpageImportNotice, setInpageImportNotice] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -859,7 +860,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const openLibraryDocument = async (id: string) => {
     const library = libraryRef.current;
     if (!library || !editor || transitionRef.current) return;
-    if (activeDocumentIdRef.current === id) { setLibraryOpen(false); return; }
+    if (activeDocumentIdRef.current === id) { setOpenDocuments(previous => previous.some(doc => doc.id === id) ? previous : [...previous, { id, title: documentTitleRef.current }]); setLibraryOpen(false); return; }
     await transitionDocument(async () => {
       const record = await library.getDocument(id);
       if (!record) throw new Error("Document not found");
@@ -867,6 +868,30 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setLibraryOpen(false);
       void refreshLibraryList(library);
     });
+  };
+
+  /** Close only this editor's open window; the persisted document is never deleted. */
+  const closeActiveDocument = async () => {
+    const library = libraryRef.current;
+    const closingId = activeDocumentIdRef.current;
+    if (!library || !closingId || !editor || transitionRef.current) return;
+    const nextOpen = [...openDocuments].reverse().find(doc => doc.id !== closingId);
+    const closed = await transitionDocument(async () => {
+      if (nextOpen) {
+        const record = await library.getDocument(nextOpen.id);
+        if (!record) throw new Error("The next open document could not be loaded");
+        applyRecordToEditor(record);
+      } else {
+        // The saved document stays in the library. Its editor remains behind
+        // the library chooser until another file is opened or this one reopened.
+        formattingSafety.current?.documentChanged();
+        editor.commands.blur();
+        setLibraryOpen(true);
+      }
+    });
+    if (!closed) return;
+    setOpenDocuments(previous => previous.filter(doc => doc.id !== closingId));
+    void refreshLibraryList(library);
   };
 
   const renameLibraryDocument = async (id: string) => {
@@ -988,6 +1013,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const handleInPageFile = async (file: File) => {
+    setInpageStories(null);
+    setInpageImportNotice(null);
     setInpageError(null);
     setUploadError(null);
     setDocxImportNotice(false);
@@ -1010,7 +1037,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       });
       if (!created) throw new Error("The imported document could not be saved in this browser.");
       setLibraryOpen(false);
-      setInpageStories(stories.filter((story) => story !== longest && story.text.trim().length > 0));
+      const additionalStories = stories.filter((story) => story !== longest && story.text.trim().length > 0);
+      setInpageStories(additionalStories.length ? additionalStories : null);
+      setInpageImportNotice("InPage text was imported. Original text-box placement and page layout are not fully preserved.");
     } catch (error) {
       setLibraryOpen(false);
       setInpageError(error instanceof Error ? error.message : "Failed to import InPage text.");
@@ -1838,6 +1867,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
+      closeDocument: () => { void closeActiveDocument(); },
       upload: () => fileInputRef.current?.click(),
       downloadTxt: handleDownload,
       downloadDocx: () => {
@@ -2025,6 +2055,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       {inpageError ? <p role="alert" data-studio-import-error="true" dir="ltr" className="m-2 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{inpageError}</p> : null}
+      {inpageImportNotice ? <div role="status" data-studio-inpage-import-notice="true" dir="ltr" className="mx-2 my-1 flex items-center gap-3 border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs text-slate-700"><span className="min-w-0 flex-1">{inpageImportNotice}</span><button type="button" aria-label="Dismiss import notice" onClick={() => setInpageImportNotice(null)}>×</button></div> : null}
       <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
         const file = event.target.files?.[0];
         if (file) void handleInPageFile(file);
@@ -2170,7 +2201,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           onDelete={(id) => {
             void deleteLibraryDocument(id);
           }}
-          onClose={() => setLibraryOpen(false)}
+          onClose={() => { setLibraryOpen(false); if (!openDocuments.length && activeDocumentIdRef.current) setOpenDocuments([{ id: activeDocumentIdRef.current, title: documentTitleRef.current }]); }}
         />
       ) : null}
 

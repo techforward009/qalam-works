@@ -181,3 +181,45 @@ test('review: saved documents open by double-click and Enter; rename/delete and 
   const chooser=page.waitForEvent('filechooser');await dlg.getByRole('button',{name:'Open InPage file…'}).click();await(await chooser).setFiles('tests/fixtures/inpage/hadiyat.inp');
   await expect(page.getByRole('dialog',{name:'InPage text imported',exact:true})).toBeVisible();await expect(dlg).toHaveCount(0);
 });
+
+test('Classic menu dialogs can be moved by title bars without changing selected text', async ({ page }) => {
+  await page.locator('.ProseMirror').click();
+  await page.keyboard.insertText('This story is unchanged');
+  const before = await page.locator('.ProseMirror').innerText();
+  const items = [
+    { menu: 'format', action: 'format.paragraph', selector: '[data-studio-paragraph-dialog]' },
+    { menu: 'format', action: 'file.pageSetup', selector: '[data-studio-page-setup]' },
+    { menu: 'file', action: 'file.open', selector: '[data-studio-open-dialog]' },
+    { menu: 'file', action: 'file.new', selector: '[data-studio-new-document] form' },
+  ];
+  for (const item of items) {
+    await page.locator('[data-menu-root="' + item.menu + '"]').click();
+    await page.locator('[data-menu-action="' + item.action + '"]').click();
+    const dlg = page.locator(item.selector), bar = dlg.locator('[data-studio-dialog-drag-handle]');
+    await expect(bar).toBeVisible();
+    const start = (await dlg.boundingBox())!, handle = (await bar.boundingBox())!;
+    await page.mouse.move(handle.x + 35, handle.y + 8);
+    await page.mouse.down();
+    await page.mouse.move(handle.x + 85, handle.y + 25, { steps: 5 });
+    await page.mouse.up();
+    const end = (await dlg.boundingBox())!;
+    expect(end.x).toBeGreaterThan(start.x + 15);
+    expect(end.y).toBeGreaterThan(start.y + 5);
+    await dlg.getByRole('button', { name: 'Cancel', exact: true }).click();
+  }
+  expect(await page.locator('.ProseMirror').innerText()).toBe(before);
+});
+
+test('File Close saves the active document and removes its window without deleting it', async ({ page }) => {
+  await page.locator('.ProseMirror').click();
+  await page.keyboard.insertText('Saved before closing 147');
+  await page.locator('[data-menu-root="file"]').click();
+  await page.locator('[data-menu-action="file.close"]').click();
+  const dialog = page.locator('[data-studio-open-dialog]');
+  await expect(dialog).toBeVisible();
+  const row = dialog.locator('[role="option"]').first();
+  await expect(row).toBeVisible();
+  await row.dblclick();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.ProseMirror')).toContainText('Saved before closing 147');
+});
