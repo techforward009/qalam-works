@@ -211,7 +211,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(simple.getByText("This prediction is not an official moon-sighting declaration.")).toBeVisible();
     await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
     await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
-    await page.getByTestId("crescent-simple-details").locator("summary").click();
+    await page.getByTestId("crescent-simple-details").locator("summary").first().click();
     await expect(page.getByTestId("crescent-simple-metrics").getByText("13.2")).toHaveCount(0);
     await page.getByTestId("crescent-quick-location").selectOption("lahore");
     await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
