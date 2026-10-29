@@ -108,9 +108,6 @@ export function PakistanCrescentQuickResult({
           {friendlyHeadline}
         </h2>
         <p className={`mx-auto mt-2 max-w-xl text-base leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
-        {!outsideNewCrescentWindow && <p data-testid="crescent-simple-national-count" className="mt-3 text-sm font-semibold text-[#234b34] dark:text-[#e0ecdf]" dir="auto">
-          {ur ? "پاکستان کے منتخب ۸ مقامات میں سے: " : "Of 8 Pakistan reference sites: "}<span dir="ltr">{qualified}/8</span>
-        </p>}
         {decision ? <p className="mx-auto mt-4 max-w-lg rounded-lg border border-[#B8935A]/45 px-3 py-2 text-sm font-semibold text-[#775724] dark:text-[#efdfa9]" data-testid="crescent-simple-official">
           {ur ? "سرکاری اعلان: " : "Official declaration: "}
           {decision.sightingDecision === "sighted" ? (ur ? "چاند نظر آگیا" : "Crescent sighted") : (ur ? "چاند نظر نہیں آیا" : "Crescent not sighted")}
@@ -136,6 +133,10 @@ export function PakistanCrescentQuickResult({
 
       <details data-testid="crescent-simple-details" className="border-t border-[#1A3A2A]/10 px-5 pb-5 dark:border-[#35513d] sm:px-8">
         <summary className="cursor-pointer py-4 text-sm font-bold text-[#315c40] dark:text-[#c3e0c5]">{ur ? "یہ اندازہ کیسے لگایا گیا؟" : "How was this predicted?"}</summary>
+        {!outsideNewCrescentWindow && <p data-testid="crescent-simple-national-count" className="mt-3 text-sm font-semibold text-[#234b34] dark:text-[#e0ecdf]" dir="auto">
+          {ur ? "پاکستان کے منتخب ۸ مقامات میں سے: " : "Of 8 Pakistan reference sites: "}<span dir="ltr">{qualified}/8</span>
+        </p>}
+
       <div className="grid gap-3 pt-2 sm:grid-cols-3" data-testid="crescent-three-outcomes">
         <article className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
           <h3 className="text-xs font-bold text-emerald-900 dark:text-emerald-200">{ur ? "پاکستانی قومی معیار" : "Pakistan national criterion"}</h3>
