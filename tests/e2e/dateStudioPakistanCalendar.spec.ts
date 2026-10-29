@@ -322,7 +322,7 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     expect(pageText).not.toContain("یہ ہمارا سائنسی اندازہ ہے؛");
     expect(pageText).not.toContain("۰ مقامات");
     const tomorrow = page.getByTestId("crescent-next-evening");
-    await expect(tomorrow).toContainText("۱۱ نومبر ۲۰۲۶");
+    await expect(tomorrow).toContainText("11 نومبر 2026");
     await expect(page.getByTestId("crescent-next-evening-count")).toContainText("پاکستان کے آٹھ مقامات");
     await expect(page.getByTestId("crescent-next-evening-metrics").locator("div")).toHaveCount(4);
     await expect(page.getByTestId("crescent-next-evening-metrics")).not.toContainText("—");
@@ -336,9 +336,31 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     const main = page.locator('main[data-crescent-ui="ur"]');
     await expect(main).toBeVisible();
-    const sentence = "ہمارے سائنسی حساب سے جمادی الثانی ۱۴۴۸ کی پہلی تاریخ ۱۲ نومبر ۲۰۲۶ء بروز جمعرات ہوگی۔";
+    const sentence = "ہمارے سائنسی حساب سے جمادی الثانی 1448 کی پہلی تاریخ 12 نومبر 2026ء بروز جمعرات ہوگی۔";
     const card = page.getByTestId("crescent-predicted-first-day");
     await expect(card).toContainText(sentence);
+    await expect(card.locator("strong, b")).toHaveCount(0);
+    await expect(card.locator("[data-crescent-forecast] bdi")).toHaveText(["1448", "12", "2026"]);
+    const forecastWeight = await card.locator("[data-crescent-forecast]").evaluate(el => getComputedStyle(el).fontWeight);
+    expect(Number(forecastWeight)).toBe(400);
+    const note = page.locator("[data-crescent-month-note]");
+    await expect(note).toContainText("منتخب تاریخ کا سائنسی حساب دیکھیں");
+    expect(await note.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+    const figures = page.getByTestId("crescent-next-evening-metrics");
+    await expect(figures.locator("[data-crescent-latin-number]")).toHaveCount(4);
+    const reading = await figures.locator("[data-crescent-latin-number]").evaluateAll(els => els.map(el => ({
+      text: el.textContent ?? "",
+      family: getComputedStyle(el).fontFamily,
+      weight: getComputedStyle(el).fontWeight,
+      direction: getComputedStyle(el).direction,
+    })));
+    for (const figure of reading) {
+      expect(figure.text).toMatch(/[0-9]+\.[0-9]/);
+      expect(figure.text).not.toMatch(/[۰-۹٠-٩]/);
+      expect(figure.family).toContain("Arial");
+      expect(Number(figure.weight)).toBe(400);
+      expect(figure.direction).toBe("ltr");
+    }
     await expect(card).not.toContainText("۱۱ نومبر");
     await expect(card).not.toContainText("۳۰ دن پورے");
     await expect(main.getByRole("link", { name: "اپنی رائے دیں" })).toHaveCount(0);
