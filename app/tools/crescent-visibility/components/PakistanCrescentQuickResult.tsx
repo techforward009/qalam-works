@@ -13,7 +13,7 @@ const URDU_NAMES: Record<string, string> = {
   gilgit: "گلگت", peshawar: "پشاور", islamabad: "اسلام آباد", lahore: "لاہور",
   muzaffarabad: "مظفرآباد", quetta: "کوئٹہ", karachi: "کراچی", jiwani: "جیوانی",
 };
-const number = (value: number, lang: "ur" | "en") => dateDigits(value.toFixed(1), lang);
+const number = (value: number) => value.toFixed(1);
 const dateLabel = (d: DateParts, lang: "ur" | "en") => dateDigits(formatDate(d, "gregorian", lang), lang);
 
 export function PakistanCrescentQuickResult({
@@ -66,10 +66,10 @@ export function PakistanCrescentQuickResult({
   const officialSighting = decision?.sightingDecision === "sighted";
   const officialNotSighting = decision?.sightingDecision === "not-sighted";
   const targetName = outlook ? monthName("hijri", outlook.nextHijriMonth, lang) : "";
-  const targetYear = outlook ? dateDigits(String(outlook.nextHijriYear), lang) : "";
+  const targetYear = outlook ? String(outlook.nextHijriYear) : "";
   const weekdayNamesUr = ["اتوار", "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ"];
   const firstDayLabel = outlook
-    ? `${targetName} ${targetYear} کی پہلی تاریخ ${dateLabel(outlook.dayOne, lang)}${ur ? "ء بروز " + weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()] + " ہوگی۔" : "."}`
+    ? `${targetName} ${targetYear} کی پہلی تاریخ ${formatDate(outlook.dayOne, "gregorian", lang)}${ur ? "ء بروز " + weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()] + " ہوگی۔" : "."}`
     : "";
   const firstDayText = outlook
     ? ur ? `ہمارے سائنسی حساب سے ${firstDayLabel}`
@@ -110,10 +110,10 @@ export function PakistanCrescentQuickResult({
   }
 
   const measures = [
-    { label: ur ? "چاند کی عمر" : "Moon age", value: age !== null && Number.isFinite(age) && age >= 0 ? `${number(age, lang)} ${ur ? "گھنٹے" : "h"}` : "—" },
-    { label: ur ? "زاویائی فاصلہ" : "Elongation", value: measured ? `${number(measured.elongationDeg, lang)}°` : "—" },
-    { label: ur ? "غروب کا وقفہ" : "Moon lag", value: measured ? `${number(measured.lagMinutes, lang)} ${ur ? "منٹ" : "min"}` : "—" },
-    { label: ur ? "افق سے بلندی" : "Altitude", value: measured ? `${number(measured.altitudeDeg, lang)}°` : "—" },
+    { label: ur ? "چاند کی عمر" : "Moon age", value: age !== null && Number.isFinite(age) && age >= 0 ? age : null, symbol: "", unit: ur ? "گھنٹے" : "h" },
+    { label: ur ? "زاویائی فاصلہ" : "Elongation", value: measured?.elongationDeg ?? null, symbol: "°", unit: "" },
+    { label: ur ? "غروب کا وقفہ" : "Moon lag", value: measured?.lagMinutes ?? null, symbol: "", unit: ur ? "منٹ" : "min" },
+    { label: ur ? "افق سے بلندی" : "Altitude", value: measured?.altitudeDeg ?? null, symbol: "°", unit: "" },
   ];
   return (
     <section data-testid="crescent-simple-result" aria-label={ur ? "رؤیتِ ہلال کا آسان نتیجہ" : "Crescent visibility quick result"}
@@ -126,7 +126,7 @@ export function PakistanCrescentQuickResult({
         <h2 data-testid="crescent-simple-headline" className={`mt-3 text-2xl font-bold leading-relaxed sm:text-3xl ${state === "favorable" ? "text-emerald-800 dark:text-emerald-300" : state === "unfavorable" ? "text-rose-800 dark:text-rose-300" : "text-[#153b29] dark:text-[#f0f7f0]"} ${ur ? "font-naskh" : ""}`}>{headline}</h2>
         <p className={`mx-auto mt-2 max-w-xl text-base leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
         {outlook && nextEveningScience && <section data-testid="crescent-next-evening" className="mx-auto mt-5 max-w-2xl rounded-2xl border border-[#1A3A2A]/20 bg-white px-4 py-5 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
-          <h3 className="text-center">{ur ? `${dateLabel(outlook.dayThirty, lang)} کی شام کا سائنسی جائزہ` : `Scientific outlook for the evening of ${dateLabel(outlook.dayThirty, lang)}`}</h3>
+          <h3 className="text-center">{ur ? `${formatDate(outlook.dayThirty, "gregorian", lang)} کی شام کا سائنسی جائزہ` : `Scientific outlook for the evening of ${dateLabel(outlook.dayThirty, lang)}`}</h3>
           <p className="mt-2 text-center" data-testid="crescent-next-evening-status">{nextEveningStatus}</p>
           <p className="mt-1 text-center" data-testid="crescent-next-evening-count">
             {ur ? `پاکستان کے آٹھ مقامات میں سے ${publicCount(nextPasses)} مقامات پر سائنسی معیار پورا ہوتا ہے۔` : `Criterion met at ${nextPasses} of 8 Pakistan locations.`}
@@ -134,19 +134,29 @@ export function PakistanCrescentQuickResult({
           <p className="mt-2 text-center">{ur ? `${localName} میں اسی شام کے حقیقی حسابی اعداد:` : `Actual astronomical calculations for ${localName} that evening:`}</p>
           <dl className="mt-3 grid grid-cols-1 gap-3 text-center sm:grid-cols-2" data-testid="crescent-next-evening-metrics">
             {[
-              { label: ur ? "افق سے بلندی" : "Altitude", value: nextMeasured ? `${number(nextMeasured.altitudeDeg, lang)}°` : "—" },
-              { label: ur ? "غروب کا وقفہ" : "Moonset lag", value: nextMeasured ? `${number(nextMeasured.lagMinutes, lang)} ${ur ? "منٹ" : "min"}` : "—" },
-              { label: ur ? "زاویائی فاصلہ" : "Elongation", value: nextMeasured ? `${number(nextMeasured.elongationDeg, lang)}°` : "—" },
-              { label: ur ? "ہلال کی چوڑائی" : "Crescent width", value: nextMeasured ? `${number(nextMeasured.widthArcMin, lang)}′` : "—" },
-            ].map(item => <div key={item.label} className="rounded-xl border border-[#1A3A2A]/10 p-3 dark:border-[#52715a]"><dt>{item.label}</dt><dd className="mt-1 font-bold" dir="auto">{item.value}</dd></div>)}
+              { label: ur ? "افق سے بلندی" : "Altitude", value: nextMeasured?.altitudeDeg ?? null, symbol: "°", unit: "" },
+              { label: ur ? "غروب کا وقفہ" : "Moonset lag", value: nextMeasured?.lagMinutes ?? null, symbol: "", unit: ur ? "منٹ" : "min" },
+              { label: ur ? "زاویائی فاصلہ" : "Elongation", value: nextMeasured?.elongationDeg ?? null, symbol: "°", unit: "" },
+              { label: ur ? "ہلال کی چوڑائی" : "Crescent width", value: nextMeasured?.widthArcMin ?? null, symbol: "′", unit: "" },
+            ].map(item => <div key={item.label} data-crescent-measure className="rounded-xl border border-[#1A3A2A]/10 p-3 dark:border-[#52715a]">
+              <dt className="text-[#587060] dark:text-[#c8d5cc]">{item.label}</dt>
+              <dd className="mt-1 flex items-baseline justify-center gap-2 font-normal text-[#153b29] dark:text-white">
+                {item.value === null || !Number.isFinite(item.value) ? "—" : <>
+                  <span data-crescent-latin-number dir="ltr">{number(item.value)}{item.symbol}</span>
+                  {item.unit && <span>{item.unit}</span>}
+                </>}
+              </dd>
+            </div>)}
           </dl>
           <a className="mt-4 block text-center underline underline-offset-4" data-testid="crescent-next-evening-link"
             href={`/tools/crescent-visibility?date=${outlook.dayThirty.year}-${String(outlook.dayThirty.month).padStart(2, "0")}-${String(outlook.dayThirty.day).padStart(2, "0")}`}>
-            {ur ? "۱۱ نومبر کے تمام مقامات کا حساب دیکھیں" : "View all locations for the next evening"}
+            {ur ? "11 نومبر کے تمام مقامات کا حساب دیکھیں" : "View all locations for the next evening"}
           </a>
         </section>}
         {outlook && !officialSighting && <div data-testid="crescent-predicted-first-day" className="mx-auto mt-5 max-w-xl rounded-2xl border border-[#1A3A2A]/15 bg-white px-4 py-4 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
-          <p className="text-lg leading-9">{ur ? <>ہمارے سائنسی حساب سے <strong>{firstDayLabel}</strong></> : firstDayText}</p>
+          <p data-crescent-forecast className="text-lg font-normal leading-9">{ur && outlook
+            ? <>ہمارے سائنسی حساب سے {targetName} <bdi dir="ltr">{outlook.nextHijriYear}</bdi> کی پہلی تاریخ <bdi dir="ltr">{outlook.dayOne.day}</bdi> {monthName("gregorian", outlook.dayOne.month, "ur")} <bdi dir="ltr">{outlook.dayOne.year}</bdi>ء بروز {weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()]} ہوگی۔</>
+            : firstDayText}</p>
         </div>}
         {!decision && <p className="mt-4 text-xs leading-6 text-[#6b786d] dark:text-[#c1cec2]">{ur ? "حتمی اعلان مرکزی رؤیتِ ہلال کمیٹی پاکستان کرے گی۔" : "Pakistan's Central Ruet-e-Hilal Committee makes the official decision."}</p>}
         {decision && <p data-testid="crescent-simple-official" className="mt-4 text-sm font-semibold text-[#775724] dark:text-[#efdfa9]">{ur ? "سرکاری اعلان دستیاب ہے" : "Reviewed official declaration available"}</p>}
@@ -185,7 +195,15 @@ export function PakistanCrescentQuickResult({
           </label>
           <p className="mt-2 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? `${localName} کے اصل فلکیاتی اعداد؛ قومی نتیجہ نہیں بدلتا۔` : `Real measurements for ${localName}; the national conclusion does not change.`}</p>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4" data-testid="crescent-simple-metrics">
-            {measures.map(item => <div key={item.label} className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#203326]"><dt className="text-xs text-[#587060] dark:text-[#b6cbb9]">{item.label}</dt><dd className="mt-1 font-bold text-[#153b29] dark:text-white" dir="auto">{item.value}</dd></div>)}
+            {measures.map(item => <div key={item.label} data-crescent-measure className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#203326]">
+              <dt className="text-[#587060] dark:text-[#b6cbb9]">{item.label}</dt>
+              <dd className="mt-1 flex items-baseline justify-center gap-2 font-normal text-[#153b29] dark:text-white">
+                {item.value === null || !Number.isFinite(item.value) ? "—" : <>
+                  <span data-crescent-latin-number dir="ltr">{number(item.value)}{item.symbol}</span>
+                  {item.unit && <span>{item.unit}</span>}
+                </>}
+              </dd>
+            </div>)}
           </dl>
           <p className="mt-2 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? "— کا مطلب ہے کہ متعلقہ عدد دستیاب نہیں۔" : "— means the number is unavailable."}</p>
         </div>
