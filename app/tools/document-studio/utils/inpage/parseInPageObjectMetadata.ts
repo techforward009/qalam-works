@@ -6,6 +6,8 @@ import { INPAGE_UNITS_PER_POINT, MAX_INPAGE_BYTES } from "./parseInPage";
 export type InPageRunAroundEvidence = "explicit-on" | "explicit-off" | "omitted" | "unknown";
 export type InPageObjectCandidate = {
   kind: "text-box-candidate";
+  /** Experimental tag 0x0082 within this descriptor. Candidate zero-based story reference, NOT universal. */
+  candidateStoryIndex?: number;
   descriptorOffset: number; // position in reconstructed InPage300 stream
   xMm: number;
   yMm: number;
@@ -51,7 +53,14 @@ export function parseInPage300ObjectStream(stream: Uint8Array): InPageObjectMeta
       runAround = flag === 1 ? "explicit-on" : flag === 0 ? "explicit-off" : "unknown";
       if (runAround === "unknown") unknownRunAroundValue = flag;
     }
+    // Tag 0x0082 + uint16LE index correlated with Story 8 in five native
+    // box-bearing samples. Read only INSIDE an accepted descriptor, and do
+    // not treat the correlation as a universal InPage foreign-key rule.
+    const candidateStoryIndex = stream[offset + 18] === 0x82 && stream[offset + 19] === 0 &&
+      stream[offset + 22] === 0 && stream[offset + 23] === 0
+      ? view.getUint16(offset + 20, true) : undefined;
     candidates.push({ kind: "text-box-candidate", descriptorOffset: offset,
+      ...(candidateStoryIndex !== undefined && candidateStoryIndex < MAX_CANDIDATES ? { candidateStoryIndex } : {}),
       xMm, yMm, widthMm, heightMm, runAround,
       ...(unknownRunAroundValue === undefined ? {} : { unknownRunAroundValue }),
     });

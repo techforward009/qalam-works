@@ -156,6 +156,7 @@ import QalamAiPanel from "./QalamAiPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import DocumentLibraryDialog from "./DocumentLibraryDialog";
 import InPageStoriesDialog, { type ImportedStory } from "./InPageStoriesDialog";
+import type { InPageTentativeBoxPreview } from "../utils/inpage/associateInPageStory";
 import {
   getDocumentLibrary,
   migrateLegacyDraftIfNeeded,
@@ -390,6 +391,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [inpageObjectEvidence, setInpageObjectEvidence] = useState<
     import("../utils/inpage/parseInPageObjectMetadata").InPageObjectMetadata | null
   >(null);
+  const [inpageTentativeBox, setInpageTentativeBox] = useState<InPageTentativeBoxPreview | null>(null);
+  const [showInpageTentativeBox, setShowInpageTentativeBox] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -742,6 +745,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     // Object evidence is a transient observation about the just-imported source;
     // never show it under a different, previously saved document.
     setInpageObjectEvidence(null);
+    setInpageTentativeBox(null);
+    setShowInpageTentativeBox(false);
     formattingSafety.current?.documentChanged();
     setFormattingNotice(0);
     setCharacterOpen(false); setParagraphOpen(false);
@@ -996,6 +1001,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const handleInPageFile = async (file: File) => {
     setInpageError(null);
     setInpageObjectEvidence(null);
+    setInpageTentativeBox(null);
+    setShowInpageTentativeBox(false);
     setUploadError(null);
     setDocxImportNotice(false);
     setIsImporting(true);
@@ -1006,12 +1013,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       const parsed = parseInPage(buffer);
       const { parseInPageObjectMetadata } = await import("../utils/inpage/parseInPageObjectMetadata");
       const possibleBoxes = parseInPageObjectMetadata(buffer);
+      const { associateOneInPageBoxStory } = await import("../utils/inpage/associateInPageStory");
       const { parseInPageSetup } = await import("../utils/inpage/parseInPageSetup");
       const { settingsFromInPageSetup } = await import("../utils/inpage/inpageSetupSettings");
       const setup = parseInPageSetup(buffer);
       const stories = parsed.stories.map((paragraphs, index) => ({ number: index + 1, text: paragraphs.join("\n") }));
       const longest = stories.reduce((best, story) => story.text.length > best.text.length ? story : best, stories[0]);
       if (!longest) throw new Error("No stories were found in this InPage file.");
+      const tentativeBox = associateOneInPageBoxStory(possibleBoxes, parsed.stories, stories.indexOf(longest));
       const created = await createAndOpenDocument({
         title: file.name.replace(/\.inp$/i, "") || "InPage import",
         content: plainTextToDocNodeWithDir(longest.text, "rtl"),
@@ -1021,6 +1030,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setLibraryOpen(false);
       setInpageStories(stories.filter((story) => story !== longest && story.text.trim().length > 0));
       setInpageObjectEvidence(possibleBoxes?.candidates.length ? possibleBoxes : null);
+      setInpageTentativeBox(tentativeBox);
+      setShowInpageTentativeBox(false);
     } catch (error) {
       setLibraryOpen(false);
       setInpageError(error instanceof Error ? error.message : "Failed to import InPage text.");
@@ -2044,9 +2055,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                 <li key={box.descriptorOffset}>Box record {box.descriptorOffset}: x={box.xMm.toFixed(2)} mm, y={box.yMm.toFixed(2)} mm; {box.widthMm.toFixed(2)} × {box.heightMm.toFixed(2)} mm; Run Around: {box.runAround === "explicit-on" ? "ON (explicit)" : box.runAround === "explicit-off" ? "OFF (explicit)" : box.runAround === "omitted" ? "not recorded (default unverified)" : "unknown value"}</li>
               ))}
             </ul>
-            <p>Text-box contents, layering and page reflow have NOT been imported. No PDF geometry is changed.</p>
+            <p>Text-box content association is experimental. No persistent frame, page reflow, font fidelity or PDF geometry is changed.</p>
+            {inpageTentativeBox ? (
+              <div className="mt-1 flex items-center gap-2">
+                <span>Possible Story {inpageTentativeBox.storyNumber} ↔ box (0x82 tag; unverified):</span>
+                <button type="button" data-studio-toggle-inpage-box-preview="true"
+                  className="rounded border border-slate-400 bg-white px-2 py-1"
+                  onClick={() => setShowInpageTentativeBox(value => !value)}>
+                  {showInpageTentativeBox ? "Hide experimental placement" : "Show experimental placement"}
+                </button>
+              </div>
+            ) : (
+              <p>No safe unique non-main story association: no box-content preview.</p>
+            )}
           </details>
-          <button type="button" aria-label="Dismiss InPage object preview" onClick={() => setInpageObjectEvidence(null)}>×</button>
+          <button type="button" aria-label="Dismiss InPage object preview" onClick={() => { setInpageObjectEvidence(null); setInpageTentativeBox(null); setShowInpageTentativeBox(false); }}>×</button>
         </div>
       ) : null}
       <input ref={inpageInputRef} type="file" accept=".inp" className="hidden" data-studio-inpage-input="true" disabled={isImporting} onChange={(event) => {
@@ -2380,6 +2403,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             minimumPages={minimumPages}
             frames={frames}
             onFramesChange={changeFrames}
+            inPageTentativeBoxPreview={showInpageTentativeBox ? inpageTentativeBox : null}
             englishFont={englishFont}
             tool={canvasTool}
             onToolAction={onCanvasTool}

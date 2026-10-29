@@ -37,6 +37,7 @@ describe("read-only InPage300 object metadata", () => {
     expect(result?.candidates).toHaveLength(1);
     const box = result!.candidates[0];
     expect(box.runAround).toBe(status);
+    expect(box.candidateStoryIndex).toBe(7);
     expect(box.xMm).toBeCloseTo(mm(408568), 8);
     expect(box.yMm).toBeCloseTo(mm(153768), 8);
     expect(box.widthMm).toBeCloseTo(mm(396850), 8);
@@ -51,6 +52,12 @@ describe("read-only InPage300 object metadata", () => {
     ]));
     expect(output?.candidates.map(x => x.runAround)).toEqual(["explicit-on", "explicit-off"]);
     expect(output?.candidates[1].xMm).toBeCloseTo(30, 2);
+  });
+  it("does not invent a story index for an unsupported reference tag", () => {
+    const actual = descriptor({ flag: "on" });
+    actual[18] = 0; // remove exact 0x0082 tag without changing geometry
+    const result = parseInPageObjectMetadata(nativeStyle([actual]));
+    expect(result?.candidates[0].candidateStoryIndex).toBeUndefined();
   });
   it("does not mistake an unrelated 7E sequence for the exact descriptor", () => {
     const bad = descriptor({ flag: "off" }); bad[0] = 0;

@@ -41,6 +41,7 @@ import { MarginGuides } from "./MarginGuides";
 import { InPageToolPalette, type StudioToolId } from "./InPageToolPalette";
 import { WindowRuler } from "./WindowRuler";
 import { StudioObjectLayer, type StudioFrame } from "./StudioObjectLayer";
+import type { InPageTentativeBoxPreview } from "../utils/inpage/associateInPageStory";
 import {
   INPAGE_HSCROLL_PX,
   INPAGE_RULER_BAR_PX,
@@ -77,6 +78,7 @@ export default function DocumentCanvas({
   minimumPages = 1,
   frames = [],
   onFramesChange,
+  inPageTentativeBoxPreview,
   tool: toolProp,
   englishFont = "Arial Unicode MS",
 }: {
@@ -104,6 +106,7 @@ export default function DocumentCanvas({
   minimumPages?: number;
   frames?: StudioFrame[];
   onFramesChange?: (frames: StudioFrame[]) => void;
+  inPageTentativeBoxPreview?: InPageTentativeBoxPreview | null;
   tool?: StudioToolId;
   englishFont?: string;
 }) {
@@ -629,6 +632,27 @@ export default function DocumentCanvas({
                             marginTopPx={geometry.marginTopPx}
                             marginRightPx={geometry.marginRightPx}
                           />
+                        ) : null}
+                        {isPages && inPageTentativeBoxPreview &&
+                          inPageTentativeBoxPreview.xMm >= 0 && inPageTentativeBoxPreview.yMm >= 0 &&
+                          inPageTentativeBoxPreview.xMm + inPageTentativeBoxPreview.widthMm <= pageLayout.widthMm &&
+                          inPageTentativeBoxPreview.yMm + inPageTentativeBoxPreview.heightMm <= pageLayout.heightMm ? (
+                          <div data-studio-inpage-box-overlay="true" data-story-number={inPageTentativeBoxPreview.storyNumber}
+                            className="studio-no-print pointer-events-none absolute z-[9] box-border overflow-hidden border-2 border-dashed border-blue-600 bg-blue-100/30"
+                            dir="rtl" aria-label="Experimental InPage text-box story placement (not imported)"
+                            style={{
+                              left: mmToPx(inPageTentativeBoxPreview.xMm) + (projection ? facingSlot(0, projection).x : 0),
+                              top: mmToPx(inPageTentativeBoxPreview.yMm) + (projection ? facingSlot(0, projection).y : 0),
+                              width: mmToPx(inPageTentativeBoxPreview.widthMm),
+                              height: mmToPx(inPageTentativeBoxPreview.heightMm),
+                              whiteSpace: "pre-wrap", overflowWrap: "anywhere",
+                              fontFamily: editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),
+                              fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
+                              lineHeight: 1.7, textAlign: "right",
+                            }}
+                          >
+                            {inPageTentativeBoxPreview.text}
+                          </div>
                         ) : null}
                       </div>
                     </div>

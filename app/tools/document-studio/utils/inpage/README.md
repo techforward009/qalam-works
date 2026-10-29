@@ -49,3 +49,29 @@ persist, render or reflow text boxes. The normal text importer is unchanged.
 
 Do not make this record scanner a general-purpose INP specification, and do
 not turn on visual Run Around or PDF wrapping from this evidence alone.
+
+## Experimental story-reference association (2026-10-29, NOT final import)
+
+In five locally inspected native InPage300 text-box samples, a bounded
+46/50-byte object descriptor contains `82 00 07 00` at descriptor+18.
+The native story list has 8 entries, and zero-based index 7 points at the
+text typed into the box in all five. The four controlled RunAround ON/OFF
+files also have a different, longer main story; the independent box-only
+sample's longest story is itself #8. **Never duplicate the longest story
+into a frame.** This is a strong correlation, not yet a proven general
+foreign-key format (all box-bearing specimens use the same index).
+
+`associateOneInPageBoxStory` therefore fails closed when there is no
+unique candidate, an absent/invalid reference, no distinct nonempty secondary
+story, or a potential duplicate of the main story. Its output is displayed
+ONLY after a user explicitly chooses "Show experimental placement".
+The dashed blue visual overlay is `studio-no-print`, pointer-events-none,
+ephemeral, and nonpersistent. It is not a StudioFrame, never changes the
+TipTap document, frames storage, Run Around/reflow, or PDF. It may use a
+different font/line wrap from native InPage; it is a placement experiment.
+
+Further proof before editable frame import: supply TWO differently-worded
+boxes in one native source and a second source with those boxes moved/swapped.
+Confirm different `0x82` references and object indices; then test native
+text/body fidelity, z-order, multi-page behavior, layouts and PDFs. Without
+those records, **do not automatically import editable frames**.
