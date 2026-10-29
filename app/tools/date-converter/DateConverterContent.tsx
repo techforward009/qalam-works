@@ -43,6 +43,7 @@ import { YallopIntegration, type DateStudioMethod } from "./components/YallopInt
 import { PakistanDateResult } from "./components/PakistanDateResult";
 import { resolvePakistanOfficialGregorianDate, resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
 import { resolveDisplayHijriDate } from "./utils/hijri-authority/displayHijriDate";
+import { predictPakistanGregorianDate } from "./utils/hijri-authority/pakistanScientificHijriDate";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -402,9 +403,11 @@ export default function DateConverterContent({
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
     // A reviewed Pakistan month can have 30 days even when the tabular month has 29.
     const reviewedGregorian = calendar === "hijri" ? resolvePakistanOfficialGregorianDate(parts) : null;
-    const err = reviewedGregorian ? null : validateDate(calendar, parts);
+    const scientificGregorian = calendar === "hijri" && !reviewedGregorian ? predictPakistanGregorianDate(parts) : null;
+    const pakistanGregorian = reviewedGregorian ?? scientificGregorian;
+    const err = pakistanGregorian ? null : validateDate(calendar, parts);
     if (err) errMsg = `${t.invalidDate}: ${err.message}`;
-    else result = reviewedGregorian ? convert("gregorian", reviewedGregorian) : convert(calendar, parts);
+    else result = pakistanGregorian ? convert("gregorian", pakistanGregorian) : convert(calendar, parts);
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
