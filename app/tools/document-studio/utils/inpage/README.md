@@ -75,3 +75,33 @@ boxes in one native source and a second source with those boxes moved/swapped.
 Confirm different `0x82` references and object indices; then test native
 text/body fidelity, z-order, multi-page behavior, layouts and PDFs. Without
 those records, **do not automatically import editable frames**.
+
+## Experimental editable single-box import (2026-10-29)
+
+After a safe single-box association, the user can explicitly select
+**"Import editable text box (experimental)"**. This creates a real Qalam
+`StudioFrame` on page 1, with the independently decoded story text, native
+x/y/width/height geometry and the original *declared* Run Around flag
+stored in optional `inPageSource` metadata. This is a **one-way conversion
+to Qalam's editable text box**, not a complete native InPage layout importer.
+
+Safety limitations:
+- Only one bounded InPage300 descriptor with a unique, nonempty, non-main
+  story reference qualifies. Ambiguous/multi-box references are NOT converted.
+- The user must click; no unreviewed automatic insertion.
+- Geometry must fit completely within the imported document's page.
+- All original stories remain accessible. The main story is not altered;
+  duplicate imports of the same native record are blocked.
+- Frames persist through Qalam's existing per-document localStorage frame map.
+  Failed writes do not count as successful conversion.
+- InPage Run Around **ON/OFF is retained as metadata only**; Qalam's story
+  text layout engine does not yet wrap its real document text around arbitrary
+  boxes. Current editor/PDF may overlap text at the original box position.
+  Do not claim pixel-perfect InPage fidelity, native frame stacking, or PDF
+  Run Around. Only the already-supported Qalam frame text is editable.
+- Importer never changes unrelated documents, font files, PDF engine,
+  storage schemas, or InPage source bytes.
+
+Native multi-box example, source-to-object indices and independent
+selection/reflow evidence are still needed before automatic full-fidelity
+import. Do not merge or deploy until focused real-browser tests pass.

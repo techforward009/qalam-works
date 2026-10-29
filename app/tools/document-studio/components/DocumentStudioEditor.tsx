@@ -1817,6 +1817,32 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (id) writeStoredFrames(id, next);
   };
 
+  const importTentativeInPageTextBox = async () => {
+    const id = activeDocumentIdRef.current;
+    if (!id || !inpageTentativeBox || transitionRef.current) return;
+    const { makeEditableInPageFrame } = await import("../utils/inpage/associateInPageStory");
+    // Resolve against the *current* page; never create a frame outside it.
+    const frame = makeEditableInPageFrame(inpageTentativeBox, id, pageLayout);
+    if (!frame) {
+      setInpageError("The inferred InPage box cannot fit safely on this document's page.");
+      return;
+    }
+    if (framesRef.current.some(existing => existing.id === frame.id)) return;
+    // Never remove the original secondary story or alter the main story.
+    const next = [...framesRef.current, frame];
+    changeFrames(next);
+    // LocalStorage currently stores frames separately. Confirm that this
+    // single editable import survived the write rather than claiming success.
+    const saved = readStoredFrames(id).find(existing => existing.id === frame.id);
+    if (!saved || saved.text !== frame.text) {
+      changeFrames(framesRef.current.filter(existing => existing.id !== frame.id));
+      setInpageError("The editable box could not be saved safely. The import was not applied.");
+      return;
+    }
+    setShowInpageTentativeBox(false);
+    setCanvasTool("text");
+  };
+
   const insertTable = () => {
     if (!editor) return;
     editor.chain().focus().insertTable({
@@ -2057,13 +2083,22 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             </ul>
             <p>Text-box content association is experimental. No persistent frame, page reflow, font fidelity or PDF geometry is changed.</p>
             {inpageTentativeBox ? (
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span>Possible Story {inpageTentativeBox.storyNumber} ↔ box (0x82 tag; unverified):</span>
                 <button type="button" data-studio-toggle-inpage-box-preview="true"
                   className="rounded border border-slate-400 bg-white px-2 py-1"
                   onClick={() => setShowInpageTentativeBox(value => !value)}>
                   {showInpageTentativeBox ? "Hide experimental placement" : "Show experimental placement"}
                 </button>
+                {frames.some(frame => frame.inPageSource?.descriptorOffset === inpageTentativeBox.descriptorOffset) ? (
+                  <span data-studio-inpage-box-imported="true">Editable box saved in this document. Original Run Around: {inpageTentativeBox.runAround.replace("explicit-", "").toUpperCase()} (not yet applied to page text).</span>
+                ) : (
+                  <button type="button" data-studio-import-inpage-editable-box="true"
+                    className="rounded border border-slate-600 bg-white px-2 py-1 font-medium"
+                    onClick={() => { void importTentativeInPageTextBox(); }}>
+                    Import editable text box (experimental; text wrapping not supported)
+                  </button>
+                )}
               </div>
             ) : (
               <p>No safe unique non-main story association: no box-content preview.</p>

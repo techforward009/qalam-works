@@ -69,3 +69,43 @@ test("same-main-story association is rejected: no duplicated overlay", async ({ 
   await expect(page.locator("[data-studio-toggle-inpage-box-preview]")).toHaveCount(0);
   await expect(page.locator("[data-studio-inpage-box-overlay]")).toHaveCount(0);
 });
+
+test("opt-in editable import preserves story and ON flag through editing and reload", async ({ page }) => {
+  await importFixture(page);
+  const importButton = page.locator('[data-studio-import-inpage-editable-box="true"]');
+  await expect(importButton).toBeVisible();
+  await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(0);
+  await importButton.click();
+  await expect(page.locator('[data-studio-inpage-box-imported="true"]')).toContainText("ON");
+  await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
+  await expect(page.locator('.ProseMirror')).not.toContainText("ٹیکسٹ باکس کے اندر الگ عبارت");
+  const textarea = page.locator('[data-studio-frame="text"] textarea');
+  await expect(textarea).toHaveValue("یہ ٹیکسٹ باکس کے اندر الگ عبارت ہے۔");
+  const snapshot = await page.evaluate(() => {
+    const current = window.localStorage.getItem("qalam-document-studio-active-document-v1");
+    const frameMap = JSON.parse(window.localStorage.getItem("qalam-studio-frames-v1") || "{}");
+    const values = Object.values(frameMap).flat() as Array<{
+      id: string; kind: string; inPageSource?: { storyNumber?: number; runAround?: string };
+    }>;
+    return { active: current, objects: values.filter(x => x.inPageSource?.storyNumber === 2) };
+  });
+  expect(snapshot.objects).toHaveLength(1);
+  expect(snapshot.objects[0]).toMatchObject({
+    kind: "text",
+    inPageSource: { storyNumber: 2, runAround: "explicit-on" },
+  });
+  await expect(importButton).toHaveCount(0);
+  await textarea.fill("ترمیم شدہ باکس کی عبارت");
+  await expect(textarea).toHaveValue("ترمیم شدہ باکس کی عبارت");
+  await page.reload();
+  await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
+  await expect(page.locator('[data-studio-frame="text"] textarea')).toHaveValue("ترمیم شدہ باکس کی عبارت");
+  await expect(page.locator('[data-studio-inpage-box-overlay]')).toHaveCount(0);
+});
+
+test("ambiguous same-main-story association never offers editable import", async ({ page }) => {
+  await importFixture(page, 0);
+  await expect(page.locator('[data-studio-inpage-objects-preview]')).toBeVisible();
+  await expect(page.locator('[data-studio-import-inpage-editable-box]')).toHaveCount(0);
+  await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(0);
+});

@@ -36,3 +36,32 @@ export function associateOneInPageBoxStory(
     runAround: box.runAround, text,
   };
 }
+
+/** Convert a reviewed native box hypothesis into an editable Qalam frame.
+ * Run Around metadata is retained, not applied to main story layout. */
+export function makeEditableInPageFrame(
+  box: InPageTentativeBoxPreview,
+  documentId: string,
+  page: { widthMm: number; heightMm: number },
+): import("../../components/StudioObjectLayer").StudioFrame | null {
+  if (!documentId || documentId.length > 160 ||
+      !Number.isSafeInteger(box.storyNumber) || box.storyNumber < 1 ||
+      !Number.isSafeInteger(box.descriptorOffset) || box.descriptorOffset < 0 ||
+      ![box.xMm, box.yMm, box.widthMm, box.heightMm, page.widthMm, page.heightMm].every(Number.isFinite) ||
+      box.xMm < 0 || box.yMm < 0 || box.widthMm <= 0 || box.heightMm <= 0 ||
+      box.widthMm > 1000 || box.heightMm > 1000 ||
+      box.xMm + box.widthMm > page.widthMm + 0.01 ||
+      box.yMm + box.heightMm > page.heightMm + 0.01 ||
+      !box.text.trim() || box.text.length > 20000) return null;
+  return {
+    id: "inpage-" + documentId + "-" + box.descriptorOffset,
+    kind: "text", page: 1,
+    xMm: box.xMm, yMm: box.yMm, wMm: box.widthMm, hMm: box.heightMm,
+    flip: false, text: box.text,
+    inPageSource: {
+      version: 3, storyNumber: box.storyNumber,
+      descriptorOffset: box.descriptorOffset,
+      runAround: box.runAround,
+    },
+  };
+}

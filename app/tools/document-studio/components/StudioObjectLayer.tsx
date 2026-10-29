@@ -28,6 +28,14 @@ export type StudioFrame = {
   flip: boolean;
   text: string;
   typography?: DocumentStudioSettings["typography"];
+  /** Proven single-box InPage300 source, not proof of a full page reflow.
+   * Persisted as metadata; the editor must never pretend Run Around is applied. */
+  inPageSource?: {
+    version: 3;
+    storyNumber: number;
+    descriptorOffset: number;
+    runAround: "explicit-on" | "explicit-off" | "omitted" | "unknown";
+  };
 };
 
 const DRAW_TOOLS = new Set<StudioToolId>(["textbox", "rect", "ellipse", "round-rect", "line"]);
