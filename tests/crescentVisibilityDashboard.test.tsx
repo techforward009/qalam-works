@@ -80,6 +80,7 @@ describe("crescent visibility dashboard", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
     expect(screen.getByText("کس مہینے کا چاند دیکھنا ہے؟")).toBeTruthy();
+    expect(screen.getByRole("main").getAttribute("data-crescent-ui")).toBe("ur");
     expect(screen.getByTestId("upcoming-crescent-month-0").textContent).toContain("جمادی الثانی");
     expect(screen.getByTestId("upcoming-crescent-month-1").textContent).toContain("سائنسی حساب");
     expect(screen.getAllByText(/چاند نظر آنے کی ضمانت نہیں/).length).toBeGreaterThan(0);
@@ -144,7 +145,7 @@ describe("crescent visibility dashboard", () => {
     expect(measures.querySelectorAll("div")).toHaveLength(4);
     expect(measures.textContent).toContain("9.1");
     expect(measures.textContent).toContain("42.3");
-    expect(screen.getByRole("link", { name: "Share feedback" }).getAttribute("href")).toBe("/feedback?tool=crescent-visibility");
+    expect(screen.queryByRole("link", { name: "Share feedback" })).toBeNull();
   });
 
   it("highlights Ramadan among live month cards without hard-coded dates", async () => {
