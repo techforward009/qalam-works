@@ -189,7 +189,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.locator("#dashboard-date")).toHaveValue("2026-11-10");
     await expect(page).toHaveURL(/date=2026-11-10/);
     await expect(next).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByText("National outlook")).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-headline")).toBeVisible();
     const rajab = page.getByRole("button", {name: /Rajab 1448, expected evening/});
     await expect(rajab).toBeVisible();
     await rajab.click();
@@ -206,17 +206,33 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     const simple = page.getByTestId("crescent-simple-result");
     await expect(simple).toBeVisible();
-    await expect(page.getByTestId("crescent-simple-headline")).toContainText("Scientific criterion is not met");
+    await expect(page.getByTestId("crescent-simple-headline")).toContainText("Conditions do not favor crescent visibility");
     await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0/8");
     await expect(simple.getByText("This prediction is not an official moon-sighting declaration.")).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
+    await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
+    await page.getByTestId("crescent-simple-details").locator("summary").click();
     await expect(page.getByTestId("crescent-simple-metrics").getByText("13.2")).toHaveCount(0);
     await page.getByTestId("crescent-quick-location").selectOption("lahore");
     await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
     await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0/8");
-    await simple.getByRole("link", { name: "Full scientific research" }).click();
+    await simple.getByRole("link", { name: "More details" }).click();
     await expect(page.getByText("Detailed scientific and official research")).toBeVisible();
     await expect(page.getByText("Pakistan national scientific criterion")).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("crescent-quick-result.png"), fullPage: true });
+  });
+
+  test("ordinary visitor sees the upcoming moon and plain answer before the technical report", async ({ page }) => {
+    await page.goto("/tools/crescent-visibility");
+    await expect(page.getByTestId("upcoming-crescent-month-0")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("crescent-simple-headline")).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
+    await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
+    await expect(page.getByTestId("crescent-three-outcomes")).not.toBeVisible();
+    await expect(page.getByText("Detailed scientific and official research")).not.toBeVisible();
+    await page.getByRole("link", { name: "More details" }).click();
+    await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
+    await expect(page.getByText("Detailed scientific and official research")).toBeVisible();
   });
 
 });
