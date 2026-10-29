@@ -2210,3 +2210,20 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
   [data-crescent-ui="ur"] h1 { font-size: 30px !important; }
   [data-crescent-ui="ur"] h2 { font-size: 27px !important; }
 }
+
+/* Latin astronomical figures are visually isolated from surrounding Mehr Nastaliq.
+   Keep their true ASCII digits and regular weight at all screen sizes. */
+[data-crescent-ui="ur"] [data-crescent-latin-number],
+[data-crescent-ui="ur"] [data-crescent-forecast] bdi {
+  font-family: Arial, "Segoe UI", sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 400 !important;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5 !important;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+[data-crescent-ui="ur"] [data-crescent-measure] dd,
+[data-crescent-ui="ur"] [data-crescent-forecast] {
+  font-weight: 400 !important;
+}
