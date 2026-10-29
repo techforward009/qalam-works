@@ -634,6 +634,9 @@ export default function DocumentCanvas({
                           />
                         ) : null}
                         {isPages ? inPageTentativeBoxPreviews.filter(box =>
+                          // Never paint a speculative, nonprinting copy on top
+                          // of an actual editable StudioFrame from this record.
+                          !frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset) &&
                           box.xMm >= 0 && box.yMm >= 0 &&
                           box.xMm + box.widthMm <= pageLayout.widthMm &&
                           box.yMm + box.heightMm <= pageLayout.heightMm

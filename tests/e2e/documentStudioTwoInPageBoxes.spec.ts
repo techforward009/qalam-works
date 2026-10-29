@@ -59,6 +59,11 @@ test("native two-box structure imports each text into its own editable frame", a
   expect(a && b && a.x>b.x && a.y<b.y).toBeTruthy();
   await page.locator('[data-studio-import-inpage-editable-box="true"]').click();
   await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(2);
+  // The experimental preview cannot paint duplicates over editable boxes.
+  await expect(page.locator('[data-studio-inpage-box-overlay]')).toHaveCount(0);
+  await expect(page.locator('[data-studio-toggle-inpage-box-preview]')).toHaveCount(0);
+  await expect(page.locator('[data-studio-inpage-stories-notice]')).toContainText("2 converted to editable boxes");
+  await expect(page.locator('[data-studio-inpage-stories-notice] details').first()).not.toHaveAttribute("open", "");
   const inputs=page.locator('[data-studio-frame="text"] textarea');
   await expect(inputs.nth(0)).toHaveValue(/پہلے باکس/);
   await expect(inputs.nth(1)).toHaveValue(/دوسرے باکس/);

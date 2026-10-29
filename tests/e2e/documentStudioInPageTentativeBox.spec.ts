@@ -78,6 +78,8 @@ test("opt-in editable import preserves story and ON flag through editing and rel
   await importButton.click();
   await expect(page.locator('[data-studio-inpage-box-imported="true"]')).toContainText("ON");
   await expect(page.locator('[data-studio-frame="text"]')).toHaveCount(1);
+  await expect(page.locator('[data-studio-toggle-inpage-box-preview]')).toHaveCount(0);
+  await expect(page.locator('[data-studio-inpage-box-overlay]')).toHaveCount(0);
   await expect(page.locator('.ProseMirror')).not.toContainText("ٹیکسٹ باکس کے اندر الگ عبارت");
   const textarea = page.locator('[data-studio-frame="text"] textarea');
   await expect(textarea).toHaveValue("یہ ٹیکسٹ باکس کے اندر الگ عبارت ہے۔");

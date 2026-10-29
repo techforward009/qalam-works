@@ -2083,7 +2083,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {inpageObjectEvidence?.candidates.length ? (
         <div data-studio-inpage-objects-preview="true" dir="ltr" className="mx-2 my-1 flex items-start gap-2 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700">
           <details className="min-w-0 flex-1">
-            <summary className="cursor-pointer">InPage 3.1: {inpageObjectEvidence.candidates.length} possible text box(es) recognised — geometry preview only; not placed or wrapped.</summary>
+            <summary className="cursor-pointer">InPage 3.1: {inpageObjectEvidence.candidates.length} possible text box(es) recognised — {inpageTentativeBoxes.length > 0 && inpageTentativeBoxes.every(box => frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset)) ? "editable boxes saved; Run Around not applied" : "placement preview only; Run Around not applied"}.</summary>
             <ul className="mt-1 list-inside list-disc">
               {inpageObjectEvidence.candidates.map((box) => (
                 <li key={box.descriptorOffset}>Box record {box.descriptorOffset}: x={box.xMm.toFixed(2)} mm, y={box.yMm.toFixed(2)} mm; {box.widthMm.toFixed(2)} × {box.heightMm.toFixed(2)} mm; Run Around: {box.runAround === "explicit-on" ? "ON (explicit)" : box.runAround === "explicit-off" ? "OFF (explicit)" : box.runAround === "omitted" ? "not recorded (default unverified)" : "unknown value"}</li>
@@ -2093,11 +2093,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             {inpageTentativeBoxes.length ? (
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span>{inpageTentativeBoxes.length} possible box/story match(es), based on observed 0x82 profile (not general InPage import):</span>
-                <button type="button" data-studio-toggle-inpage-box-preview="true"
-                  className="rounded border border-slate-400 bg-white px-2 py-1"
-                  onClick={() => setShowInpageTentativeBox(value => !value)}>
-                  {showInpageTentativeBox ? "Hide experimental placement" : "Show experimental placement"}
-                </button>
+                {inpageTentativeBoxes.some(box => !frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset)) ? (
+                  <button type="button" data-studio-toggle-inpage-box-preview="true"
+                    className="rounded border border-slate-400 bg-white px-2 py-1"
+                    onClick={() => setShowInpageTentativeBox(value => !value)}>
+                    {showInpageTentativeBox ? "Hide experimental placement" : "Show experimental placement"}
+                  </button>
+                ) : null}
                 {inpageTentativeBoxes.every(box => frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset)) ? (
                   <span data-studio-inpage-box-imported="true">
                     {inpageTentativeBoxes.length} editable box(es) saved. Original Run Around values retained, but page-text reflow is NOT implemented.
@@ -2121,7 +2123,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         if (file) void handleInPageFile(file);
         event.target.value = "";
       }} />
-      {inpageStories !== null ? <InPageStoriesDialog stories={inpageStories} onClose={() => setInpageStories(null)} /> : null}
+      {inpageStories !== null ? <InPageStoriesDialog
+        stories={inpageStories}
+        convertedStoryNumbers={inpageTentativeBoxes
+          .filter(box => frames.some(frame => frame.inPageSource?.descriptorOffset === box.descriptorOffset))
+          .map(box => box.storyNumber)}
+        onClose={() => setInpageStories(null)}
+      /> : null}
       <input
         ref={fileInputRef}
         type="file"
