@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import CrescentVisibilityContent from "../app/tools/crescent-visibility/CrescentVisibilityContent";
+import { getPakistanThirtyDayMonthOutlook } from "../app/tools/crescent-visibility/utils/pakistanThirtyDayMonthOutlook";
 
 const locale = vi.hoisted(() => ({ language: "en" }));
 const observer = (id: string, name: string) => ({ id, name, latitudeDeg: 25, longitudeDeg: 67, elevationMeters: 0, timezone: "Asia/Karachi" });
@@ -26,6 +27,32 @@ vi.mock("../app/tools/crescent-visibility/utils/upcomingCrescentEvenings", () =>
 describe("crescent visibility dashboard", () => {
   afterEach(() => { window.history.replaceState(null, "", "/tools/crescent-visibility"); });
   afterEach(() => { locale.language = "en"; locations.forEach((location, index) => { location.prediction.criterion.qualifies = index === 0; }); yallopLocations.forEach((location, index) => { location.prediction.criterion.visibilityClass = index === 0 ? "A" : "C"; location.prediction.acceptedByPolicy = index === 0; }); Object.assign(yallopClassCounts, { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 }); });
+  it("explains why an unfavorable 10 November produces 12 November as the forecast month start", () => {
+    const fixture = { locations: locations.map((item) => ({ ...item, prediction: { ...item.prediction, criterion: { ...item.prediction.criterion, qualifies: false } } })), qualifies: false } as never;
+    const resolve = (d: {year:number;month:number;day:number}) => ({
+      hijri: d.day === 10 ? {year:1448,month:5,day:29}
+        : d.day === 11 ? {year:1448,month:5,day:30}
+        : {year:1448,month:6,day:1},
+      source: d.day===10 ? "official" as const : "scientific" as const,
+    });
+    const result = getPakistanThirtyDayMonthOutlook({year:2026,month:11,day:10}, fixture, null, resolve);
+    expect(result?.dayThirty).toEqual({year:2026,month:11,day:11});
+    expect(result?.dayOne).toEqual({year:2026,month:11,day:12});
+    expect(result?.nextHijriMonth).toBe(6);
+    expect(getPakistanThirtyDayMonthOutlook({year:2026,month:11,day:10}, fixture,
+      {sightingDecision:"sighted"} as never, resolve)).toBeNull();
+    expect(getPakistanThirtyDayMonthOutlook({year:2026,month:11,day:10}, fixture,
+      null, d=>({...resolve(d),source:"tabular" as const}))).toBeNull();
+  });
+
+  it("refuses to promise a first date if the astronomical status is incomplete", () => {
+    const fixture = { locations: locations.map((item, i) => i === 0
+      ? {...item,prediction:{status:"no-sunset"}}
+      : {...item,prediction:{ ...item.prediction, criterion:{ ...item.prediction.criterion, qualifies:false } }}), qualifies:false } as never;
+    const resolve = (d: {day:number}) => ({hijri:{year:1448,month:5,day:d.day===10?29:30},source:"official" as const});
+    expect(getPakistanThirtyDayMonthOutlook({year:2026,month:11,day:10},fixture,null,resolve)).toBeNull();
+  });
+
   it("jumps to a chosen upcoming lunar month and updates the shareable selected evening", () => {
     render(<CrescentVisibilityContent />);
     const shortcuts = screen.getByTestId("upcoming-crescent-months");
