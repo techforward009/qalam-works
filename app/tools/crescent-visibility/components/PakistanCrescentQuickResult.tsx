@@ -51,10 +51,13 @@ export function PakistanCrescentQuickResult({
   const officialNotSighting = decision?.sightingDecision === "not-sighted";
   const targetName = outlook ? monthName("hijri", outlook.nextHijriMonth, lang) : "";
   const targetYear = outlook ? dateDigits(String(outlook.nextHijriYear), lang) : "";
+  const weekdayNamesUr = ["اتوار", "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ"];
+  const firstDayLabel = outlook
+    ? `${targetName} ${targetYear} کی پہلی تاریخ ${dateLabel(outlook.dayOne, lang)}${ur ? "ء بروز " + weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()] + " ہوگی۔" : "."}`
+    : "";
   const firstDayText = outlook
-    ? ur
-      ? `${targetName} ${targetYear} کی پہلی تاریخ ${dateLabel(outlook.dayOne, lang)} متوقع ہے۔`
-      : `The first of ${targetName} ${targetYear} is forecast for ${dateLabel(outlook.dayOne, lang)}.`
+    ? ur ? `ہمارے سائنسی حساب سے ${firstDayLabel}`
+      : `Our scientific calculation forecasts the first of ${targetName} ${targetYear} on ${dateLabel(outlook.dayOne, lang)}.`
     : "";
   const headline = officialSighting ? (ur ? "سرکاری اعلان: چاند نظر آگیا" : "Official announcement: Crescent sighted")
     : officialNotSighting ? (ur ? "سرکاری اعلان: چاند نظر نہیں آیا" : "Official announcement: Crescent not sighted")
@@ -68,13 +71,9 @@ export function PakistanCrescentQuickResult({
     : state === "favorable" ? (ur ? "ہمارے پاکستانی سائنسی حساب کے مطابق حالات موافق ہیں، مگر چاند نظر آنے کی ضمانت نہیں۔" : "Pakistan scientific conditions are favorable, but a sighting is not guaranteed.")
     : state === "incomplete" ? (ur ? "بعض مقامات کی معلومات مکمل نہیں۔ اس لیے ہم حتمی اندازہ نہیں دے رہے۔" : "Some local calculations are incomplete, so we cannot give a definite outlook.")
     : (ur ? "ہمارے پاکستانی سائنسی معیار کے مطابق اس شام ہلال کی رؤیت ممکن نہیں۔" : "Under our Pakistan scientific criterion, the crescent cannot be seen that evening.");
-  const reason = outlook
-    ? ur ? `${dateLabel(outlook.dayThirty, lang)} کو پچھلے قمری مہینے کے ۳۰ دن پورے ہوں گے۔`
-      : `The previous lunar month completes 30 days on ${dateLabel(outlook.dayThirty, lang)}.`
-    : "";
   const resultText = [
     ur ? "قلم ورکس — پاکستان میں رؤیتِ ہلال" : "Qalam Works — Crescent visibility in Pakistan",
-    dateLabel(date, lang), headline, explanation, firstDayText, reason,
+    dateLabel(date, lang), headline, explanation, firstDayText,
     !decision ? (ur ? "یہ سائنسی پیش گوئی ہے، سرکاری اعلان نہیں۔" : "Scientific forecast, not an official announcement.") : "",
     `https://www.qalamworks.com/tools/crescent-visibility?date=${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`,
   ].filter(Boolean).join("\n");
@@ -111,8 +110,7 @@ export function PakistanCrescentQuickResult({
         <h2 data-testid="crescent-simple-headline" className={`mt-3 text-2xl font-bold leading-relaxed sm:text-3xl ${state === "favorable" ? "text-emerald-800 dark:text-emerald-300" : state === "unfavorable" ? "text-rose-800 dark:text-rose-300" : "text-[#153b29] dark:text-[#f0f7f0]"} ${ur ? "font-naskh" : ""}`}>{headline}</h2>
         <p className={`mx-auto mt-2 max-w-xl text-base leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
         {outlook && !officialSighting && <div data-testid="crescent-predicted-first-day" className="mx-auto mt-5 max-w-xl rounded-2xl border border-[#1A3A2A]/15 bg-white px-4 py-4 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
-          <p className={`text-lg font-bold leading-9 ${ur ? "font-naskh" : ""}`}>{firstDayText}</p>
-          <p className="mt-2 text-sm leading-7 text-[#486155] dark:text-[#cfddd1]">{reason}</p>
+          <p className="text-lg leading-9">{ur ? <>ہمارے سائنسی حساب سے <strong>{firstDayLabel}</strong></> : firstDayText}</p>
         </div>}
         {!decision && <p className="mt-4 text-xs leading-6 text-[#6b786d] dark:text-[#c1cec2]">{ur ? "یہ ہمارا سائنسی اندازہ ہے؛ حتمی اعلان مرکزی رؤیتِ ہلال کمیٹی کرے گی۔" : "This is a scientific forecast; Pakistan's Central Ruet-e-Hilal Committee makes the official decision."}</p>}
         {decision && <p data-testid="crescent-simple-official" className="mt-4 text-sm font-semibold text-[#775724] dark:text-[#efdfa9]">{ur ? "سرکاری اعلان دستیاب ہے" : "Reviewed official declaration available"}</p>}
