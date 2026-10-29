@@ -58,6 +58,50 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByText(/چاند نظر آنے کی ضمانت نہیں/)).toBeTruthy();
   });
 
+  it("shows a friendly national result with genuine location measurements and a clear non-official label", () => {
+    render(<CrescentVisibilityContent />);
+    const summary = screen.getByTestId("crescent-simple-result");
+    expect(summary.textContent).toContain("Pakistan national scientific result");
+    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("Scientific criterion is met");
+    expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1/8");
+    expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("9.1");
+    expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("42.3");
+    expect(summary.textContent).toContain("not an official moon-sighting declaration");
+    expect(screen.getByRole("link", { name: "Full scientific research" }).getAttribute("href")).toBe("#crescent-technical-report");
+    expect(screen.getByText("Detailed scientific and official research")).toBeTruthy();
+    expect(screen.getByTestId("crescent-quick-location")).toBeTruthy();
+  });
+
+  it("switches the locally explained figures without changing the national decision", () => {
+    locations[1].prediction.criterion.elongationDeg = 12.7;
+    try {
+      render(<CrescentVisibilityContent />);
+      const choice = screen.getByTestId("crescent-quick-location") as HTMLSelectElement;
+      fireEvent.change(choice, { target: { value: "peshawar" } });
+      expect(choice.value).toBe("peshawar");
+      expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("12.7");
+      expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1/8");
+    } finally {
+      locations[1].prediction.criterion.elongationDeg = 9.11;
+    }
+  });
+
+  it("shares the real selected national result and date link without a fabricated source", async () => {
+    const writeText = vi.fn(async (_text: string) => {});
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<CrescentVisibilityContent />);
+    fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-11-10" } });
+    fireEvent.click(screen.getByTestId("crescent-share-result"));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copy = String(writeText.mock.calls[0]?.[0] ?? "");
+    expect(copy).toContain("2026-11-10");
+    expect(copy).toContain("1/8");
+    expect(copy).toContain("not an official announcement");
+    expect(copy).toContain("qalamworks.com/tools/crescent-visibility?date=2026-11-10");
+    expect(screen.getByText("Result copied")).toBeTruthy();
+  });
+
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Moon Sighting" })).toBeTruthy();
