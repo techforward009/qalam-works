@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot, TEXT_EFFECT_LABELS, TOOLBAR_FONT_SIZE_PRESETS } from "../utils/inpageToolbar";
@@ -108,6 +108,29 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
   const numberSearch = useRef({ text: "", time: 0 });
   const root = useRef<HTMLFormElement>(null);
   const sizeRef = useRef<HTMLInputElement>(null);
+  const [dialogOffset, setDialogOffset] = useState({ x: 0, y: 0 });
+  const dragStart = useRef<{ id: number; x: number; y: number; originX: number; originY: number } | null>(null);
+  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    dragStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY, originX: dialogOffset.x, originY: dialogOffset.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+  const moveDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = dragStart.current;
+    if (!start || start.id !== event.pointerId) return;
+    const width = root.current?.offsetWidth ?? 390, height = root.current?.offsetHeight ?? 270;
+    const centerX = (window.innerWidth - width) / 2, centerY = (window.innerHeight - height) / 2;
+    const clamp = (value: number, min: number, max: number) => min > max ? 0 : Math.max(min, Math.min(max, value));
+    setDialogOffset({
+      x: clamp(start.originX + event.clientX - start.x, 8 - centerX, window.innerWidth - width - centerX - 8),
+      y: clamp(start.originY + event.clientY - start.y, 8 - centerY, window.innerHeight - height - centerY - 8),
+    });
+  };
+  const stopDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragStart.current?.id === event.pointerId) dragStart.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
   const colors = form.color && !INPAGE_TEXT_COLOURS.some((item) => item.hex.toLowerCase() === form.color.toLowerCase())
     ? [{ label: form.color, hex: form.color }, ...INPAGE_TEXT_COLOURS]
     : INPAGE_TEXT_COLOURS;
@@ -187,7 +210,7 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
       window.visualViewport?.removeEventListener("resize", position);
       window.visualViewport?.removeEventListener("scroll", position);
     };
-  }, [menu]);
+  }, [menu, dialogOffset.x, dialogOffset.y]);
   useLayoutEffect(() => {
     const option = popup.current?.querySelector<HTMLElement>(`[data-character-option="${active}"]`);
     if (!option || !popup.current) return;
@@ -263,8 +286,9 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
       [data-studio-character-dialog] input[type="checkbox"]:indeterminate + [data-character-tick] { display: block; }
       [data-studio-character-dialog] input[type="checkbox"]:indeterminate + [data-character-tick] { border-color: #808080; }
     `}</style>
-    <form ref={root} role="dialog" aria-modal="true" aria-label="Character" data-studio-character-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ position: "relative", width: 390, height: 270, minWidth: 390, maxWidth: 390, minHeight: 270, maxHeight: 270, boxSizing: "border-box", overflow: "hidden", justifySelf: "center", alignSelf: "center", padding: 0, border: 0, color: "#000", background: "linear-gradient(#E3F1FE, #BBDCFD)", boxShadow: "inset 0 0 0 1px #252C33", font: FONT }}>
-      <span style={{ position: "absolute", left: 9, top: 7, lineHeight: "13px", font: "12px Segoe UI, Tahoma, sans-serif", fontWeight: 400, color: "#000" }}>Character</span>
+    <form ref={root} role="dialog" aria-modal="true" aria-label="Character" data-studio-character-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ position: "relative", width: 390, height: 270, minWidth: 390, maxWidth: 390, minHeight: 270, maxHeight: 270, boxSizing: "border-box", overflow: "hidden", justifySelf: "center", alignSelf: "center", padding: 0, border: 0, color: "#000", background: "linear-gradient(#E3F1FE, #BBDCFD)", transform: "translate(" + dialogOffset.x + "px, " + dialogOffset.y + "px)", boxShadow: "inset 0 0 0 1px #252C33", font: FONT }}>
+      <div data-studio-character-drag-handle="true" aria-label="Drag Character dialog" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag} style={{ position: "absolute", left: 0, top: 0, width: 304, height: 28, zIndex: 2, cursor: "move", touchAction: "none" }} />
+      <span style={{ position: "absolute", left: 9, top: 7, pointerEvents: "none", lineHeight: "13px", font: "12px Segoe UI, Tahoma, sans-serif", fontWeight: 400, color: "#000" }}>Character</span>
       <button type="button" aria-label="Help" tabIndex={-1} onClick={() => setHelp(true)} style={{ position: "absolute", left: 307, top: 0, width: 28, height: 20, boxSizing: "border-box", border: "1px solid #535C66", background: "linear-gradient(#F4F7FB, #C9D4E0)", color: "#000", font: FONT, padding: 0 }}>?</button>
       <button type="button" aria-label="Close" tabIndex={-1} onClick={close} style={{ position: "absolute", left: 335, top: 0, width: 48, height: 20, boxSizing: "border-box", border: "1px solid #5A2318", background: "linear-gradient(#E0A9A3, #C7463A)", color: "#fff", font: "700 12px Tahoma, sans-serif", padding: 0 }}>X</button>
       <div aria-hidden style={{ position: "absolute", left: 7, top: 29, width: 376, height: 234, boxSizing: "border-box", border: "1px solid #5D6C7A", pointerEvents: "none" }} />

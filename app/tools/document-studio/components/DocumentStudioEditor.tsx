@@ -155,6 +155,7 @@ import DocumentHelpDialog from "./DocumentHelpDialog";
 import QalamAiPanel from "./QalamAiPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import DocumentLibraryDialog from "./DocumentLibraryDialog";
+import StudioPageSetupDialog, { type StudioPageSetupValues } from "./StudioPageSetupDialog";
 import InPageStoriesDialog, { type ImportedStory } from "./InPageStoriesDialog";
 import {
   getDocumentLibrary,
@@ -271,6 +272,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const isUr = false;
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [newDocOpen, setNewDocOpen] = useState(false);
+  const [pageSetupOpen, setPageSetupOpen] = useState(false);
   const [visiblePage, setVisiblePage] = useState(1);
   const [viewAnchor,setViewAnchor]=useState<StudioPageAnchor|null>(null);
   const [zoomPercent, setZoomPercent] = useState<number | null>(null);
@@ -1845,7 +1847,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         void handleDownloadPdf();
       },
       print: () => { void printDocumentStudioAsync(framesRef.current).catch(error => setPdfError(error instanceof Error ? error.message : GENERIC_PDF_EXPORT_ERROR)); },
-      openPageSetup: () => setRightPanel("settings"),
+      openPageSetup: () => setPageSetupOpen(true),
       find: () => setFindOpen(true),
       toggleOutline: () => setLeftPanel((p) => toggleLeftPanel(p, "outline")),
       toggleQuality: () => setRightPanel((p) => toggleRightPanel(p, "quality")),
@@ -2116,6 +2118,38 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         </div>
       ) : null}
 
+      {pageSetupOpen ? (
+        <StudioPageSetupDialog
+          settings={documentSettings}
+          direction={dir}
+          columns={columnCount}
+          gutter={columnGutterMm}
+          facing={viewMode === "facing"}
+          onClose={() => setPageSetupOpen(false)}
+          onApply={(values: StudioPageSetupValues) => {
+            setDocumentSettings(current => ({
+              ...current,
+              page: {
+                ...current.page,
+                size: values.size,
+                orientation: values.orientation,
+                margins: {
+                  preset: "custom",
+                  topMm: values.top,
+                  bottomMm: values.bottom,
+                  startMm: dir === "rtl" ? values.right : values.left,
+                  endMm: dir === "rtl" ? values.left : values.right,
+                },
+              },
+            }));
+            setColumnCount(values.columns);
+            setColumnGutterMm(values.gutter);
+            setViewMode(values.facing ? "facing" : "pages");
+            setPdfSummary(null);
+            setPageSetupOpen(false);
+          }}
+        />
+      ) : null}
       {libraryOpen ? (
         <DocumentLibraryDialog
           isUr={isUr}
