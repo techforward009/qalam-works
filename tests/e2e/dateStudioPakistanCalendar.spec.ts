@@ -179,4 +179,27 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("pakistan-source-link")).toHaveCount(0);
   });
 
+  test("upcoming lunar-month shortcut opens the corresponding national moon-sighting evening", async ({page}) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
+    const next = page.getByTestId("upcoming-crescent-month-0");
+    await expect(next).toContainText("Jumada al-Thani 1448");
+    await expect(next).toContainText("10 November 2026");
+    await next.click();
+    await expect(page.locator("#dashboard-date")).toHaveValue("2026-11-10");
+    await expect(page).toHaveURL(/date=2026-11-10/);
+    await expect(next).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("National outlook")).toBeVisible();
+    const rajab = page.getByRole("button", {name: /Rajab 1448, expected evening/});
+    await expect(rajab).toBeVisible();
+    await rajab.click();
+    const selected = await page.locator("#dashboard-date").inputValue();
+    expect(selected).toMatch(/^2026-12-\d{2}$/);
+    await expect(page).toHaveURL(new RegExp("date=" + selected));
+    await expect(rajab).toHaveAttribute("aria-pressed", "true");
+    await page.reload();
+    await expect(page.locator("#dashboard-date")).toHaveValue(selected);
+    await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
+  });
+
 });
