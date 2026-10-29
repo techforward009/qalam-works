@@ -122,11 +122,11 @@ describe("crescent visibility dashboard", () => {
 
   it("highlights Ramadan among live month cards without hard-coded dates", async () => {
     const module = await import("../app/tools/crescent-visibility/utils/upcomingCrescentEvenings");
-    const ramadan = [{ dateIso: "2027-02-07", evening: { year: 2027, month: 2, day: 7 }, targetHijriYear: 1448, targetHijriMonth: 9, dateSource: "scientific" as const }];
+    const ramadanDates = [{ dateIso: "2027-02-07", evening: { year: 2027, month: 2, day: 7 }, targetHijriYear: 1448, targetHijriMonth: 9, dateSource: "scientific" as const }];
     vi.mocked(module.getUpcomingPakistanCrescentEvenings)
-      .mockReturnValueOnce(ramadan)
-      .mockReturnValueOnce(ramadan)
-      .mockReturnValueOnce(ramadan);
+      .mockReturnValueOnce(ramadanDates)
+      .mockReturnValueOnce(ramadanDates)
+      .mockReturnValueOnce(ramadanDates);
     render(<CrescentVisibilityContent />);
     const ramadan = screen.getByTestId("upcoming-crescent-month-0");
     expect(ramadan.textContent).toContain("Ramadan");
