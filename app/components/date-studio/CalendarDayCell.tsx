@@ -64,7 +64,7 @@ export function CalendarDayCell({
             dir={isUr ? "rtl" : "ltr"}
             style={{ fontSize: cellSpec.hijriFont }}
           >
-            {hijriDay}{hijriPolicy === "pakistan" && cell.hijriSource === "tabular" && <span aria-label={isUr ? "حسابی تاریخ" : "Calculated date"} className="ms-0.5 text-[9px] align-super opacity-70">*</span>}
+            {hijriDay}{hijriPolicy === "pakistan" && (cell.hijriSource === "tabular" || cell.hijriSource === "scientific") && <span aria-label={cell.hijriSource === "scientific" ? (isUr ? "سائنسی پیش گوئی" : "Scientific prediction") : (isUr ? "حسابی تاریخ" : "Calculated date")} className="ms-0.5 text-[9px] align-super opacity-70">*</span>}
           </span>
         )}
       </div>
