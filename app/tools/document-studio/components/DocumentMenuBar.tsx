@@ -135,6 +135,7 @@ export default function DocumentMenuBar({
   disabledIds,
   checkedIds,
   showHome = false,
+  documentOpen = true,
   endSlot,
   hasUnsavedChanges = false,
   openDocuments = [],
@@ -145,6 +146,7 @@ export default function DocumentMenuBar({
   disabledIds?: ReadonlySet<MenuActionId>;
   checkedIds?: ReadonlySet<MenuActionId>;
   showHome?: boolean;
+  documentOpen?: boolean;
   endSlot?: React.ReactNode;
   hasUnsavedChanges?: boolean;
   openDocuments?: { id: string; title: string }[];
@@ -416,7 +418,7 @@ export default function DocumentMenuBar({
         style={{ height: 22, padding: "0 6px", fontSize: 12, lineHeight: "22px", borderBottom: "1px solid #d0d0d0" }}
       >
         {showHome ? <StudioHomeButton dirty={hasUnsavedChanges} /> : null}
-        <span className="shrink-0 whitespace-pre" data-latin-control="true">Qalam Page - </span>
+        <span className="shrink-0 whitespace-pre" data-latin-control="true">Qalam Page{documentOpen ? " - " : ""}</span>
         <div className="flex min-w-0 flex-1 items-center">{endSlot}</div>
       </div>
       <div

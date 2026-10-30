@@ -48,6 +48,19 @@ describe("DocumentMenuBar", () => {
     expect(onAction).toHaveBeenCalledWith("file.open");
   });
 
+  it("dispatches File Close for the active window", () => {
+    const onAction = vi.fn();
+    render(<DocumentMenuBar isUr={false} onAction={onAction} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Close/ }));
+    expect(onAction).toHaveBeenCalledWith("file.close");
+  });
+
+  it('dispatches the now-working File Exit command',()=>{
+    const onAction=vi.fn();render(<DocumentMenuBar isUr={false} onAction={onAction}/>);
+    fireEvent.click(screen.getByRole('menuitem',{name:'File'}));fireEvent.click(screen.getByRole('menuitem',{name:/^Exit/}));expect(onAction).toHaveBeenCalledWith('file.exit');
+  });
+
   it("exposes menubar accessibility basics", () => {
     render(<DocumentMenuBar isUr={false} onAction={vi.fn()} />);
     const bar = screen.getByRole("menubar", { name: "Document menu" });

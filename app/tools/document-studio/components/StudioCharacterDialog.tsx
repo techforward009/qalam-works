@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot, TEXT_EFFECT_LABELS, TOOLBAR_FONT_SIZE_PRESETS } from "../utils/inpageToolbar";
@@ -108,6 +108,37 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
   const numberSearch = useRef({ text: "", time: 0 });
   const root = useRef<HTMLFormElement>(null);
   const sizeRef = useRef<HTMLInputElement>(null);
+  const [dialogOffset, setDialogOffset] = useState({ x: 0, y: 0 });
+  const [dialogScale, setDialogScale] = useState(1);
+  const [viewportRevision, setViewportRevision] = useState(0);
+  const viewport = () => ({ left:window.visualViewport?.offsetLeft ?? 0, top:window.visualViewport?.offsetTop ?? 0, width:window.visualViewport?.width ?? window.innerWidth, height:window.visualViewport?.height ?? window.innerHeight });
+  const clampPosition = (left:number,top:number,width:number,height:number) => {
+    const v=viewport();return {left:Math.max(v.left+8,Math.min(v.left+v.width-width-8,left)),top:Math.max(v.top+8,Math.min(v.top+v.height-height-8,top))};
+  };
+  useLayoutEffect(() => {
+    const update=()=>{const v=viewport();setDialogScale(Math.min(1,Math.max(.1,(v.width-16)/390),Math.max(.1,(v.height-16)/270)));setViewportRevision(n=>n+1);};
+    update();window.addEventListener('resize',update);window.visualViewport?.addEventListener('resize',update);window.visualViewport?.addEventListener('scroll',update);
+    return()=>{window.removeEventListener('resize',update);window.visualViewport?.removeEventListener('resize',update);window.visualViewport?.removeEventListener('scroll',update);};
+  },[]);
+  useLayoutEffect(()=>{
+    const r=root.current?.getBoundingClientRect();if(!r)return;const p=clampPosition(r.left,r.top,r.width,r.height);
+    if(Math.abs(p.left-r.left)>.25||Math.abs(p.top-r.top)>.25)setDialogOffset(old=>({x:old.x+p.left-r.left,y:old.y+p.top-r.top}));
+  },[dialogScale,viewportRevision]);
+  const dragStart = useRef<{ id:number;x:number;y:number;originX:number;originY:number;left:number;top:number;width:number;height:number } | null>(null);
+  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if(event.button!==0||!root.current)return;const r=root.current.getBoundingClientRect();
+    dragStart.current={id:event.pointerId,x:event.clientX,y:event.clientY,originX:dialogOffset.x,originY:dialogOffset.y,left:r.left,top:r.top,width:r.width,height:r.height};
+    event.currentTarget.setPointerCapture(event.pointerId);event.preventDefault();
+  };
+  const moveDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start=dragStart.current;if(!start||start.id!==event.pointerId)return;
+    const p=clampPosition(start.left+event.clientX-start.x,start.top+event.clientY-start.y,start.width,start.height);
+    setDialogOffset({x:start.originX+p.left-start.left,y:start.originY+p.top-start.top});
+  };
+  const stopDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if(dragStart.current?.id===event.pointerId)dragStart.current=null;
+    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+  };
   const colors = form.color && !INPAGE_TEXT_COLOURS.some((item) => item.hex.toLowerCase() === form.color.toLowerCase())
     ? [{ label: form.color, hex: form.color }, ...INPAGE_TEXT_COLOURS]
     : INPAGE_TEXT_COLOURS;
@@ -187,7 +218,7 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
       window.visualViewport?.removeEventListener("resize", position);
       window.visualViewport?.removeEventListener("scroll", position);
     };
-  }, [menu]);
+  }, [menu, dialogOffset.x, dialogOffset.y]);
   useLayoutEffect(() => {
     const option = popup.current?.querySelector<HTMLElement>(`[data-character-option="${active}"]`);
     if (!option || !popup.current) return;
@@ -252,7 +283,7 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
     ? [{ value: form.language, label: form.language }, ...languages]
     : languages;
   const blank = (value: string) => value === "" ? <option value="">—</option> : null;
-  return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={(event) => event.stopPropagation()}>
+  return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" style={{gridTemplateColumns:"minmax(0,1fr)"}} onKeyDown={tab} onMouseDown={(event) => event.stopPropagation()}>
     <style>{`
       [data-studio-character-dialog] select { appearance: none; -webkit-appearance: none; }
       @media (pointer: coarse), (max-width: 600px) { [data-character-menu] [role="option"] { min-height: 32px; } }
@@ -263,8 +294,9 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
       [data-studio-character-dialog] input[type="checkbox"]:indeterminate + [data-character-tick] { display: block; }
       [data-studio-character-dialog] input[type="checkbox"]:indeterminate + [data-character-tick] { border-color: #808080; }
     `}</style>
-    <form ref={root} role="dialog" aria-modal="true" aria-label="Character" data-studio-character-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ position: "relative", width: 390, height: 270, minWidth: 390, maxWidth: 390, minHeight: 270, maxHeight: 270, boxSizing: "border-box", overflow: "hidden", justifySelf: "center", alignSelf: "center", padding: 0, border: 0, color: "#000", background: "linear-gradient(#E3F1FE, #BBDCFD)", boxShadow: "inset 0 0 0 1px #252C33", font: FONT }}>
-      <span style={{ position: "absolute", left: 9, top: 7, lineHeight: "13px", font: "12px Segoe UI, Tahoma, sans-serif", fontWeight: 400, color: "#000" }}>Character</span>
+    <form ref={root} role="dialog" aria-modal="true" aria-label="Character" data-studio-character-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ position: "relative", width: 390, height: 270, minWidth: 390, maxWidth: 390, minHeight: 270, maxHeight: 270, boxSizing: "border-box", overflow: "hidden", justifySelf: "center", alignSelf: "center", padding: 0, border: 0, color: "#000", background: "linear-gradient(#E3F1FE, #BBDCFD)", transform: `translate(${dialogOffset.x}px, ${dialogOffset.y}px) scale(${dialogScale})`, boxShadow: "inset 0 0 0 1px #252C33", font: FONT }}>
+      <div data-studio-character-drag-handle="true" aria-label="Drag Character dialog" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag} style={{ position: "absolute", left: 0, top: 0, width: 304, height: 28, zIndex: 2, cursor: "default", touchAction: "none" }} />
+      <span style={{ position: "absolute", left: 9, top: 7, pointerEvents: "none", lineHeight: "13px", font: "12px Segoe UI, Tahoma, sans-serif", fontWeight: 400, color: "#000" }}>Character</span>
       <button type="button" aria-label="Help" tabIndex={-1} onClick={() => setHelp(true)} style={{ position: "absolute", left: 307, top: 0, width: 28, height: 20, boxSizing: "border-box", border: "1px solid #535C66", background: "linear-gradient(#F4F7FB, #C9D4E0)", color: "#000", font: FONT, padding: 0 }}>?</button>
       <button type="button" aria-label="Close" tabIndex={-1} onClick={close} style={{ position: "absolute", left: 335, top: 0, width: 48, height: 20, boxSizing: "border-box", border: "1px solid #5A2318", background: "linear-gradient(#E0A9A3, #C7463A)", color: "#fff", font: "700 12px Tahoma, sans-serif", padding: 0 }}>X</button>
       <div aria-hidden style={{ position: "absolute", left: 7, top: 29, width: 376, height: 234, boxSizing: "border-box", border: "1px solid #5D6C7A", pointerEvents: "none" }} />

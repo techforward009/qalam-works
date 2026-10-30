@@ -27,7 +27,8 @@ test("File Import opens the existing real InPage fixture with Urdu and A5 page s
   test.setTimeout(60_000);
   const prior = await state(page);
   await importFile(page, path.resolve("tests/fixtures/inpage/hadiyat.inp"));
-  const imported = page.getByRole("dialog", { name: "InPage text imported", exact: true });
+  const imported = page.getByRole("dialog", { name: "Additional InPage stories", exact: true });
+  await expect(page.locator("[data-studio-inpage-import-notice]")).toBeVisible();
   await expect(imported).toBeVisible();
   await expect(page.locator(".ProseMirror")).toContainText("تعقیبات نماز پنجگانہ");
   await expect(page.locator(".ProseMirror")).toContainText("ایام ہفتہ کے اعمال");

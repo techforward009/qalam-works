@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useMovableStudioDialog } from "./useMovableStudioDialog";
 
 export type ImportedStory = { number: number; text: string };
 
 export default function InPageStoriesDialog({ stories, onClose }: { stories: ImportedStory[]; onClose: () => void }) {
+  const drag = useMovableStudioDialog<HTMLDivElement>();
   const close = useRef<HTMLButtonElement>(null);
   const closeAction = useRef(onClose);
   closeAction.current = onClose;
@@ -18,9 +20,9 @@ export default function InPageStoriesDialog({ stories, onClose }: { stories: Imp
   }, []);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" role="dialog" aria-modal="true" aria-labelledby="inpage-stories-title" dir="ltr">
-      <div className="w-full max-w-lg rounded border border-gray-400 bg-white p-4 text-sm text-black shadow-xl">
-        <h2 id="inpage-stories-title" className="font-semibold">InPage text imported</h2>
-        <p className="my-2">The longest story is open. Layout is not imported in this stage.</p>
+      <div ref={drag.dialogRef} style={drag.style} className="w-full max-w-lg rounded border border-gray-400 bg-white p-4 text-sm text-black shadow-xl">
+        <h2 {...drag.handleProps} style={drag.handleProps.style} id="inpage-stories-title" className="font-semibold">Additional InPage stories</h2>
+        <p className="my-2">The main story is open. Other available stories can be copied below; their original layout is not restored.</p>
         <p className="mb-2">Other non-empty stories: {stories.length}</p>
         <ul className="max-h-[50vh] space-y-3 overflow-auto">
           {stories.map((story) => (

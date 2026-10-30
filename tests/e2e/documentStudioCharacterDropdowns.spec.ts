@@ -10,6 +10,8 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/tools/document-studio");
   await expect(page.locator(".ProseMirror")).toBeEditable();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1"))).not.toBeNull();
+  // Establish the real active story target required by Phase 6A before formatting.
+  await page.locator(".ProseMirror").click();
   await page.locator(".ProseMirror").evaluate(el => {
     const editor = (el as HTMLElement & { editor: Editor }).editor;
     editor.commands.setContent("<p>سلام دنیا</p>");

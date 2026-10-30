@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
     }
     const layout = resolvePageLayout({
       size: settings.page.size,
+      customSizeMm: settings.page.customSizeMm,
       orientation: settings.page.orientation,
       marginPreset: settings.page.margins.preset,
       customMargins: settings.page.margins,
