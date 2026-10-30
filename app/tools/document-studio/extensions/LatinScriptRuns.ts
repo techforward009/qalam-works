@@ -1,3 +1,4 @@
+import { preservedSpaceRanges, preservedSpaceStyle } from "../utils/preservedSpaces";
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey, TextSelection, type Transaction } from "@tiptap/pm/state";
 import { AddMarkStep, RemoveMarkStep } from "@tiptap/pm/transform";
@@ -223,6 +224,12 @@ function decorations(doc: Node, widths: Map<string, number>) {
             "data-studio-latin-scale": String(factor), style,
           }));
         }
+      }
+      const atLineEnd = offset + node.nodeSize === block.content.size || block.childAfter(offset + node.nodeSize).node?.type.name === "hardBreak";
+      for (const range of preservedSpaceRanges(node.text)) {
+        spans.push(Decoration.inline(pos+1+offset+range.start,pos+1+offset+range.end,{
+          "data-studio-preserved-space":"true",style:preservedSpaceStyle(node.text,range,atLineEnd),
+        }));
       }
       if (!arabicNeedsFace) return;
       for (const range of scriptRanges(node.text, "arabic")) {

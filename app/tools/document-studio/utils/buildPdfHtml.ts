@@ -1,3 +1,4 @@
+import { preservedSpaceHtml } from "./preservedSpaces";
 import { frameTextNode, renderPrintFrame } from "./printableFrames";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 // Document Studio PDF HTML adapter — pure/sync.
@@ -210,11 +211,11 @@ function familyForPiece(
   return { family: explicit, latin: false };
 }
 
-function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Direction): string {
+function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Direction, preserveSpaces = true): string {
   if (!nodes) return "";
   let html = "";
 
-  for (const node of nodes) {
+  for (const [nodeIndex, node] of nodes.entries()) {
     if (node.type === "hardBreak") {
       html += "<br/>";
       continue;
@@ -250,9 +251,10 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       const scaled = (picked.latin || typeof styleMark?.attrs?.charScale === "number") && typeof scale === "number" && scale !== 100;
       const tokens = scaled ? latinScaleTokens(piece.text).map((token) => token.text) : [piece.text];
       let chunk = "";
-      for (const token of tokens) {
+      for (const [tokenIndex, token] of tokens.entries()) {
         if (!token) continue;
         let inner = escapeHtml(token);
+        if (preserveSpaces) inner = preservedSpaceHtml(inner, (nodeIndex === nodes.length-1 || nodes[nodeIndex+1]?.type === "hardBreak") && piece === pieces.at(-1) && tokenIndex === tokens.length-1);
         const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
         const effective = resolveEffectivePdfFont(choice.family, picked.latin ? "ltr" : choice.fontDir, ctx.available, ctx.typography);
         noteEffective(ctx, effective);
@@ -485,7 +487,7 @@ export function buildPdfHtml(
   };
 
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");
-  const frameHtml = frames.map(frame => renderPrintFrame(frame, frame.kind === "text" ? convertInline(frameTextNode(frame).content, ctx, "rtl") : undefined)).join("");
+  const frameHtml = frames.map(frame => renderPrintFrame(frame, frame.kind === "text" ? convertInline(frameTextNode(frame).content, ctx, "rtl", false) : undefined)).join("");
 
   if (ctx.fontsUsed.size === 0) {
     const effective = resolveEffectivePdfFont(null, dir, available, typography);
@@ -526,7 +528,7 @@ ${classRulesCss()}
     color: #111;
     overflow: hidden;
   }
-  p, h1, h2, h3, h4, li, blockquote { margin: 0; }
+  p, h1, h2, h3, h4, li, blockquote { margin: 0; white-space:break-spaces; }
   p span, h1 span, h2 span, h3 span, h4 span { line-height: 0; }
   h1, h2, h3, h4, table, hr, blockquote { clear: both; }
   h1 { font-size: 1.6rem; }
