@@ -202,42 +202,32 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
   });
 
-  test("simple Pakistan crescent card uses live scientific facts and preserves the full research", async ({ page }, testInfo) => {
+  test("Pakistan models give plain site-based outcomes and one route to detailed science", async ({ page }, testInfo) => {
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     const simple = page.getByTestId("crescent-simple-result");
     await expect(simple).toBeVisible();
-    await expect(page.getByTestId("crescent-simple-headline")).toContainText("The crescent is not expected to be visible");
+    await expect(page.getByTestId("crescent-simple-headline")).toContainText("Crescent-visibility conditions this evening:");
+    await expect(page.getByTestId("crescent-pakistan-model")).toContainText("No favorable sites");
+    await expect(page.getByTestId("crescent-yallop-model")).toContainText("No favorable sites");
     await expect(page.getByTestId("crescent-predicted-first-day")).toContainText("12 November 2026");
-    await expect(page.getByTestId("crescent-predicted-first-day")).not.toContainText("11 November 2026");
-    await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0 of 8");
-    await expect(simple.getByText(/official decision/i)).toHaveCount(0);
-    await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
-    await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
-    await page.getByTestId("crescent-simple-details").locator("summary").first().click();
-    await expect(page.getByTestId("crescent-simple-metrics").getByText("13.2")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-three-outcomes")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-simple-metrics")).toHaveCount(0);
     await page.getByTestId("crescent-quick-location").selectOption("lahore");
-    await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
-    await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0 of 8");
+    await expect(page.getByTestId("crescent-next-evening")).toContainText("Lahore");
     await simple.getByRole("link", { name: "More details" }).click();
-    await expect(page.getByTestId("crescent-simple-details")).toHaveAttribute("open");
-    await simple.getByRole("link", { name: "Original research and sources" }).click();
+    await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
     await expect(page.getByText("Detailed scientific research")).toBeVisible();
-    await expect(page.getByTestId("crescent-three-reference-cards").getByRole("heading", { name: "Pakistan scientific criterion" })).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath("crescent-quick-result.png"), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath("crescent-science-model-result.png"), fullPage: true });
   });
 
-  test("ordinary visitor sees the upcoming moon and plain answer before the technical report", async ({ page }) => {
+  test("visitor goes from plain answer to one optional detailed report", async ({ page }) => {
     await page.goto("/tools/crescent-visibility");
     await expect(page.getByTestId("upcoming-crescent-month-0")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("crescent-simple-headline")).toBeVisible();
-    await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
+    await expect(page.getByTestId("crescent-simple-details")).toHaveCount(0);
     await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
-    await expect(page.getByTestId("crescent-three-outcomes")).not.toBeVisible();
     await expect(page.getByText("Detailed scientific research")).not.toBeVisible();
     await page.getByRole("link", { name: "More details" }).click();
-    await expect(page.getByTestId("crescent-simple-details")).toHaveAttribute("open");
-    await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
-    await page.getByRole("link", { name: "Original research and sources" }).click();
     await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
     await expect(page.getByText("Detailed scientific research")).toBeVisible();
   });
@@ -320,6 +310,21 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     await expect(main.getByText("پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں")).toHaveCount(0);
     await expect(main.getByText("قومی سائنسی اور سرکاری جائزہ")).toHaveCount(0);
     await expect(main.getByText("سائنسی اور فلکیاتی جائزہ")).toBeVisible();
+    const datePickerBar = page.getByTestId("crescent-date-control");
+    await expect(datePickerBar.getByText("کس شام کا چاند دیکھنا ہے؟")).toBeVisible();
+    await expect(datePickerBar.locator("#dashboard-date")).toBeVisible();
+    await expect(main.getByText("پاکستانی مقامات کے اصل غروب آفتاب پر سائنسی حساب")).toHaveCount(0);
+    expect(await datePickerBar.evaluate(el => getComputedStyle(el).justifyContent)).toBe("center");
+    await expect(page.getByTestId("crescent-next-evening")).toContainText("11 نومبر 2026");
+    await expect(page.getByTestId("crescent-next-evening")).toContainText("کراچی");
+    await expect(page.getByTestId("crescent-next-evening-count")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-simple-metrics")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-simple-details")).toHaveCount(0);
+    const resultCard = page.getByTestId("crescent-predicted-first-day");
+    expect(await resultCard.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(243, 207, 104)");
+    await expect(page.getByTestId("crescent-next-evening-metrics")).toContainText("قوسی منٹ");
+    await expect(page.getByTestId("crescent-next-evening-metrics")).toContainText("ڈگری");
+
     await expect(main.getByText("یہ سرکاری رویتِ ہلال کا اعلان نہیں۔")).toHaveCount(0);
     await expect(main.getByText("یہ سائنسی نتیجہ ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔")).toHaveCount(0);
     await expect(main.getByText("سائنسی پیش گوئیاں سرکاری رویتِ ہلال کا اعلان نہیں ہیں۔")).toHaveCount(0);
@@ -345,15 +350,15 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     const citySelect = city.getByRole("combobox");
     await expect(citySelect.locator("option")).toHaveCount(8);
     await expect(citySelect).toHaveValue("karachi");
-    await expect(tomorrow).toContainText("کراچی میں اسی شام کے حقیقی حسابی اعداد");
+    await expect(tomorrow).toContainText("کراچی کے فلکیاتی اعداد");
     const beforeCityFigures = await page.getByTestId("crescent-next-evening-metrics").textContent();
     await citySelect.selectOption("lahore");
-    await expect(tomorrow).toContainText("لاہور میں اسی شام کے حقیقی حسابی اعداد");
+    await expect(tomorrow).toContainText("لاہور کے فلکیاتی اعداد");
     await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
     const afterCityFigures = await page.getByTestId("crescent-next-evening-metrics").textContent();
     expect(afterCityFigures).not.toBe(beforeCityFigures);
     await citySelect.selectOption("karachi");
-    await expect(page.getByTestId("crescent-next-evening-count")).toContainText("پاکستان کے آٹھ مقامات");
+    await expect(page.getByTestId("crescent-next-evening-count")).toHaveCount(0);
     await expect(page.getByTestId("crescent-next-evening-metrics").locator("div")).toHaveCount(4);
     await expect(page.getByTestId("crescent-next-evening-metrics")).not.toContainText("—");
     await tomorrow.screenshot({ path: testInfo.outputPath("nov-11-real-astronomy-from-nov-10.png") });
@@ -397,7 +402,7 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     const forecastWeight = await card.locator("[data-crescent-forecast]").evaluate(el => getComputedStyle(el).fontWeight);
     expect(Number(forecastWeight)).toBe(400);
     const note = page.locator("[data-crescent-month-note]");
-    await expect(note).toContainText("مہینہ منتخب کرکے اس کی شام کا فلکیاتی حساب دیکھیں");
+    await expect(note).toContainText("مہینہ منتخب کریں اور اس کی 29ویں شام کا فلکیاتی حساب دیکھیں");
     expect(await note.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
     const figures = page.getByTestId("crescent-next-evening-metrics");
     await expect(figures.locator("[data-crescent-latin-number]")).toHaveCount(4);
