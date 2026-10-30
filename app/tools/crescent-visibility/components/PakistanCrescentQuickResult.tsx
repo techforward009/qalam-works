@@ -31,18 +31,14 @@ export function PakistanCrescentQuickResult({
   const [shareStatus, setShareStatus] = useState<"copied" | "failed" | null>(null);
   const selected = pakistan.locations.find(({ observer }) => observer.id === locationId) ?? pakistan.locations[0];
   const localName = selected ? ur ? URDU_NAMES[selected.observer.id] ?? selected.observer.name : selected.observer.name : "—";
-  const local = selected?.prediction;
-  const ref = yallop.locations.find(({ observer }) => observer.id === selected?.observer.id)?.prediction;
-  const measured = local?.status === "evaluated" ? local.criterion : null;
-  const sunset = local?.status === "evaluated" ? local.snapshot?.sunsetUtc : null;
-  const age = ref?.status === "evaluated" && sunset && ref.snapshot?.conjunctionUtc
-    ? (Date.parse(sunset) - Date.parse(ref.snapshot.conjunctionUtc)) / 3_600_000 : null;
   const qualified = pakistan.locations.filter(({ prediction }) =>
     prediction.status === "evaluated" && prediction.criterion.qualifies).length;
   const incomplete = pakistan.locations.some(({ prediction }) =>
     prediction.status !== "evaluated" && prediction.status !== "moonset-before-or-at-sunset");
   const yallopAccepted = yallop.locations.filter(({ prediction }) =>
     prediction.status === "evaluated" && prediction.acceptedByPolicy).length;
+  const yallopIncomplete = yallop.locations.some(({ prediction }) =>
+    prediction.status !== "evaluated" && prediction.status !== "moonset-before-or-at-sunset");
   const state = outsideNewCrescentWindow ? "not-new" :
     qualified > 0 ? "favorable" : incomplete ? "incomplete" : "unfavorable";
   const outlook = state === "unfavorable"
@@ -54,15 +50,26 @@ export function PakistanCrescentQuickResult({
   );
   const nextLocation = nextEveningScience?.locations.find(({ observer }) => observer.id === locationId);
   const nextMeasured = nextLocation?.prediction.status === "evaluated" ? nextLocation.prediction.criterion : null;
-  const nextPasses = nextEveningScience?.locations.filter(({ prediction }) =>
-    prediction.status === "evaluated" && prediction.criterion.qualifies).length ?? 0;
-  const nextIncomplete = nextEveningScience?.locations.some(({ prediction }) =>
-    prediction.status !== "evaluated" && prediction.status !== "moonset-before-or-at-sunset") ?? true;
-  const publicCount = (n: number) => ur && n === 0 ? "صفر" : dateDigits(String(n), lang);
-  const nextEveningStatus = nextIncomplete
-    ? (ur ? "بعض مقامات کا حساب دستیاب نہیں" : "Some locations have incomplete calculations")
-    : nextPasses > 0 ? (ur ? "رؤیت کے سائنسی حالات موافق ہیں" : "Scientific visibility conditions are favorable")
-      : (ur ? "رؤیت کے سائنسی حالات موافق نہیں" : "Scientific visibility conditions are unfavorable");
+  const nextEveningStatus = nextLocation?.prediction.status === "evaluated"
+    ? nextLocation.prediction.criterion.qualifies
+      ? (ur ? "رؤیت کے سائنسی حالات موافق ہیں" : "Scientific visibility conditions are favorable")
+      : (ur ? "رؤیت کے سائنسی حالات موافق نہیں" : "Scientific visibility conditions are unfavorable")
+    : nextLocation?.prediction.status === "moonset-before-or-at-sunset"
+      ? (ur ? "رؤیت کے سائنسی حالات موافق نہیں" : "Scientific visibility conditions are unfavorable")
+      : (ur ? "اس شہر کا حساب دستیاب نہیں" : "Calculations unavailable for this city");
+  // These percentages describe the share of eight sites meeting each model's
+  // threshold; they are not statistical probabilities of an actual sighting.
+  const modelShare = (count: number, missing: boolean) => {
+    if (outsideNewCrescentWindow) return ur ? "نئے ہلال کا جائزہ نہیں" : "Not a new-crescent evening";
+    if (missing) return ur ? "مکمل حساب دستیاب نہیں" : "Incomplete measurements";
+    if (count === 0) return ur ? "کوئی امکان نہیں" : "No favorable sites";
+    const percent = count / 8 * 100;
+    return ur
+      ? `${percent}% مقامات پر رؤیت کے حالات موافق ہیں`
+      : `Favorable at ${percent}% of the eight sites`;
+  };
+  const pakistanLine = modelShare(qualified, incomplete);
+  const yallopLine = modelShare(yallopAccepted, yallopIncomplete);
   const officialSighting = decision?.sightingDecision === "sighted";
   const targetName = outlook ? monthName("hijri", outlook.nextHijriMonth, lang) : "";
   const targetYear = outlook ? String(outlook.nextHijriYear) : "";
@@ -74,17 +81,13 @@ export function PakistanCrescentQuickResult({
     ? ur ? `ہمارے سائنسی حساب سے ${firstDayLabel}`
       : `Our scientific calculation forecasts the first of ${targetName} ${targetYear} on ${dateLabel(outlook.dayOne, lang)}.`
     : "";
-  const headline = state === "not-new" ? (ur ? "یہ نئے چاند کی شام نہیں ہے" : "Not a new crescent evening")
-    : state === "favorable" ? (ur ? "چاند نظر آنے کے امکانات ہیں" : "The crescent may be visible")
-    : state === "incomplete" ? (ur ? "ابھی واضح اندازہ نہیں لگایا جا سکتا" : "No clear prediction is available")
-    : (ur ? "اس شام چاند نظر آنے کی توقع نہیں" : "The crescent is not expected to be visible");
-  const explanation = state === "not-new" ? (ur ? "اوپر کسی نئے قمری مہینے کو منتخب کریں۔" : "Choose an upcoming lunar month above.")
-    : state === "favorable" ? (ur ? "ہمارے پاکستانی سائنسی حساب کے مطابق حالات موافق ہیں۔" : "Pakistan scientific conditions are favorable.")
-    : state === "incomplete" ? (ur ? "بعض مقامات کی معلومات مکمل نہیں۔ اس لیے ہم حتمی اندازہ نہیں دے رہے۔" : "Some local calculations are incomplete, so we cannot give a definite outlook.")
-    : (ur ? "ہمارے پاکستانی سائنسی معیار کے مطابق اس شام ہلال کی رؤیت ممکن نہیں۔" : "Under our Pakistan scientific criterion, the crescent cannot be seen that evening.");
+  const headline = ur ? "اس شام چاند نظر آنے کے امکانات:" : "Crescent-visibility conditions this evening:";
   const resultText = [
     ur ? "قلم ورکس — پاکستان میں رؤیتِ ہلال" : "Qalam Works — Crescent visibility in Pakistan",
-    dateLabel(date, lang), headline, explanation, firstDayText,
+    dateLabel(date, lang), headline,
+    `${ur ? "پاکستانی سائنسی ماڈل" : "Pakistan scientific model"}: ${pakistanLine}`,
+    `${ur ? "بین الاقوامی سائنسی ماڈل" : "International scientific model"}: ${yallopLine}`,
+    firstDayText,
     `https://www.qalamworks.com/tools/crescent-visibility?date=${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`,
   ].filter(Boolean).join("\n");
 
@@ -103,12 +106,6 @@ export function PakistanCrescentQuickResult({
     }
   }
 
-  const measures = [
-    { label: ur ? "چاند کی عمر" : "Moon age", value: age !== null && Number.isFinite(age) && age >= 0 ? age : null, symbol: "", unit: ur ? "گھنٹے" : "h" },
-    { label: ur ? "زاویائی فاصلہ" : "Elongation", value: measured?.elongationDeg ?? null, symbol: "°", unit: "" },
-    { label: ur ? "غروب کا وقفہ" : "Moon lag", value: measured?.lagMinutes ?? null, symbol: "", unit: ur ? "منٹ" : "min" },
-    { label: ur ? "افق سے بلندی" : "Altitude", value: measured?.altitudeDeg ?? null, symbol: "°", unit: "" },
-  ];
   return (
     <section data-testid="crescent-simple-result" aria-label={ur ? "رؤیتِ ہلال کا آسان نتیجہ" : "Crescent visibility quick result"}
       className="overflow-hidden rounded-3xl border border-[#1A3A2A]/15 bg-white shadow-sm dark:border-[#35513d] dark:bg-[#162a1e]">
@@ -117,8 +114,20 @@ export function PakistanCrescentQuickResult({
           <Moon className="h-5 w-5" aria-hidden="true" />{ur ? "پاکستان میں چاند کی رؤیت" : "Crescent visibility in Pakistan"}
         </p>
         <p className="mt-2 text-sm text-[#587060] dark:text-[#b6cbb9]">{dateLabel(date, lang)}</p>
-        <h2 data-testid="crescent-simple-headline" className={`mt-3 text-2xl font-bold leading-relaxed sm:text-3xl ${state === "favorable" ? "text-emerald-800 dark:text-emerald-300" : state === "unfavorable" ? "text-rose-800 dark:text-rose-300" : "text-[#153b29] dark:text-[#f0f7f0]"} ${ur ? "font-naskh" : ""}`}>{headline}</h2>
-        <p className={`mx-auto mt-2 max-w-xl text-base leading-8 text-[#486155] dark:text-[#cfddd1] ${ur ? "font-naskh" : ""}`}>{explanation}</p>
+        <h2 data-testid="crescent-simple-headline" className="mt-4 text-[#153b29] dark:text-[#f0f7f0]">{headline}</h2>
+        <div data-testid="crescent-model-results" className="mx-auto mt-5 grid max-w-3xl gap-3 text-center">
+          <p data-testid="crescent-pakistan-model" className="rounded-xl border border-[#b7ceb9] bg-white p-3 text-[#173d2a] dark:border-[#476c51] dark:bg-[#203326] dark:text-[#e6f1e7]">
+            <span>{ur ? "پاکستانی سائنسی ماڈل:" : "Pakistan scientific model:"}</span>{" "}
+            <span>{pakistanLine}</span>
+          </p>
+          <p data-testid="crescent-yallop-model" className="rounded-xl border border-[#b7ceb9] bg-white p-3 text-[#173d2a] dark:border-[#476c51] dark:bg-[#203326] dark:text-[#e6f1e7]">
+            <span>{ur ? "بین الاقوامی سائنسی ماڈل:" : "International scientific model:"}</span>{" "}
+            <span>{yallopLine}</span>
+          </p>
+          {(qualified > 0 || yallopAccepted > 0) && !outsideNewCrescentWindow && <p className="text-[#486155] dark:text-[#cfddd1]">
+            {ur ? "فیصد سے مراد آٹھ مقامات میں موافق حالات کا تناسب ہے۔" : "Percentages are shares of eight favorable sites, not probabilities of sighting."}
+          </p>}
+        </div>
         <div className="mx-auto mt-5 flex max-w-xl flex-wrap items-center justify-center gap-3 rounded-xl border border-[#1A3A2A]/15 bg-white px-4 py-3 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white" data-testid="crescent-visible-city-selector">
           <label htmlFor="crescent-observer-city">{ur ? "اپنا شہر منتخب کریں:" : "Choose your city:"}</label>
           <select id="crescent-observer-city" data-testid="crescent-quick-location"
@@ -132,17 +141,15 @@ export function PakistanCrescentQuickResult({
         </div>
         {outlook && nextEveningScience && <section data-testid="crescent-next-evening" className="mx-auto mt-5 max-w-2xl rounded-2xl border border-[#1A3A2A]/20 bg-white px-4 py-5 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
           <h3 className="text-center">{ur ? `${formatDate(outlook.dayThirty, "gregorian", lang)} کی شام کا سائنسی جائزہ` : `Scientific outlook for the evening of ${dateLabel(outlook.dayThirty, lang)}`}</h3>
+          <p className="mt-2 text-center">{ur ? `${localName} میں 11ویں شام:` : `For ${localName} on this evening:`}</p>
           <p className="mt-2 text-center" data-testid="crescent-next-evening-status">{nextEveningStatus}</p>
-          <p className="mt-1 text-center" data-testid="crescent-next-evening-count">
-            {ur ? `پاکستان کے آٹھ مقامات میں سے ${publicCount(nextPasses)} مقامات پر سائنسی معیار پورا ہوتا ہے۔` : `Criterion met at ${nextPasses} of 8 Pakistan locations.`}
-          </p>
-          <p className="mt-2 text-center">{ur ? `${localName} میں اسی شام کے حقیقی حسابی اعداد:` : `Actual astronomical calculations for ${localName} that evening:`}</p>
+          <p className="mt-3 text-center">{ur ? `${localName} کے فلکیاتی اعداد:` : `Astronomical figures for ${localName}:`}</p>
           <dl className="mt-3 grid grid-cols-1 gap-3 text-center sm:grid-cols-2" data-testid="crescent-next-evening-metrics">
             {[
-              { label: ur ? "افق سے بلندی" : "Altitude", value: nextMeasured?.altitudeDeg ?? null, symbol: "°", unit: "" },
+              { label: ur ? "افق سے بلندی (ڈگری)" : "Altitude (degrees)", value: nextMeasured?.altitudeDeg ?? null, symbol: "°", unit: "" },
               { label: ur ? "غروب کا وقفہ" : "Moonset lag", value: nextMeasured?.lagMinutes ?? null, symbol: "", unit: ur ? "منٹ" : "min" },
               { label: ur ? "زاویائی فاصلہ" : "Elongation", value: nextMeasured?.elongationDeg ?? null, symbol: "°", unit: "" },
-              { label: ur ? "ہلال کی چوڑائی" : "Crescent width", value: nextMeasured?.widthArcMin ?? null, symbol: "′", unit: "" },
+              { label: ur ? "ہلال کی چوڑائی (قوسی منٹ)" : "Crescent width (arcminutes)", value: nextMeasured?.widthArcMin ?? null, symbol: "′", unit: "" },
             ].map(item => <div key={item.label} data-crescent-measure className="rounded-xl border border-[#1A3A2A]/10 p-3 dark:border-[#52715a]">
               <dt className="text-[#587060] dark:text-[#c8d5cc]">{item.label}</dt>
               <dd className="mt-1 flex items-baseline justify-center gap-2 font-normal text-[#153b29] dark:text-white">
@@ -158,7 +165,7 @@ export function PakistanCrescentQuickResult({
             {ur ? "11 نومبر کے تمام مقامات کا حساب دیکھیں" : "View all locations for the next evening"}
           </a>
         </section>}
-        {outlook && !officialSighting && <div data-testid="crescent-predicted-first-day" className="mx-auto mt-5 w-full rounded-2xl border border-[#1A3A2A]/15 bg-white px-4 py-4 sm:px-6 text-[#153b29] dark:border-[#35513d] dark:bg-[#203326] dark:text-white">
+        {outlook && !officialSighting && <div data-testid="crescent-predicted-first-day" className="mx-auto mt-6 w-full rounded-2xl border-2 border-[#ad7b18] bg-[#f3cf68] px-5 py-5 text-[#173325] shadow-[0_8px_30px_rgba(172,120,20,0.25)] dark:border-[#dbb64b] dark:bg-[#f3cf68] dark:text-[#173325] sm:px-6">
           <p data-crescent-forecast className="text-lg font-normal leading-9">{ur && outlook
             ? <>ہمارے سائنسی حساب سے {targetName} <bdi dir="ltr">{outlook.nextHijriYear}</bdi> کی پہلی تاریخ <bdi dir="ltr">{outlook.dayOne.day}</bdi> {monthName("gregorian", outlook.dayOne.month, "ur")} <bdi dir="ltr">{outlook.dayOne.year}</bdi>ء بروز {weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()]} ہوگی۔</>
             : firstDayText}</p>
@@ -171,8 +178,8 @@ export function PakistanCrescentQuickResult({
           {shareStatus === "copied" ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
           {shareStatus === "copied" ? (ur ? "نتیجہ کاپی ہوگیا" : "Result copied") : (ur ? "نتیجہ شیئر کریں" : "Share result")}
         </button>
-        <a href="#crescent-simple-details" onClick={() => {
-          const details = document.getElementById("crescent-simple-details") as HTMLDetailsElement | null;
+        <a href="#crescent-technical-report" onClick={() => {
+          const details = document.getElementById("crescent-technical-report") as HTMLDetailsElement | null;
           if (details) details.open = true;
         }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1A3A2A]/20 px-4 py-2.5 text-sm font-semibold text-[#1A3A2A] dark:border-[#35513d] dark:text-[#e9f2e9]">
           <Clipboard className="h-4 w-4" />{ur ? "مزید تفصیل" : "More details"}
@@ -180,36 +187,6 @@ export function PakistanCrescentQuickResult({
         {shareStatus === "failed" && <p role="alert" className="w-full text-center text-sm text-rose-700 dark:text-rose-300">{ur ? "شیئر نہیں ہو سکا، دوبارہ کوشش کریں۔" : "Could not share. Please try again."}</p>}
       </div>
 
-      <details id="crescent-simple-details" data-testid="crescent-simple-details" className="border-t border-[#1A3A2A]/10 px-5 pb-5 dark:border-[#35513d] sm:px-8">
-        <summary className="cursor-pointer py-4 text-base font-bold text-[#315c40] dark:text-[#c3e0c5]">{ur ? "آسان الفاظ میں مکمل بات" : "Explanation in simple terms"}</summary>
-        <div className="space-y-3 text-sm leading-8 text-[#153b29] dark:text-[#e6f0e6]" data-testid="crescent-three-outcomes">
-          <p data-testid="crescent-simple-national-count"><strong>{ur ? "پاکستان میں:" : "Pakistan:"}</strong> {ur ? `آٹھ مقامات میں سے ${publicCount(qualified)} مقامات پر معیار پورا ہوا۔` : `The visibility test was met at ${qualified} of 8 reference locations.`}</p>
-          <p><strong>{ur ? "دوسرے سائنسی حساب سے:" : "Second scientific check:"}</strong> {ur ? `آٹھ میں سے ${publicCount(yallopAccepted)} مقامات پر حالات موافق ہیں۔` : `Conditions are favorable at ${yallopAccepted} of 8 locations.`}</p>
-        </div>
-        <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 p-4 dark:border-[#35513d]">
-          <p className="text-center text-[#315c40] dark:text-[#cfddd1]">
-            {ur ? `منتخب شہر: ${localName}` : `Selected city: ${localName}`}
-          </p>
-          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4" data-testid="crescent-simple-metrics">
-            {measures.map(item => <div key={item.label} data-crescent-measure className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#203326]">
-              <dt className="text-[#587060] dark:text-[#b6cbb9]">{item.label}</dt>
-              <dd className="mt-1 flex items-baseline justify-center gap-2 font-normal text-[#153b29] dark:text-white">
-                {item.value === null || !Number.isFinite(item.value) ? "—" : <>
-                  <span data-crescent-latin-number dir="ltr">{number(item.value)}{item.symbol}</span>
-                  {item.unit && <span>{item.unit}</span>}
-                </>}
-              </dd>
-            </div>)}
-          </dl>
-          <p className="mt-2 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? "— کا مطلب ہے کہ متعلقہ عدد دستیاب نہیں۔" : "— means the number is unavailable."}</p>
-        </div>
-        <a href="#crescent-technical-report" onClick={() => {
-          const detail = document.getElementById("crescent-technical-report") as HTMLDetailsElement | null;
-          if (detail) detail.open = true;
-        }} className="mt-4 inline-flex rounded-xl border border-[#1A3A2A]/20 px-4 py-3 text-sm font-bold text-[#1A3A2A] dark:text-white">
-          {ur ? "اصل تحقیق اور حوالہ جات" : "Original research and sources"}
-        </a>
-      </details>
     </section>
   );
 }
