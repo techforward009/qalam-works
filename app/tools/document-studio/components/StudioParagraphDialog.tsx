@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot } from "../utils/inpageToolbar";
-import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import {
   PARAGRAPH_ALIGNS,
@@ -16,16 +15,16 @@ import {
 
 const FIELD = "data-paragraph-field";
 const inputStyle: CSSProperties = { width: 72, height: 18, boxSizing: "border-box", border: "1px solid #808080", background: "#fff", color: "#000", font: "11px Tahoma, sans-serif", padding: "0 2px" };
-const groupStyle: CSSProperties = { border: "1px solid #808080", margin: 0, padding: "4px 5px 4px", minWidth: 0 };
-const legendStyle: CSSProperties = { padding: "0 3px", font: "11px Tahoma, sans-serif", whiteSpace:"nowrap" };
-const buttonStyle: CSSProperties = { width: 65, height: 22, boxSizing: "border-box", background: "#f0f0f0", border: "1px solid #808080", boxShadow: "inset 1px 1px #fff, inset -1px -1px #404040", font: "11px Tahoma, sans-serif", color: "#000" };
+const groupStyle: CSSProperties = { border: "1px solid #808080", margin: 0, padding: "8px 8px 6px", minWidth: 0 };
+const legendStyle: CSSProperties = { padding: "0 3px", font: "11px Tahoma, sans-serif" };
+const buttonStyle: CSSProperties = { width: 72, height: 22, boxSizing: "border-box", background: "#f0f0f0", border: "1px solid #808080", boxShadow: "inset 1px 1px #fff, inset -1px -1px #404040", font: "11px Tahoma, sans-serif", color: "#000" };
 
 function Mark({ text, at }: { text: string; at: number }) {
   return <>{text.slice(0, at)}<span style={{ textDecoration: "underline" }}>{text[at]}</span>{text.slice(at + 1)}</>;
 }
 
 function Row({ label, at, children }: { label: string; at: number; children: ReactNode }) {
-  return <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4, marginTop: 3 }}><span style={{whiteSpace:"nowrap"}}><Mark text={label} at={at} /></span>{children}</label>;
+  return <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 3 }}><span><Mark text={label} at={at} /></span>{children}</label>;
 }
 
 function MixedBox({ name, accessKey, value, onChange, children }: { name: string; accessKey?: string; value: boolean | null; onChange: (checked: boolean) => void; children: ReactNode }) {
@@ -39,8 +38,7 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
   const initial = useRef(form);
   const [error, setError] = useState("");
   const [help, setHelp] = useState(false);
-  const drag = useMovableStudioDialog<HTMLFormElement>();
-  const root = drag.dialogRef;
+  const root = useRef<HTMLFormElement>(null);
   const patch = (next: Partial<ParagraphForm>) => setForm((current) => ({ ...current, ...next }));
   const close = () => { onClose(); if (!editor.isDestroyed) editor.view.focus(); };
   const apply = () => {
@@ -65,17 +63,17 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
     next?.focus();
   };
   return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={(event) => event.stopPropagation()}>
-    <form ref={root} role="dialog" aria-modal="true" aria-label="Paragraph Preferences" data-studio-paragraph-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ ...drag.style, width: "min(365px, 100%)", minHeight: "min(292px, calc(100vh - 24px))", maxHeight: "calc(100vh - 24px)", overflow: "auto", background: "#f0f0f0", color: "#000", border: "1px solid #fff", boxShadow: "inset -1px -1px #808080, 1px 1px 0 #000, 1px 4px 12px rgba(0,0,0,.25)", font: "11px Tahoma, sans-serif", padding: 7 }}>
-      <div {...drag.handleProps} data-studio-paragraph-title="true" style={{ ...drag.handleProps.style, display: "flex", alignItems: "center", justifyContent: "space-between", height: 22, paddingLeft: 5, background: "linear-gradient(90deg, #D5EAFD, #F2FAFF)", marginBottom: 5, border: "1px solid #8DA8C1" }}>
+    <form ref={root} role="dialog" aria-modal="true" aria-label="Paragraph Preferences" data-studio-paragraph-dialog="true" dir="ltr" onSubmit={(event) => { event.preventDefault(); apply(); }} style={{ width: "min(448px, 100%)", maxHeight: "calc(100vh - 24px)", overflow: "auto", background: "#f0f0f0", color: "#000", border: "1px solid #fff", boxShadow: "inset -1px -1px #808080, 1px 1px 0 #000", font: "11px Tahoma, sans-serif", padding: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <span style={{ fontWeight: 700 }}>Paragraph Preferences</span>
-        <button type="button" aria-label="Close" tabIndex={-1} onClick={close} style={{ ...buttonStyle, width: 29, height: 18, lineHeight: "12px", background: "linear-gradient(#F6CDCD,#C94B40)", color: "#fff", fontWeight: 700 }}>×</button>
+        <button type="button" aria-label="Close" tabIndex={-1} onClick={close} style={{ ...buttonStyle, width: 18, height: 16, lineHeight: "12px" }}>×</button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,150px) minmax(0,116px) 66px", gap: 7, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.25fr) minmax(0,1fr) 76px", gap: 8, alignItems: "start" }}>
         <fieldset role="group" aria-label="Indents" style={{ ...groupStyle, gridColumn: 1, gridRow: "1 / span 2" }}>
           <legend style={legendStyle}>Indents</legend>
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <span><Mark text="Alignment" at={0} /></span>
-            <select name="alignment" aria-label="Alignment" accessKey="a" data-paragraph-field="true" value={form.alignment} onChange={(event) => patch({ alignment: event.target.value })} style={{ ...inputStyle, width: 90 }}>
+            <select name="alignment" aria-label="Alignment" accessKey="a" data-paragraph-field="true" value={form.alignment} onChange={(event) => patch({ alignment: event.target.value })} style={{ ...inputStyle, width: 110 }}>
               {form.alignment === "" ? <option value="">—</option> : null}
               {PARAGRAPH_ALIGNS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>

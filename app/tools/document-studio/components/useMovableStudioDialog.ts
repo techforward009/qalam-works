@@ -42,7 +42,6 @@ export function useMovableStudioDialog<T extends HTMLElement>() {
   }, []);
   const handleProps = {
     "data-studio-dialog-drag-handle": "true",
-    "aria-label": "Drag dialog",
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       if (event.button !== 0 || (event.target as Element).closest("button,input,select,textarea,a")) return;
       const rect = dialogRef.current?.getBoundingClientRect();
@@ -67,7 +66,7 @@ export function useMovableStudioDialog<T extends HTMLElement>() {
       if (start.current?.pointerId === event.pointerId) start.current = null;
       if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     },
-    style: { cursor: "move", touchAction: "none", userSelect: "none" } as CSSProperties,
+    style: { cursor: "default", touchAction: "none", userSelect: "none" } as CSSProperties,
   };
   return { dialogRef, handleProps, offset, style: { transform: `translate(${offset.x}px, ${offset.y}px)` } as CSSProperties };
 }

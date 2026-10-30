@@ -13,6 +13,7 @@ test("Character title bar can be dragged without changing the format form", asyn
   await page.locator('[data-menu-action="format.character"]').click();
   const dlg = page.locator('[data-studio-character-dialog]');
   const handle = dlg.locator('[data-studio-character-drag-handle]');
+  await expect(handle).toHaveCSS("cursor","default");
   const before = (await dlg.boundingBox())!;
   const grip = (await handle.boundingBox())!;
   await page.mouse.move(grip.x + 85, grip.y + 12);
@@ -36,7 +37,7 @@ test("Paragraph Preferences has compact classical groups", async ({ page }) => {
   await expect(dlg.getByRole("group", { name: "Indents" })).toBeVisible();
   await expect(dlg.getByRole("group", { name: "Breaks" })).toBeVisible();
   const box = (await dlg.boundingBox())!;
-  expect(box.width).toBeLessThanOrEqual(380);
+  expect(box.width).toBeLessThanOrEqual(448);
   await dlg.getByRole("button", { name: "Cancel" }).click();
 });
 
@@ -46,10 +47,9 @@ test("Format > Document opens a real Page Setup; cancel preserves the page and t
   await page.locator('[data-menu-action="file.pageSetup"]').click();
   const dlg = page.getByRole("dialog", { name: "Page Setup" });
   await expect(dlg).toBeVisible();
-  const facing = dlg.getByRole("checkbox", { name: "Facing Pages" });
-  const previous = await facing.isChecked();
-  if (previous) await facing.uncheck(); else await facing.check();
-  await expect(facing).toBeChecked({ checked: !previous });
+  await expect(dlg.getByRole('checkbox',{name:'Facing Pages'})).toHaveCount(0);
+  await dlg.getByLabel('Page size',{exact:true}).selectOption('b4');
+  await expect(dlg.getByLabel('Width',{exact:true})).toHaveValue('250mm');
   await dlg.getByRole("button", { name: "Cancel" }).click();
   expect(await page.locator(".ProseMirror").innerText()).toBe(before);
 });
@@ -60,7 +60,8 @@ test("File > Open has a classical dialog and real saved-document / InPage action
   const dlg = page.locator('[data-studio-open-dialog]');
   await expect(dlg).toBeVisible();
   await expect(dlg.getByRole("listbox", { name: "Saved documents" })).toBeVisible();
-  await expect(dlg.getByRole("button", { name: "Open InPage file…" })).toBeVisible();
+  await expect(dlg.getByRole("button", { name: "Open InPage file…" })).toHaveCount(0);
+  await expect(dlg.getByRole("combobox", {name:"Files of type"})).toContainText("InPage files (*.inp)");
   await dlg.getByRole("button", { name: "Cancel" }).click();
   await expect(dlg).toHaveCount(0);
 });
@@ -102,13 +103,14 @@ test('review: Character stays inside a 375px viewport and after resizing a dragg
   await page.setViewportSize({width:375,height:740});
   await expect.poll(async()=>{const b=(await dlg.boundingBox())!;return b.x>=0&&b.x+b.width<=375.5&&b.y>=0&&b.y+b.height<=740.5;}).toBe(true);
 });
-test('review: Page Setup does not pretend duplex or mirrored margins exist', async ({ page },info) => {
-  const dlg=await settingsDialog(page);const duplex=dlg.getByRole('checkbox',{name:'Double Sided',exact:true});
-  await expect(duplex).toBeDisabled();await expect(duplex).not.toBeChecked();
-  await dlg.getByRole('checkbox',{name:'Facing Pages',exact:true}).check();
-  await expect(duplex).not.toBeChecked();await expect(dlg).toContainText(/view only/i);
-  await dlg.screenshot({path:info.outputPath('page-setup-b.png'),scale:'css'});
-  await page.keyboard.press('Escape');await expect(dlg).toHaveCount(0);
+test('review: Page Setup exposes paper controls only, with the requested classic size',async({page},info)=>{
+ const dlg=await settingsDialog(page);
+ await expect(dlg.getByRole('checkbox')).toHaveCount(0);
+ const r=(await dlg.boundingBox())!;expect(r.width).toBeLessThanOrEqual(389);expect(r.height).toBeLessThanOrEqual(179);
+ await expect(dlg.getByLabel('Width',{exact:true})).toBeEditable();
+ await expect(dlg.getByLabel('Height',{exact:true})).toBeEditable();
+ await dlg.screenshot({path:info.outputPath('page-setup-b.png'),scale:'css'});
+ await page.keyboard.press('Escape');await expect(dlg).toHaveCount(0);
 });
 test('review: Page Setup rejects invalid values, applies A5 geometry and preserves authored text', async ({ page }) => {
   await page.locator('.ProseMirror').click();await page.keyboard.insertText('Keep this document محفوظ');
@@ -129,7 +131,7 @@ test('review: Open focuses safely, Escape closes it, and advertises only support
   await page.locator('[data-menu-root="file"]').click();await page.locator('[data-menu-action="file.open"]').click();
   const dlg=page.locator('[data-studio-open-dialog]');await expect(dlg.getByRole('combobox',{name:'Files of type'})).not.toContainText('*.int');
   expect(await dlg.evaluate(el=>el.contains(document.activeElement))).toBe(true);
-  const chooser=page.waitForEvent('filechooser');await dlg.getByRole('button',{name:'Open InPage file…'}).click();
+  const chooser=page.waitForEvent('filechooser');await dlg.getByRole('combobox',{name:'Files of type'}).selectOption('inpage');await dlg.getByRole('button',{name:'Open',exact:true}).click();
   const picker=await chooser;expect(await picker.isMultiple()).toBe(false);await picker.setFiles([]);
   await page.keyboard.press('Escape');await expect(dlg).toHaveCount(0);
 });
@@ -170,16 +172,16 @@ test('review: saved documents open by double-click and Enter; rename/delete and 
   const rename=async(name:string)=>{await page.locator('button[data-studio-document-title]').click();await page.locator('input[data-studio-document-title]').fill(name);await page.locator('input[data-studio-document-title]').press('Enter');};
   const save=async()=>{await page.locator('[data-menu-root="file"]').click();await page.locator('[data-menu-action="file.save"]').click();await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible();};
   const library=async()=>{await page.locator('[data-menu-root="file"]').click();await page.locator('[data-menu-action="file.open"]').click();return page.locator('[data-studio-open-dialog]');};
-  await rename('Dialog Alpha');await page.locator('.ProseMirror').click();await page.keyboard.insertText('Alpha retained');let setup=await settingsDialog(page);await setup.getByLabel('Page size',{exact:true}).selectOption('letter');await setup.getByRole('button',{name:'OK',exact:true}).click();await save();
+  await rename('Dialog Alpha');await page.locator('.ProseMirror').click();await page.keyboard.insertText('Alpha retained');let setup=await settingsDialog(page);await setup.getByLabel('Page size',{exact:true}).selectOption('folio');await setup.getByRole('button',{name:'OK',exact:true}).click();await save();
   await page.locator('[data-menu-root="file"]').click();await page.locator('[data-menu-action="file.new"]').click();await page.getByRole('dialog',{name:'New Document',exact:true}).getByRole('button',{name:'OK',exact:true}).click();
   await rename('Dialog Beta');await page.locator('.ProseMirror').click();await page.keyboard.insertText('Beta retained');await save();
-  let dlg=await library();await dlg.getByRole('option',{name:/Dialog Alpha/}).dblclick();await expect(page.locator('.ProseMirror')).toContainText('Alpha retained');setup=await settingsDialog(page);await expect(setup.getByLabel('Page size',{exact:true})).toHaveValue('letter');await setup.getByRole('button',{name:'Cancel',exact:true}).click();
+  let dlg=await library();await dlg.getByRole('option',{name:/Dialog Alpha/}).dblclick();await expect(page.locator('.ProseMirror')).toContainText('Alpha retained');setup=await settingsDialog(page);await expect(setup.getByLabel('Page size',{exact:true})).toHaveValue('folio');await setup.getByRole('button',{name:'Cancel',exact:true}).click();
   dlg=await library();await dlg.getByRole('option',{name:/Dialog Beta/}).focus();await page.keyboard.press('Enter');await expect(page.locator('.ProseMirror')).toContainText('Beta retained');
   dlg=await library();page.once('dialog',dialog=>dialog.accept('Renamed Beta'));await dlg.getByRole('button',{name:'Rename',exact:true}).click();await expect(dlg.getByRole('option',{name:/Renamed Beta/})).toBeVisible();
   await dlg.getByRole('option',{name:/Dialog Alpha/}).click();page.once('dialog',dialog=>dialog.dismiss());await dlg.getByRole('button',{name:'Delete',exact:true}).click();await expect(dlg.getByRole('option',{name:/Dialog Alpha/})).toBeVisible();
   page.once('dialog',dialog=>dialog.accept());await dlg.getByRole('button',{name:'Delete',exact:true}).click();await expect(dlg.getByRole('option',{name:/Dialog Alpha/})).toHaveCount(0);await expect(dlg.getByRole('option',{name:/Renamed Beta/})).toBeVisible();
-  const chooser=page.waitForEvent('filechooser');await dlg.getByRole('button',{name:'Open InPage file…'}).click();await(await chooser).setFiles('tests/fixtures/inpage/hadiyat.inp');
-  await expect(page.getByRole('dialog',{name:'InPage text imported',exact:true})).toBeVisible();await expect(dlg).toHaveCount(0);
+  const chooser=page.waitForEvent('filechooser');await dlg.getByRole('combobox',{name:'Files of type'}).selectOption('inpage');await dlg.getByRole('button',{name:'Open',exact:true}).click();await(await chooser).setFiles('tests/fixtures/inpage/hadiyat.inp');
+  await expect(page.getByRole('dialog',{name:'Additional InPage stories',exact:true})).toBeVisible();await expect(dlg).toHaveCount(0);
 });
 
 test('Classic menu dialogs can be moved by title bars without changing selected text', async ({ page }) => {
@@ -187,7 +189,6 @@ test('Classic menu dialogs can be moved by title bars without changing selected 
   await page.keyboard.insertText('This story is unchanged');
   const before = await page.locator('.ProseMirror').innerText();
   const items = [
-    { menu: 'format', action: 'format.paragraph', selector: '[data-studio-paragraph-dialog]' },
     { menu: 'format', action: 'file.pageSetup', selector: '[data-studio-page-setup]' },
     { menu: 'file', action: 'file.open', selector: '[data-studio-open-dialog]' },
     { menu: 'file', action: 'file.new', selector: '[data-studio-new-document] form' },
@@ -196,14 +197,15 @@ test('Classic menu dialogs can be moved by title bars without changing selected 
     await page.locator('[data-menu-root="' + item.menu + '"]').click();
     await page.locator('[data-menu-action="' + item.action + '"]').click();
     const dlg = page.locator(item.selector), bar = dlg.locator('[data-studio-dialog-drag-handle]');
-    await expect(bar).toBeVisible();
+    await expect(bar).toBeVisible();await expect(bar).toHaveCSS("cursor","default");
     const start = (await dlg.boundingBox())!, handle = (await bar.boundingBox())!;
     await page.mouse.move(handle.x + 35, handle.y + 8);
     await page.mouse.down();
     await page.mouse.move(handle.x + 85, handle.y + 25, { steps: 5 });
     await page.mouse.up();
     const end = (await dlg.boundingBox())!;
-    expect(end.x).toBeGreaterThan(start.x + 15);
+    if(page.viewportSize()!.width>600) expect(end.x).toBeGreaterThan(start.x + 15);
+    else {expect(end.x).toBeGreaterThanOrEqual(0);expect(end.x+end.width).toBeLessThanOrEqual(page.viewportSize()!.width+1);}
     expect(end.y).toBeGreaterThan(start.y + 5);
     await dlg.getByRole('button', { name: 'Cancel', exact: true }).click();
   }

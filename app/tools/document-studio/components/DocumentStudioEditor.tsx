@@ -2159,7 +2159,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           direction={dir}
           columns={columnCount}
           gutter={columnGutterMm}
-          facing={viewMode === "facing"}
           onClose={() => {setPageSetupOpen(false);document.querySelector<HTMLButtonElement>('[data-menu-root="format"]')?.focus();}}
           onApply={(values: StudioPageSetupValues) => {
             setDocumentSettings(current => ({
@@ -2167,7 +2166,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
               page: {
                 ...current.page,
                 size: values.size,
-                customSizeMm: values.size === current.page.size ? current.page.customSizeMm : undefined,
+                customSizeMm: values.customSizeMm,
                 orientation: values.orientation,
                 margins: {
                   preset: "custom",
@@ -2180,7 +2179,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             }));
             setColumnCount(values.columns);
             setColumnGutterMm(values.gutter);
-            setViewMode(values.facing ? "facing" : "pages");
             setPdfSummary(null);
             setPageSetupOpen(false);
           }}

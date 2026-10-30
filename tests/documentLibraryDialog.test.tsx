@@ -42,7 +42,10 @@ describe("DocumentLibraryDialog", () => {
     expect(onRename).toHaveBeenCalledWith("1");
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
     expect(onNew).toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Open InPage file…" }));
+    expect(screen.queryByRole("button", {name:"Open InPage file…"})).toBeNull();
+    expect(screen.getByRole("option",{name:"InPage files (*.inp)"})).toBeTruthy();
+    fireEvent.change(screen.getByRole("combobox",{name:"Files of type"}),{target:{value:"inpage"}});
+    fireEvent.click(screen.getByRole("button", { name: /^Open$/ }));
     expect(onOpenInPage).toHaveBeenCalled();
   });
 });

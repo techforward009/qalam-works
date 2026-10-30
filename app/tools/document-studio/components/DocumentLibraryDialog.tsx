@@ -69,7 +69,6 @@ export default function DocumentLibraryDialog({ isUr, documents, activeId, onOpe
       </div>
       <div style={{height:27,overflowX:"auto",display:"flex",alignItems:"center",gap:5,padding:"0 11px 6px",flexShrink:0}}>
         <button type="button" style={{...btn,minWidth:90,flexShrink:0}} onClick={onNew}>New document</button>
-        <button type="button" style={{...btn,minWidth:90,flexShrink:0}} onClick={onOpenInPage} aria-label="Open InPage file…">Open InPage file…</button>
         <button type="button" style={{...btn,minWidth:60,flexShrink:0}} onClick={()=>chosen&&onRename(chosen.id)} disabled={!chosen}>Rename</button>
         <button type="button" style={{...btn,minWidth:50,flexShrink:0}} onClick={()=>chosen&&onDelete(chosen.id)} disabled={!chosen}>Delete</button>
         <span style={{marginLeft:"auto",color:"#666"}} title="Browsers cannot enumerate local Windows folders">Browser storage</span>
