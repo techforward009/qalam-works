@@ -295,7 +295,7 @@ describe("crescent visibility dashboard", () => {
     Object.assign(yallopClassCounts, { A: 8, B: 0, C: 0, D: 0, E: 0, F: 0 });
     render(<CrescentVisibilityContent />);
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-02-28" } });
-    expect(screen.getAllByText("10 Ramadan 1447 AH").length).toBeGreaterThan(0);
+    expect(screen.queryByText("10 Ramadan 1447 AH")).toBeNull();
     expect(screen.queryByTestId("crescent-predicted-first-day")).toBeNull();
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
