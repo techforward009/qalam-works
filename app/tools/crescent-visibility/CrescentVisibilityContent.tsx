@@ -61,11 +61,10 @@ export default function CrescentVisibilityContent() {
   const yallop = useMemo(() => isValidDate ? evaluateYallopNationalReferencePrediction(date) : null, [isValidDate, date.year, date.month, date.day]);
   const authority = useMemo(() => isValidDate ? resolvePakistanOfficialHijriDate(date) : null, [isValidDate, date.year, date.month, date.day]);
   const decision = useMemo(() => isValidDate ? resolvePakistanOfficialSightingDecisionForEvening(date) : null, [isValidDate, date.year, date.month, date.day]);
-  const dateControl = <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#1A3A2A]/15 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
-    <div><label className={`block text-sm font-bold text-[#153b29] dark:text-[#e6f0e6] ${ur ? "font-naskh" : ""}`} htmlFor="dashboard-date">{ur ? "کس شام کا چاند دیکھنا ہے؟" : "Which evening would you like to check?"}</label>
-      <p className="mt-1 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? "پاکستانی مقامات کے اصل غروب آفتاب پر سائنسی حساب" : "Scientific calculation at actual local sunset across Pakistan"}</p></div>
+  const dateControl = <section data-testid="crescent-date-control" className="mt-5 flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-[#B8935A] bg-gradient-to-l from-[#153f30] to-[#255d46] px-5 py-6 text-center shadow-lg sm:flex-row sm:gap-8 dark:from-[#173d2e] dark:to-[#255d46]">
+    <label className={`text-center text-white ${ur ? "font-naskh" : ""}`} htmlFor="dashboard-date">{ur ? "کس شام کا چاند دیکھنا ہے؟" : "Which evening would you like to check?"}</label>
     <input id="dashboard-date" aria-label={ur ? "تاریخ تبدیل کریں" : "Change date"} type="date" min="1900-01-01" max="2100-12-31" value={dateInput} onChange={e => selectDate(e.target.value)}
-      className="min-h-11 w-full max-w-[240px] rounded-xl border border-[#1A3A2A]/20 bg-[#F7F5EF] px-3 py-2 font-semibold text-[#153b29] focus-visible:outline focus-visible:outline-2 dark:border-[#35513d] dark:bg-[#203326] dark:text-white" dir="ltr" />
+      className="min-h-12 w-full max-w-[245px] rounded-xl border-2 border-[#e6c875] bg-white px-4 py-2 text-center text-[#153b29] shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white dark:bg-[#f7f5ef] dark:text-[#153b29]" dir="ltr" />
   </section>;
   const backToStudio = (
     <div className="mb-6">
