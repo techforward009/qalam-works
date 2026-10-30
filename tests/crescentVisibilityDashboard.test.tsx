@@ -314,7 +314,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.queryByTestId("crescent-predicted-first-day")).toBeNull();
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
-    expect(screen.getByTestId("crescent-simple-headline").textContent).toContain("Not a new crescent evening");
+    expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("Not a new-crescent evening");
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
   });
 
