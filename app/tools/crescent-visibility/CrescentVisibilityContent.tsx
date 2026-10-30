@@ -115,16 +115,10 @@ export default function CrescentVisibilityContent() {
       : yallopAcceptedCount > 0
         ? (ur ? `8 میں سے ${yallopAcceptedCount} حوالہ جاتی مقامات پر رؤیت کے حالات موافق ہیں۔` : `${yallopAcceptedCount} of 8 reference locations have favorable visibility conditions.`)
         : (ur ? "اس ماڈل کے مطابق 8 میں سے کسی حوالہ جاتی مقام پر رؤیت کے حالات موافق نہیں ہیں۔" : "None of the 8 reference locations currently have favorable visibility conditions under this model.");
-  const qText = (q: number) => `${q >= 0 ? "+" : ""}${q.toFixed(3)}`;
-  const classTone = (visibilityClass: string) => visibilityClass === "A" || visibilityClass === "B"
-    ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100"
-    : visibilityClass === "C" || visibilityClass === "D"
-      ? "border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
-      : "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100";
 
   return <main className="mx-auto max-w-[1080px] px-4 py-12" dir={ur ? "rtl" : "ltr"} data-crescent-ui={ur ? "ur" : "en"}>
     {backToStudio}
-    <header className="relative max-w-none overflow-hidden rounded-3xl bg-gradient-to-l from-[#123326] via-[#174f3a] to-[#122c37] px-6 py-9 text-white shadow-lg sm:px-9 sm:py-11"><div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-14 h-56 w-56 rounded-full bg-[#B8935A]/15 blur-3xl" /><div className="relative"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f1d99e]">Qalam Works</p><h1 className={`mt-3 text-3xl font-bold leading-relaxed tracking-tight sm:text-4xl ${ur ? "font-naskh" : ""}`}>{ur ? "رؤیتِ ہلال — پاکستان" : "Moon Sighting — Pakistan"}</h1><p className={`mt-3 text-base text-[#e3eee4] ${ur ? "font-naskh" : ""}`}>{ur ? "قومی سائنسی اور سرکاری جائزہ" : "National scientific and official outlook"}</p></div></header>
+    <header className="relative max-w-none overflow-hidden rounded-3xl bg-gradient-to-l from-[#123326] via-[#174f3a] to-[#122c37] px-6 py-9 text-white shadow-lg sm:px-9 sm:py-11"><div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-14 h-56 w-56 rounded-full bg-[#B8935A]/15 blur-3xl" /><div className="relative"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f1d99e]">Qalam Works</p><h1 className={`mt-3 text-3xl font-bold leading-relaxed tracking-tight sm:text-4xl ${ur ? "font-naskh" : ""}`}>{ur ? "رؤیتِ ہلال — پاکستان" : "Moon Sighting — Pakistan"}</h1><p className={`mt-3 text-base text-[#e3eee4] ${ur ? "font-naskh" : ""}`}>{ur ? "سائنسی اور فلکیاتی جائزہ" : "Scientific and astronomical outlook"}</p></div></header>
     <section data-crescent-intro className={`mx-auto mt-5 max-w-3xl text-center text-muted-foreground ${ur ? "font-urdu" : ""}`}>{ur ? "مہینہ چنیں اور دیکھیں کہ پاکستان میں چاند نظر آنے کے کیا امکانات ہیں۔" : "Choose a lunar month to see whether the crescent may be visible in Pakistan."}</section>
     <UpcomingCrescentShortcuts lang={ur ? "ur" : "en"} today={today} selectedDate={dateInput} onSelect={value => selectDate(value, true)} />
     {dateControl}
@@ -132,68 +126,42 @@ export default function CrescentVisibilityContent() {
       <PakistanCrescentQuickResult date={date} lang={ur ? "ur" : "en"} pakistan={pakistan} yallop={yallop} decision={decision} outsideNewCrescentWindow={outsideNewCrescentWindow} />
     </div>
     <details id="crescent-technical-report" data-testid="crescent-deep-details" className="mt-6 scroll-mt-24 rounded-2xl border border-[#1A3A2A]/15 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e] sm:p-6">
-      <summary className={`cursor-pointer text-base font-bold text-[#153b29] dark:text-[#e6f0e6] ${ur ? "font-naskh" : ""}`}>{ur ? "مکمل تحقیق اور سرکاری حوالہ جات دیکھیں" : "View the complete research and official sources"}</summary>
+      <summary className={`cursor-pointer text-base font-bold text-[#153b29] dark:text-[#e6f0e6] ${ur ? "font-naskh" : ""}`}>{ur ? "مکمل سائنسی تحقیق دیکھیں" : "View the complete scientific research"}</summary>
       <div className="mt-5">
-      <h2 className={`text-xl font-bold text-[#123326] dark:text-[#f7faf7] ${ur ? "font-naskh" : ""}`}>{ur ? "تفصیلی سائنسی اور سرکاری تحقیق" : "Detailed scientific and official research"}</h2>
-      <p className={`mt-1 text-sm text-[#486155] dark:text-[#c8d5cc] ${ur ? "font-naskh" : ""}`}>{ur ? "اصل ماڈل، پاکستان کے آٹھ مقامات، سرکاری فیصلہ اور تمام فلکیاتی شواہد" : "Original models, eight Pakistan locations, official decision and full astronomy evidence"}</p>
+      <h2 className={`text-xl font-bold text-[#123326] dark:text-[#f7faf7] ${ur ? "font-naskh" : ""}`}>{ur ? "تفصیلی سائنسی تحقیق" : "Detailed scientific research"}</h2>
+      <p className={`mt-1 text-sm text-[#486155] dark:text-[#c8d5cc] ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کے آٹھ مقامات کا فلکیاتی حساب اور یالوپ ماڈل" : "Astronomical calculations for eight Pakistan locations and the Yallop model"}</p>
     </div>
-    <section className="mt-4 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-center text-white shadow-xl shadow-[#123326]/15 md:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#d7bc7b]">{ur ? "قومی جائزہ" : "National outlook"}</p><p className="mt-3 text-lg text-[#dce8de]">{formatDate(date, "gregorian", lang)}</p></div><span className="rounded-full border border-[#d7bc7b]/50 px-3 py-1 text-xs font-semibold text-[#f1d99e]">{ur ? "سائنسی و سرکاری سیاق" : "Science and authority context"}</span></div>
-      {authority ? <><p className="text-sm font-semibold">{authority.authority === "official" ? (ur ? "پاکستان کی سرکاری ہجری تاریخ" : "Pakistan official Hijri date") : (ur ? "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ" : "Reported official Pakistan Hijri date")}</p><p className={`text-2xl font-bold ${ur ? "font-naskh" : ""}`}>{formatDate(authority.hijri, "hijri", lang)}</p></> : <><p className={`text-sm font-semibold ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں" : "Pakistan official Hijri date unavailable"}</p><p className={`mt-1 text-sm ${ur ? "font-naskh" : ""}`}>{ur ? "اس تاریخ کے لیے کوئی جائزہ شدہ سرکاری پاکستانی ہجری تاریخ دستیاب نہیں۔" : "No reviewed official Pakistan Hijri date is available for this date."}</p></>}
-      <div className="mt-7 grid gap-3 sm:grid-cols-3">
-        {/* Signal 1 — Official status */}
-        <div className="rounded-2xl bg-[#d8b76a]/15 p-5 ring-1 ring-[#d8b76a]/30">
-          <p className="text-xs font-bold uppercase tracking-wider text-[#f1d99e]">{ur ? "سرکاری حیثیت" : "Official status"}</p>
-          {authority ? (
-            <>
-              <p className={`mt-2 text-xl font-bold leading-snug text-white ${ur ? "font-naskh" : ""}`}>
-                {formatDate(authority.hijri, "hijri", lang)}
-              </p>
-              <p className={`mt-1 text-xs text-[#dce8de] ${ur ? "font-naskh" : ""}`}>
-                {authority.authority === "official" ? (ur ? "سرکاری" : "Official") : (ur ? "رپورٹ شدہ سرکاری" : "Reported official")}
-              </p>
-            </>
-          ) : (
-            <p className={`mt-2 text-sm font-semibold text-[#f1d99e] ${ur ? "font-naskh" : ""}`}>
-              {ur ? "سرکاری تاریخ دستیاب نہیں" : "Official date unavailable"}
-            </p>
-          )}
-        </div>
-        {/* Signal 2 — Pakistan national criterion (ANY-location semantics: 1–8 pass = qualifies) */}
-        <div className={`rounded-2xl p-5 ring-1 ${outsideNewCrescentWindow ? "bg-white/10 ring-white/20" : pakistanPassCount > 0 ? "bg-emerald-800/30 ring-emerald-500/40" : "bg-rose-900/30 ring-rose-500/30"}`}>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#b9d6c0]">{ur ? "پاکستانی قومی معیار" : "Pakistan criterion"}</p>
-          <p className={`mt-2 text-xl font-bold text-white ${ur ? "font-naskh" : ""}`}>
-            {outsideNewCrescentWindow ? (ur ? "نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : pakistanPassCount > 0 ? (ur ? "معیار پورا ✓" : "Meets criterion ✓") : (ur ? "معیار پورا نہیں ✗" : "Does not meet criterion ✗")}
-          </p>
-          <p className="mt-1 text-sm font-semibold text-[#dce8de]" dir="ltr">
-            {outsideNewCrescentWindow ? (ur ? "تفصیل میں صرف خام سائنسی اعداد" : "Raw model values in details") : <>{pakCountDisplay}</>}
-          </p>
-        </div>
-        {/* Signal 3 — International model (Yallop); reuses existing public-summary semantics */}
-        <div className={`rounded-2xl p-5 ring-1 ${outsideNewCrescentWindow ? "bg-white/10 ring-white/20" : yallop.classCounts.A === 8 || yallopAcceptedCount === 8 ? "bg-emerald-800/30 ring-emerald-500/40" : yallopAcceptedCount > 0 ? "bg-amber-800/30 ring-amber-500/30" : "bg-rose-900/30 ring-rose-500/30"}`}>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#f1d99e]">{ur ? "بین الاقوامی ماڈل" : "International model"}</p>
-          <p className={`mt-2 text-xl font-bold text-white ${ur ? "font-naskh" : ""}`}>
-            {outsideNewCrescentWindow ? (ur ? "نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : yallop.classCounts.A === 8
-              ? (ur ? "بہت موافق ✓" : "Very favorable ✓")
-              : yallopAcceptedCount === 8
-                ? (ur ? "موافق ✓" : "Favorable ✓")
-                : yallopAcceptedCount === 0
-                  ? (ur ? "ناموافق ✗" : "Unfavorable ✗")
-                  : null}
-          </p>
-          <p className={`mt-1 text-sm font-semibold text-[#dce8de] ${yallopAcceptedCount > 0 && yallopAcceptedCount < 8 && yallop.classCounts.A !== 8 ? (ur ? "font-naskh" : "") : ""}`}>
-            {outsideNewCrescentWindow ? (ur ? "خام نتائج صرف تفصیل میں" : "Raw model values in details") : yallopAcceptedCount > 0 && yallopAcceptedCount < 8 && yallop.classCounts.A !== 8
-              ? (ur ? `8 میں سے ${yallopAcceptedCount} حوالہ جاتی مقامات پر رؤیت کے حالات موافق ہیں۔` : `${yallopAcceptedCount} of 8 reference locations have favorable visibility conditions.`)
-              : <span dir="auto">{yallopCountDisplay}</span>}
-          </p>
-          <p className={`mt-1 text-xs text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "ماڈل: Yallop" : "Model: Yallop"}</p>
-        </div>
+    <section className="mt-4 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-center text-white shadow-xl shadow-[#123326]/15 md:p-8" data-testid="crescent-science-summary">
+      <p className="text-[#f1d99e]">{ur ? "پاکستان میں رؤیتِ ہلال کا سائنسی جائزہ" : "Scientific crescent-visibility outlook for Pakistan"}</p>
+      <p className="mt-2 text-[#dce8de]">{formatDate(date, "gregorian", lang)}</p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <article className={`rounded-2xl p-5 ring-1 ${outsideNewCrescentWindow ? "bg-white/10 ring-white/20" : pakistanPassCount > 0 ? "bg-emerald-800/30 ring-emerald-500/40" : "bg-rose-900/30 ring-rose-500/30"}`}>
+          <h3>{ur ? "پاکستانی سائنسی معیار" : "Pakistan scientific criterion"}</h3>
+          <p className="mt-2">{outsideNewCrescentWindow ? (ur ? "یہ نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : pakistanPassCount > 0 ? (ur ? "رؤیت کے حالات موافق ہیں" : "Conditions are favorable") : (ur ? "رؤیت کے حالات موافق نہیں" : "Conditions are unfavorable")}</p>
+          <p className="mt-2 text-[#dce8de]">{outsideNewCrescentWindow ? (ur ? "صرف فلکیاتی اعداد" : "Astronomical measurements only") : pakCountDisplay}</p>
+        </article>
+        <article className={`rounded-2xl p-5 ring-1 ${outsideNewCrescentWindow ? "bg-white/10 ring-white/20" : yallopAcceptedCount > 0 ? "bg-emerald-800/30 ring-emerald-500/40" : "bg-rose-900/30 ring-rose-500/30"}`}>
+          <h3>{ur ? "یالوپ کا تقابلی حساب" : "Yallop comparison"}</h3>
+          <p className="mt-2">{outsideNewCrescentWindow ? (ur ? "یہ نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : yallopAcceptedCount > 0 ? (ur ? "بعض مقامات پر حالات موافق ہیں" : "Conditions are favorable at some sites") : (ur ? "رؤیت کے حالات موافق نہیں" : "Conditions are unfavorable")}</p>
+          <p className="mt-2 text-[#dce8de]">{outsideNewCrescentWindow ? (ur ? "صرف حوالہ جاتی اعداد" : "Reference figures only") : yallopCountDisplay}</p>
+        </article>
       </div>
     </section>
-    {decision && <section className="mt-4 rounded-2xl border border-[#5b7d54] bg-[#edf4e8] p-5 dark:border-[#78946c] dark:bg-[#213921]" aria-label={ur ? "پاکستان کا سرکاری رویتِ ہلال فیصلہ" : "Official Pakistan moon-sighting decision"}><h2 className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کا سرکاری رویتِ ہلال فیصلہ" : "Official Pakistan moon-sighting decision"}</h2><p className={`mt-1 text-lg font-semibold ${ur ? "font-naskh" : ""}`}>{decision.sightingDecision === "sighted" ? (ur ? "چاند نظر آگیا۔" : "Crescent sighted.") : (ur ? "چاند نظر نہیں آیا۔" : "Crescent not sighted.")}</p><p className={`mt-2 text-sm text-[#335a3d] dark:text-[#d7eadb] ${ur ? "font-naskh" : ""}`}>{decision.providerLabel[lang]} · {decision.sourceReference}</p></section>}
-    <section data-testid="crescent-three-reference-cards" className="mt-7 grid gap-4 text-center md:grid-cols-3"><article className="rounded-[20px] bg-[#f6f0df] p-6 shadow-sm ring-1 ring-[#d8b76a]/35 dark:bg-[#2b291c]"><p className="text-xs font-bold uppercase tracking-wider text-[#8a6830]">{ur ? "سرکاری اتھارٹی" : "Official authority"}</p><h2 className={`mt-2 text-xl font-bold text-[#183c2b] dark:text-[#f4e8c7] ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کی سرکاری حیثیت" : "Official Pakistan status"}</h2><p className={`mt-3 ${ur ? "font-naskh" : ""}`}>{authority ? formatDate(authority.hijri, "hijri", lang) : (ur ? "اس تاریخ کے لیے پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں۔" : "Official Pakistan Hijri date is not available for this date.")}</p></article><article className="rounded-[20px] bg-[#eef6ef] p-6 shadow-sm dark:bg-[#193120]"><p className="text-xs font-bold uppercase tracking-wider text-[#3e7350]">{ur ? "سائنسی پیش گوئی" : "Scientific prediction"}</p><h2 className={`mt-2 text-xl font-bold text-[#183c2b] dark:text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستانی قومی سائنسی معیار" : "Pakistan national scientific criterion"}</h2><p className={`mt-3 ${ur ? "font-naskh" : ""}`}>{outsideNewCrescentWindow ? nonCrescentSummary : pakistanSummary}</p><p className={`mt-4 text-xs text-[#426151] dark:text-[#b9d6c0] ${ur ? "font-naskh" : ""}`}>{ur ? "یہ سائنسی نتیجہ ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔" : "Scientific result — not an official moon-sighting declaration."}</p></article><article className="rounded-[20px] bg-[#f9f6ef] p-6 shadow-sm dark:bg-[#202d25]"><p className="text-xs font-bold uppercase tracking-wider text-[#8a6830]">{ur ? "فلکیاتی ماڈل" : "Astronomical model"}</p><h2 className={`mt-2 text-xl font-bold text-[#183c2b] dark:text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "بین الاقوامی طور پر معروف سائنسی ماڈل" : "International crescent-visibility model"}</h2><p className={`mt-3 ${ur ? "font-naskh" : ""}`}>{outsideNewCrescentWindow ? nonCrescentSummary : yallopPublicSummary}</p><p className="mt-4 text-xs text-muted-foreground">{ur ? "استعمال شدہ ماڈل: Yallop" : "Model used: Yallop"}</p></article></section>
-    <section className="mt-4"><button type="button" aria-expanded={isYallopHelpOpen} aria-controls="yallop-class-help" onClick={() => setYallopHelpOpen(open => !open)} className={`text-sm font-semibold underline focus-visible:outline focus-visible:outline-2 ${ur ? "font-naskh" : ""}`}>{ur ? "یالوپ ماڈل کی وضاحت" : "About the Yallop model"}</button>{isYallopHelpOpen && <div id="yallop-class-help" className={`mt-2 rounded-xl bg-muted p-4 text-sm ${ur ? "font-naskh" : ""}`}><p>{ur ? "یہ ایک بین الاقوامی طور پر معروف فلکیاتی ماڈل ہے جو فلکیاتی اعداد کی بنیاد پر ہلال کی رؤیت کے امکان کو درجہ بند کرتا ہے۔ یہ سرکاری رویتِ ہلال کا اعلان نہیں۔" : "This is a widely used astronomical crescent-visibility model that classifies visibility potential from astronomical parameters. It is not an official moon-sighting declaration."}</p><p className="mt-2 text-xs">{ur ? "A — بہت موافق حالات؛ B — موافق حالات؛ C — ابتدا میں بصری آلے کی ضرورت پڑ سکتی ہے؛ D — عموماً بصری آلہ درکار ہوتا ہے؛ E/F — رؤیت متوقع نہیں" : "A: easily visible; B: visible under favorable conditions; C: may require optical aid; D: optical aid generally required; E/F: not expected to be visible."}</p></div>}</section>
-    <details className="mt-6"><summary className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "مزید سائنسی تفصیلات" : "Scientific details"}</summary><p className={`mt-2 ${ur ? "font-naskh" : ""}`}>{ur ? "سائنسی پیش گوئیاں سرکاری رویتِ ہلال کا اعلان نہیں ہیں۔" : "Scientific predictions are not official moon-sighting declarations."}</p><div className="mt-3 grid gap-2 md:grid-cols-2" data-testid="scientific-location-grid">{pakistan.locations.map(({ observer, prediction }, index) => { const yallopPrediction = yallop.locations[index].prediction; const evaluatedPakistan = prediction.status === "evaluated"; const evaluatedYallop = yallopPrediction.status === "evaluated"; const passes = evaluatedPakistan && prediction.criterion.qualifies; return <div key={observer.id} className="rounded-lg border p-3 text-sm"><div className="flex items-center justify-between gap-2"><strong>{ur ? (URDU_LOCATION_NAMES[observer.id] ?? observer.name) : observer.name}</strong><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${passes ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100" : "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100"}`}>{passes ? (ur ? "معیار پورا" : "Pass") : (ur ? "معیار پورا نہیں" : "Fail")}</span></div>{evaluatedPakistan && <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1"><dt>{ur ? "ارتفاع" : "Altitude"}</dt><dd><span dir="ltr">{prediction.criterion.altitudeDeg.toFixed(2)}°</span></dd><dt>{ur ? "ہلال کی چوڑائی" : "Crescent width"}</dt><dd><span dir="ltr">{prediction.criterion.widthArcMin.toFixed(3)}′</span></dd><dt>{ur ? "روشن حصہ" : "Illumination"}</dt><dd><span dir="ltr">{prediction.criterion.illuminationPercent.toFixed(2)}%</span></dd><dt>{ur ? "زاویائی فاصلہ" : "Elongation"}</dt><dd><span dir="ltr">{prediction.criterion.elongationDeg.toFixed(2)}°</span></dd><dt>{ur ? "غروب کا وقفہ" : "Lag"}</dt><dd><span dir="ltr">{prediction.criterion.lagMinutes.toFixed(1)} min</span></dd></dl>}<div className="mt-2 flex items-center gap-2"><span>{ur ? "یالوپ" : "Yallop"}:</span>{evaluatedYallop ? <><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${classTone(yallopPrediction.criterion.visibilityClass)}`}>{ur ? "درجہ " : "Class "}{yallopPrediction.criterion.visibilityClass}</span><span dir="ltr">(q = {qText(yallopPrediction.criterion.q)})</span></> : <span>{ur ? "دستیاب نہیں" : "unavailable"}</span>}</div></div>; })}</div></details>
+    <section data-testid="crescent-three-reference-cards" className="mt-6 grid gap-4 text-center md:grid-cols-2">
+      <article className="rounded-[20px] bg-[#eef6ef] p-6 shadow-sm dark:bg-[#193120]">
+        <p className="text-[#3e7350]">{ur ? "سائنسی پیش گوئی" : "Scientific prediction"}</p>
+        <h2 className="mt-2 text-[#183c2b] dark:text-[#dce8de]">{ur ? "پاکستانی سائنسی معیار" : "Pakistan scientific criterion"}</h2>
+        <p className="mt-3">{outsideNewCrescentWindow ? nonCrescentSummary : pakistanSummary}</p>
+      </article>
+      <article className="rounded-[20px] bg-[#f9f6ef] p-6 shadow-sm dark:bg-[#202d25]">
+        <p className="text-[#8a6830]">{ur ? "فلکیاتی ماڈل" : "Astronomical model"}</p>
+        <h2 className="mt-2 text-[#183c2b] dark:text-[#dce8de]">{ur ? "بین الاقوامی سائنسی ماڈل" : "International astronomical model"}</h2>
+        <p className="mt-3">{outsideNewCrescentWindow ? nonCrescentSummary : yallopPublicSummary}</p>
+        <p className="mt-3">{ur ? "یالوپ (Yallop)" : "Yallop"}</p>
+      </article>
+    </section>
+    <section className="mt-4"><button type="button" aria-expanded={isYallopHelpOpen} aria-controls="yallop-class-help" onClick={() => setYallopHelpOpen(open => !open)} className={`text-sm font-semibold underline focus-visible:outline focus-visible:outline-2 ${ur ? "font-naskh" : ""}`}>{ur ? "یالوپ ماڈل کی وضاحت" : "About the Yallop model"}</button>{isYallopHelpOpen && <div id="yallop-class-help" className={`mt-2 rounded-xl bg-muted p-4 text-sm ${ur ? "font-naskh" : ""}`}><p>{ur ? "یہ ایک بین الاقوامی فلکیاتی ماڈل ہے جو ہلال کی رؤیت کے امکانات کو مختلف درجوں میں تقسیم کرتا ہے۔" : "This is an international astronomical model that classifies crescent-visibility conditions."}</p><p className="mt-2 text-xs">{ur ? "A — بہت موافق حالات؛ B — موافق حالات؛ C — ابتدا میں بصری آلے کی ضرورت پڑ سکتی ہے؛ D — عموماً بصری آلہ درکار ہوتا ہے؛ E/F — رؤیت متوقع نہیں" : "A: easily visible; B: visible under favorable conditions; C: may require optical aid; D: optical aid generally required; E/F: not expected to be visible."}</p></div>}</section>
+    <details className="mt-6"><summary className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "مزید سائنسی تفصیلات" : "Scientific details"}</summary><p className={`mt-2 ${ur ? "font-naskh" : ""}`}>{ur ? "ہر شہر کے اعداد اس مقام کے غروبِ آفتاب پر محسوب کیے گئے ہیں۔" : "Measurements are calculated at local sunset for each location."}</p><div className="mt-3 grid gap-2 md:grid-cols-2" data-testid="scientific-location-grid">{pakistan.locations.map(({ observer, prediction }, index) => { const yallopPrediction = yallop.locations[index].prediction; const evaluatedPakistan = prediction.status === "evaluated"; const evaluatedYallop = yallopPrediction.status === "evaluated"; const passes = evaluatedPakistan && prediction.criterion.qualifies; return <div key={observer.id} className="rounded-lg border p-3 text-sm"><div className="flex items-center justify-between gap-2"><strong>{ur ? (URDU_LOCATION_NAMES[observer.id] ?? observer.name) : observer.name}</strong><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${passes ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100" : "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100"}`}>{passes ? (ur ? "معیار پورا" : "Pass") : (ur ? "معیار پورا نہیں" : "Fail")}</span></div>{evaluatedPakistan && <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1"><dt>{ur ? "ارتفاع" : "Altitude"}</dt><dd><span dir="ltr">{prediction.criterion.altitudeDeg.toFixed(2)}°</span></dd><dt>{ur ? "ہلال کی چوڑائی" : "Crescent width"}</dt><dd><span dir="ltr">{prediction.criterion.widthArcMin.toFixed(3)}′</span></dd><dt>{ur ? "روشن حصہ" : "Illumination"}</dt><dd><span dir="ltr">{prediction.criterion.illuminationPercent.toFixed(2)}%</span></dd><dt>{ur ? "زاویائی فاصلہ" : "Elongation"}</dt><dd><span dir="ltr">{prediction.criterion.elongationDeg.toFixed(2)}°</span></dd><dt>{ur ? "غروب کا وقفہ" : "Lag"}</dt><dd><span dir="ltr">{prediction.criterion.lagMinutes.toFixed(1)} min</span></dd></dl>}<div className="mt-2 flex items-center gap-2"><span>{ur ? "یالوپ" : "Yallop"}:</span>{evaluatedYallop ? <><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${classTone(yallopPrediction.criterion.visibilityClass)}`}>{ur ? "درجہ " : "Class "}{yallopPrediction.criterion.visibilityClass}</span><span dir="ltr">(q = {qText(yallopPrediction.criterion.q)})</span></> : <span>{ur ? "دستیاب نہیں" : "unavailable"}</span>}</div></div>; })}</div></details>
     </details>
   </main>;
 }
