@@ -96,9 +96,9 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1 of 8");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("9.1");
     expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("42.3");
-    expect(summary.textContent).toContain("Central Ruet-e-Hilal Committee makes the official decision");
+    expect(summary.textContent).not.toContain("official decision");
     expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-simple-details");
-    expect(screen.getByText("Detailed scientific and official research")).toBeTruthy();
+    expect(screen.getByText("Detailed scientific research")).toBeTruthy();
     expect(screen.getByTestId("crescent-quick-location")).toBeTruthy();
   });
 
@@ -127,7 +127,7 @@ describe("crescent visibility dashboard", () => {
     const copy = String(writeText.mock.calls[0]?.[0] ?? "");
     expect(copy).toContain("2026-11-10");
     expect(copy).toContain("The crescent may be visible");
-    expect(copy).toContain("not an official announcement");
+    expect(copy).not.toContain("not an official announcement");
     expect(copy).toContain("qalamworks.com/tools/crescent-visibility?date=2026-11-10");
     expect(screen.getByText("Result copied")).toBeTruthy();
   });
@@ -135,10 +135,8 @@ describe("crescent visibility dashboard", () => {
   it("shows three source-separated outcomes and measured scientific table", () => {
     render(<CrescentVisibilityContent />);
     const states = screen.getByTestId("crescent-three-outcomes");
-    expect(states.querySelectorAll("p")).toHaveLength(3);
+    expect(states.querySelectorAll("p")).toHaveLength(2);
     expect(states.textContent).toContain("Pakistan:");
-    expect(states.textContent).toContain("Official decision:");
-    expect(states.textContent).toContain("No reviewed announcement");
     expect(states.textContent).toContain("Second scientific check:");
     expect(states.textContent).toContain("1 of 8");
     const measures = screen.getByTestId("crescent-simple-metrics");
@@ -168,14 +166,14 @@ describe("crescent visibility dashboard", () => {
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Moon Sighting — Pakistan" })).toBeTruthy();
-    fireEvent.click(screen.getByText("View the complete research and official sources"));
+    fireEvent.click(screen.getByText("View the complete scientific research"));
     expect(screen.getByRole("link", { name: /Back to Date Converter/i }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
-    expect(screen.getByText("National scientific and official outlook")).toBeTruthy();
+    expect(screen.getByText("Scientific and astronomical outlook")).toBeTruthy();
     expect(screen.getAllByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("heading", { name: "Pakistan national scientific criterion" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("heading", { name: "International crescent-visibility model" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: "Pakistan scientific criterion" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: "International astronomical model" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("1 of 8 reference locations have favorable visibility conditions.").length).toBeGreaterThan(0);
-    expect(screen.getByText("Pakistan official Hijri date unavailable")).toBeTruthy();
+    expect(screen.queryByText("Pakistan official Hijri date unavailable")).toBeNull();
     expect(screen.queryByText("Official historical decision")).toBeNull();
     expect(screen.queryByText("Month-start implication")).toBeNull();
     expect(screen.queryByText(/Pakistan-wide crescent visibility map is temporarily unavailable/)).toBeNull();
@@ -213,12 +211,12 @@ describe("crescent visibility dashboard", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "رؤیتِ ہلال — پاکستان" })).toBeTruthy();
-    fireEvent.click(screen.getByText("مکمل تحقیق اور سرکاری حوالہ جات دیکھیں"));
+    fireEvent.click(screen.getByText("مکمل سائنسی تحقیق دیکھیں"));
     expect(screen.getByRole("link", { name: /تاریخ کنورٹر پر واپس/ }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
-    expect(screen.getByText("قومی سائنسی اور سرکاری جائزہ")).toBeTruthy();
+    expect(screen.getByText("سائنسی اور فلکیاتی جائزہ")).toBeTruthy();
     expect(screen.getAllByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("heading", { name: "پاکستانی قومی سائنسی معیار" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("heading", { name: "بین الاقوامی طور پر معروف سائنسی ماڈل" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: "پاکستانی سائنسی معیار" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: "بین الاقوامی سائنسی ماڈل" }).length).toBeGreaterThan(0);
     const details = screen.getByText("مزید سائنسی تفصیلات").closest("details");
     expect(details?.open).toBe(false);
     fireEvent.click(screen.getByText("مزید سائنسی تفصیلات"));
@@ -229,15 +227,15 @@ describe("crescent visibility dashboard", () => {
 
   it("renders readable Pakistan and Yallop diagnostic badges with formatted scientific values", () => {
     render(<CrescentVisibilityContent />);
-    fireEvent.click(screen.getByText("View the complete research and official sources"));
+    fireEvent.click(screen.getByText("View the complete scientific research"));
     fireEvent.click(screen.getByText("Scientific details"));
-    expect(screen.getAllByText("Pass").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Fail").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Class A").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Class C").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("(q = +2.495)").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("(q = -0.123)").length).toBeGreaterThan(0);
-    for (const label of ["Altitude", "Crescent width", "Illumination", "Elongation", "Lag"]) expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(8);
+    expect(screen.getAllByText("Favorable conditions").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Unfavorable conditions").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("scientific-location-grid").textContent).toContain("Class A");
+    expect(screen.getByTestId("scientific-location-grid").textContent).toContain("Class C");
+    expect(screen.getByTestId("scientific-location-grid").textContent).toContain("q = 2.495");
+    expect(screen.getByTestId("scientific-location-grid").textContent).toContain("q = -0.123");
+    for (const label of ["Altitude (degrees)", "Crescent width (arcminutes)", "Illuminated fraction", "Elongation (degrees)", "Moonset lag"]) expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(8);
     expect(screen.getByTestId("scientific-location-grid").className).toContain("md:grid-cols-2");
   });
 
@@ -247,7 +245,7 @@ describe("crescent visibility dashboard", () => {
     expect(help.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(help);
     expect(help.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByText(/It is not an official moon-sighting declaration/)).toBeTruthy();
+    expect(screen.getByText(/This is an international astronomical model/)).toBeTruthy();
   });
 
   it("does not call science or authority resolvers for invalid dates", async () => {
@@ -309,8 +307,8 @@ describe("crescent visibility dashboard", () => {
     const authority = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate");
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", anchorId: "pk-1448-rabi-al-thani-2026-09-14", providerId: "pk-ministry-religious-affairs-central-ruet-e-hilal", providerLabel: { en: "Pakistan Ministry of Religious Affairs / Central Ruet-e-Hilal Committee", ur: "وزارتِ مذہبی امور پاکستان / مرکزی رویتِ ہلال کمیٹی" }, sourceUrl: "https://example.invalid", sourceReference: "Test", verificationStatus: "verified" });
     render(<CrescentVisibilityContent />);
-    expect(screen.getByText("Pakistan official Hijri date")).toBeTruthy();
-    expect(screen.getAllByText("1 Rabi al-Thani 1448 AH").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Pakistan official Hijri date")).toBeNull();
+    expect(screen.getByTestId("crescent-science-summary")).toBeTruthy();
     expect(screen.queryByText("Pakistan official Hijri date unavailable")).toBeNull();
     expect(screen.queryByText(/Calculated Hijri date/)).toBeNull();
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
@@ -322,9 +320,9 @@ describe("crescent visibility dashboard", () => {
     vi.mocked(decision.resolvePakistanOfficialSightingDecisionForEvening).mockImplementation(date => date.day === 12 ? reviewedDecision : null);
     render(<CrescentVisibilityContent />);
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-09-12" } });
-    fireEvent.click(screen.getByText("View the complete research and official sources"));
-    expect(screen.getByRole("heading", { name: "Official Pakistan moon-sighting decision" })).toBeTruthy();
-    expect(screen.getByText("Crescent not sighted.")).toBeTruthy();
+    fireEvent.click(screen.getByText("View the complete scientific research"));
+    expect(screen.queryByRole("heading", { name: "Official Pakistan moon-sighting decision" })).toBeNull();
+    expect(screen.getByTestId("crescent-science-summary")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-09-13" } });
     expect(screen.queryByRole("heading", { name: "Official Pakistan moon-sighting decision" })).toBeNull();
     vi.mocked(decision.resolvePakistanOfficialSightingDecisionForEvening).mockReturnValue(null);
