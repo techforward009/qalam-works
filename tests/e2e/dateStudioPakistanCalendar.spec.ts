@@ -210,7 +210,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("crescent-predicted-first-day")).toContainText("12 November 2026");
     await expect(page.getByTestId("crescent-predicted-first-day")).not.toContainText("11 November 2026");
     await expect(page.getByTestId("crescent-simple-national-count")).toContainText("0 of 8");
-    await expect(simple.getByText(/Central Ruet-e-Hilal Committee makes the official decision/)).toBeVisible();
+    await expect(simple.getByText(/official decision/i)).toHaveCount(0);
     await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
     await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
     await page.getByTestId("crescent-simple-details").locator("summary").first().click();
@@ -221,8 +221,8 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await simple.getByRole("link", { name: "More details" }).click();
     await expect(page.getByTestId("crescent-simple-details")).toHaveAttribute("open");
     await simple.getByRole("link", { name: "Original research and sources" }).click();
-    await expect(page.getByText("Detailed scientific and official research")).toBeVisible();
-    await expect(page.getByText("Pakistan national scientific criterion")).toBeVisible();
+    await expect(page.getByText("Detailed scientific research")).toBeVisible();
+    await expect(page.getByText("Pakistan scientific criterion")).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("crescent-quick-result.png"), fullPage: true });
   });
 
@@ -233,13 +233,13 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("crescent-simple-details")).not.toHaveAttribute("open");
     await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
     await expect(page.getByTestId("crescent-three-outcomes")).not.toBeVisible();
-    await expect(page.getByText("Detailed scientific and official research")).not.toBeVisible();
+    await expect(page.getByText("Detailed scientific research")).not.toBeVisible();
     await page.getByRole("link", { name: "More details" }).click();
     await expect(page.getByTestId("crescent-simple-details")).toHaveAttribute("open");
     await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
     await page.getByRole("link", { name: "Original research and sources" }).click();
     await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
-    await expect(page.getByText("Detailed scientific and official research")).toBeVisible();
+    await expect(page.getByText("Detailed scientific research")).toBeVisible();
   });
 
 });
@@ -313,10 +313,27 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     expect(introStyle.align).toBe("center");
     await page.getByTestId("crescent-deep-details").locator(":scope > summary").click();
     const cards = page.getByTestId("crescent-three-reference-cards");
-    await expect(cards.locator("article")).toHaveCount(3);
+    await expect(cards.locator("article")).toHaveCount(2);
     expect(await cards.locator("article").first().evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
     await expect(main.getByText("آغازِ ماہ کا امکان")).toHaveCount(0);
     await expect(main.getByText("سرکاری تاریخی فیصلہ")).toHaveCount(0);
+    await expect(main.getByText("پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں")).toHaveCount(0);
+    await expect(main.getByText("قومی سائنسی اور سرکاری جائزہ")).toHaveCount(0);
+    await expect(main.getByText("سائنسی اور فلکیاتی جائزہ")).toBeVisible();
+    await expect(main.getByText("یہ سرکاری رویتِ ہلال کا اعلان نہیں۔")).toHaveCount(0);
+    await expect(main.getByText("یہ سائنسی نتیجہ ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔")).toHaveCount(0);
+    await expect(main.getByText("سائنسی پیش گوئیاں سرکاری رویتِ ہلال کا اعلان نہیں ہیں۔")).toHaveCount(0);
+    await expect(main.getByText("سرکاری فیصلہ:")).toHaveCount(0);
+    await page.getByText("مزید سائنسی تفصیلات").click();
+    const local = page.getByTestId("scientific-location-grid");
+    await expect(local.locator("[data-crescent-location-card]")).toHaveCount(8);
+    const first = local.locator("[data-crescent-location-card]").first();
+    await expect(first.locator("dt")).toContainText(["افق سے بلندی (ڈگری)", "ہلال کی چوڑائی (قوسی منٹ)", "روشن حصہ", "زاویائی فاصلہ (ڈگری)", "غروب کا وقفہ"]);
+    await expect(first.locator("[data-crescent-latin-number]").first()).toContainText("°");
+    await expect(first.getByText("منٹ", { exact: true })).toBeVisible();
+    expect(await first.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+    expect(await first.locator("dl").evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+
     const pageText = await main.textContent();
     expect(pageText).not.toContain("چاند نظر آنے کی ضمانت نہیں");
     expect(pageText).not.toContain("یہ ہمارا سائنسی اندازہ ہے؛");
