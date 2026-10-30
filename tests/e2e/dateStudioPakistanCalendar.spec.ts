@@ -222,7 +222,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await expect(page.getByTestId("crescent-simple-details")).toHaveAttribute("open");
     await simple.getByRole("link", { name: "Original research and sources" }).click();
     await expect(page.getByText("Detailed scientific research")).toBeVisible();
-    await expect(page.getByText("Pakistan scientific criterion")).toBeVisible();
+    await expect(page.getByTestId("crescent-three-reference-cards").getByRole("heading", { name: "Pakistan scientific criterion" })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("crescent-quick-result.png"), fullPage: true });
   });
 
@@ -397,7 +397,7 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
     const forecastWeight = await card.locator("[data-crescent-forecast]").evaluate(el => getComputedStyle(el).fontWeight);
     expect(Number(forecastWeight)).toBe(400);
     const note = page.locator("[data-crescent-month-note]");
-    await expect(note).toContainText("منتخب تاریخ کا سائنسی حساب دیکھیں");
+    await expect(note).toContainText("مہینہ منتخب کرکے اس کی شام کا فلکیاتی حساب دیکھیں");
     expect(await note.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
     const figures = page.getByTestId("crescent-next-evening-metrics");
     await expect(figures.locator("[data-crescent-latin-number]")).toHaveCount(4);
