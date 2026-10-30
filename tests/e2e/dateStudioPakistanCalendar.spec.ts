@@ -171,12 +171,268 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({path:testInfo.outputPath("pk-2026-shareable-primary-result.png"),fullPage:true});
   });
 
-  test("unknown Pakistan lunar month is explicitly calculated and has no fabricated citation", async ({page}) => {
+  test("unverified Pakistan date uses the science forecast, never a fabricated official citation", async ({page}) => {
     await page.goto("/tools/date-converter?calendar=gregorian&day=4&month=11&year=2027");
     await expect(page.getByTestId("pakistan-primary-result")).toBeVisible();
-    await expect(page.getByTestId("pakistan-hijri-status")).toContainText("Calculated");
+    await expect(page.getByTestId("pakistan-hijri-status")).toContainText("Prediction using Pakistan crescent-visibility criteria; not an official declaration");
     await page.locator('[data-testid="pakistan-primary-result"] details summary').click();
     await expect(page.getByTestId("pakistan-source-link")).toHaveCount(0);
   });
 
+  test("upcoming lunar-month shortcut opens the corresponding national moon-sighting evening", async ({page}) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
+    const next = page.getByTestId("upcoming-crescent-month-0");
+    await expect(next).toContainText("Jumada al-Thani 1448");
+    await expect(next).toContainText("10 November 2026");
+    await next.click();
+    await expect(page.locator("#dashboard-date")).toHaveValue("2026-11-10");
+    await expect(page).toHaveURL(/date=2026-11-10/);
+    await expect(next).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("crescent-simple-headline")).toBeVisible();
+    const rajab = page.getByRole("button", {name: /Rajab 1448, expected evening/});
+    await expect(rajab).toBeVisible();
+    await rajab.click();
+    const selected = await page.locator("#dashboard-date").inputValue();
+    expect(selected).toMatch(/^2026-12-\d{2}$/);
+    await expect(page).toHaveURL(new RegExp("date=" + selected));
+    await expect(rajab).toHaveAttribute("aria-pressed", "true");
+    await page.reload();
+    await expect(page.locator("#dashboard-date")).toHaveValue(selected);
+    await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
+  });
+
+  test("Pakistan models give plain site-based outcomes and one route to detailed science", async ({ page }, testInfo) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const simple = page.getByTestId("crescent-simple-result");
+    await expect(simple).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-headline")).toContainText("Crescent-visibility conditions this evening:");
+    await expect(page.getByTestId("crescent-pakistan-model")).toContainText("No favorable sites");
+    await expect(page.getByTestId("crescent-yallop-model")).toContainText("No favorable sites");
+    await expect(page.getByTestId("crescent-predicted-first-day")).toContainText("12 November 2026");
+    await expect(page.getByTestId("crescent-three-outcomes")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-simple-metrics")).toHaveCount(0);
+    await page.getByTestId("crescent-quick-location").selectOption("lahore");
+    await expect(page.getByTestId("crescent-next-evening")).toContainText("Lahore");
+    await simple.getByRole("link", { name: "More details" }).click();
+    await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
+    await expect(page.getByText("Detailed scientific research")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("crescent-science-model-result.png"), fullPage: true });
+  });
+
+  test("visitor goes from plain answer to one optional detailed report", async ({ page }) => {
+    await page.goto("/tools/crescent-visibility");
+    await expect(page.getByTestId("upcoming-crescent-month-0")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("crescent-simple-headline")).toBeVisible();
+    await expect(page.getByTestId("crescent-simple-details")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-deep-details")).not.toHaveAttribute("open");
+    await expect(page.getByText("Detailed scientific research")).not.toBeVisible();
+    await page.getByRole("link", { name: "More details" }).click();
+    await expect(page.getByTestId("crescent-deep-details")).toHaveAttribute("open");
+    await expect(page.getByText("Detailed scientific research")).toBeVisible();
+  });
+
+});
+
+test.describe("Crescent result — Urdu typography and concise forecast", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("qalam-site-language", "ur"));
+  });
+
+  test("keeps Mehr at 22px and month cards readable at screenshot and mobile widths", async ({ page }, testInfo) => {
+    if (testInfo.project.name === "desktop-chrome") {
+      await page.setViewportSize({ width: 1006, height: 820 });
+    }
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const main = page.locator('main[data-crescent-ui="ur"]');
+    const section = page.getByTestId("upcoming-crescent-months");
+    const grid = section.locator("[data-crescent-month-grid]");
+    await expect(section).toBeVisible();
+    await expect(grid.locator("button")).toHaveCount(6);
+    const measurements = await section.evaluate((sectionElement) => {
+      const gridElement = sectionElement.querySelector("[data-crescent-month-grid]") as HTMLElement;
+      const button = gridElement.querySelector("button") as HTMLButtonElement;
+      const monthTitle = button.querySelector("[data-crescent-month-title]") as HTMLElement;
+      const date = button.children[1] as HTMLElement;
+      const cardBounds = Array.from(gridElement.querySelectorAll("button")).map(item => {
+        const card = item.getBoundingClientRect();
+        const content = item.querySelector("[data-crescent-month-title]")!.getBoundingClientRect();
+        return { cardRight: card.right, cardLeft: card.left, contentRight: content.right, contentLeft: content.left, height: card.height, width: card.width };
+      });
+      return {
+        viewport: window.innerWidth,
+        computedGrid: getComputedStyle(gridElement).gridTemplateColumns,
+        monthFont: getComputedStyle(monthTitle).fontFamily,
+        monthSize: getComputedStyle(monthTitle).fontSize,
+        cardFont: getComputedStyle(button).fontFamily,
+        cardSize: getComputedStyle(button).fontSize,
+        dateSize: getComputedStyle(date).fontSize,
+        bodySize: getComputedStyle(sectionElement.querySelector("p")!).fontSize,
+        cardBounds,
+      };
+    });
+    expect(measurements.cardFont).toContain("Mehr Nastaliq Web");
+    expect(measurements.cardSize).toBe("22px");
+    expect(measurements.bodySize).toBe("22px");
+    expect(measurements.dateSize).toBe("22px");
+    expect(measurements.monthFont).toContain("Gulzar");
+    expect(parseFloat(measurements.monthSize)).toBeGreaterThan(22);
+    const columns = measurements.computedGrid.split(" ").length;
+    expect(columns).toBe(measurements.viewport >= 900 ? 3 : measurements.viewport >= 640 ? 2 : 1);
+    for (const box of measurements.cardBounds) {
+      expect(box.height).toBeGreaterThanOrEqual(156);
+      expect(box.contentLeft).toBeGreaterThanOrEqual(box.cardLeft - 1);
+      expect(box.contentRight).toBeLessThanOrEqual(box.cardRight + 1);
+    }
+    expect(await main.evaluate(el => el.scrollWidth <= el.clientWidth + 2)).toBe(true);
+    await section.screenshot({ path: testInfo.outputPath("urdu-22px-mehr-readable-month-cards.png") });
+  });
+
+  test("centres Mehr introduction and evidence cards and independently explains 11 November", async ({ page }, testInfo) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const main = page.locator('main[data-crescent-ui="ur"]');
+    const introduction = main.locator("[data-crescent-intro]");
+    await expect(introduction).toContainText("مہینہ چنیں اور دیکھیں");
+    const introStyle = await introduction.evaluate(el => ({
+      font: getComputedStyle(el).fontFamily,
+      size: getComputedStyle(el).fontSize,
+      align: getComputedStyle(el).textAlign,
+    }));
+    expect(introStyle.font).toContain("Mehr Nastaliq Web");
+    expect(introStyle.size).toBe("22px");
+    expect(introStyle.align).toBe("center");
+    await page.getByTestId("crescent-deep-details").locator(":scope > summary").click();
+    const cards = page.getByTestId("crescent-three-reference-cards");
+    await expect(cards.locator("article")).toHaveCount(2);
+    expect(await cards.locator("article").first().evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+    await expect(main.getByText("آغازِ ماہ کا امکان")).toHaveCount(0);
+    await expect(main.getByText("سرکاری تاریخی فیصلہ")).toHaveCount(0);
+    await expect(main.getByText("پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں")).toHaveCount(0);
+    await expect(main.getByText("قومی سائنسی اور سرکاری جائزہ")).toHaveCount(0);
+    await expect(main.getByText("سائنسی اور فلکیاتی جائزہ")).toBeVisible();
+    const datePickerBar = page.getByTestId("crescent-date-control");
+    await expect(datePickerBar.getByText("کس شام کا چاند دیکھنا ہے؟")).toBeVisible();
+    await expect(datePickerBar.locator("#dashboard-date")).toBeVisible();
+    await expect(main.getByText("پاکستانی مقامات کے اصل غروب آفتاب پر سائنسی حساب")).toHaveCount(0);
+    expect(await datePickerBar.evaluate(el => getComputedStyle(el).justifyContent)).toBe("center");
+    await expect(page.getByTestId("crescent-next-evening")).toContainText("11 نومبر 2026");
+    await expect(page.getByTestId("crescent-next-evening")).toContainText("کراچی");
+    await expect(page.getByTestId("crescent-next-evening-count")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-simple-metrics")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-simple-details")).toHaveCount(0);
+    const resultCard = page.getByTestId("crescent-predicted-first-day");
+    expect(await resultCard.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgb(243, 207, 104)");
+    await expect(page.getByTestId("crescent-next-evening-metrics")).toContainText("قوسی منٹ");
+    await expect(page.getByTestId("crescent-next-evening-metrics")).toContainText("ڈگری");
+
+    await expect(main.getByText("یہ سرکاری رویتِ ہلال کا اعلان نہیں۔")).toHaveCount(0);
+    await expect(main.getByText("یہ سائنسی نتیجہ ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔")).toHaveCount(0);
+    await expect(main.getByText("سائنسی پیش گوئیاں سرکاری رویتِ ہلال کا اعلان نہیں ہیں۔")).toHaveCount(0);
+    await expect(main.getByText("سرکاری فیصلہ:")).toHaveCount(0);
+    await page.getByText("مزید سائنسی تفصیلات").click();
+    const local = page.getByTestId("scientific-location-grid");
+    await expect(local.locator("[data-crescent-location-card]")).toHaveCount(8);
+    const first = local.locator("[data-crescent-location-card]").first();
+    await expect(first.locator("dt")).toContainText(["افق سے بلندی (ڈگری)", "ہلال کی چوڑائی (قوسی منٹ)", "روشن حصہ", "زاویائی فاصلہ (ڈگری)", "غروب کا وقفہ"]);
+    await expect(first.locator("[data-crescent-latin-number]").first()).toContainText("°");
+    await expect(first.getByText("منٹ", { exact: true })).toBeVisible();
+    expect(await first.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+    expect(await first.locator("dl").evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+
+    const pageText = await main.textContent();
+    expect(pageText).not.toContain("چاند نظر آنے کی ضمانت نہیں");
+    expect(pageText).not.toContain("یہ ہمارا سائنسی اندازہ ہے؛");
+    expect(pageText).not.toContain("۰ مقامات");
+    const tomorrow = page.getByTestId("crescent-next-evening");
+    await expect(tomorrow).toContainText("11 نومبر 2026");
+    const city = page.getByTestId("crescent-visible-city-selector");
+    await expect(city).toBeVisible();
+    const citySelect = city.getByRole("combobox");
+    await expect(citySelect.locator("option")).toHaveCount(8);
+    await expect(citySelect).toHaveValue("karachi");
+    await expect(tomorrow).toContainText("کراچی کے فلکیاتی اعداد");
+    const beforeCityFigures = await page.getByTestId("crescent-next-evening-metrics").textContent();
+    await citySelect.selectOption("lahore");
+    await expect(tomorrow).toContainText("لاہور کے فلکیاتی اعداد");
+    await expect(page.getByTestId("crescent-quick-location")).toHaveValue("lahore");
+    const afterCityFigures = await page.getByTestId("crescent-next-evening-metrics").textContent();
+    expect(afterCityFigures).not.toBe(beforeCityFigures);
+    await citySelect.selectOption("karachi");
+    await expect(page.getByTestId("crescent-next-evening-count")).toHaveCount(0);
+    await expect(page.getByTestId("crescent-next-evening-metrics").locator("div")).toHaveCount(4);
+    await expect(page.getByTestId("crescent-next-evening-metrics")).not.toContainText("—");
+    await tomorrow.screenshot({ path: testInfo.outputPath("nov-11-real-astronomy-from-nov-10.png") });
+    await page.getByTestId("crescent-next-evening-link").click();
+    await expect(page.locator("#dashboard-date")).toHaveValue("2026-11-11");
+    await expect(page).toHaveURL(/date=2026-11-11/);
+  });
+
+  test("three Urdu month cards per desktop row with Western Gregorian date figures", async ({ page }) => {
+    await page.setViewportSize({ width: 1006, height: 820 });
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const months = page.getByTestId("upcoming-crescent-months");
+    const cards = months.locator("[data-crescent-month-grid] button");
+    await expect(cards).toHaveCount(6);
+    const gridCols = await months.locator("[data-crescent-month-grid]").evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+    expect(gridCols).toBe(3);
+    const dateLabels = ["10 نومبر 2026", "10 دسمبر 2026", "8 جنوری 2027", "7 فروری 2027", "8 مارچ 2027", "7 اپریل 2027"];
+    for (let i = 0; i < dateLabels.length; i++) {
+      await expect(cards.nth(i)).toContainText(dateLabels[i]);
+    }
+    const allCardText = await cards.allTextContents();
+    for (const label of allCardText) expect(label).not.toMatch(/[۰-۹]/);
+  });
+
+  test("uses the exact Thursday first-day sentence, Gulzar titles and Mehr text without a duplicate feedback banner", async ({ page }, testInfo) => {
+    await page.goto("/tools/crescent-visibility?date=2026-11-10");
+    const main = page.locator('main[data-crescent-ui="ur"]');
+    await expect(main).toBeVisible();
+    const sentence = "ہمارے سائنسی حساب سے جمادی الثانی 1448 کی پہلی تاریخ 12 نومبر 2026ء بروز جمعرات ہوگی۔";
+    const card = page.getByTestId("crescent-predicted-first-day");
+    await expect(card).toContainText(sentence);
+    await expect(card.locator("strong, b")).toHaveCount(0);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const forecastLayout = await card.locator("[data-crescent-forecast]").evaluate(el => {
+      const style = getComputedStyle(el);
+      return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), scrollWidth: el.scrollWidth, clientWidth: el.clientWidth };
+    });
+    expect(forecastLayout.height).toBeLessThan(forecastLayout.lineHeight * 1.5);
+    expect(forecastLayout.scrollWidth).toBeLessThanOrEqual(forecastLayout.clientWidth + 2);
+    await expect(card.locator("[data-crescent-forecast] bdi")).toHaveText(["1448", "12", "2026"]);
+    const forecastWeight = await card.locator("[data-crescent-forecast]").evaluate(el => getComputedStyle(el).fontWeight);
+    expect(Number(forecastWeight)).toBe(400);
+    const note = page.locator("[data-crescent-month-note]");
+    await expect(note).toContainText("مہینہ منتخب کریں اور اس کی 29ویں شام کا فلکیاتی حساب دیکھیں");
+    expect(await note.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+    const figures = page.getByTestId("crescent-next-evening-metrics");
+    await expect(figures.locator("[data-crescent-latin-number]")).toHaveCount(4);
+    const reading = await figures.locator("[data-crescent-latin-number]").evaluateAll(els => els.map(el => ({
+      text: el.textContent ?? "",
+      family: getComputedStyle(el).fontFamily,
+      weight: getComputedStyle(el).fontWeight,
+      direction: getComputedStyle(el).direction,
+    })));
+    for (const figure of reading) {
+      expect(figure.text).toMatch(/[0-9]+\.[0-9]/);
+      expect(figure.text).not.toMatch(/[۰-۹٠-٩]/);
+      expect(figure.family).toContain("Arial");
+      expect(Number(figure.weight)).toBe(400);
+      expect(figure.direction).toBe("ltr");
+    }
+    await expect(card).not.toContainText("۱۱ نومبر");
+    await expect(card).not.toContainText("۳۰ دن پورے");
+    await expect(main.getByRole("link", { name: "اپنی رائے دیں" })).toHaveCount(0);
+    await expect(main.getByText("کیا یہ معلومات آپ کے لیے مفید رہیں؟")).toHaveCount(0);
+    const fonts = await main.evaluate(element => ({
+      heading: getComputedStyle(element.querySelector("h1")!).fontFamily,
+      paragraph: getComputedStyle(element.querySelector("p")!).fontFamily,
+      result: getComputedStyle(element.querySelector('[data-testid="crescent-predicted-first-day"] p')!).fontFamily,
+      monthButton: getComputedStyle(element.querySelector('[data-testid="upcoming-crescent-month-0"]')!).fontFamily,
+    }));
+    expect(fonts.heading).toContain("Gulzar");
+    expect(fonts.paragraph).toContain("Mehr Nastaliq Web");
+    expect(fonts.result).toContain("Mehr Nastaliq Web");
+    expect(fonts.monthButton).toContain("Mehr Nastaliq Web");
+    await page.screenshot({ path: testInfo.outputPath("urdu-crescent-gulzar-mehr-forecast.png"), fullPage: true });
+  });
 });

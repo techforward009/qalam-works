@@ -10,13 +10,14 @@ import {
 } from "../utils/pakistanDateShare";
 
 export function PakistanDateResult({
-  gregorian, hijri, reviewed, weekday, lang,
+  gregorian, hijri, reviewed, weekday, lang, source = "tabular",
 }: {
   gregorian: DateParts;
   hijri: DateParts;
   reviewed: ResolvedHijriDate | null;
   weekday: string;
   lang: ShareLanguage;
+  source?: "tabular" | "scientific";
 }) {
   const [copied, setCopied] = useState<"message" | "link" | null>(null);
   const [copyError, setCopyError] = useState(false);
@@ -24,10 +25,10 @@ export function PakistanDateResult({
   const naskh = isUr ? "font-naskh" : "";
   const detailDate = dateDigits(formatDate(gregorian, "gregorian", lang), lang);
   const hijriDate = dateDigits(formatDate(hijri, "hijri", lang), lang);
-  const status = pakistanDateStatus(reviewed, lang);
+  const status = pakistanDateStatus(reviewed, lang, source);
   const firstDay = reviewedMonthStart(gregorian, hijri, reviewed);
   const url = pakistanDatePermalink(gregorian);
-  const text = buildPakistanDateShareText({ gregorian, hijri, reviewed, weekday, lang });
+  const text = buildPakistanDateShareText({ gregorian, hijri, reviewed, weekday, lang, source });
 
   async function copy(content: string, kind: "message" | "link") {
     try {
@@ -52,7 +53,7 @@ export function PakistanDateResult({
             {reviewed?.authority === "official"
               ? (isUr ? "پاکستان کی سرکاری ہجری تاریخ" : "Pakistan official Hijri date")
               : reviewed ? (isUr ? "تاریخی پاکستانی ریکارڈ" : "Pakistan historical record")
-                : (isUr ? "حسابی تاریخ" : "Calculated date")}
+                : source === "scientific" ? (isUr ? "سائنسی پیش گوئی" : "Scientific prediction") : (isUr ? "حسابی تاریخ" : "Calculated date")}
           </span>
         </div>
         <h3 className={`mt-4 text-center text-2xl font-bold leading-[2] text-[#1A3A2A] sm:text-3xl dark:text-[#e8ede9] ${naskh}`} data-testid="pakistan-hijri-date">

@@ -38,7 +38,7 @@ export interface CalendarCell {
   inCurrentMonth: boolean;
   conversionSupported: boolean;
   hijri: DateParts | null;
-  hijriSource?: "official" | "reported-official" | "tabular" | null;
+  hijriSource?: "official" | "reported-official" | "scientific" | "tabular" | null;
 }
 
 export interface CalendarWeek {

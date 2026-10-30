@@ -126,7 +126,7 @@ export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = ro
       if (rect.width < 0.1 || rect.height < 1 || (clip && (rect.bottom <= clip.top || rect.top >= clip.bottom || rect.right <= clip.left || rect.left >= clip.right))) continue;
       const height = Number.isFinite(leading) ? leading * scale : rect.height;
       const top = rectLineTop(root,text.parentElement!,rect,height,scale);
-      const reachesStart = beginsAtVisualLineStart({left:rect.left,right:rect.right,top},prefix,blockStyle.direction === "rtl");
+      const reachesStart = blockStyle.textAlign !== "center" && beginsAtVisualLineStart({left:rect.left,right:rect.right,top},prefix,blockStyle.direction === "rtl");
       const right = reachesStart && blockStyle.direction === "rtl" ? blockBounds.right - parseFloat(blockStyle.paddingRight || "0") * scale : rect.right;
       const left = reachesStart && blockStyle.direction !== "rtl" ? blockBounds.left + parseFloat(blockStyle.paddingLeft || "0") * scale : rect.left;
       rects.push({ left, top, width: right-left, height, fontTop: rect.top, fontBottom: rect.bottom });

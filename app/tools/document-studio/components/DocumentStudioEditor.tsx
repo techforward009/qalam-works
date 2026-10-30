@@ -1,5 +1,6 @@
 "use client";
 
+import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -500,6 +501,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
       handleKeyDown: (_view, event) => {
+        if (handleStudioDocumentNavigation(_view, event)) return true;
         if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && _view.state.selection.$from.parent.type.name === "paragraph") {
           if (!event.shiftKey) {
             _view.dispatch(closeHistory(_view.state.tr.insertText("\t")));

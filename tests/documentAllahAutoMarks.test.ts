@@ -6,8 +6,9 @@ import { createDocumentStudioExtensions } from "../app/tools/document-studio/uti
 import { AllahAutoMarks } from "../app/tools/document-studio/extensions/AllahAutoMarks";
 
 let editor: Editor;
-function open() {
+function open(font = "Digital Khatt Indo-Pak") {
   editor = new Editor({ extensions: [...createDocumentStudioExtensions(), AllahAutoMarks], content: "<p></p>" });
+  if (font) editor.commands.setMark("textStyle", {fontFamily:font});
   return editor;
 }
 function type(text: string) {
@@ -25,9 +26,9 @@ describe("Allah auto marks through real editor transactions", () => {
     ["واللہ", "واللّٰہ"], ["باللہ", "باللّٰہ"], ["للہ", "للّٰہ"],
     ["لِلّٰہ", "لِلّٰہ"], ["اللہم", "اللّٰہم"], ["اللّٰہُمَّ", "اللّٰہُمَّ"],
     ["اللّٰہ", "اللّٰہ"], ["اللّہ", "اللّٰہ"], ["اللٰہ", "اللّٰہ"],
-    ["اللّٰہ", "اللّٰہ"], ["اللَّهْو", "اللَّهْو"], ["اللَّهَب", "اللَّهَب"],
+    ["اللّٰہ", "اللّٰہ"], ["اللَّهْو", "اللَّهْو"], ["اللَّهَب", "اللَّهَب"],
     ["الٰہ", "الٰہ"], ["الہام", "الہام"], ["xاللہ", "xاللہ"], ["اللہنام", "اللہنام"],
-    ["اللِہ", "اللِہ"], ["اللُہ", "اللُہ"], ["اللْہ", "اللْہ"],
+    ["اللِہ", "اللِّٰہ"], ["اللُہ", "اللُّٰہ"], ["اللْہ", "اللّْٰہ"],
   ])("completes %s as %s once", (input, output) => {
     open(); type(input);
     expect(editor.getText()).toBe(input);
@@ -37,7 +38,7 @@ describe("Allah auto marks through real editor transactions", () => {
     expect(editor.getText()).toBe(output + " ۔ ");
   });
 
-  it.each(["Mehr Nastaliq Web", "Digital Khatt Indo-Pak", "Arial"])("works in %s and undo removes only the auto marks", font => {
+  it.each(["Digital Khatt Indo-Pak"])("works in %s and undo removes only the auto marks", font => {
     open(); editor.commands.setMark("textStyle", { fontFamily: font });
     type("اللہ ");
     expect(editor.getText()).toBe("اللّٰہ ");
@@ -49,11 +50,16 @@ describe("Allah auto marks through real editor transactions", () => {
     expect(editor.getText()).toBe("اللّٰہ ");
   });
 
-  it.each(["اللّہ", "اللٰہ", "اللّٰہ"])("undo retains the original marks in %s", original => {
-    open(); type(original + " ");
-    expect(editor.getText()).toBe("اللّٰہ ");
-    editor.commands.undo();
-    expect(editor.getText()).toBe(original + " ");
+  it.each(['Mehr Nastaliq Web','Gulzar','Jameel Noori Nastaleeq','Arial Unicode MS','Arial',''])("leaves typing and paste unchanged in %s", font=>{
+    open(font);type('اللہ واللہ باللہ للہ ');
+    expect(editor.getText()).toBe('اللہ واللہ باللہ للہ ');
+    editor.view.dispatch(editor.state.tr.insertText('اللہ ').setMeta('uiEvent','paste'));
+    expect(editor.getText()).toBe('اللہ واللہ باللہ للہ اللہ ');
+  });
+  it.each(['اللّٰہ','اللّٰہ','لِلّٰہ','اللّٰہُمَّ'])("never adds or normalises already authored marks in %s",original=>{
+    open();type(original+' ');expect(editor.getText()).toBe(original+' ');
+    editor.view.dispatch(editor.state.tr.insertText(original).setMeta('uiEvent','paste'));
+    expect(editor.getText()).toBe(original+' '+original);
   });
 
   it("completes on punctuation and Enter without replacing Enter behaviour", () => {
@@ -68,10 +74,10 @@ describe("Allah auto marks through real editor transactions", () => {
 
   it("normalises a multi-paragraph paste including its last word, preserving marks and undo", () => {
     open();
-    const paragraphs = ["اللہ الله", "اللّہ اللَّهَب", "واللہ"].map(text => editor.schema.nodes.paragraph.create(null, editor.schema.text(text, [editor.schema.marks.bold.create()])));
+    const paragraphs = ["اللہ الله", "اللّہ اللَّهَب", "واللہ"].map(text => editor.schema.nodes.paragraph.create(null, editor.schema.text(text, [editor.schema.marks.bold.create(),editor.schema.marks.textStyle.create({fontFamily:"Digital Khatt Indo-Pak"})])));
     editor.view.dispatch(editor.state.tr.replaceSelection(new Slice(Fragment.from(paragraphs), 1, 1)).setMeta("uiEvent", "paste"));
     expect(editor.getText()).toBe("اللّٰہ اللّٰه\n\nاللّٰہ اللَّهَب\n\nواللّٰہ");
-    expect(editor.state.doc.firstChild?.firstChild?.marks[0].type.name).toBe("bold");
+    expect(editor.state.doc.firstChild?.firstChild?.marks.some(mark=>mark.type.name === "bold")).toBe(true);
     editor.commands.undo();
     expect(editor.getText()).toBe("اللہ الله\n\nاللّہ اللَّهَب\n\nواللہ");
   });
@@ -83,3 +89,51 @@ describe("Allah auto marks through real editor transactions", () => {
     expect(editor.getText()).toBe("اللہ پہلے سے نیا ");
   });
 });
+
+it('uses inherited registry font and leaves loaded documents unchanged',()=>{
+ open('');document.body.append(editor.view.dom);editor.view.dom.style.setProperty('--qalam-rtl-font','"Digital Khatt Indo-Pak", serif');
+ type('اللہ ');expect(editor.getText()).toBe('اللّٰہ ');
+ editor.commands.setContent('<p>اللہ اللّہ</p>');expect(editor.getText()).toBe('اللہ اللّہ');
+});
+it('does not authorise an old Digital Khatt word when the caret font changes',()=>{
+ open();type('اللہ');editor.commands.setMark('textStyle',{fontFamily:'Mehr Nastaliq Web'});type(' ');
+ expect(editor.getText()).toBe('اللہ ');
+});
+it('preserves fonts in a mixed rich paste and completes only its unmarked Digital Khatt word',()=>{
+ open('Mehr Nastaliq Web');
+ const content=['Mehr Nastaliq Web','Digital Khatt Indo-Pak'].map(fontFamily=>editor.schema.nodes.paragraph.create(null,editor.schema.text('اللہ',[editor.schema.marks.textStyle.create({fontFamily})])));
+ editor.view.dispatch(editor.state.tr.replaceSelection(new Slice(Fragment.from(content),1,1)).setMeta('uiEvent','paste'));
+ expect(editor.getText()).toBe('اللہ\n\nاللّٰہ');
+});
+
+it.each(['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq','Gulzar'])(
+ 'real plain-text paste uses the active %s font for every Allah word',font=>{
+ open(font);
+ const input='اللہ اللہم واللہ باللہ للہ اللہ اللّٰہ اللّہ';
+ editor.view.pasteText(input);
+ const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّٰہ':input;
+ expect(editor.getText()).toBe(expected);
+ if(font==='Digital Khatt Indo-Pak') {
+  expect(editor.state.doc.firstChild?.firstChild?.marks.find(mark=>mark.type.name==='textStyle')?.attrs.fontFamily).toBe(font);
+  editor.commands.undo();expect(editor.getText()).toBe(input);
+  editor.commands.undo();expect(editor.getText()).toBe('');
+ }
+});
+it('plain multiline paste inherits Digital Khatt at the paste position without changing loaded text',()=>{
+ open();editor.view.pasteText('اللہ\nاللہم\nاللّٰہ');
+ expect(editor.getText()).toBe('اللّٰہ\n\nاللّٰہم\n\nاللّٰہ');
+ editor.commands.setContent('<p>اللہ اللہم</p>');expect(editor.getText()).toBe('اللہ اللہم');
+});
+
+const partialForms=[
+ ['اللّہ','اللّٰہ'],['اللٰہ','اللّٰہ'],['اللّٰہ','اللّٰہ'],['اللّٰہ','اللّٰہ'],
+ ['واللّہ','واللّٰہ'],['باللٰہ','باللّٰہ'],['للّہ','للّٰہ'],['اللّہم','اللّٰہم'],
+ ['بِاللّہ','بِاللّٰہ'],['اَللٰہُ','اَللّٰہُ'],['اللٰهم','اللّٰهم'],['اللَّهَب','اللَّهَب'],
+];
+for(const font of ['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq'])
+ for(const mode of ['typing','paste'])it.each(partialForms)(`${font} ${mode}: completes %s without replacing authored marks`,(input,completed)=>{
+  open(font);const expected=font==='Digital Khatt Indo-Pak'?completed:input;
+  if(mode==='typing')type(input+' ');else editor.view.pasteText(input+' ');
+  expect(editor.getText()).toBe(expected+' ');
+  if(expected!==input){editor.commands.undo();expect(editor.getText()).toBe(input+' ');editor.commands.redo();expect(editor.getText()).toBe(expected+' ');}
+ });
