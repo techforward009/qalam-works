@@ -94,12 +94,16 @@ export const AllahAutoMarks = Extension.create({
           if (end === block.text.length && !allowEnd) continue;
           if (!block.ranges.some(range => range.from <= pos + 1 + end && range.to >= start)) continue;
           const match = allah.exec(token[0]);
-          // Authored marks are immutable, including partial marks / their order.
-          if (!match || /\p{M}/u.test(token[0])) continue;
+          if (!match) continue;
           const from = start + match[1].length;
           // Rich paste can contain other faces: check each word, not just the caret.
           if (!isDigitalKhatt(state.doc.resolve(from).marks())) continue;
-          changes.push({ from, to: from, text: "ّٰ" });
+          // Inspect only the second lam's marks, not vowels elsewhere in the word.
+          // Never replace/reorder authored marks, including an already complete pair.
+          const shadda = match[2].indexOf("ّ"), alef = match[2].indexOf("ٰ");
+          if (shadda >= 0 && alef >= 0) continue;
+          const at = from + (shadda >= 0 ? shadda + 1 : alef >= 0 ? alef : 0);
+          changes.push({ from: at, to: at, text: shadda >= 0 ? "ٰ" : alef >= 0 ? "ّ" : "ّٰ" });
         }
         if (!changes.length) return null;
         const tr = closeHistory(state.tr);

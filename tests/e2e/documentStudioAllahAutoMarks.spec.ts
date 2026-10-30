@@ -22,7 +22,7 @@ test("typed complete Allah words get only the missing marks; other words stay un
   const cases = [
     ["اللہ", "اللّٰہ"], ["الله", "اللّٰه"], ["ٱللہ", "ٱللّٰہ"],
     ["واللہ", "واللّٰہ"], ["باللہ", "باللّٰہ"], ["للہ", "للّٰہ"], ["اللہم", "اللّٰہم"],
-    ["اللّٰہ", "اللّٰہ"], ["اللّہ", "اللّہ"], ["اللّٰہ", "اللّٰہ"],
+    ["اللّٰہ", "اللّٰہ"], ["اللّہ", "اللّٰہ"], ["اللّٰہ", "اللّٰہ"],
     ["اللَّهْو", "اللَّهْو"], ["اللَّهَب", "اللَّهَب"], ["الٰہ", "الٰہ"], ["الہام", "الہام"],
   ];
   for (const [input, output] of cases) {
@@ -65,7 +65,7 @@ test("real rich clipboard paste retains Digital Khatt and can undo only the auto
   await page.keyboard.press("Control+v");
   await expect(page.locator(".ProseMirror")).toContainText("اللّٰہ اللّٰه");
   await expect(page.locator(".ProseMirror")).toContainText("واللّٰہ");
-  expect(await page.locator(".ProseMirror p").allTextContents()).toEqual(["اللّٰہ اللّٰه", "اللّہ اللَّهَب", "واللّٰہ"]);
+  expect(await page.locator(".ProseMirror p").allTextContents()).toEqual(["اللّٰہ اللّٰه", "اللّٰہ اللَّهَب", "واللّٰہ"]);
   await page.keyboard.press("Control+z");
   expect(await page.locator(".ProseMirror p").allTextContents()).toEqual(original.split("\n"));
 });
@@ -79,18 +79,18 @@ for(const font of ['Mehr Nastaliq Web','Gulzar','Jameel Noori Nastaleeq','Arial 
  expect(await page.locator('.ProseMirror').textContent()).toBe('اللہ اللہ واللہ اللّہ');
 });
 
-test('pasted Mehr and Digital Khatt Allah and Allahum match a real downloaded PDF',async({page},info)=>{
+test('partially marked Mehr and Digital Khatt Allah forms match a real downloaded PDF',async({page},info)=>{
  test.setTimeout(120000);
  const editor=page.locator('.ProseMirror');
  await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.commands.setMark('textStyle',{fontFamily:'Mehr Nastaliq Web',fontSize:'36pt'}));
- await page.evaluate(()=>navigator.clipboard.writeText('اللہ اللہم '));await page.keyboard.press('Control+v');
- expect(await editor.textContent()).toBe('اللہ اللہم ');
+ await page.evaluate(()=>navigator.clipboard.writeText('اللّہ اللٰہ اللّٰہ اللّٰہ بِاللّہم '));await page.keyboard.press('Control+v');
+ expect(await editor.textContent()).toBe('اللّہ اللٰہ اللّٰہ اللّٰہ بِاللّہم ');
  await page.evaluate(()=>document.fonts.ready);
  await page.locator('[data-studio-pages-stack]').screenshot({path:info.outputPath('mehr-allah.png'),scale:'css'});
  await page.keyboard.press('Enter');
  await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.commands.setMark('textStyle',{fontFamily:'Digital Khatt Indo-Pak',fontSize:'36pt'}));
- await page.evaluate(()=>navigator.clipboard.writeText('اللہ اللہم '));await page.keyboard.press('Control+v');
- const texts=await editor.locator('p').allTextContents();expect(texts).toEqual(['اللہ اللہم ','اللّٰہ اللّٰہم ']);
+ await page.evaluate(()=>navigator.clipboard.writeText('اللّہ اللٰہ اللّٰہ اللّٰہ بِاللّہم '));await page.keyboard.press('Control+v');
+ const texts=await editor.locator('p').allTextContents();expect(texts).toEqual(['اللّہ اللٰہ اللّٰہ اللّٰہ بِاللّہم ','اللّٰہ اللّٰہ اللّٰہ اللّٰہ بِاللّٰہم ']);
  await page.evaluate(()=>document.fonts.ready);
  await page.locator('[data-studio-pages-stack]').screenshot({path:info.outputPath('digital-khatt-allah.png'),scale:'css'});
  const doc=await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.getJSON());
@@ -114,11 +114,24 @@ for(const font of ['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Na
  await page.locator('[data-studio-font-family]').selectOption(font);await page.locator('.ProseMirror').focus();
  const input='اللہ اللہم واللہ باللہ للہ اللہ اللّٰہ اللّہ';
  await page.evaluate(text=>navigator.clipboard.writeText(text),input);await page.keyboard.press('Control+v');
- const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّہ':input;
+ const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّٰہ':input;
  expect(await page.locator('.ProseMirror').textContent()).toBe(expected);
  if(font==='Digital Khatt Indo-Pak') {
   const fonts=await page.locator('.ProseMirror').evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.getJSON().content?.[0].content?.map(n=>n.marks?.find(m=>m.type==='textStyle')?.attrs?.fontFamily));
   expect(fonts?.every(f=>f===font)).toBe(true);
   await page.keyboard.press('Control+z');expect(await page.locator('.ProseMirror').textContent()).toBe(input);
+ }
+});
+
+for(const font of ['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq'])test(`${font}: partial marks complete on typing and paste without duplication`,async({page})=>{
+ const input='اللّہ اللٰہ اللّٰہ اللّٰہ واللّہ باللٰہ للّہ اللّہم بِاللّہ اَللٰہُ';
+ const completed='اللّٰہ اللّٰہ اللّٰہ اللّٰہ واللّٰہ باللّٰہ للّٰہ اللّٰہم بِاللّٰہ اَللّٰہُ';
+ const expected=font==='Digital Khatt Indo-Pak'?completed:input;
+ for(const mode of ['typing','paste']) {
+  await clear(page);await page.locator('[data-studio-font-family]').selectOption(font);await page.locator('.ProseMirror').focus();
+  if(mode==='typing'){await page.keyboard.insertText(input);await page.keyboard.press('Space');}
+  else {await page.evaluate(text=>navigator.clipboard.writeText(text),input+' ');await page.keyboard.press('Control+v');}
+  expect(await page.locator('.ProseMirror').textContent()).toBe(expected+' ');
+  if(font==='Digital Khatt Indo-Pak'&&mode==='paste'){await page.keyboard.press('Control+z');expect(await page.locator('.ProseMirror').textContent()).toBe(input+' ');}
  }
 });

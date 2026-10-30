@@ -25,10 +25,10 @@ describe("Allah auto marks through real editor transactions", () => {
     ["اللہ", "اللّٰہ"], ["الله", "اللّٰه"], ["ٱللہ", "ٱللّٰہ"],
     ["واللہ", "واللّٰہ"], ["باللہ", "باللّٰہ"], ["للہ", "للّٰہ"],
     ["لِلّٰہ", "لِلّٰہ"], ["اللہم", "اللّٰہم"], ["اللّٰہُمَّ", "اللّٰہُمَّ"],
-    ["اللّٰہ", "اللّٰہ"], ["اللّہ", "اللّہ"], ["اللٰہ", "اللٰہ"],
+    ["اللّٰہ", "اللّٰہ"], ["اللّہ", "اللّٰہ"], ["اللٰہ", "اللّٰہ"],
     ["اللّٰہ", "اللّٰہ"], ["اللَّهْو", "اللَّهْو"], ["اللَّهَب", "اللَّهَب"],
     ["الٰہ", "الٰہ"], ["الہام", "الہام"], ["xاللہ", "xاللہ"], ["اللہنام", "اللہنام"],
-    ["اللِہ", "اللِہ"], ["اللُہ", "اللُہ"], ["اللْہ", "اللْہ"],
+    ["اللِہ", "اللِّٰہ"], ["اللُہ", "اللُّٰہ"], ["اللْہ", "اللّْٰہ"],
   ])("completes %s as %s once", (input, output) => {
     open(); type(input);
     expect(editor.getText()).toBe(input);
@@ -56,7 +56,7 @@ describe("Allah auto marks through real editor transactions", () => {
     editor.view.dispatch(editor.state.tr.insertText('اللہ ').setMeta('uiEvent','paste'));
     expect(editor.getText()).toBe('اللہ واللہ باللہ للہ اللہ ');
   });
-  it.each(['اللّہ','اللٰہ','اللّٰہ','اللّٰہ','لِلّٰہ','اللّٰہُمَّ'])("never adds or normalises already authored marks in %s",original=>{
+  it.each(['اللّٰہ','اللّٰہ','لِلّٰہ','اللّٰہُمَّ'])("never adds or normalises already authored marks in %s",original=>{
     open();type(original+' ');expect(editor.getText()).toBe(original+' ');
     editor.view.dispatch(editor.state.tr.insertText(original).setMeta('uiEvent','paste'));
     expect(editor.getText()).toBe(original+' '+original);
@@ -76,7 +76,7 @@ describe("Allah auto marks through real editor transactions", () => {
     open();
     const paragraphs = ["اللہ الله", "اللّہ اللَّهَب", "واللہ"].map(text => editor.schema.nodes.paragraph.create(null, editor.schema.text(text, [editor.schema.marks.bold.create(),editor.schema.marks.textStyle.create({fontFamily:"Digital Khatt Indo-Pak"})])));
     editor.view.dispatch(editor.state.tr.replaceSelection(new Slice(Fragment.from(paragraphs), 1, 1)).setMeta("uiEvent", "paste"));
-    expect(editor.getText()).toBe("اللّٰہ اللّٰه\n\nاللّہ اللَّهَب\n\nواللّٰہ");
+    expect(editor.getText()).toBe("اللّٰہ اللّٰه\n\nاللّٰہ اللَّهَب\n\nواللّٰہ");
     expect(editor.state.doc.firstChild?.firstChild?.marks.some(mark=>mark.type.name === "bold")).toBe(true);
     editor.commands.undo();
     expect(editor.getText()).toBe("اللہ الله\n\nاللّہ اللَّهَب\n\nواللہ");
@@ -111,7 +111,7 @@ it.each(['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq','
  open(font);
  const input='اللہ اللہم واللہ باللہ للہ اللہ اللّٰہ اللّہ';
  editor.view.pasteText(input);
- const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّہ':input;
+ const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّٰہ':input;
  expect(editor.getText()).toBe(expected);
  if(font==='Digital Khatt Indo-Pak') {
   expect(editor.state.doc.firstChild?.firstChild?.marks.find(mark=>mark.type.name==='textStyle')?.attrs.fontFamily).toBe(font);
@@ -124,3 +124,16 @@ it('plain multiline paste inherits Digital Khatt at the paste position without c
  expect(editor.getText()).toBe('اللّٰہ\n\nاللّٰہم\n\nاللّٰہ');
  editor.commands.setContent('<p>اللہ اللہم</p>');expect(editor.getText()).toBe('اللہ اللہم');
 });
+
+const partialForms=[
+ ['اللّہ','اللّٰہ'],['اللٰہ','اللّٰہ'],['اللّٰہ','اللّٰہ'],['اللّٰہ','اللّٰہ'],
+ ['واللّہ','واللّٰہ'],['باللٰہ','باللّٰہ'],['للّہ','للّٰہ'],['اللّہم','اللّٰہم'],
+ ['بِاللّہ','بِاللّٰہ'],['اَللٰہُ','اَللّٰہُ'],['اللٰهم','اللّٰهم'],['اللَّهَب','اللَّهَب'],
+];
+for(const font of ['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq'])
+ for(const mode of ['typing','paste'])it.each(partialForms)(`${font} ${mode}: completes %s without replacing authored marks`,(input,completed)=>{
+  open(font);const expected=font==='Digital Khatt Indo-Pak'?completed:input;
+  if(mode==='typing')type(input+' ');else editor.view.pasteText(input+' ');
+  expect(editor.getText()).toBe(expected+' ');
+  if(expected!==input){editor.commands.undo();expect(editor.getText()).toBe(input+' ');editor.commands.redo();expect(editor.getText()).toBe(expected+' ');}
+ });
