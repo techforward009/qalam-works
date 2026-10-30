@@ -89,15 +89,14 @@ describe("crescent visibility dashboard", () => {
   it("shows a friendly national result with genuine location measurements and a clear non-official label", () => {
     render(<CrescentVisibilityContent />);
     const summary = screen.getByTestId("crescent-simple-result");
-    expect((screen.getByTestId("crescent-simple-details") as HTMLDetailsElement).open).toBe(false);
+    expect(screen.queryByTestId("crescent-simple-details")).toBeNull();
     expect((screen.getByTestId("crescent-deep-details") as HTMLDetailsElement).open).toBe(false);
     expect(summary.textContent).toContain("Crescent visibility in Pakistan");
-    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("The crescent may be visible");
-    expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1 of 8");
-    expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("9.1");
-    expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("42.3");
+    expect(screen.getByTestId("crescent-simple-headline").textContent).toBe("Crescent-visibility conditions this evening:");
+    expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("12.5%");
+    expect(screen.getByTestId("crescent-yallop-model").textContent).toContain("12.5%");
     expect(summary.textContent).not.toContain("official decision");
-    expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-simple-details");
+    expect(screen.getByRole("link", { name: "More details" }).getAttribute("href")).toBe("#crescent-technical-report");
     expect(screen.getByText("Detailed scientific research")).toBeTruthy();
     expect(screen.getByTestId("crescent-quick-location")).toBeTruthy();
   });
@@ -109,8 +108,8 @@ describe("crescent visibility dashboard", () => {
       const choice = screen.getByTestId("crescent-quick-location") as HTMLSelectElement;
       fireEvent.change(choice, { target: { value: "peshawar" } });
       expect(choice.value).toBe("peshawar");
-      expect(screen.getByTestId("crescent-simple-metrics").textContent).toContain("12.7");
-      expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("1 of 8");
+      expect(choice.value).toBe("peshawar");
+      expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("12.5%");
     } finally {
       locations[1].prediction.criterion.elongationDeg = 9.11;
     }
@@ -126,24 +125,40 @@ describe("crescent visibility dashboard", () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const copy = String(writeText.mock.calls[0]?.[0] ?? "");
     expect(copy).toContain("2026-11-10");
-    expect(copy).toContain("The crescent may be visible");
+    expect(copy).toContain("Favorable at 12.5% of the eight sites");
     expect(copy).not.toContain("not an official announcement");
     expect(copy).toContain("qalamworks.com/tools/crescent-visibility?date=2026-11-10");
     expect(screen.getByText("Result copied")).toBeTruthy();
   });
 
-  it("shows three source-separated outcomes and measured scientific table", () => {
+  it("keeps one clear scientific summary and no repeated ten-day details", () => {
     render(<CrescentVisibilityContent />);
-    const states = screen.getByTestId("crescent-three-outcomes");
-    expect(states.querySelectorAll("p")).toHaveLength(2);
-    expect(states.textContent).toContain("Pakistan:");
-    expect(states.textContent).toContain("Second scientific check:");
-    expect(states.textContent).toContain("1 of 8");
-    const measures = screen.getByTestId("crescent-simple-metrics");
-    expect(measures.querySelectorAll("div")).toHaveLength(4);
-    expect(measures.textContent).toContain("9.1");
-    expect(measures.textContent).toContain("42.3");
+    expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("12.5%");
+    expect(screen.getByTestId("crescent-yallop-model").textContent).toContain("12.5%");
+    expect(screen.queryByTestId("crescent-three-outcomes")).toBeNull();
+    expect(screen.queryByTestId("crescent-simple-metrics")).toBeNull();
+    expect(screen.queryByTestId("crescent-simple-details")).toBeNull();
+    expect(screen.getByTestId("crescent-date-control").className).toContain("justify-center");
     expect(screen.queryByRole("link", { name: "Share feedback" })).toBeNull();
+  });
+
+  it("expresses two and four out of eight as site percentages, not statistical probabilities", () => {
+    locale.language = "ur";
+    locations.forEach((location, i) => { location.prediction.criterion.qualifies = i < 2; });
+    yallopLocations.forEach((location, i) => { location.prediction.acceptedByPolicy = i < 4; });
+    render(<CrescentVisibilityContent />);
+    expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("25% مقامات");
+    expect(screen.getByTestId("crescent-yallop-model").textContent).toContain("50% مقامات");
+    expect(screen.getByText("فیصد سے مراد آٹھ مقامات میں موافق حالات کا تناسب ہے۔")).toBeTruthy();
+  });
+
+  it("writes no favorable-site claim when all eight fail", () => {
+    locale.language = "ur";
+    locations.forEach(location => { location.prediction.criterion.qualifies = false; });
+    yallopLocations.forEach(location => { location.prediction.acceptedByPolicy = false; });
+    render(<CrescentVisibilityContent />);
+    expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("کوئی امکان نہیں");
+    expect(screen.getByTestId("crescent-yallop-model").textContent).toContain("کوئی امکان نہیں");
   });
 
   it("highlights Ramadan among live month cards without hard-coded dates", async () => {
@@ -197,7 +212,7 @@ describe("crescent visibility dashboard", () => {
     const references = screen.getByTestId("crescent-three-reference-cards");
     expect(references.className).toContain("text-center");
     expect(references.textContent).toContain("کوئی مقام");
-    expect(screen.getByTestId("crescent-simple-national-count").textContent).toContain("صفر");
+    expect(screen.getByTestId("crescent-pakistan-model").textContent).toContain("کوئی امکان نہیں");
     expect(screen.queryByText("آغازِ ماہ کا امکان")).toBeNull();
     expect(screen.queryByText("سرکاری تاریخی فیصلہ")).toBeNull();
     const text = screen.getByRole("main").textContent ?? "";
