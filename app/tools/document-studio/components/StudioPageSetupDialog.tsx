@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { clampMarginMm, resolvePageDimensions, type CustomPageSizeMm, type PageOrientation, type PageSizeId } from "../utils/pageLayout";
-import { useMovableStudioDialog } from "./useMovableStudioDialog";
+import {ClassicTitle,ClassicGroup,ClassicSelect,ClassicSpinner,at,classicField,classicButton,useInPage2009Dialog} from "./inpage2009DialogChrome";
 
 export type StudioPageSetupValues = {
   size: PageSizeId; orientation: PageOrientation; customSizeMm?: CustomPageSizeMm;
@@ -18,9 +18,6 @@ const papers = [
   {id:'folio',label:'Folio 8.5x13"',width:215.9,height:330.2},
   {id:'quarto',label:'Quarto 215x275mm',width:215,height:275},
 ];
-const field:CSSProperties={background:'#fff',color:'#000',border:'1px solid #808080',boxShadow:'inset 1px 1px #aaa',boxSizing:'border-box',height:19,padding:'0 2px',font:'11px Tahoma,Arial,sans-serif',minWidth:0};
-const button:CSSProperties={width:60,height:23,background:'#f0f0f0',color:'#000',border:'1px solid #808080',boxShadow:'inset 1px 1px #fff,inset -1px -1px #404040',font:'11px Tahoma,Arial,sans-serif'};
-const group:CSSProperties={position:'absolute',minWidth:0,margin:0,padding:'4px 5px',border:'1px solid #999',boxSizing:'border-box'};
 function millimetres(raw:string):number {return /^\d+(?:\.\d+)?\s*(?:mm)?$/i.test(raw.trim())?Number(raw.trim().replace(/mm/i,'')):NaN;}
 
 export default function StudioPageSetupDialog({settings,direction,columns,gutter,onApply,onClose}:{
@@ -32,13 +29,12 @@ export default function StudioPageSetupDialog({settings,direction,columns,gutter
   const [paper,setPaper]=useState(()=>papers.find(p=>Math.abs(p.width-portrait.widthMm)<.01&&Math.abs(p.height-portrait.heightMm)<.01)?.id??'custom');
   const [orientation,setOrientation]=useState(settings.page.orientation);
   const [width,setWidth]=useState(`${initial.widthMm}mm`),[height,setHeight]=useState(`${initial.heightMm}mm`);
-  const [columnCount,setColumnCount]=useState(columns),[gutterMm,setGutterMm]=useState(String(gutter));
+  const [columnCount,setColumnCount]=useState(columns),[gutterMm,setGutterMm]=useState(`${gutter}mm`);
   const margins=settings.page.margins;
   const [marginText,setMarginText]=useState(()=>({left:`${direction==='rtl'?margins.endMm:margins.startMm}mm`,right:`${direction==='rtl'?margins.startMm:margins.endMm}mm`,top:`${margins.topMm}mm`,bottom:`${margins.bottomMm}mm`}));
-  const [error,setError]=useState(''),[help,setHelp]=useState(false),[scale,setScale]=useState(1);
-  const drag=useMovableStudioDialog<HTMLFormElement>(),root=drag.dialogRef;
+  const [error,setError]=useState(''),[help,setHelp]=useState(false);
+  const drag=useInPage2009Dialog<HTMLFormElement>(388,179),root=drag.dialogRef;
   useEffect(()=>{root.current?.querySelector('select')?.focus();},[]);
-  useLayoutEffect(()=>{const update=()=>setScale(Math.min(1,(window.innerWidth-16)/389,(window.innerHeight-16)/179));update();window.addEventListener('resize',update);return()=>window.removeEventListener('resize',update);},[]);
   const choosePaper=(id:string)=>{setPaper(id);const p=papers.find(item=>item.id===id);if(p){setWidth(`${orientation==='landscape'?p.height:p.width}mm`);setHeight(`${orientation==='landscape'?p.width:p.height}mm`);}};
   const turn=(next:PageOrientation)=>{if(next!==orientation){setWidth(height);setHeight(width);setOrientation(next);}};
   const submit=(event:FormEvent)=>{
@@ -53,32 +49,35 @@ export default function StudioPageSetupDialog({settings,direction,columns,gutter
     const customSizeMm=paper==='a4'||paper==='a5'?undefined:orientation==='landscape'?{widthMm:h,heightMm:w}:{widthMm:w,heightMm:h};
     onApply({size,orientation,customSizeMm,...parsed,columns:columnCount,gutter:gap});
   };
+  const label=(text:string,x:number,y:number,id:string)=><label htmlFor={id} style={{...at(x,y),whiteSpace:'nowrap'}}><u>{text[0]}</u>{text.slice(1)}:</label>;
   return <div data-studio-page-setup-backdrop="true" className="fixed inset-0 z-[125] grid place-items-center bg-black/25 p-2" style={{gridTemplateColumns:'minmax(0,1fr)'}} onPointerDown={e=>e.stopPropagation()}>
-    <form ref={root} data-studio-page-setup="true" role="dialog" aria-modal="true" aria-label="Page Setup" dir="ltr" onSubmit={submit} onKeyDown={event=>{
+    <form ref={root} data-studio-page-setup="true" data-inpage2009-dialog="true" role="dialog" aria-modal="true" aria-label="Page Setup" dir="ltr" onSubmit={submit} onKeyDown={event=>{
       if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose();}
-      if(event.key==='Tab'){const controls=[...root.current!.querySelectorAll<HTMLElement>('input:not(:disabled),select,button:not(:disabled)')],index=controls.indexOf(document.activeElement as HTMLElement);if(index>=0){event.preventDefault();controls[(index+(event.shiftKey?controls.length-1:1))%controls.length]?.focus();}}
-    }} style={{position:'relative',width:389,minWidth:389,height:179,transform:`${drag.style.transform} scale(${scale})`,justifySelf:'center',background:'#f0f0f0',color:'#000',border:'1px solid #808080',boxShadow:'inset 1px 1px #fff,1px 2px 6px #3337',font:'11px Tahoma,Arial,sans-serif',boxSizing:'border-box'}}>
-      <div {...drag.handleProps} style={{...drag.handleProps.style,position:'absolute',top:2,left:2,right:2,height:22,background:'linear-gradient(90deg,#d5eafd,#f2faff)',border:'1px solid #8da8c1',padding:'3px 6px',boxSizing:'border-box'}}>Page Setup</div>
-      <button type="button" aria-label="Close" onClick={onClose} style={{...button,position:'absolute',right:5,top:4,width:24,height:18}}>×</button>
-      <fieldset style={{...group,left:6,top:29,width:131,height:141}}><legend>Page</legend>
-        <select aria-label="Page size" style={{...field,width:'100%'}} value={paper} onChange={e=>choosePaper(e.target.value)}>{papers.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}<option value="custom">Custom Size</option></select>
-        <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:5}}>Width:<input aria-label="Width" style={{...field,width:70}} value={width} onChange={e=>{setWidth(e.target.value);setPaper('custom');}}/></label>
-        <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:4}}>Height:<input aria-label="Height" style={{...field,width:70}} value={height} onChange={e=>{setHeight(e.target.value);setPaper('custom');}}/></label>
-        <fieldset style={{border:'1px solid #999',margin:'5px 0 0',padding:'0 4px 2px',height:45,boxSizing:'border-box'}}><legend>Orientation</legend>
-          <label style={{display:'block',lineHeight:'14px'}}><input type="radio" name="page-orientation" checked={orientation==='portrait'} onChange={()=>turn('portrait')}/>Portrait</label>
-          <label style={{display:'block',lineHeight:'14px'}}><input type="radio" name="page-orientation" checked={orientation==='landscape'} onChange={()=>turn('landscape')}/>Landscape</label>
-        </fieldset>
-      </fieldset>
-      <fieldset style={{...group,left:142,top:29,width:91,height:124,padding:'4px'}}><legend>Margins</legend>
-        {(['left','right','top','bottom'] as const).map(key=><label key={key} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:2,marginBottom:6}}><span>{key[0].toUpperCase()+key.slice(1)}:</span><input aria-label={`${key} margin`} style={{...field,width:46}} value={marginText[key]} onChange={e=>setMarginText(old=>({...old,[key]:e.target.value}))}/></label>)}
-      </fieldset>
-      <fieldset style={{...group,left:238,top:29,width:77,height:90,padding:'4px'}}><legend>Columns</legend>
-        <input type="number" aria-label="Columns" min={1} max={4} style={{...field,width:'100%'}} value={columnCount} onChange={e=>setColumnCount(Number(e.target.value))}/>
-        <label style={{display:'block',marginTop:6}}>Gutter:<span style={{display:'flex',alignItems:'center'}}><input aria-label="Gutter" type="number" min={0} max={50} step={.01} style={{...field,width:54}} value={gutterMm} onChange={e=>setGutterMm(e.target.value)}/><span>mm</span></span></label>
-      </fieldset>
-      <div style={{position:'absolute',right:7,top:35,display:'flex',flexDirection:'column',gap:6}}><button type="submit" style={button}>OK</button><button type="button" style={button} onClick={onClose}>Cancel</button><button type="button" style={button} onClick={()=>setHelp(v=>!v)}>Help</button></div>
-      {error?<div role="alert" style={{position:'absolute',left:4,right:4,bottom:3,background:'#ffffdf',border:'1px solid #a00',padding:3}}>{error}</div>:null}
-      {help?<div role="status" style={{position:'absolute',left:4,right:70,bottom:3,background:'#ffffdf',border:'1px solid #aaa',padding:3}}>Size and margins update this document without replacing text. Columns and gutter retain the existing column guides.</div>:null}
+      if(event.key==='Tab'){const controls=[...root.current!.querySelectorAll<HTMLElement>('input:not(:disabled),select,button:not(:disabled):not([tabindex="-1"])')],index=controls.indexOf(document.activeElement as HTMLElement);if(index>=0){event.preventDefault();controls[(index+(event.shiftKey?controls.length-1:1))%controls.length]?.focus();}}
+    }} style={drag.style}>
+      <ClassicTitle title="Page Setup" closeTabIndex={0} onClose={onClose} handleProps={drag.handleProps}/>
+      <ClassicGroup name="Page" box={[9,34,120,136]}>
+        <ClassicSelect aria-label="Page size" box={[3,11,113,20]} value={paper} onChange={e=>choosePaper(e.target.value)}>{papers.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}<option value="custom">Custom Size</option></ClassicSelect>
+        {label('Width',3,37,'setup-width')}<input id="setup-width" aria-label="Width" style={{...classicField,...at(48,36,68,20)}} value={width} onChange={e=>{setWidth(e.target.value);setPaper('custom');}}/>
+        {label('Height',3,59,'setup-height')}<input id="setup-height" aria-label="Height" style={{...classicField,...at(48,58,68,20)}} value={height} onChange={e=>{setHeight(e.target.value);setPaper('custom');}}/>
+        <ClassicGroup name="Orientation" box={[3,83,114,50]}>
+          <label style={{...at(4,15),display:'flex',gap:4,alignItems:'center'}}><input type="radio" name="page-orientation" checked={orientation==='portrait'} onChange={()=>turn('portrait')}/><span><u>P</u>ortrait</span></label>
+          <label style={{...at(4,33),display:'flex',gap:4,alignItems:'center'}}><input type="radio" name="page-orientation" checked={orientation==='landscape'} onChange={()=>turn('landscape')}/><span><u>L</u>andscape</span></label>
+        </ClassicGroup>
+      </ClassicGroup>
+      <ClassicGroup name="Margins" box={[132,34,107,102]}>
+        {(['left','right','top','bottom'] as const).map((key,index)=><span key={key}>{label(key[0].toUpperCase()+key.slice(1),3,15+index*23,`margin-${key}`)}<input id={`margin-${key}`} aria-label={`${key} margin`} style={{...classicField,...at(45,11+index*23,60,20)}} value={marginText[key]} onChange={e=>setMarginText(old=>({...old,[key]:e.target.value}))}/></span>)}
+      </ClassicGroup>
+      <ClassicGroup name="Columns" box={[242,34,74,81]}>
+        <ClassicSpinner label="Columns" box={[4,11,67,20]} value={String(columnCount)} onChange={value=>setColumnCount(Number(value))} min={1} max={4}/>
+        <label htmlFor="inpage-spinner-gutter" style={at(4,40)}><u>G</u>utter:</label>
+        <ClassicSpinner label="Gutter" box={[4,57,67,20]} value={gutterMm} onChange={setGutterMm} min={0} max={50} step={.01} unit="mm" onBlur={()=>{const n=millimetres(gutterMm);if(Number.isFinite(n))setGutterMm(`${n}mm`);}}/>
+      </ClassicGroup>
+      <div style={at(249,129)}><label style={{display:'flex',gap:3,alignItems:'center',color:'#aaa',whiteSpace:'nowrap'}}><input type="checkbox" aria-label="Double Sided" aria-disabled="true" disabled checked={false} readOnly/>Double Sided</label></div>
+      <div style={at(249,146)}><label style={{display:'flex',gap:3,alignItems:'center',color:'#aaa',whiteSpace:'nowrap'}}><input type="checkbox" aria-label="Facing Pages" aria-disabled="true" disabled checked={false} readOnly/>Facing Pages</label></div>
+      <button type="submit" style={{...classicButton,...at(320,36,60,23)}}>OK</button><button type="button" style={{...classicButton,...at(320,62,60,23)}} onClick={onClose}>Cancel</button><button type="button" style={{...classicButton,...at(320,88,60,23)}} onClick={()=>setHelp(v=>!v)}>Help</button>
+      {error?<div role="alert" style={{position:'absolute',left:4,right:4,top:'100%',marginTop:4,background:'#ffffdf',border:'1px solid #a00',padding:3,zIndex:3}}>{error}</div>:null}
+      {help?<div role="status" style={{position:'absolute',left:4,right:4,top:'100%',marginTop:4,background:'#ffffdf',border:'1px solid #aaa',padding:3,zIndex:3}}>Size and margins update this document without replacing text. Columns and gutter retain the existing column guides.</div>:null}
     </form>
   </div>;
 }

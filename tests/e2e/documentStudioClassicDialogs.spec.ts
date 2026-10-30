@@ -47,7 +47,7 @@ test("Format > Document opens a real Page Setup; cancel preserves the page and t
   await page.locator('[data-menu-action="file.pageSetup"]').click();
   const dlg = page.getByRole("dialog", { name: "Page Setup" });
   await expect(dlg).toBeVisible();
-  await expect(dlg.getByRole('checkbox',{name:'Facing Pages'})).toHaveCount(0);
+  await expect(dlg.getByRole('checkbox',{name:'Facing Pages'})).toBeDisabled();
   await dlg.getByLabel('Page size',{exact:true}).selectOption('b4');
   await expect(dlg.getByLabel('Width',{exact:true})).toHaveValue('250mm');
   await dlg.getByRole("button", { name: "Cancel" }).click();
@@ -105,7 +105,9 @@ test('review: Character stays inside a 375px viewport and after resizing a dragg
 });
 test('review: Page Setup exposes paper controls only, with the requested classic size',async({page},info)=>{
  const dlg=await settingsDialog(page);
- await expect(dlg.getByRole('checkbox')).toHaveCount(0);
+ await expect(dlg.getByRole('checkbox')).toHaveCount(2);
+ await expect(dlg.getByRole('checkbox',{name:'Double Sided'})).toBeDisabled();
+ await expect(dlg.getByRole('checkbox',{name:'Facing Pages'})).toBeDisabled();
  const r=(await dlg.boundingBox())!;expect(r.width).toBeLessThanOrEqual(389);expect(r.height).toBeLessThanOrEqual(179);
  await expect(dlg.getByLabel('Width',{exact:true})).toBeEditable();
  await expect(dlg.getByLabel('Height',{exact:true})).toBeEditable();
@@ -189,6 +191,7 @@ test('Classic menu dialogs can be moved by title bars without changing selected 
   await page.keyboard.insertText('This story is unchanged');
   const before = await page.locator('.ProseMirror').innerText();
   const items = [
+    { menu: 'format', action: 'format.paragraph', selector: '[data-studio-paragraph-dialog]' },
     { menu: 'format', action: 'file.pageSetup', selector: '[data-studio-page-setup]' },
     { menu: 'file', action: 'file.open', selector: '[data-studio-open-dialog]' },
     { menu: 'file', action: 'file.new', selector: '[data-studio-new-document] form' },

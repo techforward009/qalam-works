@@ -8,7 +8,9 @@ function setup(){const onApply=vi.fn(),onClose=vi.fn();const settings=defaultDoc
 it('shows the InPage paper list and existing margins with no unrelated view controls',()=>{
  setup();expect([...screen.getByLabelText('Page size').querySelectorAll('option')].map(el=>el.textContent)).toEqual(['A4 210x297mm','A5 148x210mm','B4 250x353mm','B5 176x250mm','Folio 8.5x13"','Quarto 215x275mm','Custom Size']);
  expect((screen.getByLabelText('Width') as HTMLInputElement).value).toBe('210mm');expect((screen.getByLabelText('left margin') as HTMLInputElement).value).toBe('12.7mm');
- expect(screen.queryByLabelText('Facing Pages')).toBeNull();expect(screen.queryByLabelText('Double Sided')).toBeNull();
+ expect((screen.getByLabelText('Facing Pages') as HTMLInputElement).disabled).toBe(true);expect((screen.getByLabelText('Double Sided') as HTMLInputElement).disabled).toBe(true);
+ expect((screen.getByLabelText('Gutter') as HTMLInputElement).value).toBe('4.23mm');
+ expect(screen.getByRole('button',{name:'Increase Columns'})).toBeTruthy();expect(screen.getByRole('button',{name:'Decrease Gutter'})).toBeTruthy();
 });
 it('chooses sizes, swaps orientation and stores custom portrait dimensions without losing edits',()=>{
  const{onApply}=setup();fireEvent.change(screen.getByLabelText('Page size'),{target:{value:'b4'}});expect((screen.getByLabelText('Width') as HTMLInputElement).value).toBe('250mm');
@@ -23,3 +25,10 @@ it('rejects invalid dimensions and margins without applying',()=>{const{onApply}
 it('applies physical margins without relabeling them as mirrored margins',()=>{const{onApply}=setup();fireEvent.change(screen.getByLabelText('left margin'),{target:{value:'15mm'}});fireEvent.change(screen.getByLabelText('right margin'),{target:{value:'20mm'}});fireEvent.submit(screen.getByRole('dialog'));expect(onApply).toHaveBeenCalledWith(expect.objectContaining({left:15,right:20}));});
 it('Cancel and Escape do not apply changes',()=>{const{onApply,onClose}=setup();fireEvent.keyDown(screen.getByRole('dialog'),{key:'Escape'});fireEvent.click(screen.getByRole('button',{name:'Cancel'}));expect(onClose).toHaveBeenCalledTimes(2);expect(onApply).not.toHaveBeenCalled();});
 it('rejects out-of-range column guides',()=>{const{onApply}=setup();fireEvent.change(screen.getByLabelText('Columns'),{target:{value:'7'}});fireEvent.submit(screen.getByRole('dialog'));expect(onApply).not.toHaveBeenCalled();expect(screen.getByRole('alert').textContent).toMatch(/1–4/);});
+
+it('spinners retain existing columns and gutter values and limits',()=>{
+ const{onApply}=setup();fireEvent.click(screen.getByRole('button',{name:'Increase Columns'}));
+ fireEvent.click(screen.getByRole('button',{name:'Increase Gutter'}));expect((screen.getByLabelText('Gutter') as HTMLInputElement).value).toBe('4.24mm');
+ fireEvent.click(screen.getByRole('button',{name:'Decrease Gutter'}));fireEvent.submit(screen.getByRole('dialog'));
+ expect(onApply).toHaveBeenCalledWith(expect.objectContaining({columns:2,gutter:4.23}));
+});
