@@ -186,7 +186,7 @@ export default function CrescentVisibilityContent() {
             <p className="mt-2">{pass ? (ur ? "رؤیت کے حالات موافق" : "Favorable conditions") : (ur ? "رؤیت کے حالات ناموافق" : "Unfavorable conditions")}</p>
             {evaluated ? <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {values.map(v => <div key={v.label} className="rounded-xl bg-[#F7F5EF] p-3 text-center dark:bg-[#203326]">
-                <dt className="text-center">{v.label}</dt>
+                <dt className="text-center">{v.label.endsWith(" (قوسی منٹ)") ? <>{v.label.replace(" (قوسی منٹ)", "")}{" "}<span className="block">(قوسی منٹ)</span></> : v.label}</dt>
                 <dd className="mt-2 flex flex-wrap items-baseline justify-center gap-2 text-center font-normal">
                   <span data-crescent-latin-number dir="ltr">{v.value}</span>
                   {v.unit && <span>{v.unit}</span>}

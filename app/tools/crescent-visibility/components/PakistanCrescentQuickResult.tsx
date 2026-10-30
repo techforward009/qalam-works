@@ -151,7 +151,7 @@ export function PakistanCrescentQuickResult({
               { label: ur ? "زاویائی فاصلہ" : "Elongation", value: nextMeasured?.elongationDeg ?? null, symbol: "°", unit: "" },
               { label: ur ? "ہلال کی چوڑائی (قوسی منٹ)" : "Crescent width (arcminutes)", value: nextMeasured?.widthArcMin ?? null, symbol: "′", unit: "" },
             ].map(item => <div key={item.label} data-crescent-measure className="rounded-xl border border-[#1A3A2A]/10 p-3 dark:border-[#52715a]">
-              <dt className="text-[#587060] dark:text-[#c8d5cc]">{item.label}</dt>
+              <dt className="text-[#587060] dark:text-[#c8d5cc]">{item.label.endsWith(" (قوسی منٹ)") ? <>{item.label.replace(" (قوسی منٹ)", "")}{" "}<span className="block">(قوسی منٹ)</span></> : item.label}</dt>
               <dd className="mt-1 flex items-baseline justify-center gap-2 font-normal text-[#153b29] dark:text-white">
                 {item.value === null || !Number.isFinite(item.value) ? "—" : <>
                   <span data-crescent-latin-number dir="ltr">{number(item.value)}{item.symbol}</span>
