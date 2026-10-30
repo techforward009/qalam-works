@@ -1,6 +1,8 @@
 import { Extension } from "@tiptap/core";
 import { closeHistory } from "@tiptap/pm/history";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import type { Mark } from "@tiptap/pm/model";
+import { resolveEditorFontFamily } from "../utils/fontRegistry";
 import { Mapping } from "@tiptap/pm/transform";
 
 const inputKey = new PluginKey("allahAutoMarksInput");
@@ -14,6 +16,12 @@ export const AllahAutoMarks = Extension.create({
   // Observe Enter before the existing keymaps consume it; never consume it here.
   priority: 1000,
   addProseMirrorPlugins() {
+    // Resolve the real inherited story face too; an unset mark is not Digital Khatt.
+    const isDigitalKhatt = (marks: readonly Mark[]) => {
+      const explicit = marks.find(mark => mark.type.name === "textStyle")?.attrs.fontFamily;
+      const inherited = getComputedStyle(this.editor.view.dom).getPropertyValue("--qalam-rtl-font");
+      return resolveEditorFontFamily(explicit || inherited, "rtl").fontId === "digital-khatt-indo-pak";
+    };
     let completingLine = false;
     const noteEnter = () => {
       completingLine = true;
@@ -24,17 +32,17 @@ export const AllahAutoMarks = Extension.create({
       key: inputKey,
       props: {
         handleTextInput(view, from, to, text) {
-          if (view.composing || !/[^\p{L}\p{M}\p{N}\u200c\u200d]/u.test(text)) return false;
+          if (view.composing || !isDigitalKhatt(view.state.storedMarks ?? view.state.selection.$from.marks()) || !/[^\p{L}\p{M}\p{N}\u200c\u200d]/u.test(text)) return false;
           view.dispatch(view.state.tr.insertText(text, from, to).setMeta(inputKey, true));
           return true;
         },
         handleKeyDown(view, event) {
-          if (!view.composing && event.key === "Enter") noteEnter();
+          if (!view.composing && event.key === "Enter" && isDigitalKhatt(view.state.storedMarks ?? view.state.selection.$from.marks())) noteEnter();
           return false;
         },
         handleDOMEvents: {
           beforeinput(view, event) {
-            if (!view.composing && /^(insertParagraph|insertLineBreak)$/.test((event as InputEvent).inputType)) noteEnter();
+            if (!view.composing && isDigitalKhatt(view.state.storedMarks ?? view.state.selection.$from.marks()) && /^(insertParagraph|insertLineBreak)$/.test((event as InputEvent).inputType)) noteEnter();
             return false;
           },
         },
@@ -71,17 +79,12 @@ export const AllahAutoMarks = Extension.create({
           if (end === block.text.length && !allowEnd) continue;
           if (!block.ranges.some(range => range.from <= pos + 1 + end && range.to >= start)) continue;
           const match = allah.exec(token[0]);
-          // A vowel on the second lam belongs to another reading; leave it alone.
-          if (!match || /[^\u0651\u0670]/u.test(match[2])) continue;
-          const from = start + match[1].length, to = from + match[2].length;
-          const shadda = match[2].includes("ّ"), alef = match[2].includes("ٰ");
-          // Insert only the missing mark, retaining any formatting on existing marks.
-          if (!shadda) changes.push({ from, to: from, text: alef ? "ّ" : "ّٰ" });
-          else if (!alef) changes.push({ from: to, to, text: "ٰ" });
-          else {
-            const ordered = [...match[2]].filter(mark => mark === "ّ").join("") + [...match[2]].filter(mark => mark === "ٰ").join("");
-            if (ordered !== match[2]) changes.push({ from, to, text: ordered });
-          }
+          // Authored marks are immutable, including partial marks / their order.
+          if (!match || /\p{M}/u.test(token[0])) continue;
+          const from = start + match[1].length;
+          // Rich paste can contain other faces: check each word, not just the caret.
+          if (!isDigitalKhatt(state.doc.resolve(from).marks())) continue;
+          changes.push({ from, to: from, text: "ّٰ" });
         }
         if (!changes.length) return null;
         const tr = closeHistory(state.tr);
