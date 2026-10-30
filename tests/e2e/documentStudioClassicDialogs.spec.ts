@@ -220,6 +220,10 @@ test('File Close saves the active document and removes its window without deleti
   await page.keyboard.insertText('Saved before closing 147');
   await page.locator('[data-menu-root="file"]').click();
   await page.locator('[data-menu-action="file.close"]').click();
+  await expect(page.locator('[data-studio-empty-window]')).toBeVisible();
+  await expect(page.locator('[data-studio-open-dialog]')).toHaveCount(0);
+  await page.locator('[data-menu-root="file"]').click();
+  await page.locator('[data-menu-action="file.open"]').click();
   const dialog = page.locator('[data-studio-open-dialog]');
   await expect(dialog).toBeVisible();
   const row = dialog.locator('[role="option"]').first();

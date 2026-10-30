@@ -16,6 +16,7 @@ const papers = [
   {id:'b4',label:'B4 250x353mm',width:250,height:353},
   {id:'b5',label:'B5 176x250mm',width:176,height:250},
   {id:'folio',label:'Folio 8.5x13"',width:215.9,height:330.2},
+  {id:'legal',label:'Legal 8.5x14\"',width:215.9,height:355.6},
   {id:'quarto',label:'Quarto 215x275mm',width:215,height:275},
 ];
 function millimetres(raw:string):number {return /^\d+(?:\.\d+)?\s*(?:mm)?$/i.test(raw.trim())?Number(raw.trim().replace(/mm/i,'')):NaN;}
@@ -55,7 +56,7 @@ export default function StudioPageSetupDialog({settings,direction,columns,gutter
       if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose();}
       if(event.key==='Tab'){const controls=[...root.current!.querySelectorAll<HTMLElement>('input:not(:disabled),select,button:not(:disabled):not([tabindex="-1"])')],index=controls.indexOf(document.activeElement as HTMLElement);if(index>=0){event.preventDefault();controls[(index+(event.shiftKey?controls.length-1:1))%controls.length]?.focus();}}
     }} style={drag.style}>
-      <ClassicTitle title="Page Setup" closeTabIndex={0} onClose={onClose} handleProps={drag.handleProps}/>
+      <ClassicTitle title="Page Setup" onHelp={()=>setHelp(value=>!value)} closeTabIndex={0} onClose={onClose} handleProps={drag.handleProps}/>
       <ClassicGroup name="Page" box={[9,34,120,136]}>
         <ClassicSelect aria-label="Page size" box={[3,11,113,20]} value={paper} onChange={e=>choosePaper(e.target.value)}>{papers.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}<option value="custom">Custom Size</option></ClassicSelect>
         {label('Width',3,37,'setup-width')}<input id="setup-width" aria-label="Width" style={{...classicField,...at(48,36,68,20)}} value={width} onChange={e=>{setWidth(e.target.value);setPaper('custom');}}/>

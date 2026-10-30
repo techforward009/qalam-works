@@ -109,7 +109,9 @@ import {
   type LeftPanelId,
   type RightPanelId,
 } from "../utils/documentShell";
-import type { MenuActionId } from "../utils/documentMenus";
+import { allMenuActionIds, type MenuActionId } from "../utils/documentMenus";
+import {useRouter} from "next/navigation";
+import {StudioLeaveDialog} from "./StudioHomeButton";
 import {
   dispatchDocumentMenuAction,
   focusExistingDictationControl,
@@ -363,6 +365,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [editingTitle, setEditingTitle] = useState(false);
   const [englishFont, setEnglishFont] = useState("Arial Unicode MS");
   const [documentTitle, setDocumentTitle] = useState(() => defaultDocumentTitle(isUr));
+  const router=useRouter();
+  const [noDocumentOpen,setNoDocumentOpen]=useState(false);
+  const [exitConfirmOpen,setExitConfirmOpen]=useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [libraryItems, setLibraryItems] = useState<DocumentListItem[]>([]);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -517,6 +522,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       },
     },
     onUpdate: ({ editor, transaction }) => {
+      if (libraryReadyRef.current && !activeDocumentIdRef.current) return;
       if (transaction.docChanged) {
         const nextLen = editor.getText().length;
         const userEdit = transaction.getMeta("addToHistory") !== false;
@@ -741,6 +747,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+    setNoDocumentOpen(false);
     formattingSafety.current?.documentChanged();
     setFormattingNotice(0);
     setCharacterOpen(false); setParagraphOpen(false);
@@ -827,7 +834,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     transitionRef.current = true;
     setSwitchingDocument(true);
     setSwitchError(null);
-    const editable = editor.isEditable;
+    const editable = noDocumentOpen || editor.isEditable;
     editor.setEditable(false);
     try {
       await persistActiveNow();
@@ -839,7 +846,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setSaveStatus("error");
       return false;
     } finally {
-      editor.setEditable(editable);
+      editor.setEditable(activeDocumentIdRef.current ? editable : false);
       transitionRef.current = false;
       setSwitchingDocument(false);
     }
@@ -886,11 +893,22 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         if (!record) throw new Error("The next open document could not be loaded");
         applyRecordToEditor(record);
       } else {
-        // The saved document stays in the library. Its editor remains behind
-        // the library chooser until another file is opened or this one reopened.
+        // Persisted content and objects remain in the library; only this window closes.
         formattingSafety.current?.documentChanged();
         editor.commands.blur();
-        setLibraryOpen(true);
+        activeDocumentIdRef.current=null;
+        setActiveDocumentId(null);
+        saveActiveDocumentId(null);
+        setNoDocumentOpen(true);
+        setSaveStatus("saved");
+        setLibraryOpen(false);
+        setCharacterOpen(false);
+        setParagraphOpen(false);
+        setFindOpen(false);
+        setLeftPanel("none");
+        setRightPanel("none");
+        setPreview(null);
+        setExampleJustLoaded(false);
       }
     });
     if (!closed) return;
@@ -1660,7 +1678,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, []);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || noDocumentOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || !event.altKey || event.shiftKey) return;
       const key = event.key.toLowerCase();
@@ -1673,7 +1691,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editor]);
+  }, [editor,noDocumentOpen]);
 
   const commitDocumentTitle = () => {
     const next = sanitizeDocumentTitle(documentTitle) || defaultDocumentTitle(isUr);
@@ -1704,11 +1722,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     zoomTouchedRef.current = true;
     setZoomState(next);
     saveDocumentZoom(next);
-    if(editor && canvasToolRef.current === "text") editor.commands.focus();
-  }, [editor]);
+    if(editor && !noDocumentOpen && canvasToolRef.current === "text") editor.commands.focus();
+  }, [editor,noDocumentOpen]);
 
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
+      if(noDocumentOpen)return;
       const next=functionKeyZoom(event.key);
       if(next===null || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)return;
       const target=event.target instanceof Element?event.target:null;
@@ -1716,7 +1735,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       event.preventDefault();setZoom(next);
     };
     window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
-  }, [setZoom]);
+  }, [setZoom,noDocumentOpen]);
 
   useEffect(() => {
     if (zoomTouchedRef.current || typeof window === "undefined") return;
@@ -1849,7 +1868,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     insertDocumentBreak(editor, { type: "sectionBreak", attrs: { type } });
   };
 
+  const hasUnsavedChanges = !noDocumentOpen && (pendingMetadataWrites > 0 || saveStatus === "saving" || saveStatus === "error" || (editingTitle && documentTitle !== documentTitleRef.current) || (storageDurability === "memory" && !isEditorEmpty));
+  const exitToHome = async () => {
+    if (await transitionDocument(async()=>{router.push("/");})) setExitConfirmOpen(false);
+  };
+  const availableWithoutDocument = (id:MenuActionId) => id === "file.new" || id === "file.open" || id === "file.exit" || id.startsWith("help.") || id.startsWith("window.document:");
   const handleMenuAction = (id: MenuActionId) => {
+    if(noDocumentOpen && !availableWithoutDocument(id)) return;
     if (transitionRef.current) return;
     if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
     if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
@@ -1872,6 +1897,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
       closeDocument: () => { void closeActiveDocument(); },
+      exitDocument: () => {if(hasUnsavedChanges)setExitConfirmOpen(true);else void exitToHome();},
       upload: () => fileInputRef.current?.click(),
       downloadTxt: handleDownload,
       downloadDocx: () => {
@@ -1913,6 +1939,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const disabledIds = new Set<MenuActionId>();
+  if(noDocumentOpen)allMenuActionIds().filter(id=>!availableWithoutDocument(id)).forEach(id=>disabledIds.add(id));
   if (!editor?.can().undo()) disabledIds.add("edit.undo");
   if (!editor?.can().redo()) disabledIds.add("edit.redo");
   if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
@@ -2236,6 +2263,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         </div>
       ) : null}
 
+      {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}
       <DocumentStudioShell
         isUr={isUr}
@@ -2245,13 +2273,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           <DocumentMenuBar
             isUr={isUr}
             showHome={fillWindow}
-            hasUnsavedChanges={pendingMetadataWrites > 0 || saveStatus === "saving" || saveStatus === "error" || (editingTitle && documentTitle !== documentTitleRef.current) || (storageDurability === "memory" && !isEditorEmpty)}
+            documentOpen={!noDocumentOpen}
+            hasUnsavedChanges={hasUnsavedChanges}
             openDocuments={openDocuments}
             activeDocumentId={activeDocumentId}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
-            endSlot={
+            endSlot={noDocumentOpen?null:
               <div className="flex h-[20px] min-w-0 items-center gap-1" data-studio-title-slot="true">
                 {storageDurability === "memory" ? (
                   <span className="sr-only" role="status">
@@ -2278,7 +2307,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <DocumentToolbar
+          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}><DocumentToolbar
             editor={editor}
             dir={dir}
             setDir={setDir}
@@ -2290,7 +2319,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             documentSettings={documentSettings}
             englishFont={englishFont}
             onEnglishFontChange={setEnglishFont}
-          />
+          /></div>
         }
         findBar={
           findOpen ? (
@@ -2400,7 +2429,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
           <div className="relative min-h-0 flex-1">
             <div className="absolute inset-0">
-          <DocumentCanvas
+          {noDocumentOpen?<div data-studio-empty-window aria-label="No document open" className="absolute inset-0 bg-[#808080]"/>:<DocumentCanvas
             editor={editor}
             dir={dir}
             isUr={isUr}
@@ -2427,7 +2456,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             englishFont={englishFont}
             tool={canvasTool}
             onToolAction={onCanvasTool}
-          />
+          />}
             </div>
           </div>
 

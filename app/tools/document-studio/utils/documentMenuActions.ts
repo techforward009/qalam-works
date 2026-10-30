@@ -29,6 +29,7 @@ export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
 
 export type DocumentMenuHandlers = {
   save?: () => void;
+  exitDocument?: () => void;
   closeDocument?: () => void;
   character?: () => void;
   paragraph?: () => void;
@@ -116,6 +117,7 @@ export function dispatchDocumentMenuAction(
 
   switch (id) {
     case "file.save": handlers.save?.(); return;
+    case "file.exit": handlers.exitDocument?.(); return;
     case "file.close": handlers.closeDocument?.(); return;
     case "format.character": handlers.character?.(); return;
     case "format.paragraph": handlers.paragraph?.(); return;

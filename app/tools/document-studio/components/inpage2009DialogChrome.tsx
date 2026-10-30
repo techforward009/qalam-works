@@ -13,7 +13,7 @@ export function useInPage2009Dialog<T extends HTMLElement>(width:number,height:n
  useLayoutEffect(()=>{const align=()=>{const node=drag.dialogRef.current,r=node?.getBoundingClientRect();if(!node||!r)return;const matrix=getComputedStyle(node).transform.match(/^matrix\(([^)]+)\)$/)?.[1].split(',').map(Number);const x=r.left-(matrix?.[4]??0)+drag.offset.x,y=r.top-(matrix?.[5]??0)+drag.offset.y;const next={x:Math.round(x)-x,y:Math.round(y)-y};setSnap(old=>old.x===next.x&&old.y===next.y?old:next);};align();window.addEventListener('resize',align);return()=>window.removeEventListener('resize',align);},[scale,drag.offset.x,drag.offset.y]);
  return {...drag,style:{position:'relative',width,minWidth:width,height,boxSizing:'border-box',padding:0,border:0,borderRadius:'5px 5px 0 0',background:'#f5f5f5',color:'#000',font:classicFont,lineHeight:'13px',justifySelf:'center',transform:`translate(${drag.offset.x+snap.x}px,${drag.offset.y+snap.y}px) scale(${scale})`} as CSSProperties};
 }
-export function ClassicTitle({title,onClose,handleProps,closeTabIndex=-1}:{title:string;onClose:()=>void;closeTabIndex?:number;handleProps:ReturnType<typeof useMovableStudioDialog>['handleProps']}){
+export function ClassicTitle({title,onClose,onHelp,handleProps,closeTabIndex=-1}:{title:string;onClose:()=>void;onHelp:()=>void;closeTabIndex?:number;handleProps:ReturnType<typeof useMovableStudioDialog>['handleProps']}){
  return <><style>{`
  [data-inpage2009-dialog] input[type=number]{appearance:textfield;-moz-appearance:textfield}
  [data-inpage2009-dialog] input::-webkit-inner-spin-button,[data-inpage2009-dialog] input::-webkit-outer-spin-button{appearance:none;margin:0}
@@ -29,10 +29,9 @@ export function ClassicTitle({title,onClose,handleProps,closeTabIndex=-1}:{title
  `}</style>
  <div aria-hidden style={{...at(0,0),right:0,bottom:0,pointerEvents:'none',border:'1px solid #7a7a79',borderRadius:'5px 5px 0 0',boxShadow:'inset 3px 0 #f6f5f4,inset -3px -2px #f6f5f4'}}/>
  <div {...handleProps} style={{...handleProps.style,...at(1,1),right:1,height:28,background:'linear-gradient(#d9d6d3,#d8d5d2)',borderRadius:'4px 4px 0 0'}}>
-  <svg aria-hidden width="13" height="21" viewBox="0 0 13 21" style={at(8,3)}><path d="M4 2h6l-1 9c-1 4-4 4-5 0z" fill="#eee" stroke="#888"/><path d="M4 7h5l-1 4H5z" fill="#ad1820"/><path d="M6 14v4m-3 1h7" stroke="#777"/></svg>
   <span style={{position:'absolute',left:24,right:46,top:7,textAlign:'center',font:'bold 12px Arial,sans-serif',lineHeight:'16px',color:'#2e3436',pointerEvents:'none'}}>{title}</span>
-  <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" style={{position:'absolute',right:31,top:8,pointerEvents:'none'}}><path d="M3 7l3-3 3 3" stroke="#2e3436" strokeWidth="2" fill="none"/></svg>
  </div>
+ <button type="button" aria-label="Title bar help" title="Help" onClick={onHelp} style={{position:'absolute',right:29,top:6,width:16,height:18,border:0,background:'transparent',padding:0,font:'bold 12px Arial,sans-serif',color:'#2e3436'}}>?</button>
  <button type="button" aria-label="Close" tabIndex={closeTabIndex} onClick={onClose} style={{position:'absolute',right:6,top:6,width:16,height:18,border:0,background:'transparent',padding:0}}><svg aria-hidden width="12" height="12" viewBox="0 0 12 12"><path d="m3 3 6 6m0-6-6 6" stroke="#2e3436" strokeWidth="2"/></svg></button>
  </>;
 }

@@ -60,7 +60,7 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
   </Fragment>;
   return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={event=>event.stopPropagation()}>
     <form ref={root} role="dialog" aria-modal="true" aria-label="Paragraph Preferences" data-studio-paragraph-dialog="true" data-inpage2009-dialog="true" dir="ltr" onSubmit={event=>{event.preventDefault();apply();}} style={drag.style}>
-      <ClassicTitle title="Paragraph Preferences" onClose={close} handleProps={drag.handleProps}/>
+      <ClassicTitle title="Paragraph Preferences" onHelp={()=>setHelp(true)} onClose={close} handleProps={drag.handleProps}/>
       <label htmlFor="paragraph-alignment" style={at(8,40)}><Mark text="Alignment:" at={0}/></label>
       <ClassicSelect box={[62,37,88,20]} id="paragraph-alignment" name="alignment" aria-label="Alignment" accessKey="a" data-paragraph-field="true" value={form.alignment} onChange={event=>patch({alignment:event.target.value})}>
         {form.alignment===''?<option value="">—</option>:null}{PARAGRAPH_ALIGNS.map(item=><option key={item.value} value={item.value}>{item.label}</option>)}
