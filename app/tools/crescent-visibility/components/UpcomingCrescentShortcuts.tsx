@@ -25,10 +25,9 @@ export function UpcomingCrescentShortcuts({
       <h2 className={"text-xl font-bold text-[#123326] dark:text-[#f7faf7] " + (ur ? "font-naskh" : "")}>
         {ur ? "کس مہینے کا چاند دیکھنا ہے؟" : "Which month’s crescent?"}
       </h2>
-      <p className={"mt-1 text-sm leading-7 text-[#486155] dark:text-[#c8d5cc] " + (ur ? "font-naskh" : "")}>
-        {ur
-          ? "اپنا مہینہ دبائیں۔ ہم اس شام کا جواب دکھائیں گے۔"
-          : "Tap a month to see the prediction for that evening."}
+      <p data-crescent-month-note className={"mt-2 text-center text-[#486155] dark:text-[#c8d5cc] " + (ur ? "font-naskh" : "")}>
+        {ur ? "مہینہ منتخب کریں اور اس کی 29ویں شام کا فلکیاتی حساب دیکھیں۔"
+          : "Choose a month to see the astronomical calculation for its 29th evening."}
       </p>
       {upcoming.length ? (
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 min-[900px]:grid-cols-3" data-crescent-month-grid>
@@ -78,11 +77,7 @@ export function UpcomingCrescentShortcuts({
           {ur ? "اس مدت کے لیے قابلِ اعتماد قمری تاریخ دستیاب نہیں؛ براہِ کرم نیچے اپنی تاریخ منتخب کریں۔" : "No verified or supported forecast dates are available in this period. Choose a date below."}
         </p>
       )}
-      <p data-crescent-month-note className={"mx-auto mt-5 max-w-4xl text-center text-[#486155] dark:text-[#c8d5cc] " + (ur ? "font-naskh" : "")}>
-        {ur
-          ? "مہینہ منتخب کرکے اس کی شام کا فلکیاتی حساب دیکھیں۔"
-          : "Choose a month to view its evening astronomical calculation."}
-      </p>
+
     </section>
   );
 }
