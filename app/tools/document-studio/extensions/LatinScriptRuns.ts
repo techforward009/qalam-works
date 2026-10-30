@@ -6,9 +6,10 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorView } from "@tiptap/pm/view";
 import type { Node } from "@tiptap/pm/model";
 
-interface LatinRunState { decorations: DecorationSet; widths: Map<string, number> }
+interface LatinRunState { decorations: DecorationSet; widths: Map<string, number>; spaceFont: string }
 const key = new PluginKey<LatinRunState>("studioLatinScriptRuns");
 const stripKey = "studioLatinFaceStrip";
+const spaceFontKey = "studioPreservedSpaceFont";
 const scaleMeasureKey = "studioLatinScaleMeasure";
 const LATIN = /^(inter|arial|arial unicode ms|times|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
 
@@ -180,7 +181,7 @@ function liveAttrs(attrs: Record<string, unknown>): boolean {
   return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
 }
 
-function decorations(doc: Node, widths: Map<string, number>) {
+function decorations(doc: Node, widths: Map<string, number>, spaceFont = "") {
   const spans: Decoration[] = [];
   doc.descendants((block, pos) => {
     if (!block.isTextblock) return;
@@ -226,9 +227,9 @@ function decorations(doc: Node, widths: Map<string, number>) {
         }
       }
       const atLineEnd = offset + node.nodeSize === block.content.size || block.childAfter(offset + node.nodeSize).node?.type.name === "hardBreak";
-      for (const range of preservedSpaceRanges(node.text)) {
+      for (const range of preservedSpaceRanges(node.text,atLineEnd)) {
         spans.push(Decoration.inline(pos+1+offset+range.start,pos+1+offset+range.end,{
-          "data-studio-preserved-space":"true",style:preservedSpaceStyle(node.text,range,atLineEnd),
+          "data-studio-preserved-space":"true",style:preservedSpaceStyle(bareFamily(attrs.fontFamily) || spaceFont),
         }));
       }
       if (!arabicNeedsFace) return;
@@ -312,8 +313,9 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
     if (!view.dom.isConnected) return;
     const current = key.getState(view.state);
     if (!current) return;
+    const spaceFont = getComputedStyle(view.dom).getPropertyValue("--qalam-rtl-font").trim();
     const next = new Map(current.widths);
-    let changed = false;
+    let changed = spaceFont !== current.spaceFont;
     let pending = false;
     const measurements = new Map<string, number>();
     view.dom.querySelectorAll<HTMLElement>("[data-studio-latin-scale]").forEach((el) => {
@@ -335,7 +337,7 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
     });
     if (changed) {
       timer.attempts = 0;
-      view.dispatch(view.state.tr.setMeta(scaleMeasureKey, next).setMeta("addToHistory", false));
+      view.dispatch(view.state.tr.setMeta(scaleMeasureKey, next).setMeta(spaceFontKey, spaceFont).setMeta("addToHistory", false));
       return;
     }
     if (pending && timer.attempts < 8) {
@@ -400,12 +402,14 @@ export const LatinScriptRuns = Extension.create({
     return [new Plugin<LatinRunState>({
       key,
       state: {
-        init: (_, state) => ({ decorations: decorations(state.doc, new Map()), widths: new Map() }),
+        init: (_, state) => ({ decorations: decorations(state.doc, new Map()), widths: new Map(), spaceFont: "" }),
         apply: (transaction, previous) => {
           const incoming = transaction.getMeta(scaleMeasureKey) as Map<string, number> | undefined;
-          if (!transaction.docChanged && !incoming) return previous;
+          const spaceFont = transaction.getMeta(spaceFontKey) as string | undefined;
+          if (!transaction.docChanged && !incoming && spaceFont === undefined) return previous;
           const widths = incoming ?? remapScaleWidths(previous.widths, transaction);
-          return { decorations: decorations(transaction.doc, widths), widths };
+          const family = spaceFont ?? previous.spaceFont;
+          return { decorations: decorations(transaction.doc, widths, family), widths, spaceFont: family };
         },
       },
       props: {
