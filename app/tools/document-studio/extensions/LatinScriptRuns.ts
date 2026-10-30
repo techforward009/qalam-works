@@ -1,4 +1,4 @@
-import { preservedSpaceRanges, PRESERVED_SPACE_STYLE } from "../utils/preservedSpaces";
+import { preservedSpaceRanges, preservedSpaceStyle } from "../utils/preservedSpaces";
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey, TextSelection, type Transaction } from "@tiptap/pm/state";
 import { AddMarkStep, RemoveMarkStep } from "@tiptap/pm/transform";
@@ -226,9 +226,9 @@ function decorations(doc: Node, widths: Map<string, number>) {
         }
       }
       const atLineEnd = offset + node.nodeSize === block.content.size || block.childAfter(offset + node.nodeSize).node?.type.name === "hardBreak";
-      for (const range of preservedSpaceRanges(node.text, atLineEnd)) {
+      for (const range of preservedSpaceRanges(node.text)) {
         spans.push(Decoration.inline(pos+1+offset+range.start,pos+1+offset+range.end,{
-          "data-studio-preserved-space":"true",style:PRESERVED_SPACE_STYLE,
+          "data-studio-preserved-space":"true",style:preservedSpaceStyle(node.text,range,atLineEnd),
         }));
       }
       if (!arabicNeedsFace) return;
