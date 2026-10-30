@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLanguage } from "../../lib/language-context";
 import { formatDate, validateDate, type DateParts } from "../date-converter/utils/dateEngine";
-import { dateDigits } from "../date-converter/utils/pakistanDateShare";
 import { resolvePakistanOfficialHijriDate } from "../date-converter/utils/hijri-authority/resolveOfficialHijriDate";
 import { resolvePakistanOfficialSightingDecisionForEvening } from "../date-converter/utils/hijri-authority/resolveOfficialSightingDecision";
 import { evaluatePakistanNationalCrescentPrediction } from "../date-converter/utils/pakistan-crescent/nationalPrediction";
@@ -12,6 +11,7 @@ import { evaluateYallopNationalReferencePrediction } from "../date-converter/uti
 import { UpcomingCrescentShortcuts } from "./components/UpcomingCrescentShortcuts";
 import { PakistanCrescentQuickResult } from "./components/PakistanCrescentQuickResult";
 import { getUpcomingPakistanCrescentEvenings } from "./utils/upcomingCrescentEvenings";
+import { formatReferenceSiteCount, getFollowingCardEvening, getReferenceSiteConditionWording } from "./utils/crescentDisplaySummary";
 
 // Presentation safeguard: re-enable only after an approved Pakistan boundary/mask is available.
 const PAKISTAN_VISIBILITY_MAP_ENABLED = false;
@@ -57,6 +57,9 @@ export default function CrescentVisibilityContent() {
   const [isYallopHelpOpen, setYallopHelpOpen] = useState(false);
   const date = parse(dateInput);
   const isValidDate = validateDate("gregorian", date) === null;
+  const followingMonthCardDate = useMemo(() => getFollowingCardEvening(
+    dateInput, getUpcomingPakistanCrescentEvenings(today, 6).map(entry => entry.dateIso),
+  ), [dateInput, today.year, today.month, today.day]);
   const pakistan = useMemo(() => isValidDate ? evaluatePakistanNationalCrescentPrediction(date) : null, [isValidDate, date.year, date.month, date.day]);
   const yallop = useMemo(() => isValidDate ? evaluateYallopNationalReferencePrediction(date) : null, [isValidDate, date.year, date.month, date.day]);
   const authority = useMemo(() => isValidDate ? resolvePakistanOfficialHijriDate(date) : null, [isValidDate, date.year, date.month, date.day]);
@@ -93,8 +96,8 @@ export default function CrescentVisibilityContent() {
   const classSummary = (["A", "B", "C", "D", "E", "F"] as const).filter(key => yallop.classCounts[key] > 0).map(key => `${key}: ${yallop.classCounts[key]}`).join(" · ");
   const pakistanPassCount = pakistan.locations.filter(({ prediction }) => prediction.status === "evaluated" && prediction.criterion.qualifies).length;
   const yallopAcceptedCount = yallop.locations.filter(({ prediction }) => prediction.status === "evaluated" && prediction.acceptedByPolicy).length;
-  const pakCountDisplay = ur ? (pakistanPassCount === 0 ? "صفر مقامات" : `${dateDigits(String(pakistanPassCount), "ur")} از ۸ مقامات`) : `${pakistanPassCount}/8 locations`;
-  const yallopCountDisplay = ur ? (yallopAcceptedCount === 0 ? "صفر مقامات" : `${dateDigits(String(yallopAcceptedCount), "ur")} از ۸ مقامات`) : `${yallopAcceptedCount}/8 reference locations`;
+  const pakCountDisplay = formatReferenceSiteCount(pakistanPassCount, pakistan.locations.length, ur ? "ur" : "en");
+  const yallopCountDisplay = formatReferenceSiteCount(yallopAcceptedCount, yallop.locations.length, ur ? "ur" : "en");
   const pakistanSummary = pakistanPassCount === 8
     ? (ur ? "تمام 8 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔" : "All 8 prescribed national observation locations meet the scientific crescent-visibility criterion.")
     : pakistanPassCount > 0
@@ -122,6 +125,9 @@ export default function CrescentVisibilityContent() {
     <UpcomingCrescentShortcuts lang={ur ? "ur" : "en"} today={today} selectedDate={dateInput} onSelect={value => selectDate(value, true)} />
     {dateControl}
     <div ref={resultRef} tabIndex={-1} className="mt-7 scroll-mt-24">
+      {followingMonthCardDate && <p data-testid="crescent-following-evening-note" className="mb-4 rounded-xl border border-[#B8935A]/50 bg-[#F7F5EF] px-4 py-3 text-center text-[#153b29] dark:border-[#B8935A]/40 dark:bg-[#203326] dark:text-[#e6f1e7]">
+        {ur ? `یہ ${formatDate(parse(followingMonthCardDate), "gregorian", lang)} کے بعد والی شام، ${formatDate(date, "gregorian", lang)} کا الگ فلکیاتی حساب ہے۔` : `This is the separate calculation for ${formatDate(date, "gregorian", lang)}, the evening after the ${formatDate(parse(followingMonthCardDate), "gregorian", lang)} month card.`}
+      </p>}
       <PakistanCrescentQuickResult date={date} lang={ur ? "ur" : "en"} pakistan={pakistan} yallop={yallop} decision={decision} outsideNewCrescentWindow={outsideNewCrescentWindow} />
     </div>
     <details id="crescent-technical-report" data-testid="crescent-deep-details" className="mt-6 scroll-mt-24 rounded-2xl border border-[#1A3A2A]/15 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e] sm:p-6">
@@ -136,12 +142,12 @@ export default function CrescentVisibilityContent() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <article className={`rounded-2xl p-5 ring-1 ${outsideNewCrescentWindow ? "bg-white/10 ring-white/20" : pakistanPassCount > 0 ? "bg-emerald-800/30 ring-emerald-500/40" : "bg-rose-900/30 ring-rose-500/30"}`}>
           <h3>{ur ? "پاکستانی سائنسی معیار" : "Pakistan scientific criterion"}</h3>
-          <p className="mt-2">{outsideNewCrescentWindow ? (ur ? "یہ نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : pakistanPassCount > 0 ? (ur ? "رؤیت کے حالات موافق ہیں" : "Conditions are favorable") : (ur ? "رؤیت کے حالات موافق نہیں" : "Conditions are unfavorable")}</p>
+          <p className="mt-2">{outsideNewCrescentWindow ? (ur ? "یہ نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : getReferenceSiteConditionWording(pakistanPassCount, pakistan.locations.length, ur ? "ur" : "en")}</p>
           <p className="mt-2 text-[#dce8de]">{outsideNewCrescentWindow ? (ur ? "صرف فلکیاتی اعداد" : "Astronomical measurements only") : pakCountDisplay}</p>
         </article>
         <article className={`rounded-2xl p-5 ring-1 ${outsideNewCrescentWindow ? "bg-white/10 ring-white/20" : yallopAcceptedCount > 0 ? "bg-emerald-800/30 ring-emerald-500/40" : "bg-rose-900/30 ring-rose-500/30"}`}>
           <h3>{ur ? "یالوپ کا تقابلی حساب" : "Yallop comparison"}</h3>
-          <p className="mt-2">{outsideNewCrescentWindow ? (ur ? "یہ نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : yallopAcceptedCount > 0 ? (ur ? "بعض مقامات پر حالات موافق ہیں" : "Conditions are favorable at some sites") : (ur ? "رؤیت کے حالات موافق نہیں" : "Conditions are unfavorable")}</p>
+          <p className="mt-2">{outsideNewCrescentWindow ? (ur ? "یہ نئے ہلال کی جانچ نہیں" : "Not a new-crescent test") : getReferenceSiteConditionWording(yallopAcceptedCount, yallop.locations.length, ur ? "ur" : "en")}</p>
           <p className="mt-2 text-[#dce8de]">{outsideNewCrescentWindow ? (ur ? "صرف حوالہ جاتی اعداد" : "Reference figures only") : yallopCountDisplay}</p>
         </article>
       </div>
