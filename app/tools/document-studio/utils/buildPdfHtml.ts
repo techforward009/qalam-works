@@ -254,9 +254,9 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       for (const [tokenIndex, token] of tokens.entries()) {
         if (!token) continue;
         let inner = escapeHtml(token);
-        if (preserveSpaces) inner = preservedSpaceHtml(inner, (nodeIndex === nodes.length-1 || nodes[nodeIndex+1]?.type === "hardBreak") && piece === pieces.at(-1) && tokenIndex === tokens.length-1);
         const choice = exportFamilyForSegment(picked.family, piece.dir, blockDir);
         const effective = resolveEffectivePdfFont(choice.family, picked.latin ? "ltr" : choice.fontDir, ctx.available, ctx.typography);
+        if (preserveSpaces) inner = preservedSpaceHtml(inner, (nodeIndex === nodes.length-1 || nodes[nodeIndex+1]?.type === "hardBreak") && piece === pieces.at(-1) && tokenIndex === tokens.length-1, effective.family);
         noteEffective(ctx, effective);
         if (bold) inner = `<strong>${inner}</strong>`;
         if (italics) inner = `<em>${inner}</em>`;

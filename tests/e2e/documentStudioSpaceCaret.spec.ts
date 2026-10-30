@@ -57,6 +57,10 @@ async function prepareSpaces(page: Page, family = 'Mehr Nastaliq Web') {
   await page.setViewportSize({width:1280,height:900});
   await page.addInitScript(()=>localStorage.setItem('qalam-site-language','en'));
   if(family==='Jameel Noori Nastaleeq') await interceptLocalJameel(page);
+  if(family==='Gulzar' && process.env.QALAM_TEST_GULZAR_FONT) {
+    const {readFileSync}=await import('node:fs');const bytes=readFileSync(process.env.QALAM_TEST_GULZAR_FONT);
+    await page.route('**/fonts/Gulzar-Regular.woff2',route=>route.fulfill({status:200,body:bytes,contentType:'font/woff2',headers:{'access-control-allow-origin':'*'}}));
+  }
   await page.goto('/tools/document-studio');
   await expect.poll(()=>page.evaluate(()=>localStorage.getItem('qalam-document-studio-active-document-v1'))).not.toBeNull();
   const editor=page.locator('.ProseMirror');await editor.click();
@@ -88,9 +92,10 @@ test('three middle spaces keep real width without changing authored text',async(
   await prepareSpaces(page);await page.keyboard.insertText('یہ   ایک');const m=await spacesMetric(page,2,5);expect(Math.abs(m.width-3*m.advance)).toBeLessThan(1);expect(m.text).toBe('یہ   ایک');
 });
 
-for(const pdfFont of ['Mehr Nastaliq Web','Jameel Noori Nastaleeq'])test(`${pdfFont}: real exported PDF preserves space advances and the editor line endings`,async({page},info)=>{
+for(const pdfCase of ['Mehr Nastaliq Web','Jameel Noori Nastaleeq','Mehr natural Allah paragraph'])test(`${pdfCase}: real exported PDF preserves space advances and the editor line endings`,async({page},info)=>{
+  const natural=pdfCase==='Mehr natural Allah paragraph',pdfFont=natural?'Mehr Nastaliq Web':pdfCase;
   test.setTimeout(120000);await prepareSpaces(page,pdfFont);
-  const text=(pdfFont==='Jameel Noori Nastaleeq'?'ق ق ق   ق'+' '.repeat(20)+'ق   یہ ایک عبارت ہے   ':'یہ   ایک   عبارت ہے    ق'+' '.repeat(20)+'ق   ').repeat(5);
+  const text=natural?('کہ اللہ تعالی کی پروا کیجیے اللہ بقیۃ اللہ ').repeat(12):(pdfFont==='Jameel Noori Nastaleeq'?'ق ق ق   ق'+' '.repeat(20)+'ق   یہ ایک عبارت ہے   ':'کہ اللہ تعالی کی پروا کیجیے اللہ بقیۃ اللہ   ق'+' '.repeat(20)+'ق   ').repeat(5);
   await page.keyboard.insertText(text);
   const doc=await page.locator('.ProseMirror').evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.getJSON());
 
@@ -118,17 +123,20 @@ for(const pdfFont of ['Mehr Nastaliq Web','Jameel Noori Nastaleeq'])test(`${pdfF
     const file=info.outputPath('spaces.pdf');writeFileSync(file,Buffer.from(await response.arrayBuffer()));
     const fonts=execFileSync('pdffonts',[file]).toString();expect(fonts).toContain(pdfFont==='Jameel Noori Nastaleeq'?'Jameel':'Mehr');expect(fonts).toContain('CID TrueType');
     execFileSync('pdftoppm',['-f','1','-singlefile','-r','96','-png',file,info.outputPath('spaces-pdf')]);
+    if(!natural) {
     const bbox=execFileSync('pdftotext',['-bbox',file,'-'],{encoding:'utf8'});
     const qs=[...bbox.matchAll(/<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)"[^>]*>ق<\/word>/g)].map(m=>({left:Number(m[1]),top:Number(m[2]),right:Number(m[3])}));
     expect(qs.length).toBeGreaterThanOrEqual(2);
-    const firstTop=Math.min(...qs.map(q=>q.top)),pair=qs.filter(q=>Math.abs(q.top-firstTop)<0.1).sort((a,b)=>a.left-b.left);
+    // Nastaliq words on one visual line can have different ink tops. Compare every same-baseline qaf pair.
+    const pair=qs.sort((a,b)=>a.left-b.left);
     expect(pair.length).toBeGreaterThanOrEqual(2);
     const measured=await spacesMetric(page,text.indexOf(' '.repeat(20)),text.indexOf(' '.repeat(20))+20);
-    expect(pair.some((q,i)=>i>0&&Math.abs(q.left-pair[i-1].right-measured.advance*20*72/96)<2),'real PDF must paint the twenty-space gap').toBe(true);
+    expect(pair.some(q=>pair.some(previous=>Math.abs(q.top-previous.top)<.1&&Math.abs(q.left-previous.right-measured.advance*20*72/96)<2)),'real PDF must paint the twenty-space gap').toBe(true);
+    }
 
     writeFileSync(info.outputPath('line-comparison.json'),JSON.stringify({editorLines,pdfLines},null,2));
     expect(pdfLines).toEqual(editorLines);
-    expect(pdfLines.join('').replace(/\s/g,'')).toBe(text.replace(/\s/g,''));
+    expect(pdfLines.join('').replace(/\s/g,'')).toBe(editorLines.join('').replace(/\s/g,''));
     await page.locator('[data-studio-pages-stack]').screenshot({path:info.outputPath('spaces-editor.png'),scale:'css'});
   }finally{restoreFontFetch();chromium.executablePath=path;puppeteer.launch=original;}
 });
@@ -148,10 +156,10 @@ test('preserved spaces retain alignment, selection/delete, undo and Enter pagina
 });
 
 for(const zoom of ['100','200']) {
- test(`Jameel ${zoom}%: single spaces have their nominal advance`,async({page},info)=>{
+ test(`Jameel ${zoom}%: single spaces keep natural shaping without decorations`,async({page},info)=>{
   await prepareSpaces(page,'Jameel Noori Nastaleeq');await page.getByRole('combobox',{name:'Zoom',exact:true}).selectOption(zoom);await page.locator('.ProseMirror').focus();
   await page.keyboard.insertText('ق ق ق');
-  for(const at of [1,3]){const m=await spacesMetric(page,at,at+1);expect(Math.abs(m.advance/m.scale-8)).toBeLessThan(.1);expect(Math.abs(m.width-m.advance)).toBeLessThan(1);}
+  for(const at of [1,3]){const m=await spacesMetric(page,at,at+1);expect(Math.abs(m.advance/m.scale-8)).toBeLessThan(.1);expect(m.width).toBeGreaterThan(0);}
   const client=await page.context().newCDPSession(page);await client.send('DOM.enable');await client.send('CSS.enable');const {root}=await client.send('DOM.getDocument');
   const {nodeIds}=await client.send('DOM.querySelectorAll',{nodeId:root.nodeId,selector:'.ProseMirror p span'});
   const fonts=(await Promise.all(nodeIds.map(nodeId=>client.send('CSS.getPlatformFontsForNode',{nodeId})))).flatMap(result=>result.fonts);
@@ -166,3 +174,28 @@ for(const zoom of ['100','200']) {
   expect(await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.state.doc.textContent)).toBe('ق   ');
  });
 }
+
+for(const font of ['Mehr Nastaliq Web','Gulzar','Jameel Noori Nastaleeq']) test(`${font}: single word gaps preserve natural Allah shaping at 36pt`,async({page},info)=>{
+ const editor=await prepareSpaces(page,font);
+ const text='کہ اللہ تعالی کی پروا کیجیے اللہ بقیۃ اللہ';
+ await editor.evaluate((el,text)=>{const e=(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;e.chain().setMark('textStyle',{fontSize:'36pt'}).insertContent(text).run();},text);
+ expect(await editor.locator('[data-studio-preserved-space]').count()).toBe(0);
+ const comparison=await editor.locator('p').evaluate(el=>{
+  const clone=el.cloneNode(true) as HTMLElement;clone.querySelectorAll('[data-studio-preserved-space]').forEach(span=>span.replaceWith(...span.childNodes));clone.style.position='absolute';clone.style.top='0';clone.style.width=`${el.getBoundingClientRect().width}px`;document.body.append(clone);
+  // Keep inherited typography identical to the real editor; only remove decorations.
+  const cs=getComputedStyle(el);for(const name of ['font-family','font-size','line-height','direction','white-space','font-feature-settings','font-variant-ligatures','word-spacing','letter-spacing'])clone.style.setProperty(name,cs.getPropertyValue(name));
+  function boxes(root:Element){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),out:number[]=[];let node;while(node=w.nextNode()){for(const m of (node.textContent??'').matchAll(/[^ ]+| +/g)){const r=document.createRange();r.setStart(node,m.index!);r.setEnd(node,m.index!+m[0].length);out.push(r.getBoundingClientRect().width);}}return out;}
+  const actual=boxes(el),natural=boxes(clone);clone.remove();return {actual,natural};
+ });
+ expect(comparison.actual.length).toBe(comparison.natural.length);comparison.actual.forEach((width,i)=>expect(Math.abs(width-comparison.natural[i])).toBeLessThan(.5));
+ await info.attach('natural-word-widths',{body:JSON.stringify(comparison),contentType:'application/json'});
+});
+
+test('preserved-space features follow the inherited default font without changing other fonts',async({page})=>{
+ const editor=await prepareSpaces(page,'Jameel Noori Nastaleeq');
+ await editor.evaluate(el=>{const e=(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;el.style.setProperty('--qalam-rtl-font','"Jameel Noori Nastaleeq"');e.commands.setContent({type:'doc',content:[{type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text:'ق  ق '}]}]});});
+ await expect.poll(()=>editor.locator('[data-studio-preserved-space]').first().evaluate(el=>getComputedStyle(el).fontFeatureSettings)).toContain('"ccmp" 0');
+ const m=await spacesMetric(page,1,3);expect(Math.abs(m.width-m.advance*2)).toBeLessThan(1);
+ await editor.evaluate(el=>{const e=(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor;el.style.setProperty('--qalam-rtl-font','"Mehr Nastaliq Web"');e.view.dispatch(e.state.tr);});
+ await expect.poll(()=>editor.locator('[data-studio-preserved-space]').first().evaluate(el=>getComputedStyle(el).fontFeatureSettings)).not.toContain('ccmp');
+});

@@ -6,12 +6,12 @@ import {LatinScriptRuns} from '../app/tools/document-studio/extensions/LatinScri
 import {preservedSpaceRanges,preservedSpaceHtml,preservedSpaceStyle} from '../app/tools/document-studio/utils/preservedSpaces';
 import {buildPdfHtml} from '../app/tools/document-studio/utils/buildPdfHtml';
 it('isolates U+0020 composition without changing single word gap kerning, tabs or authored characters',()=>{
- expect(preservedSpaceRanges('یہ ایک   متن ')).toEqual([{start:2,end:3},{start:6,end:9},{start:12,end:13}]);
- expect(preservedSpaceStyle('یہ ایک ',{start:2,end:3},false)).not.toContain('font-kerning:none');
- expect(preservedSpaceStyle('یہ ایک ',{start:6,end:7},true)).toContain('font-kerning:none');
+ expect(preservedSpaceRanges('یہ ایک   متن ',true)).toEqual([{start:6,end:9},{start:12,end:13}]);
+ expect(preservedSpaceStyle('Mehr Nastaliq Web')).not.toContain('ccmp');
+ expect(preservedSpaceStyle('Jameel Noori Nastaleeq')).toContain('font-kerning:none');
  expect(preservedSpaceRanges('a\tb\u00a0c')).toEqual([]);
  expect(preservedSpaceHtml('a  b ',true)).toContain('font-kerning:none;white-space:break-spaces');
- expect(preservedSpaceHtml('ق ق',false)).toContain("font-feature-settings:'ccmp' 0");
+ expect(preservedSpaceHtml('ق ق',false)).toBe('ق ق');
 });
 it('editor decorations preserve model text and marks, and never split shaped words',()=>{
  const e=new Editor({extensions:[...createDocumentStudioExtensions(),LatinScriptRuns],content:{type:'doc',content:[{type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text:'یہ   ایک '}]}]}});
@@ -25,4 +25,19 @@ it('PDF story spaces share the editor rule; existing frame HTML is not changed',
  expect(html.querySelectorAll('p [data-studio-preserved-space]').length).toBeGreaterThanOrEqual(2);
  expect(html.querySelector('[data-pdf-frame-source] [data-studio-preserved-space]')).toBeNull();
  expect(result.html).toContain('white-space:break-spaces');
+});
+
+it('never decorates single internal spaces or changes non-Jameel features',()=>{
+ for(const family of ['Mehr Nastaliq Web','Gulzar','Jameel Noori Nastaleeq']) {
+  const text='کہ اللہ تعالی کی پروا کیجیے اللہ بقیۃ اللہ';
+  expect(preservedSpaceHtml(text,false)).toBe(text);
+  const e=new Editor({extensions:[...createDocumentStudioExtensions(),LatinScriptRuns],content:{type:'doc',content:[{type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text,marks:[{type:'textStyle',attrs:{fontFamily:family}}]}]}]}});
+  try { expect(e.view.dom.querySelector('[data-studio-preserved-space]')).toBeNull(); } finally {e.destroy();}
+ }
+});
+
+it('limits ccmp changes to Jameel preserved ranges',()=>{
+ for(const family of ['Mehr Nastaliq Web','Gulzar','Arial'])expect(preservedSpaceHtml('ق  ق ',true,family)).not.toContain('ccmp');
+ expect(preservedSpaceHtml('ق  ق ',true,'Jameel Noori Nastaleeq')).toContain("font-feature-settings:'ccmp' 0");
+ expect(preservedSpaceHtml('ق ق',false,'Jameel Noori Nastaleeq')).toBe('ق ق');
 });
