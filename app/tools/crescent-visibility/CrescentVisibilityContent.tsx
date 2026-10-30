@@ -161,7 +161,44 @@ export default function CrescentVisibilityContent() {
       </article>
     </section>
     <section className="mt-4"><button type="button" aria-expanded={isYallopHelpOpen} aria-controls="yallop-class-help" onClick={() => setYallopHelpOpen(open => !open)} className={`text-sm font-semibold underline focus-visible:outline focus-visible:outline-2 ${ur ? "font-naskh" : ""}`}>{ur ? "یالوپ ماڈل کی وضاحت" : "About the Yallop model"}</button>{isYallopHelpOpen && <div id="yallop-class-help" className={`mt-2 rounded-xl bg-muted p-4 text-sm ${ur ? "font-naskh" : ""}`}><p>{ur ? "یہ ایک بین الاقوامی فلکیاتی ماڈل ہے جو ہلال کی رؤیت کے امکانات کو مختلف درجوں میں تقسیم کرتا ہے۔" : "This is an international astronomical model that classifies crescent-visibility conditions."}</p><p className="mt-2 text-xs">{ur ? "A — بہت موافق حالات؛ B — موافق حالات؛ C — ابتدا میں بصری آلے کی ضرورت پڑ سکتی ہے؛ D — عموماً بصری آلہ درکار ہوتا ہے؛ E/F — رؤیت متوقع نہیں" : "A: easily visible; B: visible under favorable conditions; C: may require optical aid; D: optical aid generally required; E/F: not expected to be visible."}</p></div>}</section>
-    <details className="mt-6"><summary className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "مزید سائنسی تفصیلات" : "Scientific details"}</summary><p className={`mt-2 ${ur ? "font-naskh" : ""}`}>{ur ? "ہر شہر کے اعداد اس مقام کے غروبِ آفتاب پر محسوب کیے گئے ہیں۔" : "Measurements are calculated at local sunset for each location."}</p><div className="mt-3 grid gap-2 md:grid-cols-2" data-testid="scientific-location-grid">{pakistan.locations.map(({ observer, prediction }, index) => { const yallopPrediction = yallop.locations[index].prediction; const evaluatedPakistan = prediction.status === "evaluated"; const evaluatedYallop = yallopPrediction.status === "evaluated"; const passes = evaluatedPakistan && prediction.criterion.qualifies; return <div key={observer.id} className="rounded-lg border p-3 text-sm"><div className="flex items-center justify-between gap-2"><strong>{ur ? (URDU_LOCATION_NAMES[observer.id] ?? observer.name) : observer.name}</strong><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${passes ? "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100" : "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100"}`}>{passes ? (ur ? "معیار پورا" : "Pass") : (ur ? "معیار پورا نہیں" : "Fail")}</span></div>{evaluatedPakistan && <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1"><dt>{ur ? "ارتفاع" : "Altitude"}</dt><dd><span dir="ltr">{prediction.criterion.altitudeDeg.toFixed(2)}°</span></dd><dt>{ur ? "ہلال کی چوڑائی" : "Crescent width"}</dt><dd><span dir="ltr">{prediction.criterion.widthArcMin.toFixed(3)}′</span></dd><dt>{ur ? "روشن حصہ" : "Illumination"}</dt><dd><span dir="ltr">{prediction.criterion.illuminationPercent.toFixed(2)}%</span></dd><dt>{ur ? "زاویائی فاصلہ" : "Elongation"}</dt><dd><span dir="ltr">{prediction.criterion.elongationDeg.toFixed(2)}°</span></dd><dt>{ur ? "غروب کا وقفہ" : "Lag"}</dt><dd><span dir="ltr">{prediction.criterion.lagMinutes.toFixed(1)} min</span></dd></dl>}<div className="mt-2 flex items-center gap-2"><span>{ur ? "یالوپ" : "Yallop"}:</span>{evaluatedYallop ? <><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${classTone(yallopPrediction.criterion.visibilityClass)}`}>{ur ? "درجہ " : "Class "}{yallopPrediction.criterion.visibilityClass}</span><span dir="ltr">(q = {qText(yallopPrediction.criterion.q)})</span></> : <span>{ur ? "دستیاب نہیں" : "unavailable"}</span>}</div></div>; })}</div></details>
+    <details className="mt-6">
+      <summary className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "مزید سائنسی تفصیلات" : "Scientific details"}</summary>
+      <p className="mt-3 text-center">{ur ? "تمام مقامات کے اعداد ان کے مقامی غروبِ آفتاب کے حساب سے ہیں۔" : "Figures use the local sunset at each location."}</p>
+      <div className="mt-4 grid gap-4 md:grid-cols-2" data-testid="scientific-location-grid">
+        {pakistan.locations.map(({ observer, prediction }, index) => {
+          const comparison = yallop.locations[index]?.prediction;
+          const evaluated = prediction.status === "evaluated";
+          const pass = evaluated && prediction.criterion.qualifies;
+          const values = evaluated ? [
+            { label: ur ? "افق سے بلندی (ڈگری)" : "Altitude (degrees)", value: `${prediction.criterion.altitudeDeg.toFixed(2)}°` },
+            { label: ur ? "ہلال کی چوڑائی (قوسی منٹ)" : "Crescent width (arcminutes)", value: `${prediction.criterion.widthArcMin.toFixed(3)}′` },
+            { label: ur ? "روشن حصہ" : "Illuminated fraction", value: `${prediction.criterion.illuminationPercent.toFixed(2)}%` },
+            { label: ur ? "زاویائی فاصلہ (ڈگری)" : "Elongation (degrees)", value: `${prediction.criterion.elongationDeg.toFixed(2)}°` },
+            { label: ur ? "غروب کا وقفہ" : "Moonset lag", value: `${prediction.criterion.lagMinutes.toFixed(1)}`, unit: ur ? "منٹ" : "min" },
+          ] : [];
+          return <article key={observer.id} className="rounded-2xl border border-[#1A3A2A]/15 p-5 text-center dark:border-[#35513d]" data-crescent-location-card>
+            <h3>{ur ? URDU_LOCATION_NAMES[observer.id] ?? observer.name : observer.name}</h3>
+            <p className="mt-2">{pass ? (ur ? "رؤیت کے حالات موافق" : "Favorable conditions") : (ur ? "رؤیت کے حالات ناموافق" : "Unfavorable conditions")}</p>
+            {evaluated ? <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {values.map(v => <div key={v.label} className="rounded-xl bg-[#F7F5EF] p-3 text-center dark:bg-[#203326]">
+                <dt className="text-center">{v.label}</dt>
+                <dd className="mt-2 flex flex-wrap items-baseline justify-center gap-2 text-center font-normal">
+                  <span data-crescent-latin-number dir="ltr">{v.value}</span>
+                  {v.unit && <span>{v.unit}</span>}
+                </dd>
+              </div>)}
+            </dl> : <p className="mt-3">{ur ? "فلکیاتی اعداد دستیاب نہیں" : "Astronomical measurements unavailable"}</p>}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-center">
+              <span>{ur ? "یالوپ:" : "Yallop:"}</span>
+              {comparison?.status === "evaluated" ? <>
+                <span>{ur ? "درجہ" : "Class"} <bdi dir="ltr">{comparison.criterion.visibilityClass}</bdi></span>
+                <span dir="ltr" data-crescent-latin-number>(q = {comparison.criterion.q.toFixed(3)})</span>
+              </> : <span>{ur ? "دستیاب نہیں" : "Unavailable"}</span>}
+            </div>
+          </article>;
+        })}
+      </div>
+    </details>
     </details>
   </main>;
 }
