@@ -234,7 +234,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     // this clone prevents a parent list item from duplicating or reordering
     // nested lists and later paragraphs.
     source.querySelectorAll(blockSelector).forEach(child => child.remove());
-    if (!nodes.some(node => node.data.trim())) {
+    if (!nodes.some(node => node.data.includes(" ") || node.data.trim().length > 0)) {
       context.font = style.font;
       const metric = context.measureText(" ");
       const lineHeight = parseFloat(style.lineHeight) || rect.height || metric.fontBoundingBoxAscent + metric.fontBoundingBoxDescent;
@@ -242,7 +242,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       source.dataset.pdfBlankParagraph = "true";
       source.append(document.createElement("br"));
       source.querySelector("br")!.dataset.pdfPreservedBreak = "blank-paragraph";
-      source.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${rect.width}px;height:${lineHeight}px;white-space:nowrap;`;
+      source.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${rect.width}px;height:${lineHeight}px;white-space:pre;`;
       snapshots.push({ element: source, baseline: rect.top + metric.fontBoundingBoxAscent, block: blockIndex, heading: false, left: rect.left - origin.left, width: rect.width, fontHeight: lineHeight, inkAscent: 0, inkDescent: 0, blank: true, forceBreak });
       continue;
     }
@@ -259,7 +259,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       inkDescent = Math.max(inkDescent, font.actualBoundingBoxDescent);
       for (let i = 0; i < node.length;) {
         const next = i + ((node.data.codePointAt(i) ?? 0) > 0xffff ? 2 : 1), y = baseline(node, i, next);
-        if (/^\s$/u.test(node.data.slice(i, next))) {
+        if (node.data.slice(i, next) !== " " && /^\s$/u.test(node.data.slice(i, next))) {
           const previous = groups.at(-1);
           if (previous) previous.end = offset + next;
           else if (pendingWhitespaceStart === null) pendingWhitespaceStart = offset + i;
@@ -346,7 +346,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       if (besideFloat && frame.width >= rect.width - 8 && box.width > 1 && box.width < rect.width - 8) {
         frame = { left: box.left - origin.left, width: box.width };
       }
-      element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:nowrap;`;
+      element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:pre;`;
       // These are already measured visual lines. Nested break-spaces/pre-wrap
       // spans must not wrap again when the line is painted into the PDF page.
       element.querySelectorAll<HTMLElement>("span").forEach(span => { span.style.whiteSpace = "pre"; });

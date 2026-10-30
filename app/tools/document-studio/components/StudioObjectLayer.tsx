@@ -470,37 +470,6 @@ function FrameShape({
   );
 }
 
-/** Show true U+0020 advance when Chromium hangs a trailing space's collapsed range.
- * This affects only screen caret painting; it never changes stored text or PDF. */
-function trailingSpaceCaretX(
-  editor: Editor, head: number, current: { left: number; top: number; bottom: number },
-  block: HTMLElement, fontElement: HTMLElement, scale: number,
-): number | null {
-  const resolved = editor.state.doc.resolve(head);
-  if (!resolved.parent.isTextblock || resolved.parentOffset !== resolved.parent.content.size) return null;
-  const count = resolved.parent.textContent.match(/ +$/)?.[0].length ?? 0;
-  if (!count || count > 24) return null;
-  const before = editor.view.coordsAtPos(head - count);
-  if (Math.abs(before.top - current.top) > Math.max(5, current.bottom - current.top)) return null;
-  const font = getComputedStyle(fontElement);
-  const probe = document.createElement("span");
-  probe.textContent = " ".repeat(count);
-  probe.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre;display:inline-block;transform:none;border:0;padding:0;margin:0;";
-  probe.style.font = font.font;
-  probe.style.letterSpacing = font.letterSpacing;
-  probe.style.wordSpacing = font.wordSpacing;
-  probe.style.fontKerning = font.fontKerning;
-  probe.style.fontFeatureSettings = font.fontFeatureSettings;
-  document.body.append(probe);
-  const advance = probe.getBoundingClientRect().width * scale;
-  probe.remove();
-  if (!Number.isFinite(advance) || advance < 1) return null;
-  const direction = getComputedStyle(block).direction === "rtl" ? -1 : 1;
-  const nativeAdvance = (current.left - before.left) * direction;
-  if (nativeAdvance > advance * 0.6 || Math.abs(nativeAdvance) > advance * 1.5) return null;
-  return before.left + direction * advance;
-}
-
 function StudioCaret({
   projection: projectionProp,
   zoom,
@@ -571,9 +540,7 @@ function StudioCaret({
       const rtl = getComputedStyle(owner ?? editor.view.dom).direction === "rtl";
       // Layout-only struts consume one page pixel, but an empty line's caret
       // belongs at its real paragraph edge, independently of that width.
-      const spaceX = !emptyLine ? trailingSpaceCaretX(editor, selectionHead.pos,
-        { left: coords.left, top: coords.top, bottom: coords.bottom }, block, owner ?? block, scale) : null;
-      const point = emptyLine ? (rtl ? bounds.right : bounds.left) : spaceX ?? coords.left;
+      const point = emptyLine ? (rtl ? bounds.right : bounds.left) : coords.left;
       setBox({...caretGeometry({
         x: (point-rect.left)/scale, top: (top-rect.top)/scale,
         height: Number.isFinite(leading) ? leading/scale : (coords.bottom-coords.top)/scale, scale,
