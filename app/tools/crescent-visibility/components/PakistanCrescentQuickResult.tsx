@@ -64,7 +64,6 @@ export function PakistanCrescentQuickResult({
     : nextPasses > 0 ? (ur ? "رؤیت کے سائنسی حالات موافق ہیں" : "Scientific visibility conditions are favorable")
       : (ur ? "رؤیت کے سائنسی حالات موافق نہیں" : "Scientific visibility conditions are unfavorable");
   const officialSighting = decision?.sightingDecision === "sighted";
-  const officialNotSighting = decision?.sightingDecision === "not-sighted";
   const targetName = outlook ? monthName("hijri", outlook.nextHijriMonth, lang) : "";
   const targetYear = outlook ? String(outlook.nextHijriYear) : "";
   const weekdayNamesUr = ["اتوار", "پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ"];
@@ -75,22 +74,17 @@ export function PakistanCrescentQuickResult({
     ? ur ? `ہمارے سائنسی حساب سے ${firstDayLabel}`
       : `Our scientific calculation forecasts the first of ${targetName} ${targetYear} on ${dateLabel(outlook.dayOne, lang)}.`
     : "";
-  const headline = officialSighting ? (ur ? "سرکاری اعلان: چاند نظر آگیا" : "Official announcement: Crescent sighted")
-    : officialNotSighting ? (ur ? "سرکاری اعلان: چاند نظر نہیں آیا" : "Official announcement: Crescent not sighted")
-    : state === "not-new" ? (ur ? "یہ نئے چاند کی شام نہیں ہے" : "Not a new crescent evening")
+  const headline = state === "not-new" ? (ur ? "یہ نئے چاند کی شام نہیں ہے" : "Not a new crescent evening")
     : state === "favorable" ? (ur ? "چاند نظر آنے کے امکانات ہیں" : "The crescent may be visible")
     : state === "incomplete" ? (ur ? "ابھی واضح اندازہ نہیں لگایا جا سکتا" : "No clear prediction is available")
     : (ur ? "اس شام چاند نظر آنے کی توقع نہیں" : "The crescent is not expected to be visible");
-  const explanation = officialSighting ? (ur ? "مرکزی رؤیتِ ہلال کمیٹی کے دستیاب اور جائزہ شدہ اعلان کے مطابق۔" : "According to the reviewed official sighting announcement.")
-    : officialNotSighting ? (ur ? "مرکزی رؤیتِ ہلال کمیٹی کے دستیاب اور جائزہ شدہ اعلان کے مطابق۔" : "According to the reviewed official non-sighting announcement.")
-    : state === "not-new" ? (ur ? "اوپر کسی نئے قمری مہینے کو منتخب کریں۔" : "Choose an upcoming lunar month above.")
+  const explanation = state === "not-new" ? (ur ? "اوپر کسی نئے قمری مہینے کو منتخب کریں۔" : "Choose an upcoming lunar month above.")
     : state === "favorable" ? (ur ? "ہمارے پاکستانی سائنسی حساب کے مطابق حالات موافق ہیں۔" : "Pakistan scientific conditions are favorable.")
     : state === "incomplete" ? (ur ? "بعض مقامات کی معلومات مکمل نہیں۔ اس لیے ہم حتمی اندازہ نہیں دے رہے۔" : "Some local calculations are incomplete, so we cannot give a definite outlook.")
     : (ur ? "ہمارے پاکستانی سائنسی معیار کے مطابق اس شام ہلال کی رؤیت ممکن نہیں۔" : "Under our Pakistan scientific criterion, the crescent cannot be seen that evening.");
   const resultText = [
     ur ? "قلم ورکس — پاکستان میں رؤیتِ ہلال" : "Qalam Works — Crescent visibility in Pakistan",
     dateLabel(date, lang), headline, explanation, firstDayText,
-    !decision ? (ur ? "یہ سائنسی پیش گوئی ہے، سرکاری اعلان نہیں۔" : "Scientific forecast, not an official announcement.") : "",
     `https://www.qalamworks.com/tools/crescent-visibility?date=${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`,
   ].filter(Boolean).join("\n");
 
@@ -169,8 +163,6 @@ export function PakistanCrescentQuickResult({
             ? <>ہمارے سائنسی حساب سے {targetName} <bdi dir="ltr">{outlook.nextHijriYear}</bdi> کی پہلی تاریخ <bdi dir="ltr">{outlook.dayOne.day}</bdi> {monthName("gregorian", outlook.dayOne.month, "ur")} <bdi dir="ltr">{outlook.dayOne.year}</bdi>ء بروز {weekdayNamesUr[new Date(Date.UTC(outlook.dayOne.year, outlook.dayOne.month - 1, outlook.dayOne.day)).getUTCDay()]} ہوگی۔</>
             : firstDayText}</p>
         </div>}
-        {!decision && <p className="mt-4 text-xs leading-6 text-[#6b786d] dark:text-[#c1cec2]">{ur ? "حتمی اعلان مرکزی رؤیتِ ہلال کمیٹی پاکستان کرے گی۔" : "Pakistan's Central Ruet-e-Hilal Committee makes the official decision."}</p>}
-        {decision && <p data-testid="crescent-simple-official" className="mt-4 text-sm font-semibold text-[#775724] dark:text-[#efdfa9]">{ur ? "سرکاری اعلان دستیاب ہے" : "Reviewed official declaration available"}</p>}
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-3 border-t border-[#1A3A2A]/10 px-5 py-5 dark:border-[#35513d] sm:px-8">
@@ -192,14 +184,12 @@ export function PakistanCrescentQuickResult({
         <summary className="cursor-pointer py-4 text-base font-bold text-[#315c40] dark:text-[#c3e0c5]">{ur ? "آسان الفاظ میں مکمل بات" : "Explanation in simple terms"}</summary>
         <div className="space-y-3 text-sm leading-8 text-[#153b29] dark:text-[#e6f0e6]" data-testid="crescent-three-outcomes">
           <p data-testid="crescent-simple-national-count"><strong>{ur ? "پاکستان میں:" : "Pakistan:"}</strong> {ur ? `آٹھ مقامات میں سے ${publicCount(qualified)} مقامات پر معیار پورا ہوا۔` : `The visibility test was met at ${qualified} of 8 reference locations.`}</p>
-          <p><strong>{ur ? "سرکاری فیصلہ:" : "Official decision:"}</strong> {decision ? (officialSighting ? (ur ? "چاند نظر آنے کا اعلان ہوا۔" : "A sighting was declared.") : (ur ? "چاند نظر نہ آنے کا اعلان ہوا۔" : "No sighting was declared.")) : (ur ? "ابھی مصدقہ اعلان دستیاب نہیں۔" : "No reviewed announcement is available yet.")}</p>
           <p><strong>{ur ? "دوسرے سائنسی حساب سے:" : "Second scientific check:"}</strong> {ur ? `آٹھ میں سے ${publicCount(yallopAccepted)} مقامات پر حالات موافق ہیں۔` : `Conditions are favorable at ${yallopAccepted} of 8 locations.`}</p>
         </div>
         <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 p-4 dark:border-[#35513d]">
           <p className="text-center text-[#315c40] dark:text-[#cfddd1]">
             {ur ? `منتخب شہر: ${localName}` : `Selected city: ${localName}`}
           </p>
-          <p className="mt-2 text-xs text-[#587060] dark:text-[#b6cbb9]">{ur ? `${localName} کے اصل فلکیاتی اعداد؛ قومی نتیجہ نہیں بدلتا۔` : `Real measurements for ${localName}; the national conclusion does not change.`}</p>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4" data-testid="crescent-simple-metrics">
             {measures.map(item => <div key={item.label} data-crescent-measure className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#203326]">
               <dt className="text-[#587060] dark:text-[#b6cbb9]">{item.label}</dt>
