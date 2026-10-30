@@ -1,8 +1,8 @@
 import { Extension } from "@tiptap/core";
 import { closeHistory } from "@tiptap/pm/history";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
-import type { Mark } from "@tiptap/pm/model";
-import { resolveEditorFontFamily } from "../utils/fontRegistry";
+import { Fragment, Slice, type Mark, type Node } from "@tiptap/pm/model";
+import { getFontById, resolveEditorFontFamily } from "../utils/fontRegistry";
 import { Mapping } from "@tiptap/pm/transform";
 
 const inputKey = new PluginKey("allahAutoMarksInput");
@@ -31,6 +31,21 @@ export const AllahAutoMarks = Extension.create({
     return [new Plugin({
       key: inputKey,
       props: {
+        transformPasted(slice, view, plain) {
+          const activeMarks = view.state.storedMarks ?? view.state.selection.$from.marks();
+          if (!plain || !isDigitalKhatt(activeMarks)) return slice;
+          // Native plain-text paste uses $from.marks(), ignoring storedMarks.
+          // In an empty paragraph this loses the selected Digital Khatt face.
+          // Inherit it on the existing parsed slice; keep rich-paste fonts intact.
+          const style = activeMarks.find(mark => mark.type.name === "textStyle");
+          const inherited = view.state.schema.marks.textStyle.create({
+            ...style?.attrs, fontFamily: getFontById("digital-khatt-indo-pak").editorFamily,
+          });
+          const inherit = (node: Node): Node => node.isText
+            ? node.mark(inherited.addToSet(node.marks))
+            : node.copy(Fragment.from(node.content.content.map(inherit)));
+          return new Slice(Fragment.from(slice.content.content.map(inherit)), slice.openStart, slice.openEnd);
+        },
         handleTextInput(view, from, to, text) {
           if (view.composing || !isDigitalKhatt(view.state.storedMarks ?? view.state.selection.$from.marks()) || !/[^\p{L}\p{M}\p{N}\u200c\u200d]/u.test(text)) return false;
           view.dispatch(view.state.tr.insertText(text, from, to).setMeta(inputKey, true));

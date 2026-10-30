@@ -79,18 +79,18 @@ for(const font of ['Mehr Nastaliq Web','Gulzar','Jameel Noori Nastaleeq','Arial 
  expect(await page.locator('.ProseMirror').textContent()).toBe('اللہ اللہ واللہ اللّہ');
 });
 
-test('Mehr and Digital Khatt keep their editor text in a real downloaded PDF',async({page},info)=>{
+test('pasted Mehr and Digital Khatt Allah and Allahum match a real downloaded PDF',async({page},info)=>{
  test.setTimeout(120000);
  const editor=page.locator('.ProseMirror');
  await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.commands.setMark('textStyle',{fontFamily:'Mehr Nastaliq Web',fontSize:'36pt'}));
- await page.keyboard.insertText('اللہ');await page.keyboard.press('Space');
- expect(await editor.textContent()).toBe('اللہ ');
+ await page.evaluate(()=>navigator.clipboard.writeText('اللہ اللہم '));await page.keyboard.press('Control+v');
+ expect(await editor.textContent()).toBe('اللہ اللہم ');
  await page.evaluate(()=>document.fonts.ready);
  await page.locator('[data-studio-pages-stack]').screenshot({path:info.outputPath('mehr-allah.png'),scale:'css'});
  await page.keyboard.press('Enter');
  await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.commands.setMark('textStyle',{fontFamily:'Digital Khatt Indo-Pak',fontSize:'36pt'}));
- await page.keyboard.insertText('اللہ');await page.keyboard.press('Space');
- const texts=await editor.locator('p').allTextContents();expect(texts).toEqual(['اللہ ','اللّٰہ ']);
+ await page.evaluate(()=>navigator.clipboard.writeText('اللہ اللہم '));await page.keyboard.press('Control+v');
+ const texts=await editor.locator('p').allTextContents();expect(texts).toEqual(['اللہ اللہم ','اللّٰہ اللّٰہم ']);
  await page.evaluate(()=>document.fonts.ready);
  await page.locator('[data-studio-pages-stack]').screenshot({path:info.outputPath('digital-khatt-allah.png'),scale:'css'});
  const doc=await editor.evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.getJSON());
@@ -108,4 +108,17 @@ test('Mehr and Digital Khatt keep their editor text in a real downloaded PDF',as
   const fonts=execFileSync('pdffonts',[file],{encoding:'utf8'});expect(fonts).toContain('Mehr');expect(fonts).toContain('DigitalKhatt');expect(fonts).toContain('CID TrueType');
   execFileSync('pdftoppm',['-f','1','-singlefile','-r','96','-png',file,info.outputPath('allah-fonts-pdf')]);
  }finally{chromium.executablePath=originalPath;puppeteer.launch=originalLaunch;}
+});
+
+for(const font of ['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq'])test(`${font}: real plain clipboard paste completes only unmarked Digital Khatt words`,async({page})=>{
+ await page.locator('[data-studio-font-family]').selectOption(font);await page.locator('.ProseMirror').focus();
+ const input='اللہ اللہم واللہ باللہ للہ اللہ اللّٰہ اللّہ';
+ await page.evaluate(text=>navigator.clipboard.writeText(text),input);await page.keyboard.press('Control+v');
+ const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّہ':input;
+ expect(await page.locator('.ProseMirror').textContent()).toBe(expected);
+ if(font==='Digital Khatt Indo-Pak') {
+  const fonts=await page.locator('.ProseMirror').evaluate(el=>(el as HTMLElement & {editor:import('@tiptap/core').Editor}).editor.getJSON().content?.[0].content?.map(n=>n.marks?.find(m=>m.type==='textStyle')?.attrs?.fontFamily));
+  expect(fonts?.every(f=>f===font)).toBe(true);
+  await page.keyboard.press('Control+z');expect(await page.locator('.ProseMirror').textContent()).toBe(input);
+ }
 });

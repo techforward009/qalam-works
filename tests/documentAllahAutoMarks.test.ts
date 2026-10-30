@@ -105,3 +105,22 @@ it('preserves fonts in a mixed rich paste and completes only its unmarked Digita
  editor.view.dispatch(editor.state.tr.replaceSelection(new Slice(Fragment.from(content),1,1)).setMeta('uiEvent','paste'));
  expect(editor.getText()).toBe('اللہ\n\nاللّٰہ');
 });
+
+it.each(['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Nastaleeq','Gulzar'])(
+ 'real plain-text paste uses the active %s font for every Allah word',font=>{
+ open(font);
+ const input='اللہ اللہم واللہ باللہ للہ اللہ اللّٰہ اللّہ';
+ editor.view.pasteText(input);
+ const expected=font==='Digital Khatt Indo-Pak'?'اللّٰہ اللّٰہم واللّٰہ باللّٰہ للّٰہ اللّٰہ اللّٰہ اللّہ':input;
+ expect(editor.getText()).toBe(expected);
+ if(font==='Digital Khatt Indo-Pak') {
+  expect(editor.state.doc.firstChild?.firstChild?.marks.find(mark=>mark.type.name==='textStyle')?.attrs.fontFamily).toBe(font);
+  editor.commands.undo();expect(editor.getText()).toBe(input);
+  editor.commands.undo();expect(editor.getText()).toBe('');
+ }
+});
+it('plain multiline paste inherits Digital Khatt at the paste position without changing loaded text',()=>{
+ open();editor.view.pasteText('اللہ\nاللہم\nاللّٰہ');
+ expect(editor.getText()).toBe('اللّٰہ\n\nاللّٰہم\n\nاللّٰہ');
+ editor.commands.setContent('<p>اللہ اللہم</p>');expect(editor.getText()).toBe('اللہ اللہم');
+});
