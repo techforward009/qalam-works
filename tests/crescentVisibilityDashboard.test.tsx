@@ -164,18 +164,21 @@ describe("crescent visibility dashboard", () => {
   it("highlights Ramadan among live month cards without hard-coded dates", async () => {
     const module = await import("../app/tools/crescent-visibility/utils/upcomingCrescentEvenings");
     const ramadanDates = [{ dateIso: "2027-02-07", evening: { year: 2027, month: 2, day: 7 }, targetHijriYear: 1448, targetHijriMonth: 9, dateSource: "scientific" as const }];
-    vi.mocked(module.getUpcomingPakistanCrescentEvenings)
-      .mockReturnValueOnce(ramadanDates)
-      .mockReturnValueOnce(ramadanDates)
-      .mockReturnValueOnce(ramadanDates);
-    render(<CrescentVisibilityContent />);
-    const ramadan = screen.getByTestId("upcoming-crescent-month-0");
-    expect(ramadan.textContent).toContain("Ramadan");
-    expect(ramadan.textContent).toContain("7 February 2027");
-    expect(ramadan.textContent).toContain("See result");
-    expect(ramadan.getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(ramadan);
-    expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2027-02-07");
+    // The resolver is deterministic; adding another consumer must not exhaust
+    // a call-count-dependent fixture or leak its value into later tests.
+    vi.mocked(module.getUpcomingPakistanCrescentEvenings).withImplementation(
+      () => ramadanDates,
+      () => {
+        render(<CrescentVisibilityContent />);
+        const ramadan = screen.getByTestId("upcoming-crescent-month-0");
+        expect(ramadan.textContent).toContain("Ramadan");
+        expect(ramadan.textContent).toContain("7 February 2027");
+        expect(ramadan.textContent).toContain("See result");
+        expect(ramadan.getAttribute("aria-pressed")).toBe("true");
+        fireEvent.click(ramadan);
+        expect((screen.getByLabelText("Change date") as HTMLInputElement).value).toBe("2027-02-07");
+      },
+    );
   });
 
   it("presents national science without a public city selector", () => {
