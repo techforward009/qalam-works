@@ -2246,10 +2246,9 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
   user-select: text;
 }
 
-/* Blink drops text-stroke in native selection paint. Keep selected outline
-   glyphs legible; the stored, deselected and PDF outline stays unchanged. */
+/* Outline selection is painted as white hollow glyphs over black, not filled text. */
 .qalam-editor-content .ProseMirror [data-text-outline="true"]::selection,
 .qalam-editor-content .ProseMirror [data-text-outline="true"] ::selection {
-  -webkit-text-fill-color: currentColor;
-  text-shadow: 0 0 0 currentColor;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
 }

@@ -67,8 +67,9 @@ export function textEffectDeclarations(effect: unknown): string {
   }
 }
 
+export const OUTLINE_STROKE_PT = 0.25;
 export function textOutlineDeclarations(on: unknown): string {
-  return on === true || on === "true" ? "-webkit-text-stroke:0.6pt currentColor;-webkit-text-fill-color:transparent;" : "";
+  return on === true || on === "true" ? `-webkit-text-stroke:${OUTLINE_STROKE_PT}pt currentColor;-webkit-text-fill-color:transparent;` : "";
 }
 
 /** Letters that do not join onward, so a tatweel after them is illegal. */

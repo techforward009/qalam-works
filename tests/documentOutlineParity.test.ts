@@ -1,0 +1,15 @@
+import {expect,it,vi} from 'vitest';
+import {writeFileSync,mkdirSync,existsSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+import {textOutlineDeclarations} from '../app/tools/document-studio/utils/inpageToolbar';
+import {POST} from '../app/api/export-pdf/route';
+import {PdfExportTestRequest} from './helpers/pdfExportRequest';
+import {defaultDocumentSettings} from '../app/tools/document-studio/utils/documentSettings';
+it('shared Outline CSS is a hairline with no fill',()=>{expect(textOutlineDeclarations(true)).toContain('0.25pt');expect(textOutlineDeclarations(true)).toContain('-webkit-text-fill-color:transparent');expect(textOutlineDeclarations(false)).toBe('');});
+it('real PDF prints the same thin, unfilled Mehr outline',async()=>{
+ const dir='/tmp/qalam-outline-review/pdf';mkdirSync(dir,{recursive:true});let measured:{stroke:number;fill:string}|undefined;
+ const launch=puppeteer.launch.bind(puppeteer),executable=process.env.QALAM_PDF_CHROMIUM||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':await chromium.executablePath());vi.spyOn(chromium,'executablePath').mockResolvedValue(executable);vi.spyOn(puppeteer,'launch').mockImplementation(async options=>{const browser=await launch({...options,args:['--no-sandbox']});const newPage=browser.newPage.bind(browser);vi.spyOn(browser,'newPage').mockImplementation(async()=>{const page=await newPage(),pdf=page.pdf.bind(page);vi.spyOn(page,'pdf').mockImplementation(async options=>{measured=await page.evaluate(()=>{const el=[...document.querySelectorAll<HTMLElement>('[data-pdf-ink-line] span')].find(el=>parseFloat(getComputedStyle(el).webkitTextStrokeWidth)>0)!;const style=getComputedStyle(el);return{stroke:parseFloat(style.webkitTextStrokeWidth),fill:style.webkitTextFillColor};});return pdf(options);});return page;});return browser;});
+ try{const settings=defaultDocumentSettings();settings.headerFooter.headerEnabled=false;settings.headerFooter.footerEnabled=false;const doc={type:'doc',content:[{type:'paragraph',attrs:{dir:'rtl'},content:[{type:'text',text:'متن خطبہ جمعۃ المبارک',marks:[{type:'textStyle',attrs:{fontFamily:'Mehr Nastaliq Web',fontSize:'30pt',textOutline:true}}]}]}]};const response=await POST(new PdfExportTestRequest('http://localhost/api/export-pdf',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({doc,dir:'rtl',settings})}));expect(response.status,response.status===200?'PDF':await response.text()).toBe(200);writeFileSync(`${dir}/outline.pdf`,Buffer.from(await response.arrayBuffer()));expect(measured?.stroke).toBeCloseTo(1/3,3);expect(measured?.fill).toBe('rgba(0, 0, 0, 0)');execFileSync('pdftoppm',['-f','1','-singlefile','-scale-to','1100','-png',`${dir}/outline.pdf`,`${dir}/inspected`]);execFileSync('pdftocairo',['-svg',`${dir}/outline.pdf`,`${dir}/outline.svg`]);writeFileSync(`${dir}/styles.json`,JSON.stringify(measured));}finally{vi.restoreAllMocks();}
+},90000);

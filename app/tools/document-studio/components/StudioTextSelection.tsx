@@ -3,16 +3,22 @@ import {pageProjection,projectPoint,withCanonicalPages} from "../utils/facingPag
 
 import { FORMATTING_TARGET_CHANGE, isFormattingSurface, readFormattingTarget } from "../utils/formattingSafety";
 import { AllSelection, TextSelection } from "@tiptap/pm/state";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { selectedLineBoxes, type TextLineBox } from "../utils/textLineBoxes";
 
+import {selectedOutlineFragments,type OutlineFragment} from "../utils/outlineSelection";
+import {OUTLINE_STROKE_PT} from "../utils/inpageToolbar";
+const EMPTY_OUTLINES:OutlineFragment[]=[];
 const EMPTY_BOXES: TextLineBox[] = [];
 
 /** Native textarea selection is retained; only the main editor uses custom paint. */
 export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Editor | null; zoom: number;revision?:string }) {
   const [boxes, setBoxes] = useState<TextLineBox[]>(EMPTY_BOXES);
+  const outlineId=useId().replace(/:/g,"");
+  const [outlines,setOutlines]=useState<OutlineFragment[]>(EMPTY_OUTLINES);
+  const [onlyOutlined,setOnlyOutlined]=useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
     if (!editor) return;
@@ -27,7 +33,7 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        let next = EMPTY_BOXES;
+        let next = EMPTY_BOXES,nextOutlines=EMPTY_OUTLINES,allOutline=false;
         const selection = editor.state.selection;
         const target = readFormattingTarget(root);
         const active = document.activeElement;
@@ -37,22 +43,27 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
           const clip = scroller.getBoundingClientRect(), origin = layerHost.getBoundingClientRect();
           const hostScale = origin.width / parseFloat(getComputedStyle(layerHost).width) || 1;
           const projection=pageProjection(root);
+          let outlineRange:Range;
           const canonical=withCanonicalPages(root,()=>{
             // Rebuild from the current model on every paint. Native selection
             // can belong to a toolbar input while the formatting range is valid.
             const from=editor.view.domAtPos(selection.from,1),to=editor.view.domAtPos(selection.to,-1);
-            const range=document.createRange();range.setStart(from.node,from.offset);range.setEnd(to.node,to.offset);
+            const range=document.createRange();range.setStart(from.node,from.offset);range.setEnd(to.node,to.offset);outlineRange=range;
             return selectedLineBoxes(root,range,projection?new DOMRect(-1e7,-1e7,2e7,2e7):clip);
           });
+          const outlined=selectedOutlineFragments(root,outlineRange!,clip,hostScale);
+          allOutline=outlined.onlyOutlined;
+          nextOutlines=outlined.fragments.map(f=>({...f,x:(f.x-origin.left)/hostScale,y:(f.y-origin.top)/hostScale,clip:{left:(f.clip.left-origin.left)/hostScale,top:(f.clip.top-origin.top)/hostScale,width:f.clip.width/hostScale,height:f.clip.height/hostScale}}));
           const rootBox=root.getBoundingClientRect();
           next = canonical.map(box=>{if(!projection)return box;const p=projectPoint((box.left-rootBox.left)/hostScale,(box.top-rootBox.top)/hostScale,projection);return {...box,left:rootBox.left+p.x*hostScale,top:rootBox.top+p.y*hostScale};}).map(box => {
             const left = Math.max(box.left, clip.left), top = Math.max(box.top, clip.top);
             return { left: (left - origin.left)/hostScale, top: (top - origin.top)/hostScale, width: Math.max(0, Math.min(box.left + box.width, clip.right) - left)/hostScale, height: Math.max(0, Math.min(box.top + box.height, clip.bottom) - top)/hostScale };
           }).filter(box => box.width > 0 && box.height > 0);
         }
-        } catch { next = EMPTY_BOXES; }
+        } catch { next = EMPTY_BOXES; nextOutlines=EMPTY_OUTLINES; allOutline=false; }
         // If measurement fails or no selection is painted, keep native highlighting.
         setBoxes(prev => prev.length || next.length ? next : prev);
+        setOutlines(prev=>prev.length||nextOutlines.length?nextOutlines:prev);setOnlyOutlined(allOutline);
       });
     };
     const pointer = (event: PointerEvent) => {
@@ -100,7 +111,14 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
   if (!host || !boxes.length) return null;
   // Paint a translucent highlight between effect backgrounds (0) and story ink (2).
   // Difference blending needs an opaque backdrop; effects require a transparent story.
-  return createPortal(<div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
-    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "rgba(80, 145, 255, 0.35)" }} />)}
-  </div>, host);
+  return createPortal(<><div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
+    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: onlyOutlined ? "#000" : "rgba(80, 145, 255, 0.35)" }} />)}
+    {outlines.map((f,index)=><div key={`outline-${index}`} data-studio-outline-background style={{position:"absolute",...f.clip,background:"#000"}}/>)}
+  </div>
+  {outlines.length?<svg data-studio-outline-selection aria-hidden="true" className="studio-no-print" style={{position:"absolute",inset:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none",userSelect:"none",zIndex:3}}>
+   {outlines.map((f,index)=><g key={index} clipPath={`url(#${outlineId}-${index})`}>
+    <defs><clipPath id={`${outlineId}-${index}`} clipPathUnits="userSpaceOnUse"><rect x={f.clip.left} y={f.clip.top} width={f.clip.width} height={f.clip.height}/></clipPath></defs>
+    <text fill="none" stroke="#fff" strokeWidth={`${OUTLINE_STROKE_PT}pt`} transform={`translate(${f.x} ${f.y}) scale(${f.xScale} 1)`} textAnchor="start" style={{font:f.font,fontFeatureSettings:f.features,fontKerning:f.kerning as "auto",letterSpacing:f.letterSpacing,wordSpacing:f.wordSpacing,textRendering:f.rendering as "auto",direction:f.rtl?"rtl":"ltr",unicodeBidi:"plaintext"}}>{f.text}</text>
+   </g>)}
+  </svg>:null}</>, host);
 }
