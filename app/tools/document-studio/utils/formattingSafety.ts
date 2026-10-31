@@ -26,8 +26,10 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   const root = dom.closest<HTMLElement>('[data-studio-root]') ?? dom.parentElement!;
   let owner: 'story' | 'frame' | 'none' = 'story';
   let input: HTMLTextAreaElement | null = null;
+  // Only clipboard actions may use this focus breadcrumb; never formatting.
+  let storyClipboardFocus = dom.contains(document.activeElement);
   const publish = () => { targets.set(root, { owner, input }); root.dispatchEvent(new Event(FORMATTING_TARGET_CHANGE)); };
-  const invalidate = () => { owner = 'none'; input = null; publish(); };
+  const invalidate = () => { owner = 'none'; input = null; storyClipboardFocus = false; publish(); };
   // A document replacement or switch invalidates *every* previous target,
   // including story selections. Programmatic focus in the new document must
   // not authorize formatting until the user explicitly selects/edits there.
@@ -52,16 +54,39 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   const claimFrame = (target: Element | null) => {
     const box = target?.closest<HTMLTextAreaElement>('textarea[data-studio-text-frame]');
     if (!box || !root.contains(box)) return false;
+    storyClipboardFocus = false;
     if (box.readOnly) invalidate(); else { owner = 'frame'; input = box; publish(); }
     return true;
   };
   const pointer = (event: Event) => {
     const target = element(event);
     if (claimFrame(target)) return;
+    if (isFormattingSurface(target) && dom.contains(document.activeElement)) storyClipboardFocus = true;
     if (target && dom.contains(target)) { owner = 'story'; input = null; publish(); clearNotice(); }
     else if (target?.closest('[data-studio-scroller], [data-studio-tool-button]') && root.contains(target)) invalidate();
   };
-  const focus = (event: Event) => { claimFrame(element(event)); };
+  const focus = (event: Event) => {
+    const target = element(event);
+    if (claimFrame(target)) return;
+    if (target && dom.contains(target)) storyClipboardFocus = true;
+    else if (!isFormattingSurface(target)) storyClipboardFocus = false;
+  };
+  const claimStoryEdit = () => {
+    if (owner !== 'none') return;
+    owner = 'story'; input = null; publish(); clearNotice();
+  };
+  const clipboard = (event: Event) => {
+    const target = element(event);
+    if (target && dom.contains(target) && !target.closest('textarea[data-studio-text-frame]')) claimStoryEdit();
+  };
+  const clipboardMenu = (event: Event) => {
+    const target = element(event), button = target?.closest<HTMLButtonElement>('button');
+    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
+    const action = button.getAttribute('data-menu-action');
+    const contextAction = button.closest('[data-studio-text-menu]') && /^(Paste|Cut)$/.test(button.textContent?.trim() ?? '');
+    if ((action === 'edit.paste' || action === 'edit.cut' || contextAction) &&
+        (storyClipboardFocus || dom.contains(document.activeElement))) claimStoryEdit();
+  };
   const cancel = (event: Event) => { event.preventDefault(); event.stopImmediatePropagation(); };
   const control = (event: Event) => {
     const target = element(event);
@@ -95,7 +120,9 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   publish();
   document.addEventListener('pointerdown', pointer, true);
   document.addEventListener('focusin', focus, true);
+  document.addEventListener('click', clipboardMenu, true);
   document.addEventListener('click', control, true);
+  for (const name of ['paste', 'cut', 'drop']) document.addEventListener(name, clipboard, true);
   document.addEventListener('change', control, true);
   document.addEventListener('input', control, true);
   document.addEventListener('keydown', key, true);
@@ -105,7 +132,9 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     editor.unregisterPlugin(keyId);
     document.removeEventListener('pointerdown', pointer, true);
     document.removeEventListener('focusin', focus, true);
+    document.removeEventListener('click', clipboardMenu, true);
     document.removeEventListener('click', control, true);
+    for (const name of ['paste', 'cut', 'drop']) document.removeEventListener(name, clipboard, true);
     document.removeEventListener('change', control, true);
     document.removeEventListener('input', control, true);
     document.removeEventListener('keydown', key, true);
