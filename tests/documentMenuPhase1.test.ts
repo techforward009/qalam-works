@@ -3,7 +3,7 @@ import priorActions from "./fixtures/qalam-menu-working-actions.json";
 import { allMenuActionIds, DOCUMENT_MENU_BAR, MENU_WIDTHS, type MenuNode } from "../app/tools/document-studio/utils/documentMenus";
 
 test("Phase 1 preserves every existing Qalam working command ID", () => {
-  expect([...new Set(allMenuActionIds())].sort()).toEqual([...priorActions, "window.page", "file.close", "file.exit", "preferences.typographic"].sort());
+  expect([...new Set(allMenuActionIds())].sort()).toEqual([...priorActions, "window.page", "file.close", "file.exit", "preferences.typographic", "file.saveAs"].sort());
 });
 
 test("main labels/order and reference popup widths remain explicit", () => {
