@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import {installClassicDialogSelection} from "../utils/classicDialogSelection";
 import { studioJameelFontFaceCss } from "../utils/fontRegistry";
 
 /**
@@ -34,6 +35,7 @@ export default function DocumentStudioShell({
   fillWindow?: boolean;
   children: React.ReactNode;
 }) {
+  useEffect(()=>installClassicDialogSelection(document),[]);
   const leftOpen = Boolean(leftSidebar);
   const rightOpen = Boolean(rightSidebar);
   const shellRef = useRef<HTMLDivElement>(null);
