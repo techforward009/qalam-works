@@ -56,3 +56,9 @@ it("retains guide extension for fully selected and wrapped continuation lines",(
  expect(beginsAtVisualLineStart({left:60,right:120,top:100},[{left:0,right:60,top:100}],false)).toBe(false);
  expect(beginsAtVisualLineStart({left:60,right:120,top:120},[{left:0,right:60,top:100}],false)).toBe(true);
 });
+
+it.each(['right','center','left'])('selected %s line uses only its text extent',align=>{
+ const root=document.createElement('div'),p=document.createElement('p');root.style.cssText='width:200px;line-height:20px';p.style.cssText=`direction:rtl;text-align:${align};line-height:20px`;p.textContent='مختصر';root.append(p);document.body.append(root);root.getBoundingClientRect=p.getBoundingClientRect=()=>new DOMRect(0,100,200,20);
+ const original=Object.getOwnPropertyDescriptor(Range.prototype,'getClientRects');Object.defineProperty(Range.prototype,'getClientRects',{configurable:true,value:()=>[new DOMRect(80,100,40,20)]});
+ try{const range=document.createRange();range.selectNodeContents(p);expect(selectedLineBoxes(root,range,new DOMRect(0,0,200,300))).toEqual([{left:80,top:100,width:40,height:20}]);}finally{if(original)Object.defineProperty(Range.prototype,'getClientRects',original);root.remove();}
+});
