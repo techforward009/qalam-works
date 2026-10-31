@@ -9,3 +9,11 @@ test('checkbox ticks toggle visibly and reflect saved selected formatting',async
  await dialog.getByRole('button',{name:'OK',exact:true}).click();dialog=await character(page);
  for(const name of ['Bold','Italics','Outline']){const box=dialog.getByRole('checkbox',{name,exact:true});await expect(box).toBeChecked();await expect(box.locator('..').locator('[data-character-tick]')).toBeVisible();}
 });
+test('numeric Spin fields are centred in their unchanged field frames',async({page})=>{
+ await open(page);const dialog=await character(page);
+ for(const label of ['Spacing','Scaling','Baseline Shift']){
+  const input=dialog.getByLabel(label,{exact:true}),frame=input.locator('..');
+  const a=(await input.boundingBox())!,b=(await frame.boundingBox())!;
+  expect(Math.abs(a.y+a.height/2-b.y-b.height/2)).toBeLessThan(.3);
+ }
+});
