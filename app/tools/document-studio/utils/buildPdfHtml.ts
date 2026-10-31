@@ -1,3 +1,5 @@
+import {collectTypographicPaint} from "./typographicPaint";
+import {parseTypographicPreferences} from "./typographicPreferences";
 import { preservedSpaceHtml } from "./preservedSpaces";
 import { frameTextNode, renderPrintFrame } from "./printableFrames";
 import type { StudioFrame } from "../components/StudioObjectLayer";
@@ -560,6 +562,7 @@ ${classRulesCss()}
 <body dir="${dir}">
 ${bodyHtml}
 ${frameHtml ? `<div data-pdf-frame-source style="position:absolute;left:-10000px;top:0">${frameHtml}</div>` : ""}
+<script>window.qalamApplyTypographicPreferences=(function(){var collect=${collectTypographicPaint.toString()},prefs=${JSON.stringify(parseTypographicPreferences(typography?.preferences))},applied=false;return function(){if(applied)return;applied=true;var jobs=collect(document.body,prefs),groups=new Map();jobs.forEach(function(job){if(!groups.has(job.node))groups.set(job.node,[]);groups.get(job.node).push(job);});groups.forEach(function(items,node){var points=Array.from(new Set([0,node.length].concat(items.flatMap(function(j){return[j.from,j.to];})))).sort(function(a,b){return a-b;}),fragment=document.createDocumentFragment();for(var i=0;i<points.length-1;i++){var start=points[i],end=points[i+1],active=items.filter(function(j){return j.from<=start&&j.to>=end;}),text=document.createTextNode(node.data.slice(start,end));if(active.length){var span=document.createElement('span');span.setAttribute('data-typographic-space','true');span.style.cssText=active.map(function(j){return j.style;}).join(';');span.append(text);fragment.append(span);}else fragment.append(text);}node.replaceWith(fragment);});};})();</script>
 <script>(function(){var tokenWidth=${scaleTokenWidth.toString()};function measure(){var widths=new Map();document.querySelectorAll("[data-pdf-scale]").forEach(function(el){var factor=Number(el.getAttribute("data-pdf-scale"));if(!factor||factor===1)return;var width=tokenWidth(el,factor,1,widths);if(width<=0)return;var advance=el.textContent.trim()?width:tokenWidth(el,factor,1,widths,true);el.style.marginInlineEnd=(advance*factor-width).toFixed(2)+"px";});}measure();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);})();</script>
 </body>
 </html>`;
