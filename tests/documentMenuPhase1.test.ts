@@ -35,3 +35,10 @@ test("reference dialogs remain unavailable rather than aliases for unrelated com
   const actionNodes = (items: MenuNode[]): string[] => items.flatMap(item => item.type === "action" ? [item.id] : item.type === "submenu" ? actionNodes(item.items) : []);
   expect(actionNodes(format.items)).toEqual(expect.arrayContaining(["format.image.wrap", "table.addRowAfter"]));
 });
+
+test('Edit omits Start Prompting and keeps clean separators',()=>{
+ const items=DOCUMENT_MENU_BAR.find(menu=>menu.id==='edit')!.items;
+ expect(items.some(item=>'id' in item&&item.id==='edit.prompting')).toBe(false);
+ expect(items.some(item=>'labelEn' in item&&item.labelEn==='Start Prompting')).toBe(false);
+ expect(items.at(-1)?.type).not.toBe('separator');for(let i=1;i<items.length;i++)expect([items[i-1].type,items[i].type]).not.toEqual(['separator','separator']);
+});

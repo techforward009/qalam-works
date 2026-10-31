@@ -431,7 +431,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     soon("edit.story", "Story Editor", "F2"), soon("edit.deletePage", "Delete Page…", "Alt+Del"),
     { type: "submenu", id: "edit.preferences", labelEn: "Preferences", labelUr: "ترجیحات", items: [
       soon("preferences.application", "Application…", "Alt+F11"), ready("window.settings", "Document…"), soon("preferences.typographic", "Typographic…", "F11"), soon("preferences.story", "Story Editor…"), soon("preferences.spelling", "Spelling Preferences…"),
-    ] }, soon("edit.prompting", "Start Prompting"), separator, qalamSection,
+    ] }, separator, qalamSection,
     ready("edit.redo", "Redo", "Ctrl+Shift+Z"),
   ] },
   { ...original("view"), items: [
