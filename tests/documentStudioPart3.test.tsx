@@ -2,7 +2,7 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {DOCUMENT_ZOOM_PRESETS,functionKeyZoom,parseStoredZoom,resolveZoomFactor,snapStudioGuide} from '../app/tools/document-studio/utils/documentView';
-import {TEXT_CONTEXT_ITEMS,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition} from '../app/tools/document-studio/utils/textContextMenu';
+import {TEXT_CONTEXT_ITEMS,textContextItems,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition} from '../app/tools/document-studio/utils/textContextMenu';
 import {StudioHomeButton} from '../app/tools/document-studio/components/StudioHomeButton';
 const {push}=vi.hoisted(()=>({push:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>({push})}));
@@ -42,4 +42,10 @@ describe('automatic pagination safety',()=>{
   const geometry={enabled:true,pageWidthPx:800,pageHeightPx:1100,marginTopPx:50,marginBottomPx:50,marginLeftPx:50,marginRightPx:50,gapPx:12,canvasColor:'#fff',minimumPages:1};
   const warning=vi.spyOn(console,'warn').mockImplementation(()=>{});expect(guardAutomaticPageCount(dom,geometry,1,70)).toBe(9);warning.mockRestore();
  });
+});
+
+it.each([false,true])('context items hide selection actions and label the table correctly (%s)',selected=>{
+ const items=textContextItems(selected);expect(items.map(item=>'label' in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All',...(selected?['Cut','Copy','Clear']:[]),'Paste','—','Character…','Paragraph…','—',selected?'Text To Table…':'Table…']);
+ for(let i=0;i<items.length;i++)if('separator' in items[i]){expect(i).toBeGreaterThan(0);expect(i).toBeLessThan(items.length-1);expect('separator' in items[i-1]).toBe(false);expect('separator' in items[i+1]).toBe(false);}
+ expect(textContextDisabled('textToTable',selected)).toBe(true);
 });

@@ -83,11 +83,10 @@ function rectLineTop(root:HTMLElement, owner:HTMLElement, rect:DOMRect, height:n
   return absolute ? root.getBoundingClientRect().top+Number(absolute)*scale : renderedLineBoxTop(owner,rect,height,scale,true);
 }
 
-/** Walk selected text and cache its starting block's prefix once; discard offscreen selection rects before grouping. */
+/** Walk selected text; discard offscreen selection rects before grouping. */
 export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = root.closest("[data-studio-scroller]")?.getBoundingClientRect()): TextLineBox[] {
   const scale = elementScale(root);
   const rects: LineRect[] = [];
-  const prefixes=new Map<HTMLElement,PrefixLineRect[]>();
   const common = selection.commonAncestorContainer;
   if (common !== root && !root.contains(common)) return [];
   const walker = document.createTreeWalker(common, NodeFilter.SHOW_TEXT);
@@ -102,45 +101,29 @@ export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = ro
     const textBlock=text.parentElement!.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? root;
     const leading = parseFloat(getComputedStyle(textBlock).lineHeight);
     const nativeRects = [...range.getClientRects()];
-    const block = text.parentElement!.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? root;
-    const blockStyle = getComputedStyle(block), blockBounds=block.getBoundingClientRect();
-    let prefix=prefixes.get(block);
-    if(!prefix){
-      prefix=[];prefixes.set(block,prefix);
-      // Only the block containing the range start can have unselected text
-      // before it. Later selected blocks/soft-wrapped lines still reach the guide.
-      if(block.contains(selection.startContainer)){
-        const before=document.createRange();before.setStart(block,0);before.setEnd(selection.startContainer,selection.startOffset);
-        const prior=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
-        for(let node=prior.nextNode();node;node=prior.nextNode()){
-          const value=node as Text;
-          if(before.comparePoint(value,0)>0)break;
-          if(!before.intersectsNode(value))continue;
-          const end=value===selection.startContainer?selection.startOffset:value.length;
-          if(!value.data.slice(0,end).trim())continue;
-          const fragment=document.createRange();fragment.setStart(value,0);fragment.setEnd(value,end);
-          for(const box of fragment.getClientRects())if(box.width>.1 && box.height>0){
-            prefix.push({left:box.left,right:box.right,top:rectLineTop(root,value.parentElement!,box,Number.isFinite(leading)?leading*scale:box.height,scale)});
-          }
-        }
-      }
-    }
     for (const rect of nativeRects) {
       if (rect.width < 0.1 || rect.height < 1 || (clip && (rect.bottom <= clip.top || rect.top >= clip.bottom || rect.right <= clip.left || rect.left >= clip.right))) continue;
       const height = Number.isFinite(leading) ? leading * scale : rect.height;
       const top = rectLineTop(root,text.parentElement!,rect,height,scale);
-      const reachesStart = blockStyle.textAlign !== "center" && beginsAtVisualLineStart({left:rect.left,right:rect.right,top},prefix,blockStyle.direction === "rtl");
-      const right = reachesStart && blockStyle.direction === "rtl" ? blockBounds.right - parseFloat(blockStyle.paddingRight || "0") * scale : rect.right;
-      const left = reachesStart && blockStyle.direction !== "rtl" ? blockBounds.left + parseFloat(blockStyle.paddingLeft || "0") * scale : rect.left;
+      const left = rect.left, right = rect.right;
       const shift=baselineOffset(text.parentElement!,scale);
       rects.push({ left, top, width: right-left, height, fontTop: rect.top, fontBottom: rect.bottom, ...(shift ? {selectionTop:Math.min(top,top+shift,rect.top),selectionBottom:Math.max(top+height,top+height+shift,rect.bottom)} : {}) });
     }
   };
   if (common.nodeType === Node.TEXT_NODE) visit(common);
   else for (let node = walker.nextNode(); node; node = walker.nextNode()) visit(node);
+  // Empty selected paragraphs have no text-node rect; never fill their frame.
+  for (const block of root.querySelectorAll<HTMLElement>("p,h1,h2,h3,h4,h5,h6")) {
+    if (block.textContent?.length || !selection.intersectsNode(block)) continue;
+    const bounds = block.getBoundingClientRect(), style = getComputedStyle(block);
+    const height = parseFloat(style.lineHeight) * scale || bounds.height;
+    const width = 2;
+    const left = style.textAlign === "center" ? (bounds.left+bounds.right-width)/2 : style.textAlign === "left" || (style.textAlign !== "right" && style.direction === "ltr") ? bounds.left : bounds.right-width;
+    if (clip && (bounds.top+height <= clip.top || bounds.top >= clip.bottom)) continue;
+    rects.push({left,top:bounds.top,width,height,fontTop:bounds.top,fontBottom:bounds.top+height});
+  }
   const boxes = groupVisualLineRects(rects);
-  // Merge all selected runs of a line to a single solid band. A completely
-  // selected line reaches its start guide, including the whitespace beside ink.
+  // Merge selected runs into one continuous band, using only their text extent.
   const merged: TextLineBox[] = [];
   for (const box of boxes) {
     const last = merged[merged.length-1];
