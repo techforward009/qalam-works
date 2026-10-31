@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import sharp from 'sharp';
 import type {Editor} from '@tiptap/core';
 export const sample='السلام علیکم و رحمۃ اللہ و برکاتہ';
 async function open(page:Page){await page.addInitScript(()=>localStorage.setItem('qalam-site-language','en'));await page.goto('/tools/document-studio');await expect.poll(()=>page.evaluate(()=>localStorage.getItem('qalam-document-studio-active-document-v1'))).not.toBeNull();await page.locator('.ProseMirror').click();await page.keyboard.insertText(sample);}
@@ -31,4 +32,12 @@ test('classic dialog chrome cannot be selected; editable text keeps native Ctrl+
  await page.locator('.ProseMirror').click();await page.keyboard.press('ControlOrMeta+f');
  const panel=page.locator('[data-studio-find-ui]');await expect(panel.getByRole('button').first()).toHaveCSS('user-select','none');
  const input=panel.locator('input').first();await input.fill('searchable');await input.press('ControlOrMeta+A');expect(await input.evaluate(el=>[ (el as HTMLInputElement).selectionStart,(el as HTMLInputElement).selectionEnd])).toEqual([0,10]);
+});
+
+test('outlined glyph ink remains visible while selected',async({page})=>{
+ await open(page);const dialog=await character(page);await dialog.getByLabel('Size',{exact:true}).fill('30pt');await dialog.getByRole('checkbox',{name:'Outline',exact:true}).check();await dialog.getByRole('button',{name:'OK',exact:true}).click();
+ await expect(page.locator('[data-studio-line-selection]').first()).toBeVisible();
+ const clip=await page.locator('.ProseMirror p').first().boundingBox();
+ async function dark(){const {data}=await sharp(await page.screenshot({clip:clip!,scale:'css'})).removeAlpha().raw().toBuffer({resolveWithObject:true});let n=0;for(let i=0;i<data.length;i+=3)if(data[i]<100&&data[i+1]<100&&data[i+2]<100)n++;return n;}
+ const selected=await dark();await page.keyboard.press('ArrowLeft');await expect(page.locator('[data-studio-line-selection]')).toHaveCount(0);const ordinary=await dark();expect(ordinary).toBeGreaterThan(100);expect(selected/ordinary).toBeGreaterThan(.75);
 });
