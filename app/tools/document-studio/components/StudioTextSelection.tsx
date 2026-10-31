@@ -8,8 +8,8 @@ import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { selectedLineBoxes, type TextLineBox } from "../utils/textLineBoxes";
 
-import {selectedOutlineFragments,type OutlineFragment} from "../utils/outlineSelection";
-import {OUTLINE_STROKE_PT} from "../utils/inpageToolbar";
+import {selectedOutlineFragments,outlineSelectionBands, selectionFrameBounds,type OutlineFragment} from "../utils/outlineSelection";
+import {SELECTED_OUTLINE_STROKE_PT} from "../utils/inpageToolbar";
 const EMPTY_OUTLINES:OutlineFragment[]=[];
 const EMPTY_BOXES: TextLineBox[] = [];
 
@@ -53,11 +53,12 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
           });
           const outlined=selectedOutlineFragments(root,outlineRange!,clip,hostScale);
           allOutline=outlined.onlyOutlined;
-          nextOutlines=outlined.fragments.map(f=>({...f,x:(f.x-origin.left)/hostScale,y:(f.y-origin.top)/hostScale,clip:{left:(f.clip.left-origin.left)/hostScale,top:(f.clip.top-origin.top)/hostScale,width:f.clip.width/hostScale,height:f.clip.height/hostScale}}));
-          const rootBox=root.getBoundingClientRect();
+          nextOutlines=outlined.fragments.map(f=>({...f,x:(f.x-origin.left)/hostScale,y:(f.y-origin.top)/hostScale,line:(f.line-origin.top)/hostScale,box:{left:(f.box.left-origin.left)/hostScale,top:(f.box.top-origin.top)/hostScale,width:f.box.width/hostScale,height:f.box.height/hostScale},frame:f.frame?{left:(f.frame.left-origin.left)/hostScale,top:(f.frame.top-origin.top)/hostScale,width:f.frame.width/hostScale,height:f.frame.height/hostScale}:undefined,clip:{left:(f.clip.left-origin.left)/hostScale,top:(f.clip.top-origin.top)/hostScale,width:f.clip.width/hostScale,height:f.clip.height/hostScale}}));
+          const rootBox=root.getBoundingClientRect(),frames=selectionFrameBounds(root);
           next = canonical.map(box=>{if(!projection)return box;const p=projectPoint((box.left-rootBox.left)/hostScale,(box.top-rootBox.top)/hostScale,projection);return {...box,left:rootBox.left+p.x*hostScale,top:rootBox.top+p.y*hostScale};}).map(box => {
-            const left = Math.max(box.left, clip.left), top = Math.max(box.top, clip.top);
-            return { left: (left - origin.left)/hostScale, top: (top - origin.top)/hostScale, width: Math.max(0, Math.min(box.left + box.width, clip.right) - left)/hostScale, height: Math.max(0, Math.min(box.top + box.height, clip.bottom) - top)/hostScale };
+            const middle=box.top+box.height/2, frame=frames.find(f=>middle>=f.top&&middle<=f.top+f.height&&box.left+box.width/2>=f.left&&box.left+box.width/2<=f.left+f.width)??frames.reduce<(typeof frames)[number]|undefined>((best,f)=>!best||Math.abs(middle-f.top-f.height/2)<Math.abs(middle-best.top-best.height/2)?f:best,undefined);
+            const left = Math.max(box.left, clip.left,frame?.left??-Infinity), top = Math.max(box.top, clip.top,frame?.top??-Infinity);
+            return { left: (left - origin.left)/hostScale, top: (top - origin.top)/hostScale, width: Math.max(0, Math.min(box.left + box.width, clip.right,frame?frame.left+frame.width:Infinity) - left)/hostScale, height: Math.max(0, Math.min(box.top + box.height, clip.bottom,frame?frame.top+frame.height:Infinity) - top)/hostScale };
           }).filter(box => box.width > 0 && box.height > 0);
         }
         } catch { next = EMPTY_BOXES; nextOutlines=EMPTY_OUTLINES; allOutline=false; }
@@ -109,16 +110,17 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
     return () => root.removeAttribute("data-studio-selection-painted");
   }, [editor, host, boxes]);
   if (!host || !boxes.length) return null;
+  const outlineBands=outlineSelectionBands(outlines);
   // Paint a translucent highlight between effect backgrounds (0) and story ink (2).
   // Difference blending needs an opaque backdrop; effects require a transparent story.
   return createPortal(<><div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
-    {boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: onlyOutlined ? "#000" : "rgba(80, 145, 255, 0.35)" }} />)}
-    {outlines.map((f,index)=><div key={`outline-${index}`} data-studio-outline-background style={{position:"absolute",...f.clip,background:"#000"}}/>)}
+    {!onlyOutlined&&boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "rgba(80, 145, 255, 0.35)" }} />)}
+    {outlineBands.map((box,index)=><div key={`outline-${index}`} data-studio-outline-background data-studio-line-selection={onlyOutlined?true:undefined} style={{position:"absolute",...box,background:"#000"}}/>)}
   </div>
   {outlines.length?<svg data-studio-outline-selection aria-hidden="true" className="studio-no-print" style={{position:"absolute",inset:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none",userSelect:"none",zIndex:3}}>
    {outlines.map((f,index)=><g key={index} clipPath={`url(#${outlineId}-${index})`}>
     <defs><clipPath id={`${outlineId}-${index}`} clipPathUnits="userSpaceOnUse"><rect x={f.clip.left} y={f.clip.top} width={f.clip.width} height={f.clip.height}/></clipPath></defs>
-    <text fill="none" stroke="#fff" strokeWidth={`${OUTLINE_STROKE_PT}pt`} transform={`translate(${f.x} ${f.y}) scale(${f.xScale} 1)`} textAnchor="start" style={{font:f.font,fontFeatureSettings:f.features,fontKerning:f.kerning as "auto",letterSpacing:f.letterSpacing,wordSpacing:f.wordSpacing,textRendering:f.rendering as "auto",direction:f.rtl?"rtl":"ltr",unicodeBidi:"plaintext"}}>{f.text}</text>
+    <text fill="none" stroke="#fff" strokeWidth={`${SELECTED_OUTLINE_STROKE_PT}pt`} transform={`translate(${f.x} ${f.y}) scale(${f.xScale} 1)`} textAnchor="start" style={{font:f.font,fontFeatureSettings:f.features,fontKerning:f.kerning as "auto",letterSpacing:f.letterSpacing,wordSpacing:f.wordSpacing,textRendering:f.rendering as "auto",direction:f.rtl?"rtl":"ltr",unicodeBidi:"plaintext"}}>{f.text}</text>
    </g>)}
   </svg>:null}</>, host);
 }
