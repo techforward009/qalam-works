@@ -1,11 +1,11 @@
 import {hardBreakLineTop} from "./hardBreakLineGrid";
 export interface TextLineBox { left: number; top: number; width: number; height: number }
-export interface LineRect extends TextLineBox { fontTop: number; fontBottom: number }
+export interface LineRect extends TextLineBox { fontTop: number; fontBottom: number; selectionTop?:number; selectionBottom?:number }
 
 /** One sort and one grouping pass: all runs on a visual line share its box. */
 export function groupVisualLineRects(rects: LineRect[]): TextLineBox[] {
   rects.sort((a, b) => a.top - b.top || a.left - b.left);
-  const lines: { rects: LineRect[]; top: number; bottom: number; fontTop: number; fontBottom: number }[] = [];
+  const lines: { rects: LineRect[]; top: number; bottom: number; fontTop: number; fontBottom: number; selectionTop:number; selectionBottom:number }[] = [];
   for (const rect of rects) {
     const line = lines[lines.length - 1];
     if (line && Math.abs(line.top - rect.top) <= 1) {
@@ -15,13 +15,15 @@ export function groupVisualLineRects(rects: LineRect[]): TextLineBox[] {
       line.bottom = line.top + height;
       line.fontTop = Math.min(line.fontTop, rect.fontTop);
       line.fontBottom = Math.max(line.fontBottom, rect.fontBottom);
-    } else lines.push({ rects: [rect], top: rect.top, bottom: rect.top + rect.height, fontTop: rect.fontTop, fontBottom: rect.fontBottom });
+      line.selectionTop = Math.min(line.selectionTop,rect.selectionTop ?? rect.top);
+      line.selectionBottom = Math.max(line.selectionBottom,rect.selectionBottom ?? rect.top+rect.height);
+    } else lines.push({ rects: [rect], top: rect.top, bottom: rect.top + rect.height, fontTop: rect.fontTop, fontBottom: rect.fontBottom, selectionTop:rect.selectionTop ?? rect.top, selectionBottom:rect.selectionBottom ?? rect.top+rect.height });
   }
   const boxes: TextLineBox[] = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const bottom = line.bottom;
-    for (const rect of line.rects) boxes.push({ left: rect.left, top: line.top, width: rect.width, height: Math.max(0, bottom - line.top) });
+    const top=Math.min(line.top,line.selectionTop),bottom=Math.max(line.bottom,line.selectionBottom);
+    for (const rect of line.rects) boxes.push({ left: rect.left, top, width: rect.width, height: Math.max(0, bottom - top) });
   }
   return boxes;
 }
@@ -38,7 +40,8 @@ export function lineBoxTop(glyphTop: number, glyphHeight: number, leading: numbe
 
 let measurementContext: CanvasRenderingContext2D | null | undefined;
 /** Read the baseline grid, not glyph overflow or an inline run's zero-height strut. */
-export function renderedLineBoxTop(owner: HTMLElement, rect: Pick<DOMRect,"top"|"height">, leading: number, scale: number): number {
+function baselineOffset(owner:HTMLElement,scale:number):number { return -(Number(owner.closest("[data-baseline]")?.getAttribute("data-baseline"))||0)*96/72*scale; }
+export function renderedLineBoxTop(owner: HTMLElement, rect: Pick<DOMRect,"top"|"height">, leading: number, scale: number, ignoreBaselineShift=false): number {
   const root=owner.closest<HTMLElement>(".ProseMirror");
   const hardBreakTop=root?hardBreakLineTop(root,owner,rect,leading,scale):undefined;if(hardBreakTop!==undefined)return hardBreakTop;
   const block=owner.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? owner;
@@ -47,7 +50,7 @@ export function renderedLineBoxTop(owner: HTMLElement, rect: Pick<DOMRect,"top"|
   if(!context) return lineBoxTop(rect.top,rect.height,leading,bounds.top,scale);
   const ascent=(element:HTMLElement)=>{context.font=getComputedStyle(element).font;return context.measureText("اM").fontBoundingBoxAscent*scale;};
   const paint=(element:HTMLElement)=>{if(element.closest("[data-studio-canonical-measure]"))return 0;const run=element.closest<HTMLElement>("[data-studio-line-run]");return run ? (parseFloat(run.style.top)||0)*scale : 0;};
-  const baseline=rect.top+ascent(owner)-paint(owner);
+  const baseline=rect.top+ascent(owner)-paint(owner)-(ignoreBaselineShift?baselineOffset(owner,scale):0);
   const firstText=(element:HTMLElement)=>document.createTreeWalker(element,NodeFilter.SHOW_TEXT).nextNode();
   const anchors=[block,...block.querySelectorAll<HTMLElement>("[data-studio-line-selection-offset]")];
   let origin: {baseline:number;top:number} | null=null;
@@ -55,9 +58,9 @@ export function renderedLineBoxTop(owner: HTMLElement, rect: Pick<DOMRect,"top"|
     const text=firstText(anchor);if(!text?.textContent)continue;
     const range=document.createRange();range.setStart(text,0);range.setEnd(text,1);
     const first=range.getBoundingClientRect(),parent=text.parentElement!;
-    const start=first.top+ascent(parent)-paint(parent);
+    const start=first.top+ascent(parent)-paint(parent)-(ignoreBaselineShift?baselineOffset(parent,scale):0);
     const absolute=anchor.dataset.studioLineBoxTop;
-    const top=anchor===block ? bounds.top : absolute ? (block.closest(".ProseMirror")?.getBoundingClientRect().top ?? bounds.top)+Number(absolute)*scale : first.top+parseFloat(anchor.dataset.studioLineSelectionOffset??"0")*scale;
+    const top=anchor===block ? bounds.top : absolute ? (block.closest(".ProseMirror")?.getBoundingClientRect().top ?? bounds.top)+Number(absolute)*scale : first.top+parseFloat(anchor.dataset.studioLineSelectionOffset??"0")*scale-(ignoreBaselineShift?baselineOffset(parent,scale):0);
     if(start<=baseline+1 && (!origin || start>=origin.baseline))origin={baseline:start,top};
   }
   if(!origin) return lineBoxTop(rect.top,rect.height,leading,bounds.top,scale);
@@ -77,7 +80,7 @@ export function beginsAtVisualLineStart(rect: {left:number;right:number;top:numb
 }
 function rectLineTop(root:HTMLElement, owner:HTMLElement, rect:DOMRect, height:number, scale:number):number {
   const absolute=owner.closest("[data-studio-line-box-top]")?.getAttribute("data-studio-line-box-top");
-  return absolute ? root.getBoundingClientRect().top+Number(absolute)*scale : renderedLineBoxTop(owner,rect,height,scale);
+  return absolute ? root.getBoundingClientRect().top+Number(absolute)*scale : renderedLineBoxTop(owner,rect,height,scale,true);
 }
 
 /** Walk selected text and cache its starting block's prefix once; discard offscreen selection rects before grouping. */
@@ -129,7 +132,8 @@ export function selectedLineBoxes(root: HTMLElement, selection: Range, clip = ro
       const reachesStart = blockStyle.textAlign !== "center" && beginsAtVisualLineStart({left:rect.left,right:rect.right,top},prefix,blockStyle.direction === "rtl");
       const right = reachesStart && blockStyle.direction === "rtl" ? blockBounds.right - parseFloat(blockStyle.paddingRight || "0") * scale : rect.right;
       const left = reachesStart && blockStyle.direction !== "rtl" ? blockBounds.left + parseFloat(blockStyle.paddingLeft || "0") * scale : rect.left;
-      rects.push({ left, top, width: right-left, height, fontTop: rect.top, fontBottom: rect.bottom });
+      const shift=baselineOffset(text.parentElement!,scale);
+      rects.push({ left, top, width: right-left, height, fontTop: rect.top, fontBottom: rect.bottom, ...(shift ? {selectionTop:Math.min(top,top+shift,rect.top),selectionBottom:Math.max(top+height,top+height+shift,rect.bottom)} : {}) });
     }
   };
   if (common.nodeType === Node.TEXT_NODE) visit(common);
