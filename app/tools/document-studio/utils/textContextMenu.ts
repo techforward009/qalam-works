@@ -7,6 +7,10 @@ export const TEXT_CONTEXT_ITEMS = [
  {id:'character',label:'Character…'},{id:'paragraph',label:'Paragraph…'},{id:'sep4',separator:true},
  {id:'textToTable',label:'Text To Table…'},
 ] as const;
+/** Keep the reference order while hiding actions without an actual range. */
+export function textContextItems(hasSelection:boolean) {
+ return TEXT_CONTEXT_ITEMS.filter(item=>hasSelection||!['cut','copy','clear'].includes(item.id)).map(item=>item.id==='textToTable'?{...item,label:hasSelection?'Text To Table…':'Table…'}:item);
+}
 export const CONTEXT_ZOOMS:ReadonlyArray<{label:string;value:DocumentZoom}>=[
  {label:'50%',value:50},{label:'75%',value:75},{label:'100%',value:100},{label:'200%',value:200},{label:'300%',value:300},{label:'Fit width',value:'fit-width'},{label:'Fit page',value:'fit-page'},
 ];

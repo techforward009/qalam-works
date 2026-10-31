@@ -47,8 +47,8 @@ test('zoom retains an offscreen caret and the current selection',async({page})=>
 
 test('context items stay ordered, disabled correctly and keyboard navigable',async({page})=>{
  await open(page);await page.keyboard.insertText('Some selected text');await settle(page);let m=await menu(page);
- expect(await m.getByRole('menuitem').allTextContents()).toEqual(['Zoom▸','Import…','Select All','Cut','Copy','Clear','Paste','Character…','Paragraph…','Text To Table…']);
- await expect(m.getByRole('menuitem',{name:'Cut',exact:true})).toBeDisabled();await expect(m.getByRole('menuitem',{name:'Copy',exact:true})).toBeDisabled();await expect(m.getByRole('menuitem',{name:'Clear',exact:true})).toBeDisabled();await expect(m.getByRole('menuitem',{name:'Text To Table…',exact:true})).toBeDisabled();
+ expect(await m.getByRole('menuitem').allTextContents()).toEqual(['Zoom▸','Import…','Select All','Paste','Character…','Paragraph…','Table…']);
+ await expect(m.getByRole('menuitem',{name:'Cut',exact:true})).toHaveCount(0);await expect(m.getByRole('menuitem',{name:'Copy',exact:true})).toHaveCount(0);await expect(m.getByRole('menuitem',{name:'Clear',exact:true})).toHaveCount(0);await expect(m.getByRole('menuitem',{name:'Table…',exact:true})).toBeDisabled();
  await page.keyboard.press('ArrowDown');await expect(m.getByRole('menuitem',{name:'Import…',exact:true})).toBeFocused();await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowRight');
  const sub=page.getByRole('menu',{name:'Zoom',exact:true});await expect(sub).toBeVisible();await expect(sub.getByRole('menuitem',{name:'50%',exact:true})).toBeFocused();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');await expect(page.locator('[data-studio-print-root]')).toHaveAttribute('data-studio-zoom','75');
  await settle(page);m=await menu(page);await m.getByRole('menuitem',{name:'Select All',exact:true}).click();m=await menu(page);for(const name of ['Cut','Copy','Clear'])await expect(m.getByRole('menuitem',{name,exact:true})).toBeEnabled();await page.keyboard.press('Escape');await expect(m).toBeHidden();
