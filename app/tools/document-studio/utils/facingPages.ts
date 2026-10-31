@@ -65,8 +65,9 @@ let nextRead = -1;
 const pendingReads = new Map<number, () => void>();
 const frameQueues = new WeakMap<HTMLElement, number[]>();
 export function requestCanonicalFrame(root: HTMLElement, read: () => void): number {
- if (!pageProjection(root)) return requestAnimationFrame(read);
- const id = nextRead--; pendingReads.set(id, read);
+ const run = () => { try { read(); } catch (error) { console.error("Studio layout reader failed:", error); } };
+ if (!pageProjection(root)) return requestAnimationFrame(run);
+ const id = nextRead--; pendingReads.set(id, run);
  const queue = frameQueues.get(root);
  if (queue) queue.push(id);
  else {
@@ -74,7 +75,7 @@ export function requestCanonicalFrame(root: HTMLElement, read: () => void): numb
   requestAnimationFrame(() => {
    frameQueues.delete(root);
    withCanonicalPages(root, () => {
-    for (const key of batch) { const run = pendingReads.get(key); pendingReads.delete(key); run?.(); }
+    for (const key of batch) { const run = pendingReads.get(key); try { run?.(); } finally { pendingReads.delete(key); } }
    });
   });
  }

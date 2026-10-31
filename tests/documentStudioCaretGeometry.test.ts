@@ -22,3 +22,8 @@ it.each([.5,1,1.5])("clears the full LTR guide ink at scale %s without changing 
  expect((box.left-48)*scale).toBeCloseTo(2,8);expect(box.width*scale).toBeCloseTo(2,8);
  const rtl=caretGeometry({...input,scale});expect((700-rtl.left-rtl.width)*scale).toBeCloseTo(1,8);
 });
+
+it.each([true,false])('does not pin an interior caret when a transient block has no usable clamp interval (RTL=%s)',rtl=>{
+ const box=caretGeometry({...input,x:300,rtl,blockLeft:600,blockRight:600});
+ expect(box.left).toBe(rtl?297:301);
+});

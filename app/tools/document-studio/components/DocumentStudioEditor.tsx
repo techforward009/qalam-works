@@ -9,7 +9,7 @@ import { migrateDocumentLeading } from "../utils/leading";
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { isSingleEmptyParagraph } from "../utils/singleEmptyParagraph";
+import { restoreEditorFocus } from "../utils/restoreEditorFocus";
 import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
 import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
@@ -700,12 +700,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [processingLanguage, editor]);
 
   const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!editor || canvasTool !== "text") return;
+    if (!editor || canvasTool !== "text" || e.detail > 1) return;
+    if (editor.isFocused && !editor.state.selection.empty) return;
     const target = e.target as HTMLElement;
     if (target.closest("button, a, input, select, textarea, img, [data-resize-container]")) return;
     if (!editor.isFocused || !target.closest(".ProseMirror")) {
       const hit = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
-      editor.commands.focus(isSingleEmptyParagraph(editor.state.doc) ? "start" : hit?.pos ?? "end");
+      if (target.closest(".ProseMirror") || !hit) editor.view.focus();
+      else editor.commands.focus(hit.pos, { scrollIntoView: false });
     }
   };
 
@@ -2186,7 +2188,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           direction={dir}
           columns={columnCount}
           gutter={columnGutterMm}
-          onClose={() => {setPageSetupOpen(false);document.querySelector<HTMLButtonElement>('[data-menu-root="format"]')?.focus();}}
+          onClose={() => {setPageSetupOpen(false);restoreEditorFocus(editor);}}
           onApply={(values: StudioPageSetupValues) => {
             setDocumentSettings(current => ({
               ...current,
@@ -2208,6 +2210,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             setColumnGutterMm(values.gutter);
             setPdfSummary(null);
             setPageSetupOpen(false);
+            restoreEditorFocus(editor);
           }}
         />
       ) : null}

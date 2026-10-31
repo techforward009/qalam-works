@@ -99,3 +99,19 @@ it('drops arrow affinity on newer edits and direct selections, retaining it only
  expect(facingArrowKey.getState(arrow.apply(arrow.tr.insertText('ا')))).toBeNull();
  expect(facingArrowKey.getState(arrow.apply(arrow.tr.setSelection(TextSelection.create(doc,1))))).toBeNull();
 });
+
+it('isolates a throwing reader so later caret readers and future frames still run',()=>{
+ const root=document.createElement('div'),frames:FrameRequestCallback[]=[],read=vi.fn();
+ vi.stubGlobal('requestAnimationFrame',(callback:FrameRequestCallback)=>{frames.push(callback);return frames.length;});
+ const errors=vi.spyOn(console,'error').mockImplementation(()=>{});
+ try{
+  setPageProjection(root,g);
+  requestCanonicalFrame(root,()=>{throw new Error('detached selection owner');});
+  requestCanonicalFrame(root,read);
+  expect(()=>frames.shift()!(0)).not.toThrow();
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(root.hasAttribute('data-studio-canonical-measure')).toBe(false);
+  requestCanonicalFrame(root,read);frames.shift()!(1);
+  expect(read).toHaveBeenCalledTimes(2);
+ }finally{setPageProjection(root,null);errors.mockRestore();vi.unstubAllGlobals();}
+});

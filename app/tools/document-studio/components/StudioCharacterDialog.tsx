@@ -1,4 +1,5 @@
 "use client";
+import {restoreEditorFocus} from "../utils/restoreEditorFocus";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
@@ -163,7 +164,7 @@ export function StudioCharacterDialog({ editor, settings, onClose }: { editor: E
     combo(menu)?.focus(); setMenu(null);
   };
   const patch = (next: Partial<CharacterForm>) => setForm((current) => ({ ...current, ...next }));
-  const close = () => { onClose(); if (!editor.isDestroyed) editor.view.focus(); };
+  const close = () => { onClose(); restoreEditorFocus(editor); };
   const apply = () => {
     const parsed = characterPatchFromForm(form, initial.current);
     if (!parsed.ok) {
