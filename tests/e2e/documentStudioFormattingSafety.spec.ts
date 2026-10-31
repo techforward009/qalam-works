@@ -117,3 +117,20 @@ test('a story selection in document A cannot format document B until explicitly 
   await page.getByRole('button', { name: 'Bold', exact: true }).click();
   expect(await snapshot(page)).not.toEqual(selectedB);
 });
+
+test('first story paste survives load, margin and Escape; menu paste and cut remain usable',async({page,context},info)=>{
+ await context.grantPermissions(['clipboard-read','clipboard-write']);
+ const fresh=async()=>{await page.locator('[data-menu-root="file"]').click();await page.locator('[data-menu-action="file.new"]').click();await page.getByRole('dialog',{name:'New Document',exact:true}).getByRole('button',{name:'OK',exact:true}).click();await expect(story(page)).toBeFocused();};
+ await fresh();
+ await page.evaluate(()=>navigator.clipboard.writeText('پہلی پیسٹ کامیاب'));
+ await page.keyboard.press('Control+v');await expect(story(page)).toContainText('پہلی پیسٹ کامیاب');await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+ if(info.project.name==='desktop-chrome')await page.screenshot({path:info.outputPath('first-paste-no-notice.png'),scale:'css'});
+ await page.locator('[data-studio-scroller]').click({position:{x:5,y:5}});await story(page).focus();await page.evaluate(()=>navigator.clipboard.writeText(' حاشیہ '));await page.keyboard.press('Control+v');await expect(story(page)).toContainText('حاشیہ');await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+ await page.keyboard.press('Escape');await page.evaluate(()=>navigator.clipboard.writeText(' دوبارہ '));await page.keyboard.press('Control+v');await expect(story(page)).toContainText('دوبارہ');await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+ await fresh();await page.evaluate(()=>navigator.clipboard.writeText('مینو پیسٹ'));
+ await page.locator('[data-menu-root="edit"]').click();await page.locator('[data-menu-action="edit.paste"]').click();await expect(story(page)).toContainText('مینو پیسٹ');await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+ await page.keyboard.press('Escape');await page.evaluate(()=>navigator.clipboard.writeText('سیاقی پیسٹ'));await story(page).evaluate(el=>(el as HTMLElement&{editor:Editor}).editor.commands.selectAll());await story(page).locator('p').first().click({button:'right',position:{x:10,y:10}});await page.getByRole('menu',{name:'Text context menu',exact:true}).getByRole('menuitem',{name:'Paste',exact:true}).click();await expect(story(page)).toContainText('سیاقی پیسٹ');await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+ // A replacement invalidates ownership; selection-only commands do not restore it.
+ await story(page).evaluate(el=>{const ed=(el as HTMLElement&{editor:Editor}).editor;ed.chain().command(({tr})=>{tr.setMeta('studio-content-replacement',true);return true;}).setContent('<p>cut after load</p>').selectAll().run();ed.view.focus();});
+ await page.keyboard.press('Control+x');await expect(story(page)).toHaveText('');await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+});

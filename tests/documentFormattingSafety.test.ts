@@ -10,11 +10,11 @@ function setup() {
   document.body.innerHTML = '<div data-studio-root><div data-studio-scroller><div id="editor"></div><textarea data-studio-text-frame>محفوظ عبارت</textarea></div><div data-studio-toolbar><button>Bold</button><select><option>One</option><option>Two</option></select></div></div>';
   editor = new Editor({ element: document.querySelector('#editor')!, extensions: [StarterKit, TextStyle, FontFamily], content: '<p>باہر کا متن</p>', injectCSS: false });
   editor.commands.selectAll();
-  const reject = vi.fn(), guard = installFormattingSafety(editor, reject, vi.fn()); dispose = guard.dispose;
+  const reject = vi.fn(), clearNotice = vi.fn(), guard = installFormattingSafety(editor, reject, clearNotice); dispose = guard.dispose;
   const box = document.querySelector('textarea')!;
   const claim = () => { box.focus(); box.setSelectionRange(0, 4); };
   const before = editor.getJSON();
-  return { guard, box, reject, claim, before };
+  return { guard, box, reject, clearNotice, claim, before };
 }
 describe('formatting target safety', () => {
   it('rejects direct font/mark transactions for a frame without changing either text', () => {
@@ -93,4 +93,49 @@ describe('formatting target safety', () => {
     expect(formattingSafetyMessage(false)).toBe('Formatting selected text inside a text box is not yet available.');
     expect(formattingSafetyMessage(true)).toBe('ٹیکسٹ باکس میں منتخب عبارت کی فارمیٹنگ ابھی دستیاب نہیں۔');
   });
+});
+
+describe('deliberate story clipboard edits', () => {
+ for(const eventName of ['paste','cut','drop'])for(const dismissal of ['load','margin','escape'])it(`${eventName} reclaims the story after ${dismissal} before its transaction`,()=>{
+  const {guard,reject,clearNotice}=setup();
+  if(dismissal==='load')guard.documentChanged();
+  if(dismissal==='margin')document.querySelector('[data-studio-scroller]')!.dispatchEvent(new Event('pointerdown',{bubbles:true}));
+  if(dismissal==='escape')editor.view.dom.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  const child=editor.view.dom.querySelector('p')!;
+  child.addEventListener(eventName,event=>{event.preventDefault();if(eventName==='cut')editor.commands.deleteSelection();else editor.commands.insertContent('first clipboard edit');},{once:true});
+  child.dispatchEvent(new Event(eventName,{bubbles:true,cancelable:true}));
+  expect(editor.getText()).toBe(eventName==='cut'?'':'first clipboard edit');expect(reject).not.toHaveBeenCalled();expect(clearNotice).toHaveBeenCalled();
+ });
+ for(const eventName of ['paste','cut','drop'])it(`${eventName} never promotes frame ownership, even on the story`,()=>{
+  const {claim,box,before,reject}=setup();claim();
+  for(const target of [box,editor.view.dom])target.dispatchEvent(new Event(eventName,{bubbles:true,cancelable:true}));
+  editor.commands.toggleBold();expect(editor.getJSON()).toEqual(before);expect(box.value).toBe('محفوظ عبارت');expect(reject).toHaveBeenCalled();
+ });
+ for(const action of ['edit.paste','edit.cut','context-paste'])it(`${action} explicitly edits a focused story after load`,()=>{
+  const {guard,reject}=setup();guard.documentChanged();editor.view.dom.focus();
+  const menu=document.createElement('div'),button=document.createElement('button');
+  if(action==='context-paste'){menu.dataset.studioTextMenu='';button.setAttribute('role','menuitem');button.textContent='Paste';}else button.dataset.menuAction=action;
+  menu.setAttribute('role','menu');menu.append(button);document.querySelector('[data-studio-root]')!.append(menu);
+  button.dispatchEvent(new Event('pointerdown',{bubbles:true}));button.focus();
+  button.addEventListener('click',()=>editor.commands.insertContent('menu edit'));
+  button.click();expect(editor.getText()).toBe('menu edit');expect(reject).not.toHaveBeenCalled();
+ });
+ it('toolbar Bold remains unauthorized after load or programmatic focus',()=>{
+  const {guard,before,reject}=setup();guard.documentChanged();editor.view.dom.focus();
+  const button=document.querySelector('[data-studio-toolbar] button')!;const handler=vi.fn(()=>editor.commands.toggleBold());button.addEventListener('click',handler);button.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+  expect(handler).not.toHaveBeenCalled();expect(editor.getJSON()).toEqual(before);expect(reject).toHaveBeenCalled();
+ });
+ it('removes clipboard capture listeners on dispose',()=>{
+  const {guard,clearNotice}=setup();guard.documentChanged();guard.dispose();dispose=undefined;
+  for(const name of ['paste','cut','drop'])editor.view.dom.dispatchEvent(new Event(name,{bubbles:true}));expect(clearNotice).not.toHaveBeenCalled();
+ });
+});
+
+it('menu clipboard actions cannot promote a frame or an unfocused, invalidated target',()=>{
+ const {guard,claim,before,reject}=setup();const button=document.createElement('button');button.dataset.menuAction='edit.paste';document.querySelector('[data-studio-root]')!.append(button);button.addEventListener('click',()=>editor.commands.insertContent('must not insert'));
+ claim();button.click();expect(editor.getJSON()).toEqual(before);
+ guard.documentChanged();button.focus();button.click();expect(editor.getJSON()).toEqual(before);expect(reject).toHaveBeenCalledTimes(2);
+});
+it('switching documents clears a menu clipboard focus breadcrumb',()=>{
+ const {guard,before}=setup();guard.documentChanged();editor.view.dom.focus();const button=document.createElement('button');button.dataset.menuAction='edit.paste';button.setAttribute('role','menuitem');document.querySelector('[data-studio-root]')!.append(button);button.dispatchEvent(new Event('pointerdown',{bubbles:true}));button.focus();guard.documentChanged();button.addEventListener('click',()=>editor.commands.insertContent('stale paste'));button.click();expect(editor.getJSON()).toEqual(before);
 });
