@@ -1,6 +1,8 @@
 "use client";
 import {StudioTypographicDialog} from "./StudioTypographicDialog";
 import {parseTypographicPreferences} from "../utils/typographicPreferences";
+import StudioQpgSaveAsDialog from "./StudioQpgSaveAsDialog";
+import { deserializeQpg, QPG_FILE_ACCEPT, readStoredQpgLayout, writeStoredQpgLayout, type QpgDocument } from "../utils/qpgFile";
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
@@ -296,6 +298,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
   const [typographicOpen,setTypographicOpen] = useState(false);
+  const [qpgSaveAsOpen,setQpgSaveAsOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const tableDialogDrag = useMovableStudioDialog<HTMLFormElement>();
@@ -780,9 +783,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
       setZoomState("fit-width");
     }
-    const columns = sessionColumns.current.get(record.id);
+    const qpgLayout = readStoredQpgLayout(record.id);
+    const columns = sessionColumns.current.get(record.id) ?? (qpgLayout ? {count:qpgLayout.columns.count,gutter:qpgLayout.columns.gutterMm} : undefined);
     setColumnCount(columns?.count ?? 1);
     setColumnGutterMm(columns?.gutter ?? STUDIO_DEFAULT_GUTTER_MM);
+    if (qpgLayout) setViewMode(qpgLayout.viewMode);
     setSaveStatus("saved");
     setPreview(null);
     setAlreadyClean(false);
@@ -1071,6 +1076,61 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setLibraryOpen(false);
       setInpageError(error instanceof Error ? error.message : "Failed to import InPage text.");
     } finally { setIsImporting(false); }
+  };
+
+  const handleQpgFile = async (file: File) => {
+    setUploadError(null);
+    setInpageError(null);
+    if (isImporting || transitionRef.current) return;
+    // Parse and validate fully before touching the editor or browser library.
+    let qpg: QpgDocument;
+    try {
+      if (file.size > 32 * 1024 * 1024) throw new Error("Qalam Page فائل 32 MB سے بڑی نہیں ہو سکتی۔");
+      qpg = deserializeQpg(await file.text());
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "یہ Qalam Page فائل خراب ہے۔ موجودہ دستاویز محفوظ ہے۔");
+      return;
+    }
+    const library = libraryRef.current;
+    if (!library) {
+      setUploadError("دستاویزات کا ذخیرہ دستیاب نہیں۔ موجودہ دستاویز محفوظ ہے۔");
+      return;
+    }
+    setIsImporting(true);
+    try {
+      const opened = await transitionDocument(async () => {
+        const record = await library.createDocument({
+          title: qpg.title,
+          content: qpg.content,
+          documentSettings: qpg.documentSettings,
+        });
+        writeStoredFrames(record.id, qpg.frames);
+        writeStoredMinimumPages(record.id, qpg.minimumPages);
+        if (JSON.stringify(readStoredFrames(record.id)) !== JSON.stringify(qpg.frames) ||
+          readStoredMinimumPages(record.id) !== qpg.minimumPages) throw new Error("فائل کی اشیا محفوظ نہیں ہو سکیں۔");
+        writeStoredQpgLayout(record.id, { columns: qpg.columns, viewMode: qpg.viewMode });
+        sessionColumns.current.set(record.id, {count:qpg.columns.count,gutter:qpg.columns.gutterMm});
+        applyRecordToEditor(record, {minimumPages:qpg.minimumPages});
+        setLibraryOpen(false);
+        void refreshLibraryList(library);
+      });
+      if (!opened) setUploadError("فائل نہیں کھل سکی۔ موجودہ دستاویز محفوظ ہے۔");
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "فائل نہیں کھل سکی۔");
+    } finally { setIsImporting(false); }
+  };
+
+  const currentQpgSnapshot = (title: string): QpgDocument => {
+    if (!editor || !activeDocumentIdRef.current) throw new Error("کوئی دستاویز کھلی نہیں ہے۔");
+    return {
+      title: title.replace(/\.qpg$/i,"").trim() || documentTitleRef.current,
+      content: editor.getJSON() as DocNode,
+      documentSettings: documentSettingsRef.current,
+      frames: framesRef.current,
+      minimumPages: minimumPagesRef.current,
+      columns: {count: columnCount, gutterMm: columnGutterMm},
+      viewMode,
+    };
   };
 
   // v1 file import (Option A, per Sajjad's 2026-08-08 decision): both .txt
@@ -1669,6 +1729,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey && e.key.toLowerCase() === "s") {
+        const root = document.querySelector("[data-studio-root]");
+        if (root?.contains(document.activeElement) && !document.activeElement?.closest('[role="dialog"]')) {
+          e.preventDefault();
+          if (activeDocumentIdRef.current) setQpgSaveAsOpen(true);
+        }
+        return;
+      }
       if (e.key === "F11" && !e.ctrlKey && !e.altKey && !e.metaKey) {
         const root=document.querySelector("[data-studio-root]"),active=document.activeElement;if(root?.contains(active)||active?.closest("[data-studio-dialog]")){e.preventDefault();if(root?.querySelector(".ProseMirror")&&!active?.closest('[role="dialog"],[role="alertdialog"]'))setTypographicOpen(true);}return;
       }
@@ -1896,6 +1964,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       return;
     }
     dispatchDocumentMenuAction(id, editor, {
+      saveAs: () => setQpgSaveAsOpen(true),
       save: () => {
         setSaveStatus("saving");
         void persistActiveNow().then(() => setSaveStatus("saved"), () => setSaveStatus("error"));
@@ -2105,11 +2174,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <input
         ref={fileInputRef}
         type="file"
-        accept=".inp,.txt,.docx"
+        accept={QPG_FILE_ACCEPT}
         onChange={(e) => {
           const f = e.target.files && e.target.files[0];
           if (f) {
-            if (f.name.toLowerCase().endsWith(".inp")) void handleInPageFile(f);
+            if (f.name.toLowerCase().endsWith(".qpg")) void handleQpgFile(f);
+            else if (f.name.toLowerCase().endsWith(".inp")) void handleInPageFile(f);
             else void handleUploadFile(f);
           }
           e.target.value = "";
@@ -2134,6 +2204,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
+      {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
       {imageMenu && editor ? (
@@ -2227,7 +2298,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           isUr={isUr}
           documents={libraryItems}
           activeId={activeDocumentId}
-          onOpenInPage={() => inpageInputRef.current?.click()}
+          onOpenInPage={() => fileInputRef.current?.click()}
           onOpen={(id) => {
             void openLibraryDocument(id);
           }}
