@@ -1,0 +1,38 @@
+import {test,expect,type Page} from '@playwright/test';
+import sharp from 'sharp';
+const sample=['متن خطبہ جمعۃ المبارک','١٨ ر جمادی الاول ١٤٤٨ھ بمطابق 30 ر اکتوبر 2026ء'];
+async function open(page:Page){await page.addInitScript(()=>localStorage.setItem('qalam-site-language','en'));await page.goto('/tools/document-studio');await expect.poll(()=>page.evaluate(()=>localStorage.getItem('qalam-document-studio-active-document-v1')),{timeout:15000}).not.toBeNull();await page.locator('.ProseMirror p').first().click();await page.keyboard.insertText(sample[0]);await page.keyboard.press('Enter');await page.keyboard.insertText(sample[1]);await page.locator('[data-menu-root="edit"]').click();await page.locator('[data-menu-action="edit.selectAll"]').click();await page.getByRole('button',{name:'Align center',exact:true}).click();await page.locator('[data-menu-root="format"]').click();await page.locator('[data-menu-action="format.character"]').click();const d=page.getByRole('dialog',{name:'Character',exact:true});await d.getByLabel('Size',{exact:true}).fill('30pt');await d.getByRole('checkbox',{name:'Outline',exact:true}).check();await d.getByRole('button',{name:'OK',exact:true}).click();await page.evaluate(()=>document.fonts.ready);await page.evaluate(()=>new Promise<void>(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r()))));await page.addStyleTag({content:'[data-studio-caret]{visibility:hidden!important}'});}
+for(const zoom of [100,200])test(`mixed Urdu/digits outline is one solid full-height band per centred line at ${zoom}%`,async({page},info)=>{
+ await open(page);if(zoom===200){await page.keyboard.press('F8');await page.locator('[data-menu-root="edit"]').click();await page.locator('[data-menu-action="edit.selectAll"]').click();await page.locator('.ProseMirror [data-text-outline]').first().evaluate(el=>el.scrollIntoView({block:'nearest',inline:'center'}));}
+ const bands=page.locator('[data-studio-outline-background]');await expect(bands).toHaveCount(2);await expect(page.locator('[data-studio-selection-layer] [data-studio-line-selection]')).toHaveCount(2);
+ await expect(bands.first()).toHaveCSS('background-color','rgb(80, 145, 255)');await expect(page.locator('[data-studio-selection-layer]')).toHaveCSS('opacity','0.35');
+ const scale=await page.locator('[data-studio-selection-host]').evaluate(el=>el.getBoundingClientRect().width/parseFloat(getComputedStyle(el).width));
+ const geometry=await bands.evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,width:r.width,height:r.height,bottom:r.bottom};}));
+ const lines=await page.locator('.ProseMirror p').evaluateAll(nodes=>nodes.map(p=>{const range=document.createRange();range.selectNodeContents(p);const rects=[...range.getClientRects()].filter(r=>r.height>0&&r.width>0);return{top:Math.min(...rects.map(r=>r.top)),bottom:Math.max(...rects.map(r=>r.bottom)),height:parseFloat(getComputedStyle(p).lineHeight)};}));
+ for(let i=0;i<2;i++){const b=geometry[i];expect(b.height).toBeGreaterThanOrEqual(lines[i].height*scale-1);expect(b.top).toBeLessThanOrEqual(lines[i].top+1);expect(b.bottom).toBeGreaterThanOrEqual(lines[i].bottom-1);}
+ const frame=await page.locator('[data-studio-margin-guide]').first().evaluate(el=>({top:el.querySelector('[data-studio-margin-line="top"]')!.getBoundingClientRect().bottom,bottom:el.querySelector('[data-studio-margin-line="bottom"]')!.getBoundingClientRect().top}));
+ for(const b of geometry){expect(b.top).toBeGreaterThanOrEqual(frame.top-.1);expect(b.bottom).toBeLessThanOrEqual(frame.bottom+.1);}
+ const ink=page.locator('[data-studio-outline-selection] text').first();await expect(ink).toHaveAttribute('stroke','#000');await expect(ink).toHaveAttribute('fill','none');await expect(ink).toHaveAttribute('stroke-width','0.125pt');expect(await ink.evaluate(el=>{const m=(el as SVGGraphicsElement).getScreenCTM()!;return parseFloat(getComputedStyle(el).strokeWidth)*Math.hypot(m.a,m.b);})).toBeCloseTo(scale/6,3);
+ if(zoom===100&&info.project.name==='desktop-chrome'){
+  // Scan several full rows, including each band's extrema: no unpainted notches/gaps.
+  const image=await page.screenshot({path:info.outputPath('two-lines-selected.png'),scale:'css'}),{data,info:img}=await sharp(image).removeAlpha().raw().toBuffer({resolveWithObject:true});
+  for(const b of geometry)for(const y of [Math.ceil(b.top)+1,Math.floor(b.bottom)-2]){let blue=0,total=0;for(let x=Math.ceil(b.left)+1;x<Math.floor(b.left+b.width)-1;x++){if(x<0||x>=img.width||y<0||y>=img.height)continue;const n=(y*img.width+x)*3;if(Math.abs(data[n]-194)<=2&&Math.abs(data[n+1]-216)<=2&&data[n+2]>=253)blue++;total++;}expect(blue/total).toBeGreaterThan(.95);}
+  await page.screenshot({path:info.outputPath('two-lines-selected.png'),scale:'css'});await page.keyboard.press('ArrowLeft');await expect(page.locator('[data-studio-outline-selection]')).toHaveCount(0);await page.screenshot({path:info.outputPath('two-lines-unselected.png'),scale:'css'});
+ }
+});
+
+test('mixed selection paints outline and normal lines with exactly the same blue pixels',async({page},info)=>{
+ await open(page);
+ await page.locator('.ProseMirror').evaluate(el=>{
+  const editor=(el as HTMLElement&{editor:import('@tiptap/core').Editor}).editor,doc=editor.getJSON();
+  for(const text of ['یہ عام عبارت ہے','دوسری عام سطر','تیسری عام سطر'])doc.content!.push({type:'paragraph',attrs:doc.content![0].attrs,content:[{type:'text',text,marks:[{type:'textStyle',attrs:{fontFamily:'Mehr Nastaliq Web',fontSize:'30pt'}}]}]});
+  editor.commands.setContent(doc);
+ });
+ await page.locator('[data-menu-root="edit"]').click();await page.locator('[data-menu-action="edit.selectAll"]').click();
+ await expect(page.locator('[data-studio-outline-background]')).toHaveCount(2);
+ await expect(page.locator('[data-studio-selection-layer] > [data-studio-line-selection]')).toHaveCount(5);
+ const rects=await page.locator('[data-studio-selection-layer] > [data-studio-line-selection]').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom};}));
+ const screenshot=await page.screenshot({path:info.outputPath('mixed-selection.png'),scale:'css'}),{data,info:img}=await sharp(screenshot).removeAlpha().raw().toBuffer({resolveWithObject:true});
+ const colours=rects.map(r=>{const counts=new Map<string,number>();for(let y=Math.max(0,Math.ceil(r.top)+2);y<Math.min(img.height,Math.floor(r.bottom)-2);y++)for(let x=Math.max(0,Math.ceil(r.left)+2);x<Math.min(img.width,Math.floor(r.right)-2);x++){const n=(y*img.width+x)*3;if(data[n+2]>data[n]+20){const key=Array.from(data.subarray(n,n+3)).join(',');counts.set(key,(counts.get(key)||0)+1);}}return [...counts].sort((a,b)=>b[1]-a[1])[0]?.[0];});
+ expect(colours).toHaveLength(5);expect(colours[2]).toBeDefined();const normal=colours[2]!.split(',').map(Number);expect(normal[0]).toBeGreaterThanOrEqual(193);expect(normal[0]).toBeLessThanOrEqual(195);expect(normal[1]).toBeGreaterThanOrEqual(216);expect(normal[1]).toBeLessThanOrEqual(218);expect(normal[2]).toBe(255);for(const colour of colours)expect(colour).toBe(colours[2]);
+});

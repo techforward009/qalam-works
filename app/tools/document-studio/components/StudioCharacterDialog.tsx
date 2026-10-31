@@ -393,7 +393,7 @@ const menuItem: CSSProperties = { display: "flex", alignItems: "center", gap: 6,
 
 function Spin({ id, box, name, label, accessKey, x, y, value, onChange, onUp, onDown }: { id: string; box: string; name: string; label: string; accessKey: string; x: number; y: number; value: string; onChange: (next: string) => void; onUp: () => void; onDown: () => void }) {
   return <span data-character-box={box} style={{ ...SUNKEN, position: "absolute", left: x, top: y, width: 60, height: 20 }}>
-    <input id={id} name={name} aria-label={label} accessKey={accessKey} data-character-field="true" value={value} onChange={(event) => onChange(event.target.value)} style={{ position: "absolute", left: 0, top: 0, width: 44, height: 20, boxSizing: "border-box", border: 0, background: "transparent", color: "#000", font: FONT, padding: "0 0 0 4px" }} />
+    <input id={id} name={name} aria-label={label} accessKey={accessKey} data-character-field="true" value={value} onChange={(event) => onChange(event.target.value)} style={{ position: "absolute", left: 0, top: 0, width: 44, height: "100%", boxSizing: "border-box", border: 0, background: "transparent", color: "#000", font: FONT, padding: "0 0 0 4px" }} />
     <span style={{ position: "absolute", left: 42, top: 2, width: 16, height: 16 }}>
       <button type="button" tabIndex={-1} aria-label={`${label} up`} onClick={onUp} style={{ ...ARROW_FACE, position: "absolute", left: 0, top: 0, width: 16, height: 8, display: "grid", placeItems: "center" }}><span style={triangle("up", 5, 3)} /></button>
       <button type="button" tabIndex={-1} aria-label={`${label} down`} onClick={onDown} style={{ ...ARROW_FACE, position: "absolute", left: 0, top: 8, width: 16, height: 8, display: "grid", placeItems: "center" }}><span style={triangle("down", 5, 3)} /></button>
@@ -407,7 +407,7 @@ function Check({ name, accessKey, ariaLabel, value, onChange, x, y, text, at, te
   return <label style={{ position: "absolute", left: x, top: y, width: textX - x + 32, height: 16, margin: 0 }}>
     <span data-character-box={name} style={{ ...SUNKEN, position: "absolute", left: 0, top: 0, width: 13, height: 13 }}>
       <input ref={box} name={name} type="checkbox" aria-label={ariaLabel ?? text} accessKey={accessKey} data-character-field="true" checked={value === true} onChange={(event) => onChange(event.target.checked)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, background: "transparent" }} />
-      <span data-character-tick aria-hidden style={{ display: "none", position: "absolute", left: 2, top: 3, width: 7, height: 4, boxSizing: "border-box", borderLeft: "2px solid #000", borderBottom: "2px solid #000", transform: "rotate(-45deg)", pointerEvents: "none" }} />
+      <span data-character-tick aria-hidden style={{ display: value === false ? "none" : "block", position: "absolute", left: 2, top: 3, width: 7, height: 4, boxSizing: "border-box", borderLeft: `2px solid ${value === null ? "#808080" : "#000"}`, borderBottom: `2px solid ${value === null ? "#808080" : "#000"}`, transform: "rotate(-45deg)", pointerEvents: "none" }} />
     </span>
     <span style={{ position: "absolute", left: textX - x, top: capTop - 3 - y, lineHeight: "13px", whiteSpace: "nowrap", font: FONT }}><Mark text={text} at={at} /></span>
   </label>;

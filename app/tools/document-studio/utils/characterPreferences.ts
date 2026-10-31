@@ -194,13 +194,13 @@ export function readCharacterForm(editor: Editor, settings: DocumentStudioSettin
     kashida: kashida ?? "",
     spacing: spacing == null ? "" : percentLabel(spacing),
     scaling: scaling == null ? "" : percentLabel(scaling),
-    baseline: baseline == null ? "" : ptLabel(baseline),
+    baseline: baseline == null ? "" : ptLabel(-baseline),
     ...letters,
   };
 }
 
 function parseBaseline(raw: string): number | null {
-  const match = raw.trim().match(/^(-?\d+(?:\.\d+)?)\s*pt?$/i);
+  const match = raw.trim().match(/^([+-]?\d+(?:\.\d+)?)\s*pt?$/i);
   if (!match) return null;
   const value = Math.round(parseFloat(match[1]) * 10) / 10;
   if (!Number.isFinite(value) || value < -96 || value > 96) return null;
@@ -269,7 +269,7 @@ export function characterPatchFromForm(form: CharacterForm, initial: CharacterFo
     else {
       const baseline = parseBaseline(form.baseline);
       if (baseline === null) return { ok: false, field: "baseline" };
-      patch.baselineShift = baseline === 0 ? null : baseline;
+      patch.baselineShift = baseline === 0 ? null : -baseline;
     }
   }
   for (const key of LETTERS) {

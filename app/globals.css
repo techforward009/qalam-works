@@ -2234,3 +2234,21 @@ textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selectio
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Studio dialog chrome is nonselectable; editable controls retain native selection. */
+:is([data-studio-dialog],[data-inpage2009-dialog],[data-studio-new-document],[data-studio-pdf-recovery],[data-studio-find-ui],[data-studio-root] [role="dialog"]),
+:is([data-studio-dialog],[data-inpage2009-dialog],[data-studio-new-document],[data-studio-pdf-recovery],[data-studio-find-ui],[data-studio-root] [role="dialog"]) * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+:is([data-studio-dialog],[data-inpage2009-dialog],[data-studio-new-document],[data-studio-pdf-recovery],[data-studio-find-ui],[data-studio-root] [role="dialog"]) :is(input,textarea,select,[contenteditable="true"]) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Outline selection is painted as white hollow glyphs over black, not filled text. */
+.qalam-editor-content .ProseMirror [data-text-outline="true"]::selection,
+.qalam-editor-content .ProseMirror [data-text-outline="true"] ::selection {
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}

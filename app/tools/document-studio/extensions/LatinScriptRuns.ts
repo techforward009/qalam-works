@@ -121,11 +121,26 @@ export function latinScaleFactor(scale: number): number {
 /** Measure spaces off the line: a trailing/hanging space has no reliable DOM
  * width. The same routine runs before PDF pagination, so initial wrap positions
  * cannot change the scale compensation or the resulting line ends. */
-export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, cache: Map<string, number>): number {
+export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, cache: Map<string, number>, contextual = false): number {
   if (el.textContent?.trim()) return el.getBoundingClientRect().width / (factor * zoom);
+  contextual = contextual && el.textContent === " " && !el.querySelector("[data-studio-preserved-space]");
   const style = getComputedStyle(el);
   const values = [style.font, style.letterSpacing, style.wordSpacing, style.fontKerning, style.fontFeatureSettings, style.textRendering, style.direction, el.textContent ?? ""];
-  const id = JSON.stringify(values);
+  // A Nastaliq space can have a contextual advance very different from its
+  // isolated U+0020 width. Keep neighbours in the shaping buffer, then measure
+  // only the space range. This is shared verbatim with PDF measurement.
+  const block = el.closest("p,h1,h2,h3,h4,h5,h6");
+  const neighbour = (back: boolean) => {
+    let node: globalThis.Node | null = el;
+    while (node && node !== block) {
+      const sibling: globalThis.Node | null = back ? node.previousSibling : node.nextSibling;
+      if (sibling) return (sibling.textContent ?? "").match(back ? /\S+$/u : /^\S+/u)?.[0] ?? "";
+      node = node.parentNode;
+    }
+    return "";
+  };
+  const prefix = contextual ? neighbour(true) : "", suffix = contextual ? neighbour(false) : "";
+  const id = JSON.stringify([...values, prefix, suffix]);
   const cached = cache.get(id);
   if (cached != null) return cached;
   const probe = document.createElement("span");
@@ -137,9 +152,15 @@ export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, c
   probe.style.fontFeatureSettings = style.fontFeatureSettings;
   probe.style.textRendering = style.textRendering;
   probe.style.direction = style.direction;
-  probe.textContent = el.textContent;
+  probe.textContent = prefix + (el.textContent ?? "") + suffix;
   document.body.append(probe);
-  const width = probe.getBoundingClientRect().width;
+  let width = probe.getBoundingClientRect().width;
+  if (contextual && probe.firstChild) {
+    const range = document.createRange();
+    range.setStart(probe.firstChild, prefix.length);
+    range.setEnd(probe.firstChild, prefix.length + (el.textContent?.length ?? 0));
+    width = range.getBoundingClientRect().width;
+  }
   probe.remove();
   cache.set(id, width);
   return width;
@@ -324,7 +345,8 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
       const zoom = view.dom.getBoundingClientRect().width / parseFloat(getComputedStyle(view.dom).width) || 1;
       const width = scaleTokenWidth(el, factor, zoom, measurements);
       if (width <= 0) { pending = true; return; }
-      const px = Number((width * (factor - 1)).toFixed(2));
+      const advance = el.textContent?.trim() ? width : scaleTokenWidth(el, factor, zoom, measurements, true);
+      const px = Number((advance * factor - width).toFixed(2));
       let pos = -1;
       try { pos = view.posAtDOM(el, 0); } catch { return; }
       const id = scaleWidthKey(pos, factor, el.textContent ?? "");
