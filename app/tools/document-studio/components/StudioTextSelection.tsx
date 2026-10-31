@@ -115,12 +115,13 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
   // Difference blending needs an opaque backdrop; effects require a transparent story.
   return createPortal(<><div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
     {!onlyOutlined&&boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "rgba(80, 145, 255, 0.35)" }} />)}
-    {outlineBands.map((box,index)=><div key={`outline-${index}`} data-studio-outline-background data-studio-line-selection={onlyOutlined?true:undefined} style={{position:"absolute",...box,background:"#000"}}/>)}
+    {/* Composite once so overlapping line bounds keep the ordinary selection colour. */}
+    <div data-studio-outline-bands style={{position:"absolute",inset:0,opacity:.35}}>{outlineBands.map((box,index)=><div key={`outline-${index}`} data-studio-outline-background data-studio-line-selection={onlyOutlined?true:undefined} style={{position:"absolute",...box,background:"rgb(80, 145, 255)"}}/>)}</div>
   </div>
   {outlines.length?<svg data-studio-outline-selection aria-hidden="true" className="studio-no-print" style={{position:"absolute",inset:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none",userSelect:"none",zIndex:3}}>
    {outlines.map((f,index)=><g key={index} clipPath={`url(#${outlineId}-${index})`}>
     <defs><clipPath id={`${outlineId}-${index}`} clipPathUnits="userSpaceOnUse"><rect x={f.clip.left} y={f.clip.top} width={f.clip.width} height={f.clip.height}/></clipPath></defs>
-    <text fill="none" stroke="#fff" strokeWidth={`${SELECTED_OUTLINE_STROKE_PT}pt`} transform={`translate(${f.x} ${f.y}) scale(${f.xScale} 1)`} textAnchor="start" style={{font:f.font,fontFeatureSettings:f.features,fontKerning:f.kerning as "auto",letterSpacing:f.letterSpacing,wordSpacing:f.wordSpacing,textRendering:f.rendering as "auto",direction:f.rtl?"rtl":"ltr",unicodeBidi:"plaintext"}}>{f.text}</text>
+    <text fill="none" stroke="#000" strokeWidth={`${SELECTED_OUTLINE_STROKE_PT}pt`} transform={`translate(${f.x} ${f.y}) scale(${f.xScale} 1)`} textAnchor="start" style={{font:f.font,fontFeatureSettings:f.features,fontKerning:f.kerning as "auto",letterSpacing:f.letterSpacing,wordSpacing:f.wordSpacing,textRendering:f.rendering as "auto",direction:f.rtl?"rtl":"ltr",unicodeBidi:"plaintext"}}>{f.text}</text>
    </g>)}
   </svg>:null}</>, host);
 }
