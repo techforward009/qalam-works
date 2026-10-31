@@ -48,6 +48,11 @@ test('baseline UI signs match InPage and selected shifted text fits its growing 
   const mark=page.locator('.ProseMirror [data-baseline]').first();await expect(mark).toHaveAttribute('data-baseline',stored);
   expect(await mark.evaluate(el=>parseFloat(getComputedStyle(el).top))).toBeCloseTo(-Number(stored)*96/72,1);
   await expect.poll(async()=>{const ink=await mark.evaluate(el=>{const r=document.createRange();r.selectNodeContents(el);const b=r.getBoundingClientRect();return{top:b.top,bottom:b.bottom};}),boxes=await page.locator('[data-studio-line-selection]').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return{top:r.top,bottom:r.bottom};}));return boxes.some(b=>b.top<=ink.top+1&&b.bottom>=ink.bottom-1);}).toBe(true);
-  if(ui==='10pt')await page.screenshot({path:info.outputPath('baseline-selected.png'),scale:'css'});
  }
+ await page.locator('.ProseMirror').evaluate(el=>{
+  const editor=(el as HTMLElement&{editor:Editor}).editor;
+  editor.commands.setContent({type:'doc',content:[{label:'Negative -10pt (up): ',value:10},{label:'Positive +10pt (down): ',value:-10}].map(row=>({type:'paragraph',attrs:{dir:'ltr'},content:[{type:'text',text:row.label,marks:[{type:'textStyle',attrs:{fontFamily:'Inter',fontSize:'24pt'}}]},{type:'text',text:'Shifted text',marks:[{type:'textStyle',attrs:{fontFamily:'Inter',fontSize:'24pt',baselineShift:row.value}}]}]}))});editor.commands.selectAll();
+ });
+ await expect(page.locator('[data-studio-line-selection]')).toHaveCount(2);
+ await page.screenshot({path:info.outputPath('baseline-selected.png'),scale:'css'});
 });

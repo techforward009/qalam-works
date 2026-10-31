@@ -123,6 +123,7 @@ export function latinScaleFactor(scale: number): number {
  * cannot change the scale compensation or the resulting line ends. */
 export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, cache: Map<string, number>, contextual = false): number {
   if (el.textContent?.trim()) return el.getBoundingClientRect().width / (factor * zoom);
+  contextual = contextual && el.textContent === " " && !el.querySelector("[data-studio-preserved-space]");
   const style = getComputedStyle(el);
   const values = [style.font, style.letterSpacing, style.wordSpacing, style.fontKerning, style.fontFeatureSettings, style.textRendering, style.direction, el.textContent ?? ""];
   // A Nastaliq space can have a contextual advance very different from its
@@ -130,9 +131,9 @@ export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, c
   // only the space range. This is shared verbatim with PDF measurement.
   const block = el.closest("p,h1,h2,h3,h4,h5,h6");
   const neighbour = (back: boolean) => {
-    let node: Node | null = el;
+    let node: globalThis.Node | null = el;
     while (node && node !== block) {
-      const sibling: Node | null = back ? node.previousSibling : node.nextSibling;
+      const sibling: globalThis.Node | null = back ? node.previousSibling : node.nextSibling;
       if (sibling) return (sibling.textContent ?? "").match(back ? /\S+$/u : /^\S+/u)?.[0] ?? "";
       node = node.parentNode;
     }
