@@ -9,12 +9,13 @@ export function caretGeometry(input: CaretGeometryInput) {
   const min = input.rtl
     ? Math.max(input.blockLeft, input.contentLeft ?? input.blockLeft) + inset
     : Math.max(input.blockLeft + inset, (input.contentLeft ?? input.blockLeft) + 2 * inset);
-  const max = Math.max(min, Math.min(input.blockRight, input.contentRight) - width - inset);
+  const max = Math.min(input.blockRight, input.contentRight) - width - inset;
+  const x = input.rtl ? input.x - width - inset : input.x + inset;
   const bottom = input.contentBottom ?? Infinity;
   const topGuard = input.contentTop + inset;
   const top = Math.min(Math.max(input.top,topGuard),Math.max(topGuard,bottom-input.height));
   return {
-    left: Math.max(min, Math.min(max, input.rtl ? input.x - width - inset : input.x + inset)),
+    left: max > min ? Math.max(min, Math.min(max, x)) : x,
     // The guide and its clearance are screen pixels at every magnification.
     top,
     width, height: Math.max(0,Math.min(input.height,bottom-top)),

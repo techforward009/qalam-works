@@ -7,7 +7,7 @@ let context:CanvasRenderingContext2D|null|undefined;
  * Both caret and selection use this same grid. All coordinates are screen px. */
 export function hardBreakLineTop(root:HTMLElement,owner:HTMLElement,rect:{top:number},leading:number,scale:number):number|undefined {
  const editor=(root as HTMLElement&{editor?:Editor}).editor,block=owner.closest<HTMLElement>('p,h1,h2,h3,h4,h5,h6');
- if(!editor||!block||!Number.isFinite(leading)||leading<=0)return;
+ if(!editor||!root.contains(owner)||!block||!root.contains(block)||!Number.isFinite(leading)||leading<=0)return;
  const resolved=editor.state.doc.resolve(editor.view.posAtDOM(block,0));
  if(resolved.parent.firstChild?.type.name!=='hardBreak')return;
  let prefix=0,found=false;

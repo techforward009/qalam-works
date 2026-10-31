@@ -1,4 +1,5 @@
 "use client";
+import {nativeCaretSnapshot} from "../utils/nativeCaretSnapshot";
 import {pageProjection,projectPoint,facingArrowKey,facingTextRect,facingLineTop,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
 import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
@@ -487,14 +488,15 @@ function StudioCaret({
   marginTopPx: number;
   marginRightPx: number;
 }) {
-  const [box, setBox] = useState<{ left: number; top: number; height: number; width: number; pos:number } | null>(null);
+  const [box, setBox] = useState<{ left: number; top: number; height: number; width: number; pos:number; contentLeft:number; contentRight:number } | null>(null);
   const caretRef = useRef<HTMLDivElement>(null);
   useStudioCaretVisibility(editor, caretRef, box);
 
   useEffect(() => {
     if (!editor) return;
     let frame=0;
-    const measure = () => withCanonicalPages(editor.view.dom,() => {
+    const measure = () => {
+     try { withCanonicalPages(editor.view.dom,() => {
       if (!editor.isFocused || editor.isDestroyed || !editor.state.selection.empty) {
         setBox(null);
         return;
@@ -502,32 +504,27 @@ function StudioCaret({
       const host = hostRef.current;
       if (!host) return;
       const facing=pageProjection(editor.view.dom);
-      const resolvedDom=facing?editor.view.domAtPos(editor.state.selection.head):null;
+      const resolvedDom=editor.view.domAtPos(editor.state.selection.head);
       const selectionHead=editor.state.selection.$head;
       const facingLeaf=facing?(selectionHead.nodeAfter?.isText?editor.view.nodeDOM(selectionHead.pos):selectionHead.nodeBefore?.isText?editor.view.nodeDOM(selectionHead.pos-1):null):null;
       // Resolve the model's text leaf, not a pagination widget adjacent to it.
       const facingAnchor=facingLeaf??resolvedDom?.node;
-      const domSelection = window.getSelection();
-      let selectionRect: DOMRect | null = null;
-      if (domSelection?.rangeCount && domSelection.isCollapsed && editor.view.dom.contains(domSelection.anchorNode)) {
-        // Facing decorations can update after the model selection. Do not use
-        // an old native anchor from the other side of a pagination strut.
-        const matches=!facing||editor.view.posAtDOM(domSelection.anchorNode!,domSelection.anchorOffset)===editor.state.selection.head;
-        if(matches){const rects=[...domSelection.getRangeAt(0).getClientRects()].filter(r=>!facing||r.height>0);selectionRect=rects.length?rects[rects.length-1]:null;}
-      }
-      const coords = selectionRect ?? editor.view.coordsAtPos(editor.state.selection.head);
+      const native = nativeCaretSnapshot(editor.view,window.getSelection());
+      const coords = native?.rect ?? editor.view.coordsAtPos(editor.state.selection.head);
       const measuredRun = firstLineRunAt(editor.state, editor.state.selection.head);
       const firstLine = facing&&measuredRun&&!measuredRun.empty&&selectionHead.pos===measuredRun.to&&selectionHead.pos<selectionHead.end()?undefined:measuredRun;
       const rect = host.getBoundingClientRect();
       const scale = host.closest<HTMLElement>("[data-studio-zoom-surface]")!.getBoundingClientRect().width/pageWidthPx;
-      const anchor = facingAnchor??window.getSelection()?.anchorNode;
-      const owner = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor instanceof HTMLElement ? anchor : editor.view.dom;
+      const anchor = facingAnchor??native?.owner??resolvedDom.node;
+      const candidate = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor instanceof HTMLElement ? anchor : editor.view.dom;
+      const owner = candidate && editor.view.dom.contains(candidate) ? candidate : editor.view.dom;
       const leading = parseFloat(getComputedStyle(owner?.closest("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom).lineHeight) * scale;
       const block = owner?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6") ?? editor.view.dom;
       const bounds = block.getBoundingClientRect();
       let top = firstLine?.lineBoxTop !== undefined ? rect.top+firstLine.lineBoxTop*scale : firstLine ? coords.top + (firstLine.empty ? firstLine.offset * scale : 0) + (firstLine.selectionOffset ?? 0) * scale
         : renderedLineBoxTop(owner ?? editor.view.dom,{top:coords.top,height:coords.bottom-coords.top},Number.isFinite(leading) ? leading : coords.bottom-coords.top,scale);
       const geometry = getQalamPaginationState(editor)?.geometry;
+      const contentLeft=geometry?.marginLeftPx ?? 0, contentRight=pageWidthPx-marginRightPx;
       const hardBreakTop=hardBreakLineTop(editor.view.dom,owner??editor.view.dom,coords,leading,scale);
       top=hardBreakTop??top;
       const arrow=facing?facingArrowKey.getState(editor.state):null;
@@ -546,13 +543,15 @@ function StudioCaret({
         height: Number.isFinite(leading) ? leading/scale : (coords.bottom-coords.top)/scale, scale,
         rtl,
         blockLeft: (bounds.left-rect.left)/scale, blockRight: (bounds.right-rect.left)/scale,
-        contentRight: pageWidthPx-marginRightPx,
-        contentLeft: geometry?.marginLeftPx ?? 0,
+        contentRight,
+        contentLeft,
         contentBottom: geometry?.enabled ? page*(geometry.pageHeightPx+geometry.gapPx)+geometry.pageHeightPx-geometry.marginBottomPx : undefined,
         contentTop: marginTopPx+page*(geometry ? geometry.pageHeightPx+geometry.gapPx : 0),
-      }),pos:editor.state.selection.head});
-    });
+      }),pos:editor.state.selection.head,contentLeft,contentRight});
+    }); } catch { setBox(null); }
+    };
     const place = () => {
+      if(editor.isDestroyed)return;
       if(!pageProjection(editor.view.dom))return measure();
       if(!frame)frame=requestCanonicalFrame(editor.view.dom,()=>{frame=0;measure();});
     };
@@ -587,7 +586,7 @@ function StudioCaret({
       style={{
         animation: "qalam-studio-caret-blink 1060ms step-end infinite",
         position: "absolute",
-        left: Math.max(x(pageX+(getQalamPaginationState(editor!)?.geometry.marginLeftPx ?? 0))+2, Math.min(x(pageX+pageWidthPx-marginRightPx)-3,x(projected.x))),
+        left: Math.max(x(pageX+box.contentLeft)+2, Math.min(x(pageX+box.contentRight)-3,x(projected.x))),
         top: y(projected.y),
         width: 2,
         height: box.height*scale,

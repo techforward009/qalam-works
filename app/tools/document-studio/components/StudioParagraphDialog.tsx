@@ -1,4 +1,5 @@
 "use client";
+import {restoreEditorFocus} from "../utils/restoreEditorFocus";
 import { useEffect, useRef, useState, type KeyboardEvent, Fragment, type ReactNode } from "react";
 import type { Editor } from "@tiptap/react";
 import { createPortal } from "react-dom";
@@ -32,7 +33,7 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
   const drag=useInPage2009Dialog<HTMLFormElement>(349,283,24);
   const root=drag.dialogRef;
   const patch = (next: Partial<ParagraphForm>) => setForm((current) => ({ ...current, ...next }));
-  const close = () => { onClose(); if (!editor.isDestroyed) editor.view.focus(); };
+  const close = () => { onClose(); restoreEditorFocus(editor); };
   const apply = () => {
     const parsed = preferencesFromForm(form, initial.current);
     if (!parsed.ok) {
