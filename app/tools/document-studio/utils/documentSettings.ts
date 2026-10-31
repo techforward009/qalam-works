@@ -1,3 +1,4 @@
+import {DEFAULT_TYPOGRAPHIC_PREFERENCES,parseTypographicPreferences,type TypographicPreferences} from "./typographicPreferences";
 /**
  * Versioned Document Studio settings — document-wide defaults.
  * Explicit TipTap marks/attrs always override these.
@@ -31,6 +32,7 @@ export interface DocumentStudioSettings {
     };
   };
   typography: {
+    preferences?: TypographicPreferences;
     bodyFontSizePt: number;
     /** Legacy multiplier, read only during migration. */
     lineHeight: number;
@@ -78,6 +80,7 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
       },
     },
     typography: {
+      preferences: {...DEFAULT_TYPOGRAPHIC_PREFERENCES},
       bodyFontSizePt: 12,
       lineHeight: 1.5,
       leading: { mode: "auto" },
@@ -225,7 +228,7 @@ function sanitizeFontId(raw: unknown, fallback: FontId): FontId {
 /** Validate and coerce unknown input into safe settings. */
 export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
   const defaults = defaultDocumentSettings();
-  if (!raw || typeof raw !== "object") return defaults;
+  if (!raw || typeof raw !== "object") return {...defaults,typography:{...defaults.typography,preferences:parseTypographicPreferences(null)}};
   const o = raw as Record<string, unknown>;
 
   const presetId =
@@ -295,6 +298,7 @@ export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
       },
     },
     typography: {
+      preferences: parseTypographicPreferences(typoIn.preferences),
       bodyFontSizePt,
       lineHeight,
       leading: parseLeading(typoIn.leading) ?? (typoIn.lineHeight == null || typoIn.lineHeight === 1.5 ? { mode: "auto" } : migrateLeading(typoIn.lineHeight, bodyFontSizePt)),

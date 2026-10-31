@@ -1,4 +1,6 @@
 "use client";
+import {StudioTypographicDialog} from "./StudioTypographicDialog";
+import {parseTypographicPreferences} from "../utils/typographicPreferences";
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
@@ -293,6 +295,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [characterOpen,setCharacterOpen] = useState(false);
   const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
+  const [typographicOpen,setTypographicOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const tableDialogDrag = useMovableStudioDialog<HTMLFormElement>();
@@ -1666,6 +1669,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F11" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const root=document.querySelector("[data-studio-root]"),active=document.activeElement;if(root?.contains(active)||active?.closest("[data-studio-dialog]")){e.preventDefault();if(root?.querySelector(".ProseMirror")&&!active?.closest('[role="dialog"],[role="alertdialog"]'))setTypographicOpen(true);}return;
+      }
       if (e.key === "F1") {
         e.preventDefault();
         setHelpOpen("about");
@@ -1879,6 +1885,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if(noDocumentOpen && !availableWithoutDocument(id)) return;
     if (transitionRef.current) return;
     if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
+    if (id === "preferences.typographic") { setTypographicOpen(true); return; }
     if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
     if (id === "window.page") {
       // Activate the existing Page workspace, not the Single Pages view mode.
@@ -2127,6 +2134,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
+      {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
       {imageMenu && editor ? (
         <div
