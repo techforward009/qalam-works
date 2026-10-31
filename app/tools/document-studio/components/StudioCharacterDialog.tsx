@@ -407,7 +407,7 @@ function Check({ name, accessKey, ariaLabel, value, onChange, x, y, text, at, te
   return <label style={{ position: "absolute", left: x, top: y, width: textX - x + 32, height: 16, margin: 0 }}>
     <span data-character-box={name} style={{ ...SUNKEN, position: "absolute", left: 0, top: 0, width: 13, height: 13 }}>
       <input ref={box} name={name} type="checkbox" aria-label={ariaLabel ?? text} accessKey={accessKey} data-character-field="true" checked={value === true} onChange={(event) => onChange(event.target.checked)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, background: "transparent" }} />
-      <span data-character-tick aria-hidden style={{ display: "none", position: "absolute", left: 2, top: 3, width: 7, height: 4, boxSizing: "border-box", borderLeft: "2px solid #000", borderBottom: "2px solid #000", transform: "rotate(-45deg)", pointerEvents: "none" }} />
+      <span data-character-tick aria-hidden style={{ display: value === false ? "none" : "block", position: "absolute", left: 2, top: 3, width: 7, height: 4, boxSizing: "border-box", borderLeft: `2px solid ${value === null ? "#808080" : "#000"}`, borderBottom: `2px solid ${value === null ? "#808080" : "#000"}`, transform: "rotate(-45deg)", pointerEvents: "none" }} />
     </span>
     <span style={{ position: "absolute", left: textX - x, top: capTop - 3 - y, lineHeight: "13px", whiteSpace: "nowrap", font: FONT }}><Mark text={text} at={at} /></span>
   </label>;
