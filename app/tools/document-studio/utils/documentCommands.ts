@@ -246,6 +246,13 @@ function patchTextRanges(
       }
       start = end;
     }
+    for (let start = 0; start < chars.length;) {
+      let end = start + 1;
+      while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1) end++;
+      const text = chars.slice(start, end).map(ch => ch.value).join("");
+      for (const range of scriptRanges(text, "arabic")) for (let i = range.start; i < range.end; i++) separators.add(chars[start + i].pos);
+      start = end;
+    }
   }
   state.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isText || !node.text) return;

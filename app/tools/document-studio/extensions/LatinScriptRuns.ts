@@ -61,6 +61,15 @@ function classify(text: string): Slot[] {
       j += 1;
     }
   }
+  // Remaining common punctuation/digits belong to neighbouring Urdu, not the
+  // document default. Latin continuation has already claimed its own neutrals.
+  for (let start = 0; start < kinds.length;) {
+    if (kinds[start] !== "other" || !LATIN_CONTINUE.test(text[start])) { start++; continue; }
+    let end = start + 1;
+    while (end < kinds.length && kinds[end] === "other" && LATIN_CONTINUE.test(text[end])) end++;
+    if (kinds[start - 1] === "ar" || kinds[end] === "ar") for (let i = start; i < end; i++) if (!/\s/u.test(text[i])) kinds[i] = "ar";
+    start = end;
+  }
   return kinds;
 }
 
