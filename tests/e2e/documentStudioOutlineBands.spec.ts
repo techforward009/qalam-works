@@ -5,7 +5,7 @@ async function open(page:Page){await page.addInitScript(()=>localStorage.setItem
 for(const zoom of [100,200])test(`mixed Urdu/digits outline is one solid full-height band per centred line at ${zoom}%`,async({page},info)=>{
  await open(page);if(zoom===200){await page.keyboard.press('F8');await page.locator('[data-menu-root="edit"]').click();await page.locator('[data-menu-action="edit.selectAll"]').click();await page.locator('.ProseMirror [data-text-outline]').first().evaluate(el=>el.scrollIntoView({block:'nearest',inline:'center'}));}
  const bands=page.locator('[data-studio-outline-background]');await expect(bands).toHaveCount(2);await expect(page.locator('[data-studio-selection-layer] [data-studio-line-selection]')).toHaveCount(2);
- await expect(bands.first()).toHaveCSS('background-color','rgb(80, 145, 255)');await expect(page.locator('[data-studio-outline-bands]')).toHaveCSS('opacity','0.35');
+ await expect(bands.first()).toHaveCSS('background-color','rgb(80, 145, 255)');await expect(page.locator('[data-studio-selection-layer]')).toHaveCSS('opacity','0.35');
  const scale=await page.locator('[data-studio-selection-host]').evaluate(el=>el.getBoundingClientRect().width/parseFloat(getComputedStyle(el).width));
  const geometry=await bands.evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,width:r.width,height:r.height,bottom:r.bottom};}));
  const lines=await page.locator('.ProseMirror p').evaluateAll(nodes=>nodes.map(p=>{const range=document.createRange();range.selectNodeContents(p);const rects=[...range.getClientRects()].filter(r=>r.height>0&&r.width>0);return{top:Math.min(...rects.map(r=>r.top)),bottom:Math.max(...rects.map(r=>r.bottom)),height:parseFloat(getComputedStyle(p).lineHeight)};}));
@@ -19,4 +19,20 @@ for(const zoom of [100,200])test(`mixed Urdu/digits outline is one solid full-he
   for(const b of geometry)for(const y of [Math.ceil(b.top)+1,Math.floor(b.bottom)-2]){let blue=0,total=0;for(let x=Math.ceil(b.left)+1;x<Math.floor(b.left+b.width)-1;x++){if(x<0||x>=img.width||y<0||y>=img.height)continue;const n=(y*img.width+x)*3;if(Math.abs(data[n]-194)<=2&&Math.abs(data[n+1]-216)<=2&&data[n+2]>=253)blue++;total++;}expect(blue/total).toBeGreaterThan(.95);}
   await page.screenshot({path:info.outputPath('two-lines-selected.png'),scale:'css'});await page.keyboard.press('ArrowLeft');await expect(page.locator('[data-studio-outline-selection]')).toHaveCount(0);await page.screenshot({path:info.outputPath('two-lines-unselected.png'),scale:'css'});
  }
+});
+
+test('mixed selection paints outline and normal lines with exactly the same blue pixels',async({page},info)=>{
+ await open(page);
+ await page.locator('.ProseMirror').evaluate(el=>{
+  const editor=(el as HTMLElement&{editor:import('@tiptap/core').Editor}).editor,doc=editor.getJSON();
+  for(const text of ['یہ عام عبارت ہے','دوسری عام سطر','تیسری عام سطر'])doc.content!.push({type:'paragraph',attrs:doc.content![0].attrs,content:[{type:'text',text,marks:[{type:'textStyle',attrs:{fontFamily:'Mehr Nastaliq Web',fontSize:'30pt'}}]}]});
+  editor.commands.setContent(doc);
+ });
+ await page.locator('[data-menu-root="edit"]').click();await page.locator('[data-menu-action="edit.selectAll"]').click();
+ await expect(page.locator('[data-studio-outline-background]')).toHaveCount(2);
+ await expect(page.locator('[data-studio-selection-layer] > [data-studio-line-selection]')).toHaveCount(5);
+ const rects=await page.locator('[data-studio-selection-layer] > [data-studio-line-selection]').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom};}));
+ const screenshot=await page.screenshot({path:info.outputPath('mixed-selection.png'),scale:'css'}),{data,info:img}=await sharp(screenshot).removeAlpha().raw().toBuffer({resolveWithObject:true});
+ const colours=rects.map(r=>{const counts=new Map<string,number>();for(let y=Math.max(0,Math.ceil(r.top)+2);y<Math.min(img.height,Math.floor(r.bottom)-2);y++)for(let x=Math.max(0,Math.ceil(r.left)+2);x<Math.min(img.width,Math.floor(r.right)-2);x++){const n=(y*img.width+x)*3;if(data[n+2]>data[n]+20){const key=Array.from(data.subarray(n,n+3)).join(',');counts.set(key,(counts.get(key)||0)+1);}}return [...counts].sort((a,b)=>b[1]-a[1])[0]?.[0];});
+ expect(colours).toHaveLength(5);expect(colours[2]).toBeDefined();const normal=colours[2]!.split(',').map(Number);expect(normal[0]).toBeGreaterThanOrEqual(193);expect(normal[0]).toBeLessThanOrEqual(195);expect(normal[1]).toBeGreaterThanOrEqual(216);expect(normal[1]).toBeLessThanOrEqual(218);expect(normal[2]).toBe(255);for(const colour of colours)expect(colour).toBe(colours[2]);
 });

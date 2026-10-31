@@ -113,10 +113,10 @@ export function StudioTextSelection({ editor, zoom, revision="" }: { editor: Edi
   const outlineBands=outlineSelectionBands(outlines);
   // Paint a translucent highlight between effect backgrounds (0) and story ink (2).
   // Difference blending needs an opaque backdrop; effects require a transparent story.
-  return createPortal(<><div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}>
-    {!onlyOutlined&&boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: "rgba(80, 145, 255, 0.35)" }} />)}
-    {/* Composite once so overlapping line bounds keep the ordinary selection colour. */}
-    <div data-studio-outline-bands style={{position:"absolute",inset:0,opacity:.35}}>{outlineBands.map((box,index)=><div key={`outline-${index}`} data-studio-outline-background data-studio-line-selection={onlyOutlined?true:undefined} style={{position:"absolute",...box,background:"rgb(80, 145, 255)"}}/>)}</div>
+  return createPortal(<><div aria-hidden="true" data-studio-selection-layer className="studio-no-print" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1, opacity: outlines.length ? .35 : undefined }}>
+    {!onlyOutlined&&boxes.map((box, index) => <div key={index} data-studio-line-selection style={{ position: "absolute", ...box, background: outlines.length ? "rgb(80, 145, 255)" : "rgba(80, 145, 255, 0.35)" }} />)}
+    {/* All bands share one opacity layer, including mixed ordinary/outline selections. */}
+    <div data-studio-outline-bands style={{position:"absolute",inset:0}}>{outlineBands.map((box,index)=><div key={`outline-${index}`} data-studio-outline-background data-studio-line-selection={onlyOutlined?true:undefined} style={{position:"absolute",...box,background:"rgb(80, 145, 255)"}}/>)}</div>
   </div>
   {outlines.length?<svg data-studio-outline-selection aria-hidden="true" className="studio-no-print" style={{position:"absolute",inset:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none",userSelect:"none",zIndex:3}}>
    {outlines.map((f,index)=><g key={index} clipPath={`url(#${outlineId}-${index})`}>
