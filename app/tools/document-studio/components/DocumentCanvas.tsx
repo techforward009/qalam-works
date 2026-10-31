@@ -302,6 +302,8 @@ export default function DocumentCanvas({
   useEffect(()=>{if(!editor)return;return installTypographicPaint(editor,parseTypographicPreferences(documentSettings.typography.preferences));},[editor,documentSettings.typography.preferences]);
 
   const typeVars = {
+    "--qalam-typographic-space-tokens": parseTypographicPreferences(documentSettings.typography.preferences).firstSpaceWidth!==0||parseTypographicPreferences(documentSettings.typography.preferences).subsequentSpaceWidth!==100 ? "1" : "0",
+    "--qalam-latin-size-factor": String(1-parseTypographicPreferences(documentSettings.typography.preferences).reduceLatinFontsize/100),
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
     "--qalam-line-height": `${blockLeadingPt({ type: "paragraph" }, editorFontFamilyStack(documentSettings.typography.defaultRtlFontId), documentSettings.typography, dir)}pt`,
     "--qalam-rtl-font": editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),

@@ -1670,7 +1670,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "F11" && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        const root=document.querySelector("[data-studio-root]");if(root?.contains(document.activeElement)||document.activeElement?.closest("[data-studio-dialog]")){e.preventDefault();setTypographicOpen(true);}return;
+        const root=document.querySelector("[data-studio-root]"),active=document.activeElement;if(root?.contains(active)||active?.closest("[data-studio-dialog]")){e.preventDefault();if(root?.querySelector(".ProseMirror")&&!active?.closest('[role="dialog"],[role="alertdialog"]'))setTypographicOpen(true);}return;
       }
       if (e.key === "F1") {
         e.preventDefault();

@@ -6,10 +6,11 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorView } from "@tiptap/pm/view";
 import type { Node } from "@tiptap/pm/model";
 
-interface LatinRunState { decorations: DecorationSet; widths: Map<string, number>; spaceFont: string }
+interface LatinRunState { decorations: DecorationSet; widths: Map<string, number>; spaceFont: string; typographicSpaces: boolean }
 const key = new PluginKey<LatinRunState>("studioLatinScriptRuns");
 const stripKey = "studioLatinFaceStrip";
 const spaceFontKey = "studioPreservedSpaceFont";
+const typographicSpacesKey = "studioTypographicSpaceTokens";
 const scaleMeasureKey = "studioLatinScaleMeasure";
 const LATIN = /^(inter|arial|arial unicode ms|times|times new roman|tahoma|calibri|georgia|verdana|courier new|cambria|segoe ui|helvetica)$/i;
 
@@ -134,6 +135,16 @@ export function scaleTokenWidth(el: HTMLElement, factor: number, zoom: number, c
   if (el.textContent?.trim()) return el.getBoundingClientRect().width / (factor * zoom);
   contextual = contextual && el.textContent === " " && !el.querySelector("[data-studio-preserved-space]");
   const style = getComputedStyle(el);
+  // New typography can give successive spaces different advances. Preserve
+  // those child styles when measuring an off-line scaled whitespace token.
+  if (el.querySelector('[data-typographic-space]')) {
+    const id = JSON.stringify([style.font,style.wordSpacing,style.letterSpacing,style.fontFeatureSettings,el.innerHTML]);
+    const cached=cache.get(id);if(cached!=null)return cached;
+    const clone=el.cloneNode(true) as HTMLElement;
+    clone.style.cssText='position:absolute;visibility:hidden;display:inline-block;white-space:pre;transform:none;margin:0;padding:0;border:0;width:auto;left:0;top:0';
+    clone.style.font=style.font;clone.style.wordSpacing=style.wordSpacing;clone.style.letterSpacing=style.letterSpacing;clone.style.fontKerning=style.fontKerning;clone.style.fontFeatureSettings=style.fontFeatureSettings;clone.style.direction=style.direction;
+    document.body.append(clone);const width=clone.getBoundingClientRect().width;clone.remove();cache.set(id,width);return width;
+  }
   const values = [style.font, style.letterSpacing, style.wordSpacing, style.fontKerning, style.fontFeatureSettings, style.textRendering, style.direction, el.textContent ?? ""];
   // A Nastaliq space can have a contextual advance very different from its
   // isolated U+0020 width. Keep neighbours in the shaping buffer, then measure
@@ -211,7 +222,7 @@ function liveAttrs(attrs: Record<string, unknown>): boolean {
   return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
 }
 
-function decorations(doc: Node, widths: Map<string, number>, spaceFont = "") {
+function decorations(doc: Node, widths: Map<string, number>, spaceFont = "", typographicSpaces = false) {
   const spans: Decoration[] = [];
   doc.descendants((block, pos) => {
     if (!block.isTextblock) return;
@@ -221,7 +232,13 @@ function decorations(doc: Node, widths: Map<string, number>, spaceFont = "") {
       const explicitLatin = Boolean(bareFamily(attrs.latinFontFamily) || (isLatinFamilyName(attrs.fontFamily) ? bareFamily(attrs.fontFamily) : ""));
       const arabicNeedsFace = isLatinFamilyName(attrs.fontFamily);
       const scale = typeof attrs.scalePercent === "number" && attrs.scalePercent !== 100 ? attrs.scalePercent : null;
-      const face = latinFaceStyle(attrs);
+      const size = `font-size:calc(${typeof attrs.fontSize === "string" ? attrs.fontSize : "100%"} * var(--qalam-latin-size-factor, 1))`;
+      const rtl = block.attrs.dir !== "ltr";
+      const face = latinFaceStyle(attrs) + (rtl ? `;${size}` : "");
+      if (rtl) for (const match of node.text.matchAll(/[0-9]+/g)) {
+        if (scriptRanges(node.text,"latin").some(range=>match.index!>=range.start&&match.index!<range.end)) continue;
+        spans.push(Decoration.inline(pos+1+offset+match.index!,pos+1+offset+match.index!+match[0].length,{"data-studio-typographic-latin":"true",style:size}));
+      }
       for (const range of scriptRanges(node.text, "latin")) {
         const origin = pos + 1 + offset + range.start;
         const sample = node.text.slice(range.start, range.end);
@@ -245,7 +262,7 @@ function decorations(doc: Node, widths: Map<string, number>, spaceFont = "") {
       // or individual Arabic letters. Spaces remain break opportunities.
       if (scale != null && typeof attrs.charScale === "number") {
         let rtl = block.attrs.dir !== "ltr";
-        for (const token of latinScaleTokens(node.text)) {
+        for (const token of latinScaleTokens(node.text).flatMap(token=>typographicSpaces && /^ {2,}$/.test(token.text) ? [{text:" ",start:token.start,end:token.start+1},{text:token.text.slice(1),start:token.start+1,end:token.end}] : [token])) {
           const from = pos + 1 + offset + token.start;
           if (token.text.trim()) rtl = hasScript(token.text, "arabic");
           const factor = latinScaleFactor(scale);
@@ -345,7 +362,8 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
     if (!current) return;
     const spaceFont = getComputedStyle(view.dom).getPropertyValue("--qalam-rtl-font").trim();
     const next = new Map(current.widths);
-    let changed = spaceFont !== current.spaceFont;
+    const typographicSpaces=getComputedStyle(view.dom).getPropertyValue("--qalam-typographic-space-tokens").trim()==="1";
+    let changed = spaceFont !== current.spaceFont || typographicSpaces !== current.typographicSpaces;
     let pending = false;
     const measurements = new Map<string, number>();
     view.dom.querySelectorAll<HTMLElement>("[data-studio-latin-scale]").forEach((el) => {
@@ -368,7 +386,7 @@ function scheduleScaleMeasure(timer: { raf: number; attempts: number; view: Edit
     });
     if (changed) {
       timer.attempts = 0;
-      view.dispatch(view.state.tr.setMeta(scaleMeasureKey, next).setMeta(spaceFontKey, spaceFont).setMeta("addToHistory", false));
+      view.dispatch(view.state.tr.setMeta(scaleMeasureKey, next).setMeta(spaceFontKey, spaceFont).setMeta(typographicSpacesKey,typographicSpaces).setMeta("addToHistory", false));
       return;
     }
     if (pending && timer.attempts < 8) {
@@ -433,14 +451,15 @@ export const LatinScriptRuns = Extension.create({
     return [new Plugin<LatinRunState>({
       key,
       state: {
-        init: (_, state) => ({ decorations: decorations(state.doc, new Map()), widths: new Map(), spaceFont: "" }),
+        init: (_, state) => ({ decorations: decorations(state.doc, new Map()), widths: new Map(), spaceFont: "", typographicSpaces:false }),
         apply: (transaction, previous) => {
           const incoming = transaction.getMeta(scaleMeasureKey) as Map<string, number> | undefined;
           const spaceFont = transaction.getMeta(spaceFontKey) as string | undefined;
-          if (!transaction.docChanged && !incoming && spaceFont === undefined) return previous;
+          const typographicSpaces=transaction.getMeta(typographicSpacesKey) as boolean|undefined;
+          if (!transaction.docChanged && !incoming && spaceFont === undefined && typographicSpaces === undefined) return previous;
           const widths = incoming ?? remapScaleWidths(previous.widths, transaction);
           const family = spaceFont ?? previous.spaceFont;
-          return { decorations: decorations(transaction.doc, widths, family), widths, spaceFont: family };
+          return { decorations: decorations(transaction.doc, widths, family,typographicSpaces??previous.typographicSpaces), widths, spaceFont: family,typographicSpaces:typographicSpaces??previous.typographicSpaces };
         },
       },
       props: {

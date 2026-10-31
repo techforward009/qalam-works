@@ -1,11 +1,12 @@
 import type {TypographicPreferences} from './typographicPreferences';
-export interface TypographicPaintJob {node:Text;from:number;to:number;style:string;kind:'first'|'subsequent'}
+export interface TypographicPaintJob {node:Text;from:number;to:number;style:string;kind:'first'|'subsequent'|'latin'}
 /** Shared DOM measurement in editor and PDF, after the authored fonts load.
  * Whole Arabic runs retain shaping; only whitespace ranges get split further. */
-export function collectTypographicPaint(root:HTMLElement,prefs:TypographicPreferences):TypographicPaintJob[]{
+export function collectTypographicPaint(root:HTMLElement,prefs:TypographicPreferences,pdf=false):TypographicPaintJob[]{
  const jobs:TypographicPaintJob[]=[],canvas=document.createElement('canvas').getContext('2d');if(!canvas)return jobs;
  for(const block of root.querySelectorAll<HTMLElement>('p,h1,h2,h3,h4,h5,h6')){
-  if(block.closest('[data-pdf-frame-source]')||getComputedStyle(block).direction!=='rtl')continue;
+  if(block.closest('[data-pdf-frame-source]'))continue;
+  const rtl=getComputedStyle(block).direction==='rtl';
   const nodes:{node:Text;offset:number}[]=[],walker=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);let text='';
   for(let n=walker.nextNode();n;n=walker.nextNode()){nodes.push({node:n as Text,offset:text.length});text+=n.textContent??'';}
   const latin=new Array<boolean>(text.length).fill(false);
@@ -20,6 +21,10 @@ export function collectTypographicPaint(root:HTMLElement,prefs:TypographicPrefer
   for(const {node,offset} of nodes){
    const owner=node.parentElement!,style=getComputedStyle(owner);canvas.font=style.font;const advance=canvas.measureText(' ').width;
    const tracking=Number(owner.closest('[data-tracking]')?.getAttribute('data-tracking'))||0,base=tracking/100*parseFloat(style.fontSize);
+   if(pdf&&rtl&&prefs.reduceLatinFontsize>0)for(let i=0;i<node.length;){
+    if(!latin[offset+i]&&!/[0-9]/.test(node.data[i])){i++;continue;}const from=i;while(i<node.length&&(latin[offset+i]||/[0-9]/.test(node.data[i])))i++;
+    jobs.push({node,from,to:i,kind:'latin',style:`font-size:${parseFloat(style.fontSize)*(1-prefs.reduceLatinFontsize/100)}px`});
+   }
    for(const range of ranges){const from=Math.max(0,range.from-offset),to=Math.min(node.length,range.to-offset);if(to>from)jobs.push({node,from,to,kind:range.kind,style:`word-spacing:${base+advance*range.delta}px`});}
   }
  }
