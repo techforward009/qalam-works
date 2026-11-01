@@ -56,6 +56,7 @@ export type DocumentMenuHandlers = {
   loadExample: () => void;
   promptLink: () => void;
   openTableInsert?: () => void;
+  openTableLayout?: () => void;
   openImageInsert?: () => void;
   insertPageBreak?: () => void;
   insertSectionBreak?: (type: "nextPage" | "continuous") => void;
@@ -202,6 +203,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.link":
       handlers.promptLink();
+      return;
+    case "text.tableLayout":
+      handlers.openTableLayout?.();
       return;
     case "insert.table":
       handlers.openTableInsert?.();

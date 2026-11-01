@@ -35,3 +35,19 @@ export function moveTableCell(view: EditorView, step: -1 | 1): boolean {
   view.focus();
   return true;
 }
+
+/** After a final Tab inserts a row, place the caret in its first (rightmost
+ * in RTL) cell, rather than keeping the stale pre-insertion DOM selection. */
+export function focusTableLastRowStart(view:EditorView):boolean{
+ const {state}=view;let target=-1;
+ state.doc.descendants((node,pos)=>{
+  if(node.type.name!=="table")return true;
+  let rowPos=pos+1;
+  for(let i=0;i<node.childCount-1;i++)rowPos+=node.child(i).nodeSize;
+  const row=node.lastChild;
+  if(row?.type.name==="tableRow"&&row.childCount>0)target=rowPos+3;
+  return false;
+ });
+ if(target<0)return false;
+ view.dispatch(state.tr.setSelection(TextSelection.near(state.doc.resolve(target),1)).scrollIntoView());view.focus();return true;
+}

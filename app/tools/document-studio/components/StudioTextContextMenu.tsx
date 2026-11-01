@@ -11,8 +11,8 @@ import {textContextItems,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition} 
 const itemStyle:React.CSSProperties={height:20,minHeight:20,width:'100%',padding:'0 20px',textAlign:'left',fontFamily:'Tahoma, MS Sans Serif, sans-serif',fontSize:11,color:'#000',whiteSpace:'nowrap'};
 function enabledItems(menu:HTMLElement|null){return menu?[...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')]:[];}
 export type StudioTextActions = { run: (id: "cut" | "copy" | "paste" | "clear") => void };
-export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,onTable,onTextToTable,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;onTable:()=>void;onTextToTable:()=>void;actionRef?:Ref<StudioTextActions>}){
- const [menu,setMenu]=useState<{x:number;y:number;hasSelection:boolean}|null>(null),[zoom,setZoom]=useState(false),[message,setMessage]=useState<string|null>(null);
+export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,onTable,onTextToTable,onTableLayout,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;onTable:()=>void;onTextToTable:()=>void;onTableLayout:()=>void;actionRef?:Ref<StudioTextActions>}){
+ const [menu,setMenu]=useState<{x:number;y:number;hasSelection:boolean;inTable:boolean;selectedInsideTable:boolean}|null>(null),[zoom,setZoom]=useState(false),[message,setMessage]=useState<string|null>(null);
  const root=useRef<HTMLDivElement>(null),submenu=useRef<HTMLDivElement>(null),zoomTrigger=useRef<HTMLButtonElement>(null),bookmark=useRef<SelectionBookmark|null>(null);
  const [position,setPosition]=useState({left:0,top:0}),[subPosition,setSubPosition]=useState({left:0,top:0});
  const restore=()=>{if(!editor||editor.isDestroyed)return;try{if(bookmark.current)editor.view.dispatch(editor.state.tr.setSelection(bookmark.current.resolve(editor.state.doc)));editor.view.focus();}catch{/* document replaced while the menu was open */}};
@@ -25,7 +25,11 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
    event.preventDefault();
    if(editor.state.selection.empty){const hit=editor.view.posAtCoords({left:event.clientX,top:event.clientY});if(hit)editor.commands.setTextSelection(hit.pos);}
    bookmark.current=editor.state.selection.getBookmark();
-   setMenu({x:event.clientX,y:event.clientY,hasSelection:!editor.state.selection.empty});setZoom(false);
+   const selection=editor.state.selection;
+   const tablePos=($:typeof selection.$from)=>{for(let depth=$.depth;depth>0;depth--)if($.node(depth).type.name==="table")return $.before(depth);return -1;};
+   const start=tablePos(selection.$from),end=tablePos(selection.$to);
+   const inside=Boolean(target?.closest("table.qalam-document-table"))&&start>=0&&end===start;
+   setMenu({x:event.clientX,y:event.clientY,hasSelection:!selection.empty,inTable:inside,selectedInsideTable:inside});setZoom(false);
   };
   document.addEventListener('contextmenu',open);return()=>document.removeEventListener('contextmenu',open);
  },[editor]);
@@ -57,6 +61,8 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
  const action=async(id:string)=>{
   if(!editor)return;close(true);
   if(id==='import'){onImport();return;}if(id==='character'){onCharacter();return;}if(id==='paragraph'){onParagraph();return;}
+  if(id==='tableLayout'){onTableLayout();return;}
+  if(id==='tableToText'||id==='tableFormat')return;
   if(id==='textToTable'){if(menu?.hasSelection)onTextToTable();else onTable();return;}
   if(id==='selectAll'){editor.commands.selectAll();return;}if(id==='clear'){editor.commands.deleteSelection();return;}
   const doc=editor.state.doc,selection=editor.state.selection,selected=doc.textBetween(selection.from,selection.to,'\n');
@@ -78,7 +84,7 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
  return <>
   {menu?createPortal(<>
    <div ref={root} role="menu" aria-label="Text context menu" data-studio-text-menu dir="ltr" className="fixed z-[110] border border-[#808080] bg-[#f0f0f0] py-1 shadow-md" style={{...position,width:200,maxWidth:'calc(100vw - 8px)',maxHeight:'calc(100vh - 8px)',overflowY:'auto'}} onKeyDown={event=>key(event)} onPointerDown={event=>event.preventDefault()}>
-    {textContextItems(menu.hasSelection).map(item=>'separator'in item?<div key={item.id} role="separator" className="my-[3px] border-t border-[#808080]"/>:item.id==='zoom'?<button ref={zoomTrigger} key={item.id} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={zoom} style={itemStyle} className="flex items-center justify-between hover:bg-[#d6dff2] focus:bg-[#d6dff2]" onPointerEnter={()=>setZoom(true)} onClick={()=>{setZoom(true);requestAnimationFrame(()=>enabledItems(submenu.current)[0]?.focus());}}>Zoom<span aria-hidden>▸</span></button>:<button key={item.id} type="button" role="menuitem" disabled={textContextDisabled(item.id,menu.hasSelection)} aria-disabled={textContextDisabled(item.id,menu.hasSelection)||undefined} style={{...itemStyle,color:textContextDisabled(item.id,menu.hasSelection)?'#808080':'#000'}} className="block enabled:hover:bg-[#d6dff2] enabled:focus:bg-[#d6dff2]" onPointerEnter={()=>setZoom(false)} onClick={()=>void action(item.id)}>{item.label}</button>)}
+    {textContextItems(menu.hasSelection,menu.inTable,menu.selectedInsideTable).map(item=>'separator'in item?<div key={item.id} role="separator" className="my-[3px] border-t border-[#808080]"/>:item.id==='zoom'?<button ref={zoomTrigger} key={item.id} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={zoom} style={itemStyle} className="flex items-center justify-between hover:bg-[#d6dff2] focus:bg-[#d6dff2]" onPointerEnter={()=>setZoom(true)} onClick={()=>{setZoom(true);requestAnimationFrame(()=>enabledItems(submenu.current)[0]?.focus());}}>Zoom<span aria-hidden>▸</span></button>:<button key={item.id} type="button" role="menuitem" disabled={textContextDisabled(item.id,menu.hasSelection)} aria-disabled={textContextDisabled(item.id,menu.hasSelection)||undefined} style={{...itemStyle,color:textContextDisabled(item.id,menu.hasSelection)?'#808080':'#000'}} className="block enabled:hover:bg-[#d6dff2] enabled:focus:bg-[#d6dff2]" onPointerEnter={()=>setZoom(false)} onClick={()=>void action(item.id)}>{item.label}</button>)}
    </div>
    {zoom?<div ref={submenu} role="menu" aria-label="Zoom" data-studio-context-zoom dir="ltr" className="fixed z-[111] border border-[#808080] bg-[#f0f0f0] py-1 shadow-md" style={{...subPosition,width:150,maxWidth:'calc(100vw - 8px)',maxHeight:'calc(100vh - 8px)',overflowY:'auto'}} onKeyDown={event=>key(event,true)} onPointerDown={event=>event.preventDefault()}>
     {CONTEXT_ZOOMS.map(item=><button key={item.label} type="button" role="menuitem" style={itemStyle} className="block hover:bg-[#d6dff2] focus:bg-[#d6dff2]" onClick={()=>{close(true);onZoom(item.value);}}>{item.label}</button>)}

@@ -5,7 +5,9 @@ import StudioQpgSaveAsDialog from "./StudioQpgSaveAsDialog";
 import { deserializeQpg, QPG_FILE_ACCEPT, readStoredQpgLayout, writeStoredQpgLayout, type QpgDocument } from "../utils/qpgFile";
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
-import {moveTableCell} from "../utils/tableCellNavigation";
+import {moveTableCell,focusTableLastRowStart} from "../utils/tableCellNavigation";
+import {installTableColumnResize} from "../utils/tableColumnResize";
+import {StudioTableLayoutDialog} from "./StudioTableLayoutDialog";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -305,6 +307,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [textToTableOpen,setTextToTableOpen] = useState(false);
+  const [tableLayoutOpen,setTableLayoutOpen] = useState(false);
+  const tableDialogsActive=useRef(false);
+  tableDialogsActive.current=tableInsertOpen||textToTableOpen||tableLayoutOpen;
+  const closeTableDialog=()=>{setTableInsertOpen(false);setTextToTableOpen(false);setTableLayoutOpen(false);setFormattingNotice(0);};
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingMetadataWrites,setPendingMetadataWrites] = useState(0);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
@@ -522,7 +528,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           // cell on the right. Never insert a literal tab inside a table cell.
           event.preventDefault();
           if (moveTableCell(_view,event.shiftKey ? -1 : 1)) return true;
-          if (!event.shiftKey && tableNavigationEditorRef.current?.commands.addRowAfter()) moveTableCell(_view,1);
+          if (!event.shiftKey && tableNavigationEditorRef.current?.commands.addRowAfter()) focusTableLastRowStart(_view);
           return true;
         }
         if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && $from.parent.type.name === "paragraph") {
@@ -637,10 +643,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   });
 
   tableNavigationEditorRef.current = editor;
+  useEffect(()=>{if(!editor)return;return installTableColumnResize(editor);},[editor]);
 
   useEffect(() => {
     if (!editor) return;
-    const guard = installFormattingSafety(editor, () => setFormattingNotice(n => n + 1), () => setFormattingNotice(0));
+    const guard = installFormattingSafety(editor, () => { if (!tableDialogsActive.current) setFormattingNotice(n => n + 1); }, () => setFormattingNotice(0));
     formattingSafety.current = guard;
     return () => { guard.dispose(); formattingSafety.current = null; };
   }, [editor]);
@@ -2003,6 +2010,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       loadExample: handleLoadExample,
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
+      openTableLayout: () => setTableLayoutOpen(true),
       openImageInsert: () => imageInputRef.current?.click(),
       insertPageBreak,
       insertSectionBreak,
@@ -2207,7 +2215,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
-        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} />
+        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
@@ -2321,8 +2329,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         />
       ) : null}
 
-      {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={()=>setTableInsertOpen(false)} /> : null}
-      {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>setTextToTableOpen(false)} /> : null}
+      {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={closeTableDialog} /> : null}
+      {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={closeTableDialog} /> : null}
+      {tableLayoutOpen && editor ? <StudioTableLayoutDialog editor={editor} onClose={closeTableDialog} /> : null}
 
       {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}

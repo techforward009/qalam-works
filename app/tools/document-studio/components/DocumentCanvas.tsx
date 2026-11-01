@@ -831,6 +831,9 @@ export default function DocumentCanvas({
           color: #b45309;
           text-decoration: underline;
         }
+        /* The saved paragraph direction determines column order, not UI language. */
+        .qalam-editor-content .ProseMirror table.qalam-document-table:has(tr:first-child > :first-child p[dir="rtl"]) { direction: rtl; }
+        .qalam-editor-content .ProseMirror table.qalam-document-table:has(tr:first-child > :first-child p[dir="ltr"]) { direction: ltr; }
         .qalam-editor-content .ProseMirror table.qalam-document-table {
           width: 100%;
           max-width: 100%;
@@ -843,7 +846,7 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror table.qalam-document-table td {
           min-width: 4rem;
           border: 1px solid #95a89a;
-          padding: 0.45rem 0.6rem;
+          padding: 0.65rem 0.6rem;
           vertical-align: top;
           text-align: start;
         }
