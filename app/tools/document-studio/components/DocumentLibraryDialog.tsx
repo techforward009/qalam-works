@@ -23,10 +23,10 @@ export default function DocumentLibraryDialog({ isUr, documents, activeId, onOpe
   const [selected,setSelected] = useState<string|null>(activeId && documents.some(d=>d.id===activeId) ? activeId : null);
   useEffect(()=>{if(selected&&!documents.some(doc=>doc.id===selected))setSelected(activeId&&documents.some(doc=>doc.id===activeId)?activeId:null);},[documents,activeId,selected]);
   const [order,setOrder] = useState<"recent"|"all">("all");
-  const [fileType,setFileType] = useState<"qalam"|"inpage">("qalam");
+  const [fileType,setFileType] = useState<"qalam"|"inpage"|"qpg"|"import">("qalam");
   const items = order==="recent" ? [...documents].sort((a,b)=>new Date(b.updatedAt).getTime()-new Date(a.updatedAt).getTime()) : documents;
   const chosen=items.find(d=>d.id===selected);
-  const open=()=>{if(fileType==="inpage")onOpenInPage();else if(chosen)onOpen(chosen.id);};
+  const open=()=>{if(fileType!=="qalam")onOpenInPage();else if(chosen)onOpen(chosen.id);};
   return <div data-studio-dialog={isUr?"ur":"en"} className="fixed inset-0 z-[110] grid place-items-center bg-black/30 p-2" role="dialog" aria-modal="true" aria-labelledby="document-library-title" onKeyDown={e=>{
       if(e.key==="Escape"){e.preventDefault();e.stopPropagation();close();}
       if(e.key==="Tab"){
@@ -62,8 +62,8 @@ export default function DocumentLibraryDialog({ isUr, documents, activeId, onOpe
       <div data-open-footer style={{padding:"6px 7px 6px 100px",display:"grid",gridTemplateColumns:"minmax(0,1fr) 75px",rowGap:5,columnGap:7,alignItems:"center",flexShrink:0}}>
         <label style={{display:"flex",alignItems:"center",gap:5}}><span style={{whiteSpace:"nowrap",width:90,flexShrink:0}}>File name:</span><input aria-label="File name" onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();open();}}} readOnly value={chosen?.title??""} style={{flex:1,minWidth:0,height:22,border:"1px solid #8e8e8e",background:"#fff",paddingLeft:4}}/></label>
         <button type="button" style={btn} onClick={open} disabled={fileType==="qalam"&&!chosen}>Open</button>
-        <label style={{display:"flex",alignItems:"center",gap:5}}><span style={{whiteSpace:"nowrap",width:90,flexShrink:0}}>Files of type:</span><select aria-label="Files of type" value={fileType} onChange={e=>setFileType(e.target.value as "qalam"|"inpage")} style={{flex:1,minWidth:0,height:22,border:"1px solid #8e8e8e",background:"#fff"}}>
-          <option value="qalam">Qalam Page Documents</option><option value="inpage">InPage files (*.inp)</option>
+        <label style={{display:"flex",alignItems:"center",gap:5}}><span style={{whiteSpace:"nowrap",width:90,flexShrink:0}}>Files of type:</span><select aria-label="Files of type" value={fileType} onChange={e=>setFileType(e.target.value as "qalam"|"inpage"|"qpg"|"import")} style={{flex:1,minWidth:0,height:22,border:"1px solid #8e8e8e",background:"#fff"}}>
+          <option value="qalam">Qalam Page Documents</option><option value="qpg">Qalam Page files (*.qpg)</option><option value="inpage">InPage files (*.inp)</option><option value="import">Text / Word (*.txt; *.docx)</option>
         </select></label>
         <button type="button" style={btn} onClick={close}>Cancel</button>
       </div>

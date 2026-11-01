@@ -8,6 +8,7 @@ export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | 
 
 export type MenuActionId =
   | "file.save"
+  | "file.saveAs"
   | "file.close"
   | "file.exit"
   | "format.character"
@@ -416,7 +417,7 @@ const soon = (id: string, labelEn: string, shortcut?: string): MenuNode => ({ ty
 export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   { ...original("file"), items: [
     ready("file.new", "New…", "Ctrl+N"), ready("file.open", "Open…", "Ctrl+O"), ready("file.close", "Close", "Ctrl+F4"), separator,
-    ready("file.save", "Save…", "Ctrl+S"), soon("file.saveAs", "Save As…", "Ctrl+Alt+S"), ready("file.downloadPdf", "Save as PDF…"), separator,
+    ready("file.save", "Save…", "Ctrl+S"), ready("file.saveAs", "Save As…", "Ctrl+Alt+S"), ready("file.downloadPdf", "Save as PDF…"), separator,
     soon("file.place", "Place…"), ready("file.upload", "Import…"), ready("file.downloadTxt", "Export All Text…", "Ctrl+Alt+Y"), soon("file.exportPage", "Export Page…"), separator,
     ready("file.print", "Print…", "Ctrl+P"), separator, ready("file.exit", "Exit", "Alt+F4"), separator,
     soon("file.recent", "Recent Files"),
