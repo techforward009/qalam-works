@@ -94,7 +94,7 @@ export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean
    changed=true;
   }
   if(columns.has(cell.column)){
-   if(widthChanged){attrs.colwidth=[Math.round(columnWidth)];changed=true;}
+   if(widthChanged){attrs.colwidth=[Math.round(columnWidth*1000)/1000];changed=true;}
    if(gapChanged){attrs.tableGapMm=gap;changed=true;}
   }
   if(changed)tr.setNodeMarkup(cell.pos,undefined,attrs);

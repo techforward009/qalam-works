@@ -27,7 +27,7 @@ export function StudioTableFormatDialog({editor,onClose}:{editor:Editor;onClose:
  });
  const length=(name:keyof typeof lengths)=>(
   <input aria-label={name==="width"?"Column Width":name==="gap"?"Column Gap":name==="indent"?"Table Indent":"Border Width"}
-   type="text" inputMode="decimal" style={{...inputStyle,width:82}} value={lengths[name]} onChange={e=>setLengths(old=>({...old,[name]:e.target.value}))}/>
+   type="text" inputMode="decimal" onFocus={e=>e.currentTarget.select()} onClick={e=>e.currentTarget.select()} onMouseUp={e=>e.currentTarget.select()} onMouseDown={e=>{e.preventDefault();e.currentTarget.focus();e.currentTarget.select();}} style={{...inputStyle,width:82}} value={lengths[name]} onChange={e=>setLengths(old=>({...old,[name]:e.target.value}))}/>
  );
  const drag=useInPage2009Dialog<HTMLFormElement>(530,352,18);
  const update=<K extends keyof TableFormatValues>(key:K,value:TableFormatValues[K])=>setV(old=>({...old,[key]:value}));

@@ -10,16 +10,25 @@ export interface FirstLineRun { block: number; from: number; to: number; offset:
 interface LineState { blocks: number[]; runs: FirstLineRun[]; decorations: DecorationSet; dirty: Set<number>; textOnly:boolean }
 export const firstLineKey = new PluginKey<LineState>("qalam-first-line");
 const MEASURE = "qalam-first-line-measure";
-/** First-line page-top ink positioning applies to story paragraphs only.
- * A table cell has its own top border and intrinsic line box; shifting its
- * text to the page top places Urdu glyphs outside the cell. */
-function insideTableCell(doc: PMNode, pos: number): boolean {
+/** First-line page-top ink shifts must not affect table cells or the
+ * first story paragraph immediately following a table. That paragraph
+ * already sits below the table in normal flow; shifting its glyphs to the
+ * page's top guide paints them over the first row and steals mouse clicks. */
+function excludedFromFirstLinePaint(doc: PMNode, pos: number): boolean {
   const $pos = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
   for (let depth = $pos.depth; depth > 0; depth--) {
     const name = $pos.node(depth).type.name;
     if (name === "tableCell" || name === "tableHeader") return true;
   }
-  return false;
+  let textBlockStart: number | null = null;
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    if ($pos.node(depth).isTextblock) {
+      textBlockStart = $pos.before(depth);
+      break;
+    }
+  }
+  const sibling = doc.resolve(textBlockStart ?? $pos.pos).nodeBefore;
+  return sibling?.type.name === "table";
 }
 function blockAt(doc: PMNode, pos: number): number | null {
   const resolved = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
@@ -46,7 +55,7 @@ export function createFirstLinePlugin(): Plugin<LineState> {
         const blocks: number[] = [];
         state.doc.descendants((node, pos) => {
           if (node.isTextblock) {
-            if (!insideTableCell(state.doc, pos)) blocks.push(pos);
+            if (!excludedFromFirstLinePaint(state.doc, pos)) blocks.push(pos);
             return false;
           }
         });
@@ -58,21 +67,21 @@ export function createFirstLinePlugin(): Plugin<LineState> {
           const blocks = new Set<number>();
           for (const pos of previous.blocks) {
             const mapped = tr.mapping.mapResult(pos, 1);
-            if (!mapped.deleted && !insideTableCell(tr.doc, mapped.pos)) blocks.add(mapped.pos);
+            if (!mapped.deleted && !excludedFromFirstLinePaint(tr.doc, mapped.pos)) blocks.add(mapped.pos);
           }
           const dirty = new Set<number>();
           tr.mapping.maps.forEach((map, index) => map.forEach((_a, _b, from, to) => {
             const rest = tr.mapping.slice(index + 1);
             const start = Math.max(0, rest.map(from, -1)), end = Math.min(tr.doc.content.size, rest.map(to, 1));
             tr.doc.nodesBetween(start, end, (node, pos) => { if (node.isTextblock) {
-              if (!insideTableCell(tr.doc, pos)) { blocks.add(pos); dirty.add(pos); }
+              if (!excludedFromFirstLinePaint(tr.doc, pos)) { blocks.add(pos); dirty.add(pos); }
               return false;
             } });
-            for (const edge of [start, end]) { const pos = blockAt(tr.doc, edge); if (pos !== null && !insideTableCell(tr.doc, pos)) { blocks.add(pos); dirty.add(pos); } }
+            for (const edge of [start, end]) { const pos = blockAt(tr.doc, edge); if (pos !== null && !excludedFromFirstLinePaint(tr.doc, pos)) { blocks.add(pos); dirty.add(pos); } }
           }));
           const runs = previous.runs.flatMap(run => {
             const block = tr.mapping.mapResult(run.block, 1), from = tr.mapping.mapResult(run.from, -1), to = tr.mapping.mapResult(run.to, 1);
-            return block.deleted || (from.deletedAcross && to.deletedAcross) || insideTableCell(tr.doc, block.pos)
+            return block.deleted || (from.deletedAcross && to.deletedAcross) || excludedFromFirstLinePaint(tr.doc, block.pos)
               ? [] : [{ ...run, block: block.pos, from: from.pos, to: to.pos }];
           });
           const removedCellRuns = runs.length < previous.runs.length;
@@ -181,6 +190,8 @@ class FirstLineView {
       const result = {top,bottom,baseline:top+ascent*scale,parent};
       coordinates.set(pos,result); return result;
     };
+    const tableBoxes = Array.from(view.dom.querySelectorAll<HTMLElement>("table.qalam-document-table"))
+      .map(table => table.getBoundingClientRect());
     for (let page = firstPage; page <= lastPage; page++) {
       const frameTop = root.top + page * stride + geometry.marginTopPx * scale;
       const frameBottom = root.top + page * stride + (geometry.pageHeightPx - geometry.marginBottomPx) * scale;
@@ -196,6 +207,11 @@ class FirstLineView {
         const bounds = dom.getBoundingClientRect();
         if (bounds.top >= frameBottom || bounds.bottom < frameTop - 1) continue;
         affected.add(block);
+        // A previous table already occupies the page's top region. Keep
+        // every following story line in normal flow, not just the very next
+        // paragraph; otherwise the second paragraph jumps over the table.
+        if (tableBoxes.some(rect => rect.bottom > frameTop + 1 &&
+            rect.bottom <= bounds.top + 1 && rect.top < bounds.top)) continue;
         const start = block + 1, end = start + node.content.size;
         const size = this.sizes.get(dom) ?? cached;
         const unchangedSize = cached && size && Math.abs((size.height ?? -1)*scale-bounds.height)<0.1 && Math.abs((size.width ?? -1)*scale-bounds.width)<0.1;
