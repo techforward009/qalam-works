@@ -1,5 +1,9 @@
 import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
 import type { Page } from "puppeteer-core";
+export const PDF_TABLE_SELECTOR = "table.qalam-document-table,table[data-pdf-table]";
+export const PDF_TABLE_BORDER_CSS = "1px solid #222";
+export const isPdfTableBlock = (tagName: string) => tagName.toUpperCase() === "TABLE";
+
 
 export interface InkLine {
   block: number; heading: boolean; baseline: number; offset: number;
@@ -111,7 +115,7 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     const relativeTop = line.boxTop ?? line.inkTop;
     const relativeBottom = line.boxBottom ?? line.inkBottom;
     const top = line.baseline + relativeTop, bottom = line.baseline + relativeBottom;
-    if (relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
+    if (!line.image && relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
     // Fit follows line pitch, never glyph overflow. Paint-only offsets cannot
     // change page membership, heading keeps, or authored page breaks.
     if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
@@ -193,7 +197,9 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
   const originalText = documentText(document.body);
   const breakSelector = ".qalam-page-break, .qalam-section-break-next-page";
   const imageSelector = "figure.qalam-document-image";
-  const ordered = Array.from(document.querySelectorAll<HTMLElement>(`${blockSelector},${imageSelector},${breakSelector}`));
+  const tableSelector = "table.qalam-document-table,table[data-pdf-table]";
+  const ordered = Array.from(document.querySelectorAll<HTMLElement>(`${blockSelector},${imageSelector},${breakSelector},${tableSelector}`))
+    .filter(element => element.matches(tableSelector) || !element.closest(tableSelector));
   let pendingForce = false;
   let blockIndex = -1;
   for (const block of ordered) {
@@ -204,6 +210,21 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     const forceBreak = pendingForce;
     pendingForce = false;
     blockIndex += 1;
+    if (block.matches(tableSelector)) {
+      const rect = block.getBoundingClientRect();
+      const source = block.cloneNode(true) as HTMLElement;
+      source.dataset.pdfTable = "true";
+      source.style.cssText += `;position:absolute;display:table;table-layout:fixed;border-collapse:collapse;margin:0;width:${rect.width}px;min-height:${rect.height}px;direction:${getComputedStyle(block).direction};`;
+      const originals = block.querySelectorAll<HTMLElement>("td,th");
+      source.querySelectorAll<HTMLElement>("td,th").forEach((cell, index) => {
+        const style = getComputedStyle(originals[index] ?? block);
+        cell.style.cssText += `;border:1px solid #222;box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
+      });
+      snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false,
+        left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height),
+        inkAscent: 0, inkDescent: Math.max(1, rect.height), forceBreak, image: true });
+      continue;
+    }
     if (block.matches(imageSelector)) {
       const rect = block.getBoundingClientRect();
       const source = block.cloneNode(true) as HTMLElement;
@@ -429,6 +450,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
   }
   const measurement = document.createElement("style"); measurement.id = "pdf-ink-measure-style";
   measurement.textContent = "body{background:white!important}[data-pdf-ink-stage] *{color:black!important;background:transparent!important;border-color:transparent!important;text-shadow:none!important}[data-pdf-ink-stage] [style*=background]{background:black!important}";
+  measurement.textContent += `[data-pdf-table] td,[data-pdf-table] th{border:1px solid #222!important}[data-pdf-table]{border-collapse:collapse!important}`;
   document.head.append(measurement); return lines;
 }
 

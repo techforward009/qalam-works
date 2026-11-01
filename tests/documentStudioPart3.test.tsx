@@ -17,7 +17,7 @@ describe('text context catalog',()=>{
   expect(TEXT_CONTEXT_ITEMS.map(item=>'label'in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All','Cut','Copy','Clear','Paste','—','Character…','Paragraph…','—','Text To Table…']);
   expect(CONTEXT_ZOOMS.map(item=>item.value)).toEqual([50,75,100,200,300,'fit-width','fit-page']);
  });
- it('disables unimplemented and selection-only actions',()=>{for(const id of ['cut','copy','clear']){expect(textContextDisabled(id,false)).toBe(true);expect(textContextDisabled(id,true)).toBe(false);}expect(textContextDisabled('textToTable',true)).toBe(true);expect(textContextDisabled('paste',false)).toBe(false);});
+ it('disables unimplemented and selection-only actions',()=>{for(const id of ['cut','copy','clear']){expect(textContextDisabled(id,false)).toBe(true);expect(textContextDisabled(id,true)).toBe(false);}expect(textContextDisabled('textToTable',true)).toBe(false);expect(textContextDisabled('textToTable',false)).toBe(false);expect(textContextDisabled('paste',false)).toBe(false);});
  it('clamps the popup into the viewport',()=>{expect(contextMenuPosition(389,850,200,310,390,851)).toEqual({left:186,top:537});expect(contextMenuPosition(-10,-10,200,310,390,851)).toEqual({left:4,top:4});});
 });
 describe('Home guard',()=>{
@@ -47,5 +47,5 @@ describe('automatic pagination safety',()=>{
 it.each([false,true])('context items hide selection actions and label the table correctly (%s)',selected=>{
  const items=textContextItems(selected);expect(items.map(item=>'label' in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All',...(selected?['Cut','Copy','Clear']:[]),'Paste','—','Character…','Paragraph…','—',selected?'Text To Table…':'Table…']);
  for(let i=0;i<items.length;i++)if('separator' in items[i]){expect(i).toBeGreaterThan(0);expect(i).toBeLessThan(items.length-1);expect('separator' in items[i-1]).toBe(false);expect('separator' in items[i+1]).toBe(false);}
- expect(textContextDisabled('textToTable',selected)).toBe(true);
+ expect(textContextDisabled('textToTable',selected)).toBe(false);
 });

@@ -15,7 +15,7 @@ export const CONTEXT_ZOOMS:ReadonlyArray<{label:string;value:DocumentZoom}>=[
  {label:'50%',value:50},{label:'75%',value:75},{label:'100%',value:100},{label:'200%',value:200},{label:'300%',value:300},{label:'Fit width',value:'fit-width'},{label:'Fit page',value:'fit-page'},
 ];
 export function textContextDisabled(id:string,hasSelection:boolean):boolean {
- return id==='textToTable'||(!hasSelection&&['cut','copy','clear'].includes(id));
+ return (!hasSelection&&['cut','copy','clear'].includes(id));
 }
 export function contextMenuPosition(x:number,y:number,width:number,height:number,viewportWidth:number,viewportHeight:number){
  return {left:Math.max(4,Math.min(x,viewportWidth-width-4)),top:Math.max(4,Math.min(y,viewportHeight-height-4))};
