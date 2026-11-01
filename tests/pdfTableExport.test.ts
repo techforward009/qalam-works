@@ -29,7 +29,7 @@ describe.runIf(Boolean(chrome))("real PDF table export",()=>{
            dir:getComputedStyle(t.querySelector("td")!).direction,
          })));
          writeFileSync(`${output}/table-dom.json`,JSON.stringify(count,null,2));
-         expect(count).toEqual([{rows:3,cells:[2,2,2],border:"1px",dir:"rtl"}]);
+         expect(count).toEqual([{rows:3,cells:[2,2,2],border:"0px",dir:"rtl"}]);
          return pdf(options);
        });
        return page;

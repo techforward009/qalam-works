@@ -50,7 +50,7 @@ test("column drag moves divider and preserves sum; Layout dialog works",async({p
  const menu=page.getByRole("menu",{name:"Text context menu"});
  await expect(menu.getByRole("menuitem",{name:"Table Layout…"})).toBeEnabled();
  await expect(menu.getByRole("menuitem",{name:"Table To Text…"})).toBeDisabled();
- await expect(menu.getByRole("menuitem",{name:"Table Format"})).toBeDisabled();
+ await expect(menu.getByRole("menuitem",{name:"Table Format"})).toBeEnabled();
  await menu.getByRole("menuitem",{name:"Table Layout…"}).click();
  const d=page.getByRole("dialog",{name:"Table Layout"});
  await expect(d.getByRole("radio",{name:"Row"})).toBeChecked();

@@ -15,6 +15,7 @@ export type MenuActionId =
   | "preferences.typographic"
   | "format.paragraph"
   | "text.tableLayout"
+  | "text.tableFormat"
   | "edit.cut" | "edit.copy" | "edit.paste" | "edit.clear"
   | "file.new"
   | "file.open"
@@ -449,7 +450,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   ] },
   { ...original("format"), items: [
     ready("format.character", "Character…", "Ctrl+H"), ready("format.paragraph", "Paragraph…", "Ctrl+G"), soon("text.hyphenation", "Hyphenation…"), soon("text.borders", "Borders…"), soon("text.tabs", "Tabs", "Ctrl+Alt+T"), soon("text.wrap", "Text Wrap"), separator,
-    soon("text.sort", "Sort Text…"), soon("text.tableFormat", "Table Format…"), ready("text.tableLayout", "Table Layout…"), separator,
+    soon("text.sort", "Sort Text…"), ready("text.tableFormat", "Table Format…"), ready("text.tableLayout", "Table Layout…"), separator,
     soon("text.object", "Object…"), soon("text.runaround", "Runaround…"), soon("text.inset", "Inset…"), soon("text.master", "Master Page Objects…"), ready("file.pageSetup", "Document…"), soon("text.guides", "Guides…"), separator,
     soon("text.styles", "Style Sheets…", "Ctrl+T"), soon("text.colors", "Define Colors…"), separator, qalamSection,
     { type: "submenu", id: "format.image", labelEn: "Image Commands", labelUr: "تصویر کے اوزار", items: findSubmenuItems(original("format").items, "format.image")! },

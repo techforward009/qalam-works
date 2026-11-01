@@ -40,10 +40,10 @@ export function StudioInsertTableDialog({editor,unit,onClose}:{editor:Editor;uni
  return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={key} onMouseDown={e=>e.stopPropagation()}>
   <form ref={drag.dialogRef} role="dialog" aria-modal="true" aria-label="Insert Table" data-studio-insert-table-dialog="true" data-inpage2009-dialog="true" dir="ltr" onSubmit={e=>{e.preventDefault();apply();}} style={drag.style}>
    <ClassicTitle title="Insert Table" onHelp={()=>setHelp(true)} onClose={close} handleProps={drag.handleProps}/>
-   <label style={at(12,40)}>Rows:</label><ClassicSpinner label="Rows" box={[100,37,92,20]} value={rows} onChange={setRows} min={1} max={100}/>
-   <label style={at(12,67)}>Columns:</label><ClassicSpinner label="Columns" box={[100,64,92,20]} value={columns} onChange={setColumns} min={1} max={50}/>
+   <label style={at(12,40)}>Rows:</label><ClassicSpinner label="Rows" box={[100,37,92,20]} value={rows} onChange={setRows} min={1} max={100} selectOnFocus/>
+   <label style={at(12,67)}>Columns:</label><ClassicSpinner label="Columns" box={[100,64,92,20]} value={columns} onChange={setColumns} min={1} max={50} selectOnFocus/>
    <label style={at(12,94)}>Column Width:</label>
-   <input aria-label="Column Width" value={width} onChange={e=>setWidth(e.target.value)} style={{...classicField,...at(100,91,92,20)}} placeholder={`Auto or ${unit}`}/>
+   <input aria-label="Column Width" onFocus={e=>e.currentTarget.select()} onClick={e=>e.currentTarget.select()} onMouseUp={e=>e.currentTarget.select()} onMouseDown={e=>{e.preventDefault();e.currentTarget.focus();e.currentTarget.select();}} value={width} onChange={e=>setWidth(e.target.value)} style={{...classicField,...at(100,91,92,20)}} placeholder={`Auto or ${unit}`}/>
    <button type="submit" style={{...classicButton,...at(229,37,78,23)}}>OK</button>
    <button type="button" onClick={close} style={{...classicButton,...at(229,64,78,23)}}>Cancel</button>
    <button type="button" onClick={()=>setHelp(true)} style={{...classicButton,...at(229,91,78,23)}}>Help</button>

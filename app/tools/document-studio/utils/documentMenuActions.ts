@@ -35,6 +35,7 @@ export type DocumentMenuHandlers = {
   character?: () => void;
   paragraph?: () => void;
   tableLayout?: () => void;
+  tableFormat?: () => void;
   textAction?: (action: "cut" | "copy" | "paste" | "clear") => void;
   newDocument: () => void;
   openLibrary: () => void;
@@ -125,6 +126,7 @@ export function dispatchDocumentMenuAction(
     case "format.character": handlers.character?.(); return;
     case "format.paragraph": handlers.paragraph?.(); return;
     case "text.tableLayout": handlers.tableLayout?.(); return;
+    case "text.tableFormat": handlers.tableFormat?.(); return;
     case "edit.cut": handlers.textAction?.("cut"); return;
     case "edit.copy": handlers.textAction?.("copy"); return;
     case "edit.paste": handlers.textAction?.("paste"); return;

@@ -172,6 +172,7 @@ export default function DocumentMenuBar({
       let id: MenuActionId | undefined;
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "y") id = "file.downloadTxt";
+      if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "f") id = "text.tableFormat";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "insert") id = "insert.pageBreak";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "f12") id = "window.page";
       if (!id) return;
