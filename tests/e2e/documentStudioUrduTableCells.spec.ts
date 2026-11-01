@@ -32,7 +32,7 @@ test("nine complete Urdu words fill their own RTL cells and reverse Tab moves to
   const cells=editor.locator("table td");
   await expect.poll(()=>page.evaluate(cellAtCaret)).toEqual({row:0,col:0});
   for(let i=0;i<WORDS.length;i++){
-    await page.keyboard.insertText(WORDS[i]);
+    await page.keyboard.type(WORDS[i],{delay:40});
     await expect.poll(()=>page.evaluate(cellAtCaret)).toEqual({row:Math.floor(i/3),col:i%3});
     await expect(cells.nth(i)).toHaveText(WORDS[i]);
     if(i===4) {
@@ -48,6 +48,18 @@ test("nine complete Urdu words fill their own RTL cells and reverse Tab moves to
     }
   }
   for(let i=0;i<WORDS.length;i++)await expect(cells.nth(i)).toHaveText(WORDS[i]);
+  await expect(editor.locator("table tr")).toHaveCount(3);
+  await expect(editor.locator("table td")).toHaveCount(9);
+  // Native Urdu typing must leave each glyph inside the visible cell box,
+  // not on the top border or in the previous/next cell.
+  const ink=await cells.first().evaluate(cell=>{
+    const paragraph=cell.querySelector("p")!,range=document.createRange();
+    range.selectNodeContents(paragraph);
+    const border=cell.getBoundingClientRect(),glyph=range.getBoundingClientRect();
+    return {top:glyph.top,bottom:glyph.bottom,cellTop:border.top,cellBottom:border.bottom};
+  });
+  expect(ink.top).toBeGreaterThanOrEqual(ink.cellTop+1);
+  expect(ink.bottom).toBeLessThanOrEqual(ink.cellBottom-1);
   await cells.nth(4).click();
   await expect.poll(()=>page.evaluate(cellAtCaret)).toEqual({row:1,col:1});
   await page.keyboard.press("Shift+Tab");
@@ -61,11 +73,15 @@ test("empty rows equal one line, first Urdu word stays fully inside, and row hei
   const editor=await insertUrduTable(page),rows=editor.locator("table tr"),cells=editor.locator("table tr:first-child td");
   const empty=await rows.evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
   expect(Math.max(...empty)-Math.min(...empty)).toBeLessThanOrEqual(2);
+  // A single table row gives every cell the same height. The first row
+  // cannot collapse while other rows retain their one-line height.
+  const emptyCellHeights=await editor.locator("table td").evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
+  expect(Math.max(...emptyCellHeights)-Math.min(...emptyCellHeights)).toBeLessThanOrEqual(2);
   await editor.evaluate(el=>el.style.setProperty("--qalam-first-line-indent","12mm"));
   await expect(cells.first().locator("p")).toHaveCSS("text-indent","0px");
   const line=await cells.first().locator("p").evaluate(p=>parseFloat(getComputedStyle(p).lineHeight));
   expect(empty[0]).toBeLessThanOrEqual(line+6); // no large fixed 8px top and bottom
-  await page.keyboard.insertText("ایک");
+  await page.keyboard.type("ایک",{delay:40});
   await expect(cells.first().locator("[data-studio-line-run]")).toHaveCount(0);
   const geometry=await cells.first().evaluate(el=>{
     const p=el.querySelector("p")!,range=document.createRange();
@@ -78,9 +94,9 @@ test("empty rows equal one line, first Urdu word stays fully inside, and row hei
   expect(geometry.paddingTop).toBeLessThanOrEqual(3);
   // Enter inside the middle row adds a line only to that row.
   await editor.locator("table tr:nth-child(2) td").first().click();
-  await page.keyboard.insertText("دو");
+  await page.keyboard.type("دو",{delay:40});
   await page.keyboard.press("Enter");
-  await page.keyboard.insertText("تین");
+  await page.keyboard.type("تین",{delay:40});
   const grown=await rows.evaluateAll(nodes=>nodes.map(n=>Math.round(n.getBoundingClientRect().height)));
   expect(grown[1]).toBeGreaterThan(grown[0]+line/2);
   expect(Math.abs(grown[2]-empty[2])).toBeLessThanOrEqual(3);
@@ -93,7 +109,7 @@ test("48pt Urdu word enlarges only its own row; Enter and explicit paragraph spa
   const before=await rows.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
   const first=editor.locator("table tr:first-child td").first();
   await first.click();
-  await page.keyboard.insertText("بڑا");
+  await page.keyboard.type("بڑا",{delay:40});
   await first.locator("p").dblclick();
   const fontSize=page.locator("[data-studio-font-size]");
   await expect(fontSize).toBeVisible();
@@ -105,9 +121,9 @@ test("48pt Urdu word enlarges only its own row; Enter and explicit paragraph spa
   expect(Math.abs(bigger[1]-before[1])).toBeLessThanOrEqual(3);
   expect(Math.abs(bigger[2]-before[2])).toBeLessThanOrEqual(3);
   const second=editor.locator("table tr:nth-child(2) td").first();
-  await second.click();await page.keyboard.insertText("دو");
+  await second.click();await page.keyboard.type("دو",{delay:40});
   await page.keyboard.press("Enter");
-  await page.keyboard.insertText("تین");
+  await page.keyboard.type("تین",{delay:40});
   const multiline=await rows.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
   expect(multiline[1]).toBeGreaterThan(before[1]+18);
   expect(Math.abs(multiline[2]-before[2])).toBeLessThanOrEqual(3);
