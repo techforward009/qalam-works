@@ -1,0 +1,51 @@
+import {test,expect} from "@playwright/test";
+
+test.beforeEach(async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem("qalam-site-language","en"));
+ await page.goto("/tools/document-studio");
+ await expect(page.getByRole("textbox",{name:"Document editor"})).toBeVisible({timeout:30000});
+});
+test("classic Insert Table defaults 1x2, no header; supports numeric column width",async({page})=>{
+ const editor=page.locator(".ProseMirror").first();
+ await editor.click();
+ await editor.locator("p").first().click({button:"right"});
+ const menu=page.getByRole("menu",{name:"Text context menu"});
+ await menu.getByRole("menuitem",{name:"Table…",exact:true}).click();
+ const dialog=page.getByRole("dialog",{name:"Insert Table"});
+ await expect(dialog).toBeVisible();
+ await expect(dialog.getByRole("spinbutton",{name:"Rows"})).toHaveValue("1");
+ await expect(dialog.getByRole("spinbutton",{name:"Columns"})).toHaveValue("2");
+ await expect(dialog.getByRole("textbox",{name:"Column Width"})).toHaveValue("Auto");
+ await page.screenshot({path:"tests/screenshots/qalam-tables/insert-table-dialog.png"});
+ await dialog.getByRole("spinbutton",{name:"Rows"}).fill("3");
+ await dialog.getByRole("textbox",{name:"Column Width"}).fill("2.54cm");
+ await dialog.getByRole("button",{name:"OK",exact:true}).click();
+ await expect(editor.locator("table.qalam-document-table")).toHaveCount(1);
+ await expect(editor.locator("tr")).toHaveCount(3);
+ await expect(editor.locator("tr").first().locator("td")).toHaveCount(2);
+ await expect(editor.locator("th")).toHaveCount(0);
+});
+test("Text To Table splits tabs, pads cells, and creates one undo step",async({page})=>{
+ const editor=page.locator(".ProseMirror").first();
+ await editor.click();
+ await page.keyboard.insertText("Alpha");
+ await page.keyboard.press("Tab");
+ await page.keyboard.insertText("Beta");
+ await page.keyboard.press("Enter");
+ await page.keyboard.insertText("Gamma");
+ await page.keyboard.press("Control+a");
+ await editor.locator("p").first().click({button:"right"});
+ const menu=page.getByRole("menu",{name:"Text context menu"});
+ await menu.getByRole("menuitem",{name:"Text To Table…",exact:true}).click();
+ const dialog=page.getByRole("dialog",{name:"Text To Table"});
+ await expect(dialog.getByRole("radio",{name:"Tabs"})).toBeChecked();
+ await dialog.getByRole("button",{name:"OK"}).click();
+ await expect(editor.locator("tr")).toHaveCount(2);
+ await expect(editor.locator("tr").first().locator("td")).toHaveCount(2);
+ await expect(editor.locator("tr").nth(1).locator("td")).toHaveCount(2);
+ await expect(editor.locator("tr").first()).toContainText("Alpha");
+ await expect(editor.locator("tr").first()).toContainText("Beta");
+ await editor.click();
+ await page.keyboard.press("Control+z");
+ await expect(editor.locator("table")).toHaveCount(0);
+});
