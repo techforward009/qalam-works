@@ -18,7 +18,7 @@ export function parseTableColumnWidth(value: string, unit: RulerUnit): number | 
 export function createTableContent(rows: number, cols: number, widthPx: number | null, dir?: "rtl" | "ltr"): JSONContent {
   if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1 || rows > 100 || cols > 50)
     throw new Error("Rows or columns are outside the supported range.");
-  return { type: "table", content: Array.from({ length: rows }, () => ({
+  return { type: "table", ...(dir ? { attrs: { dir } } : {}), content: Array.from({ length: rows }, () => ({
     type: "tableRow", content: Array.from({ length: cols }, () => ({
       type: "tableCell", ...(widthPx === null ? {} : { attrs: { colwidth: [widthPx] } }),
       content: [{ type: "paragraph", ...(dir ? { attrs: { dir, directionMode: "manual" } } : {}) }],
@@ -52,7 +52,7 @@ export function convertSelectionToTable(fragment: Fragment, mode: TextTableMode)
     return cells.map(content => ({ type: "paragraph", ...(paragraph.attrs ? { attrs: paragraph.attrs } : {}), ...(content.length ? { content } : {}) }));
   });
   const width = Math.max(...rows.map(row => row.length));
-  return { type: "table", content: rows.map(cells => ({
+  return { type: "table", attrs:{dir: paragraphs[0]?.attrs?.dir === "ltr" ? "ltr" : "rtl"}, content: rows.map(cells => ({
     type: "tableRow", content: Array.from({ length: width }, (_, i) => ({
       type: "tableCell", content: [cells[i] ?? { type: "paragraph", ...(paragraphs[0].attrs ? { attrs: paragraphs[0].attrs } : {}) }],
     })),

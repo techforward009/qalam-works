@@ -159,6 +159,7 @@ import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import {StudioTableLayoutDialog} from "./StudioTableLayoutDialog";
 import {QalamTableColumnResizing} from "../utils/tableColumnResizing";
+import {QalamTableStableDirection} from "../utils/tableStableDirection";
 import { functionKeyZoom } from "../utils/documentView";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
@@ -508,7 +509,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const tableNavigationEditorRef = useRef<Editor | null>(null);
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
+    extensions: [...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {

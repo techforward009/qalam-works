@@ -6,17 +6,32 @@ import {TABLE_DIALOG_CHANGE} from "./formattingSafety";
 import {TABLE_MIN_COL_WIDTH,tableResizePair} from "./tableOperations";
 
 type Handle={table:HTMLTableElement;index:number;outer:boolean;rtl:boolean};
-const cellFrom=(target:EventTarget|null)=>target instanceof Element?target.closest<HTMLTableCellElement>("td,th"):null;
-function getHandle(event:MouseEvent):Handle|null {
- const cell=cellFrom(event.target),table=cell?.closest<HTMLTableElement>("table.qalam-document-table");
- if(!cell||!table)return null;
- const row=cell.parentElement,entries=Array.from(row?.children||[]).filter((e):e is HTMLTableCellElement=>e instanceof HTMLTableCellElement);
- if(entries.length<2)return null;
- const rtl=getComputedStyle(table).direction==="rtl",index=entries.indexOf(cell);
- if(index<0)return null;
- const box=cell.getBoundingClientRect(),inside=rtl?box.left:box.right;
- if(Math.abs(event.clientX-inside)>7)return null;
- return {table,index,outer:index===entries.length-1,rtl};
+function getHandle(event:PointerEvent):Handle|null {
+  const element=event.target instanceof Element?event.target:null;
+  // At a collapsed border the browser may hit a TR or the neighbouring cell
+  // rather than the TD owning that edge. Detect by physical coordinates.
+  const table=element?.closest<HTMLTableElement>("table.qalam-document-table");
+  if(!table)return null;
+  const box=table.getBoundingClientRect();
+  if(event.clientX<box.left-8||event.clientX>box.right+8||
+     event.clientY<box.top||event.clientY>box.bottom)return null;
+  const row=Array.from(table.rows).find(r=>{
+    const rect=r.getBoundingClientRect();
+    return event.clientY>=rect.top&&event.clientY<=rect.bottom;
+  }) ?? table.rows[0];
+  const cells=Array.from(row?.cells||[]);
+  if(cells.length<2)return null;
+  const rtl=getComputedStyle(table).direction==="rtl";
+  // Column 0 is the rightmost in an RTL table. The outer far-left
+  // boundary of the last column is also a resize handle.
+  for(let index=0;index<cells.length;index++){
+    const rect=cells[index].getBoundingClientRect();
+    const line=rtl?rect.left:rect.right;
+    if(Math.abs(event.clientX-line)<=8){
+      return {table,index,outer:index===cells.length-1,rtl};
+    }
+  }
+  return null;
 }
 function geometry(table:HTMLTableElement) {
  return Array.from(table.rows[0]?.cells||[]).map(cell=>cell.getBoundingClientRect().width);
@@ -51,11 +66,11 @@ export const QalamTableColumnResizing=Extension.create({
        let drag:{handle:Handle;startX:number;widths:number[];preview:number[]}|null=null;
        let hover:HTMLTableElement|null=null;
        const setHover=(table:HTMLTableElement|null)=>{
-         if(hover&&hover!==table)hover.style.cursor="";
+         if(hover&&hover!==table){hover.style.cursor="";delete hover.dataset.tableResizeHover;}
          hover=table;
-         if(table)table.style.cursor="col-resize";
+         if(table){table.dataset.tableResizeHover="true";table.style.cursor="col-resize";}
        };
-       const move=(event:MouseEvent)=>{
+       const move=(event:PointerEvent)=>{
          if(!drag)return;
          const {handle,startX,widths}=drag;
          const raw=(event.clientX-startX)*(handle.rtl?-1:1);
@@ -70,25 +85,29 @@ export const QalamTableColumnResizing=Extension.create({
          if(!drag)return;
          const {handle,preview}=drag;
          drag=null;
-         document.removeEventListener("mousemove",move,true);
-         document.removeEventListener("mouseup",finish,true);
+         document.removeEventListener("pointermove",move,true);
+         document.removeEventListener("pointerup",finish,true);
+         document.removeEventListener("pointercancel",finish,true);
          setHover(null);
+
          updateWidths(view,handle.table,preview);
        };
-       const onMove=(event:MouseEvent)=>{if(!drag)setHover(getHandle(event)?.table??null);};
-       const onDown=(event:MouseEvent)=>{
+       const onMove=(event:PointerEvent)=>{if(!drag)setHover(getHandle(event)?.table??null);};
+       const onDown=(event:PointerEvent)=>{
          if(event.button!==0)return;
          const handle=getHandle(event);if(!handle)return;
          const widths=geometry(handle.table);
          if(widths.length<2)return;
          drag={handle,startX:event.clientX,widths,preview:widths};
+
          setHover(handle.table);
-         document.addEventListener("mousemove",move,true);
-         document.addEventListener("mouseup",finish,true);
+         document.addEventListener("pointermove",move,true);
+         document.addEventListener("pointerup",finish,true);
+         document.addEventListener("pointercancel",finish,true);
          event.preventDefault();
        };
-       view.dom.addEventListener("mousemove",onMove);
-       view.dom.addEventListener("mousedown",onDown,true);
+       view.dom.addEventListener("pointermove",onMove,true);
+       view.dom.addEventListener("pointerdown",onDown,true);
        return {update(){
          if(drag)return;
          view.dom.querySelectorAll<HTMLTableElement>("table.qalam-document-table").forEach(table=>{
@@ -107,10 +126,11 @@ export const QalamTableColumnResizing=Extension.create({
            if(widths.every(w=>!w)){table.style.width="";table.style.minWidth="";}
          });
        },destroy(){
-         view.dom.removeEventListener("mousemove",onMove);
-         view.dom.removeEventListener("mousedown",onDown,true);
-         document.removeEventListener("mousemove",move,true);
-         document.removeEventListener("mouseup",finish,true);
+         view.dom.removeEventListener("pointermove",onMove,true);
+         view.dom.removeEventListener("pointerdown",onDown,true);
+         document.removeEventListener("pointermove",move,true);
+         document.removeEventListener("pointerup",finish,true);
+         document.removeEventListener("pointercancel",finish,true);
          setHover(null);
        }};
      }
