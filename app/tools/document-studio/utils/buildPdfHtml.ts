@@ -382,15 +382,39 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
       return `<ol${startAttr} dir="${blockDir}">${items}</ol>`;
     }
     case "table": {
-      const rows = (node.content ?? []).filter((row) => row.type === "tableRow").map((row) => {
-        const cells = (row.content ?? []).filter((cell) => cell.type === "tableCell" || cell.type === "tableHeader").map((cell) => {
-          const tag = cell.type === "tableHeader" ? "th" : "td";
-          const inner = (cell.content ?? []).map((child) => convertNode(child, ctx)).join("");
-          return `<${tag}>${inner}</${tag}>`;
+      const attrs=node.attrs??{};
+      const tableDir=attrs.tableFlow==="ltr"||attrs.dir==="ltr"?"ltr":"rtl";
+      const align=attrs.tableAlignment==="center"?"center":attrs.tableAlignment==="left"?"left":"right";
+      const indent=Math.max(0,Math.min(120,Number(attrs.tableIndentMm)||0));
+      const width=Math.max(0,Math.min(2000,Number(attrs.tableFormatWidthPx)||0));
+      const tableStyles=[`margin-inline-start:${indent}mm`];
+      if(align==="center")tableStyles.push("margin-left:auto","margin-right:auto");
+      else if(align==="left")tableStyles.push("margin-left:0","margin-right:auto");
+      else tableStyles.push("margin-left:auto","margin-right:0");
+      if(width>0)tableStyles.push(`width:${width}px`,"max-width:100%");
+      const firstRow=(node.content??[]).find(row=>row.type==="tableRow");
+      const cols=(firstRow?.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader");
+      const colgroup=cols.some(cell=>Array.isArray(cell.attrs?.colwidth))
+        ?`<colgroup>${cols.map(cell=>{
+          const w=Number((cell.attrs?.colwidth as number[]|undefined)?.[0])||0;
+          return `<col${w>0?` style="width:${Math.max(64,Math.min(2000,w))}px"`:""}>`;
+         }).join("")}</colgroup>`:"";
+      const rows=(node.content??[]).filter(row=>row.type==="tableRow").map(row=>{
+        const cells=(row.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader").map(cell=>{
+          const tag=cell.type==="tableHeader"?"th":"td";
+          const a=cell.attrs??{};
+          const fill=typeof a.tableFill==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableFill)?a.tableFill:"transparent";
+          const color=typeof a.tableBorderColor==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableBorderColor)?a.tableBorderColor:"#000000";
+          const style=["solid","dotted","dashed","double"].includes(String(a.tableBorderStyle))?String(a.tableBorderStyle):"none";
+          const pt=Math.max(.25,Math.min(8,Number(a.tableBorderWidthPt)||1));
+          const gap=Math.max(0,Math.min(20,Number(a.tableGapMm??1.41)||1.41));
+          const css=`background-color:${fill};border:${style==="none"?"0 none transparent":`${pt}pt ${style} ${color}`};padding-inline-end:${gap}mm;vertical-align:top`;
+          const inner=(cell.content??[]).map(child=>convertNode(child,ctx)).join("");
+          return `<${tag} data-table-border-style="${style}" style="${escapeAttr(css)}">${inner}</${tag}>`;
         }).join("");
         return `<tr>${cells}</tr>`;
       }).join("");
-      return `<table class="qalam-document-table" dir="${blockDir}"><tbody>${rows}</tbody></table>`;
+      return `<table class="qalam-document-table" dir="${tableDir}" data-table-alignment="${align}" style="${escapeAttr(tableStyles.join(";"))}">${colgroup}<tbody>${rows}</tbody></table>`;
     }
     case "image": {
       const src = typeof node.attrs?.src === "string" && /^data:image\/(png|jpeg|webp);base64,/i.test(node.attrs.src) ? node.attrs.src : "";
@@ -544,8 +568,8 @@ ${classRulesCss()}
   }
   table.qalam-document-table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed; margin:0.75em 0; }
   table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
-  table.qalam-document-table th, table.qalam-document-table td { border:1px solid #789080; padding:0.45em 0.6em; vertical-align:top; text-align:start; overflow-wrap:anywhere; }
-  table.qalam-document-table th { background:#eaf2eb; color:#1a3a2a; font-weight:700; }
+  table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:0.45em 0.6em; vertical-align:top; text-align:start; overflow-wrap:anywhere; }
+  table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
   table.qalam-document-table p { margin:0; }
   figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
   figure.qalam-document-image.image-left { margin-left:0; margin-right:auto; }

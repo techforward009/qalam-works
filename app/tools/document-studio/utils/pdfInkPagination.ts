@@ -218,7 +218,9 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       const originals = block.querySelectorAll<HTMLElement>("td,th");
       source.querySelectorAll<HTMLElement>("td,th").forEach((cell, index) => {
         const style = getComputedStyle(originals[index] ?? block);
-        cell.style.cssText += `;border:1px solid #222;box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
+        const none=(originals[index]?.dataset.tableBorderStyle??"none")==="none";
+        const border=none?"0 none transparent":style.border;
+        cell.style.cssText += `;border:${border};background-color:${style.backgroundColor};box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
       });
       snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false,
         left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height),
@@ -572,7 +574,7 @@ export async function paginatePdfInk(
       line.inkLeft = line.frameLeft;
       line.inkRight = line.frameLeft;
     }
-    if (line.inkTop <= line.frameTop || line.inkBottom >= line.frameBottom) throw new Error(`PDF glyph ink could not be bounded safely for line ${i}: ${line.inkTop}..${line.inkBottom} in ${line.frameTop}..${line.frameBottom}; export blocked`);
+    if (!line.image && (line.inkTop <= line.frameTop || line.inkBottom >= line.frameBottom)) throw new Error(`PDF glyph ink could not be bounded safely for line ${i}: ${line.inkTop}..${line.inkBottom} in ${line.frameTop}..${line.frameBottom}; export blocked`);
     line.inkTop -= baselines[i]; line.inkBottom -= baselines[i];
     line.horizontalShift = fitHorizontalInk(
       line.inkLeft,

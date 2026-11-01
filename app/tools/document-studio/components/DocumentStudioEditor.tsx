@@ -158,6 +158,8 @@ import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import {StudioTableLayoutDialog} from "./StudioTableLayoutDialog";
+import {StudioTableFormatDialog} from "./StudioTableFormatDialog";
+import {QalamTableFormatAttributes} from "../utils/tableFormatAttributes";
 import {QalamTableColumnResizing} from "../utils/tableColumnResizing";
 import {QalamTableStableDirection} from "../utils/tableStableDirection";
 import { functionKeyZoom } from "../utils/documentView";
@@ -309,8 +311,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [textToTableOpen,setTextToTableOpen] = useState(false);
   const [tableLayoutOpen,setTableLayoutOpen] = useState(false);
+  const [tableFormatOpen,setTableFormatOpen] = useState(false);
   const tableDialogsActive=useRef(false);
-  tableDialogsActive.current=tableInsertOpen||textToTableOpen||tableLayoutOpen;
+  tableDialogsActive.current=tableInsertOpen||textToTableOpen||tableLayoutOpen||tableFormatOpen;
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingMetadataWrites,setPendingMetadataWrites] = useState(0);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
@@ -509,7 +512,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   const tableNavigationEditorRef = useRef<Editor | null>(null);
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
+    extensions: [...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableFormatAttributes, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -643,6 +646,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   });
 
   tableNavigationEditorRef.current = editor;
+
+  useEffect(()=>{
+    if(!editor)return;
+    const shortcut=(event:KeyboardEvent)=>{
+      if(!(event.ctrlKey||event.metaKey)||!event.altKey||event.shiftKey||event.key.toLowerCase()!=="f")return;
+      const target=event.target instanceof Element?event.target:null;
+      if(!target||!editor.view.dom.contains(target)||!editor.isActive("table")||tableFormatOpen)return;
+      event.preventDefault();event.stopPropagation();setTableFormatOpen(true);
+    };
+    // Capture before TipTap or browser text commands consume Ctrl+Alt+F.
+    document.addEventListener("keydown",shortcut,true);
+    return()=>document.removeEventListener("keydown",shortcut,true);
+  },[editor,tableFormatOpen]);
 
   useEffect(() => {
     if (!editor) return;
@@ -1982,6 +1998,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       character: () => setCharacterOpen(true),
       paragraph: () => setParagraphOpen(true),
       tableLayout: () => setTableLayoutOpen(true),
+      tableFormat: () => setTableFormatOpen(true),
       textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
@@ -2040,6 +2057,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }
   if (!editor?.isActive("table")) {
     disabledIds.add("text.tableLayout");
+    disabledIds.add("text.tableFormat");
     ([
       "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
       "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn",
@@ -2215,7 +2233,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
-        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} />
+        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} onTableFormat={()=>setTableFormatOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
@@ -2332,6 +2350,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={()=>{setTableInsertOpen(false);setFormattingNotice(0);}} /> : null}
       {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>{setTextToTableOpen(false);setFormattingNotice(0);}} /> : null}
       {tableLayoutOpen && editor ? <StudioTableLayoutDialog editor={editor} onClose={()=>{setTableLayoutOpen(false);setFormattingNotice(0);}} /> : null}
+      {tableFormatOpen && editor ? <StudioTableFormatDialog editor={editor} onClose={()=>{setTableFormatOpen(false);setFormattingNotice(0);}} /> : null}
 
       {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}
