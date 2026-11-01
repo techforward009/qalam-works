@@ -14,7 +14,7 @@ describe('Part 3 zoom',()=>{
 });
 describe('text context catalog',()=>{
  it('keeps InPage order, separators and fit choices',()=>{
-  expect(TEXT_CONTEXT_ITEMS.map(item=>'label'in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All','Cut','Copy','Clear','Paste','—','Character…','Paragraph…','—','Text To Table…','Table To Text…','Table Format','Table Layout…']);
+  expect(TEXT_CONTEXT_ITEMS.map(item=>'label'in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All','Cut','Copy','Clear','Paste','—','Character…','Paragraph…','—','Text To Table…']);
   expect(CONTEXT_ZOOMS.map(item=>item.value)).toEqual([50,75,100,200,300,'fit-width','fit-page']);
  });
  it('disables unimplemented and selection-only actions',()=>{for(const id of ['cut','copy','clear']){expect(textContextDisabled(id,false)).toBe(true);expect(textContextDisabled(id,true)).toBe(false);}expect(textContextDisabled('textToTable',true)).toBe(false);expect(textContextDisabled('textToTable',false)).toBe(false);expect(textContextDisabled('paste',false)).toBe(false);});

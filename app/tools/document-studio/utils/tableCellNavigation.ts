@@ -36,18 +36,20 @@ export function moveTableCell(view: EditorView, step: -1 | 1): boolean {
   return true;
 }
 
-/** After a final Tab inserts a row, place the caret in its first (rightmost
- * in RTL) cell, rather than keeping the stale pre-insertion DOM selection. */
-export function focusTableLastRowStart(view:EditorView):boolean{
- const {state}=view;let target=-1;
- state.doc.descendants((node,pos)=>{
-  if(node.type.name!=="table")return true;
-  let rowPos=pos+1;
-  for(let i=0;i<node.childCount-1;i++)rowPos+=node.child(i).nodeSize;
-  const row=node.lastChild;
-  if(row?.type.name==="tableRow"&&row.childCount>0)target=rowPos+3;
-  return false;
- });
- if(target<0)return false;
- view.dispatch(state.tr.setSelection(TextSelection.near(state.doc.resolve(target),1)).scrollIntoView());view.focus();return true;
+
+/** Explicitly select the first cell of the freshly appended last row. */
+export function moveToLastTableRow(view:EditorView):boolean {
+ const {state}=view,$from=state.selection.$from;
+ let tableDepth=-1;
+ for(let d=$from.depth;d>0;d--)if($from.node(d).type.name==="table"){tableDepth=d;break;}
+ if(tableDepth<0)return false;
+ const table=$from.node(tableDepth);
+ if(!table.childCount)return false;
+ let rowOffset=0;
+ for(let i=0;i<table.childCount-1;i++)rowOffset+=table.child(i).nodeSize;
+ const pos=$from.before(tableDepth)+rowOffset+3;
+ const selection=TextSelection.near(state.doc.resolve(pos),1);
+ view.dispatch(state.tr.setSelection(selection).scrollIntoView());
+ view.focus();
+ return true;
 }

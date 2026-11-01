@@ -841,12 +841,13 @@ export default function DocumentCanvas({
           table-layout: fixed;
           margin: 0.75rem 0;
           overflow-wrap: anywhere;
+          direction: inherit;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table th,
         .qalam-editor-content .ProseMirror table.qalam-document-table td {
           min-width: 4rem;
           border: 1px solid #95a89a;
-          padding: 0.65rem 0.6rem;
+          padding: 8px 10px !important;
           vertical-align: top;
           text-align: start;
         }

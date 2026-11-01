@@ -34,6 +34,7 @@ export type DocumentMenuHandlers = {
   closeDocument?: () => void;
   character?: () => void;
   paragraph?: () => void;
+  tableLayout?: () => void;
   textAction?: (action: "cut" | "copy" | "paste" | "clear") => void;
   newDocument: () => void;
   openLibrary: () => void;
@@ -56,7 +57,6 @@ export type DocumentMenuHandlers = {
   loadExample: () => void;
   promptLink: () => void;
   openTableInsert?: () => void;
-  openTableLayout?: () => void;
   openImageInsert?: () => void;
   insertPageBreak?: () => void;
   insertSectionBreak?: (type: "nextPage" | "continuous") => void;
@@ -124,6 +124,7 @@ export function dispatchDocumentMenuAction(
     case "file.close": handlers.closeDocument?.(); return;
     case "format.character": handlers.character?.(); return;
     case "format.paragraph": handlers.paragraph?.(); return;
+    case "text.tableLayout": handlers.tableLayout?.(); return;
     case "edit.cut": handlers.textAction?.("cut"); return;
     case "edit.copy": handlers.textAction?.("copy"); return;
     case "edit.paste": handlers.textAction?.("paste"); return;
@@ -203,9 +204,6 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.link":
       handlers.promptLink();
-      return;
-    case "text.tableLayout":
-      handlers.openTableLayout?.();
       return;
     case "insert.table":
       handlers.openTableInsert?.();

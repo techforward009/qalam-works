@@ -6,6 +6,7 @@ import type {RulerUnit} from "../utils/documentView";
 import {createTableContent,parseTableColumnWidth} from "../utils/tableConversions";
 import {restoreEditorFocus} from "../utils/restoreEditorFocus";
 import {TABLE_DIALOG_CHANGE} from "../utils/formattingSafety";
+import {TextSelection} from "@tiptap/pm/state";
 import {studioOverlayRoot} from "../utils/inpageToolbar";
 import {ClassicTitle,ClassicSpinner,at,classicField,classicButton,useInPage2009Dialog} from "./inpage2009DialogChrome";
 
@@ -18,7 +19,19 @@ export function StudioInsertTableDialog({editor,unit,onClose}:{editor:Editor;uni
      const r=Number(rows),c=Number(columns),px=parseTableColumnWidth(width,unit);
      const direction=editor.state.selection.$from.parent.attrs.dir === "ltr" || editor.view.dom.getAttribute("dir") === "ltr" ? "ltr" : "rtl";
      const table=createTableContent(r,c,px,direction);
-     if (!editor.chain().command(({tr})=>{tr.setMeta(TABLE_DIALOG_CHANGE,true);return true;}).focus().insertContent(table).run()) throw new Error("Unable to insert table.");
+     if (!editor.chain()
+       .command(({tr})=>{tr.setMeta(TABLE_DIALOG_CHANGE,true);return true;})
+       .focus()
+       .insertContent(table)
+       .command(({tr})=>{
+         const $pos=tr.selection.$from;
+         let tableStart=-1;
+         for(let d=$pos.depth;d>0;d--)if($pos.node(d).type.name==="table"){tableStart=$pos.before(d);break;}
+         if(tableStart<0)return false;
+         // First text position: table + row + cell + paragraph.
+         tr.setSelection(TextSelection.near(tr.doc.resolve(tableStart+3),1));
+         return true;
+       }).run()) throw new Error("Unable to insert table.");
      close();
    }catch(e){setError(e instanceof Error?e.message:"Invalid table dimensions");}
  };
