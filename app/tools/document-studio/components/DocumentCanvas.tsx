@@ -831,6 +831,9 @@ export default function DocumentCanvas({
           color: #b45309;
           text-decoration: underline;
         }
+        /* Table direction is independent of the auto-detected direction of cell text. */
+        .qalam-editor-content .ProseMirror table.qalam-document-table:not([dir]):has(tr:first-child > :first-child p[dir="rtl"]) { direction: rtl; }
+        .qalam-editor-content .ProseMirror table.qalam-document-table:not([dir]):has(tr:first-child > :first-child p[dir="ltr"]) { direction: ltr; }
         .qalam-editor-content .ProseMirror table.qalam-document-table {
           width: 100%;
           max-width: 100%;
@@ -838,12 +841,38 @@ export default function DocumentCanvas({
           table-layout: fixed;
           margin: 0.75rem 0;
           overflow-wrap: anywhere;
+          direction: inherit;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table[dir="rtl"] { direction: rtl; }
+        .qalam-editor-content .ProseMirror table.qalam-document-table[dir="ltr"] { direction: ltr; }
+        /* Tall tables must participate in the normal block flow. Native
+           display:table is an indivisible float-exclusion box; every
+           pagination breaker otherwise pushes it beneath the previous
+           breaker, growing pages until the 80-page safety cap. Break the
+           large table into normal rows while retaining its cell DOM/JSON. */
+        .qalam-editor-content .ProseMirror.qalam-pagination table.qalam-document-table:has(tr:nth-child(18)) {
+          display: block;
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+        .qalam-editor-content .ProseMirror.qalam-pagination table.qalam-document-table:has(tr:nth-child(18)) tbody {
+          display: block;
+        }
+        .qalam-editor-content .ProseMirror.qalam-pagination table.qalam-document-table:has(tr:nth-child(18)) tr {
+          display: flex;
+          width: 100%;
+          break-inside: avoid;
+        }
+        .qalam-editor-content .ProseMirror.qalam-pagination table.qalam-document-table:has(tr:nth-child(18)) tr > :is(td,th) {
+          flex: 1 1 0;
+          box-sizing: border-box;
+          min-width: 0;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table th,
         .qalam-editor-content .ProseMirror table.qalam-document-table td {
           min-width: 4rem;
           border: 1px solid #95a89a;
-          padding: 0.45rem 0.6rem;
+          padding: 2px 4px !important;
           vertical-align: top;
           text-align: start;
         }
@@ -854,9 +883,30 @@ export default function DocumentCanvas({
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table p {
           margin: 0;
+          /* Story-level first-line indentation must not reach a cell.
+             Explicit paragraph indentation is still respected inline. */
+          text-indent: 0;
         }
-        .qalam-editor-content .ProseMirror .selectedCell::after {
-          background: rgba(26, 58, 42, 0.12);
+        /* Within cells, a marked 48pt word must expand its own line box
+           and row, instead of spilling outside a 0-height inline span. */
+        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span {
+          line-height: normal;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] :is(td,th,p) {
+          cursor: col-resize !important;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table .selectedCell {
+          position: relative;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table .selectedCell::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 3;
+          background: rgba(30, 99, 185, 0.29) !important;
+          outline: 2px solid rgba(30, 99, 185, 0.65);
+          outline-offset: -2px;
         }
         .qalam-editor-content .ProseMirror img.qalam-document-image {
           display: block;
@@ -934,7 +984,7 @@ export default function DocumentCanvas({
         }
         /* Page breakers are floats. Clearing them moves a heading below ALL
            generated sheets and causes self-feeding page-count growth. */
-        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6,blockquote) { clear: none; }
+        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6,blockquote,table,hr) { clear: none; }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
           outline: 2px solid #B8935A;
           outline-offset: 3px;

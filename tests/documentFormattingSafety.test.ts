@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle, FontFamily } from '@tiptap/extension-text-style';
-import { CONTENT_REPLACEMENT, formattingSafetyMessage, installFormattingSafety } from '../app/tools/document-studio/utils/formattingSafety';
+import { CONTENT_REPLACEMENT, TABLE_DIALOG_CHANGE, formattingSafetyMessage, installFormattingSafety } from '../app/tools/document-studio/utils/formattingSafety';
 let dispose: (() => void) | undefined, editor: Editor;
 afterEach(() => { dispose?.(); editor?.destroy(); document.body.replaceChildren(); });
 function setup() {
@@ -17,6 +17,21 @@ function setup() {
   return { guard, box, reject, clearNotice, claim, before };
 }
 describe('formatting target safety', () => {
+  it('allows only explicit table-dialog document changes when the target is none, never a focused text box', () => {
+    const {guard,claim,before,reject}=setup();
+    guard.invalidate();
+    const tableInsert=()=>editor.chain().command(({tr})=>{tr.setMeta(TABLE_DIALOG_CHANGE,true);return true;}).insertContent('<p>Table dialog text</p>').run();
+    editor.commands.insertContent('<p>Unsafe normal change</p>');
+    expect(editor.getJSON()).toEqual(before);
+    expect(tableInsert()).toBe(true);
+    expect(editor.getText()).toContain('Table dialog text');
+    claim();
+    const framed=editor.getJSON();
+    tableInsert();
+    expect(editor.getJSON()).toEqual(framed);
+    expect(reject).toHaveBeenCalled();
+  });
+
   it('rejects direct font/mark transactions for a frame without changing either text', () => {
     const { claim, before, box, reject } = setup(); claim();
     editor.chain().setFontFamily('Digital Khatt Indo-Pak').toggleBold().run();

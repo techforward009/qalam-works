@@ -10,6 +10,17 @@ export interface FirstLineRun { block: number; from: number; to: number; offset:
 interface LineState { blocks: number[]; runs: FirstLineRun[]; decorations: DecorationSet; dirty: Set<number>; textOnly:boolean }
 export const firstLineKey = new PluginKey<LineState>("qalam-first-line");
 const MEASURE = "qalam-first-line-measure";
+/** First-line page-top ink positioning applies to story paragraphs only.
+ * A table cell has its own top border and intrinsic line box; shifting its
+ * text to the page top places Urdu glyphs outside the cell. */
+function insideTableCell(doc: PMNode, pos: number): boolean {
+  const $pos = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const name = $pos.node(depth).type.name;
+    if (name === "tableCell" || name === "tableHeader") return true;
+  }
+  return false;
+}
 function blockAt(doc: PMNode, pos: number): number | null {
   const resolved = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
   for (let depth = resolved.depth; depth > 0; depth--) if (resolved.node(depth).isTextblock) return resolved.before(depth);
@@ -33,7 +44,12 @@ export function createFirstLinePlugin(): Plugin<LineState> {
     state: {
       init(_, state) {
         const blocks: number[] = [];
-        state.doc.descendants((node, pos) => { if (node.isTextblock) { blocks.push(pos); return false; } });
+        state.doc.descendants((node, pos) => {
+          if (node.isTextblock) {
+            if (!insideTableCell(state.doc, pos)) blocks.push(pos);
+            return false;
+          }
+        });
         return { blocks, runs: [], decorations: DecorationSet.empty, dirty: new Set<number>(), textOnly:false };
       },
       apply(tr, previous) {
@@ -42,26 +58,32 @@ export function createFirstLinePlugin(): Plugin<LineState> {
           const blocks = new Set<number>();
           for (const pos of previous.blocks) {
             const mapped = tr.mapping.mapResult(pos, 1);
-            if (!mapped.deleted) blocks.add(mapped.pos);
+            if (!mapped.deleted && !insideTableCell(tr.doc, mapped.pos)) blocks.add(mapped.pos);
           }
           const dirty = new Set<number>();
           tr.mapping.maps.forEach((map, index) => map.forEach((_a, _b, from, to) => {
             const rest = tr.mapping.slice(index + 1);
             const start = Math.max(0, rest.map(from, -1)), end = Math.min(tr.doc.content.size, rest.map(to, 1));
-            tr.doc.nodesBetween(start, end, (node, pos) => { if (node.isTextblock) { blocks.add(pos); dirty.add(pos); return false; } });
-            for (const edge of [start, end]) { const pos = blockAt(tr.doc, edge); if (pos !== null) { blocks.add(pos); dirty.add(pos); } }
+            tr.doc.nodesBetween(start, end, (node, pos) => { if (node.isTextblock) {
+              if (!insideTableCell(tr.doc, pos)) { blocks.add(pos); dirty.add(pos); }
+              return false;
+            } });
+            for (const edge of [start, end]) { const pos = blockAt(tr.doc, edge); if (pos !== null && !insideTableCell(tr.doc, pos)) { blocks.add(pos); dirty.add(pos); } }
           }));
           const runs = previous.runs.flatMap(run => {
             const block = tr.mapping.mapResult(run.block, 1), from = tr.mapping.mapResult(run.from, -1), to = tr.mapping.mapResult(run.to, 1);
-            return block.deleted || (from.deletedAcross && to.deletedAcross) ? [] : [{ ...run, block: block.pos, from: from.pos, to: to.pos }];
+            return block.deleted || (from.deletedAcross && to.deletedAcross) || insideTableCell(tr.doc, block.pos)
+              ? [] : [{ ...run, block: block.pos, from: from.pos, to: to.pos }];
           });
+          const removedCellRuns = runs.length < previous.runs.length;
           const textOnly = tr.steps.every((step,index) => {
             if (!(step instanceof ReplaceStep) || step.slice.openStart || step.slice.openEnd) return false;
             let text = true; step.slice.content.forEach(node => { if (!node.isText) text = false; });
             const from = tr.docs[index].resolve(step.from), to = tr.docs[index].resolve(step.to);
             return text && from.parent.isTextblock && from.sameParent(to);
           });
-          next = { blocks: [...blocks].sort((a,b) => a-b), runs, dirty, textOnly, decorations: previous.decorations.map(tr.mapping, tr.doc) };
+          next = { blocks: [...blocks].sort((a,b) => a-b), runs, dirty, textOnly,
+            decorations: removedCellRuns ? DecorationSet.create(tr.doc, runs.flatMap(decorate)) : previous.decorations.map(tr.mapping, tr.doc) };
         }
         const measured = tr.getMeta(MEASURE) as { blocks: number[]; runs: FirstLineRun[] } | undefined;
         if (measured) {

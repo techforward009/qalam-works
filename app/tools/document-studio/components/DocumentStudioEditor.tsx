@@ -5,6 +5,7 @@ import StudioQpgSaveAsDialog from "./StudioQpgSaveAsDialog";
 import { deserializeQpg, QPG_FILE_ACCEPT, readStoredQpgLayout, writeStoredQpgLayout, type QpgDocument } from "../utils/qpgFile";
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
+import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -154,6 +155,11 @@ import DocumentMenuBar from "./DocumentMenuBar";
 import { StudioTextContextMenu, type StudioTextActions } from "./StudioTextContextMenu";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
+import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
+import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
+import {StudioTableLayoutDialog} from "./StudioTableLayoutDialog";
+import {QalamTableColumnResizing} from "../utils/tableColumnResizing";
+import {QalamTableStableDirection} from "../utils/tableStableDirection";
 import { functionKeyZoom } from "../utils/documentView";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
@@ -301,9 +307,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [qpgSaveAsOpen,setQpgSaveAsOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
-  const tableDialogDrag = useMovableStudioDialog<HTMLFormElement>();
-  const [tableRows, setTableRows] = useState(3);
-  const [tableColumns, setTableColumns] = useState(3);
+  const [textToTableOpen,setTextToTableOpen] = useState(false);
+  const [tableLayoutOpen,setTableLayoutOpen] = useState(false);
+  const tableDialogsActive=useRef(false);
+  tableDialogsActive.current=tableInsertOpen||textToTableOpen||tableLayoutOpen;
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingMetadataWrites,setPendingMetadataWrites] = useState(0);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
@@ -500,8 +507,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const textLenRef = useRef(0);
   const fullDeleteRef = useRef(false);
 
+  const tableNavigationEditorRef = useRef<Editor | null>(null);
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamPagination, LatinScriptRuns, AllahAutoMarks],
+    extensions: [...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -513,7 +521,17 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       transformPasted: (slice) => transformPastedSlice(slice, dir),
       handleKeyDown: (_view, event) => {
         if (handleStudioDocumentNavigation(_view, event)) return true;
-        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && _view.state.selection.$from.parent.type.name === "paragraph") {
+        const $from = _view.state.selection.$from;
+        const insideTableCell = Array.from({length:$from.depth},(_,depth)=> $from.node(depth+1).type.name).some(name=>name==="tableCell"||name==="tableHeader");
+        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && insideTableCell) {
+          // Tables use document-order navigation; RTL is visualised with the first
+          // cell on the right. Never insert a literal tab inside a table cell.
+          event.preventDefault();
+          if (moveTableCell(_view,event.shiftKey ? -1 : 1)) return true;
+          if (!event.shiftKey && tableNavigationEditorRef.current?.commands.addRowAfter()) moveToLastTableRow(_view);
+          return true;
+        }
+        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && $from.parent.type.name === "paragraph") {
           if (!event.shiftKey) {
             _view.dispatch(closeHistory(_view.state.tr.insertText("\t")));
             _view.dispatch(closeHistory(_view.state.tr));
@@ -624,9 +642,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     },
   });
 
+  tableNavigationEditorRef.current = editor;
+
   useEffect(() => {
     if (!editor) return;
-    const guard = installFormattingSafety(editor, () => setFormattingNotice(n => n + 1), () => setFormattingNotice(0));
+    const guard = installFormattingSafety(editor, () => { if (!tableDialogsActive.current) setFormattingNotice(n => n + 1); }, () => setFormattingNotice(0));
     formattingSafety.current = guard;
     return () => { guard.dispose(); formattingSafety.current = null; };
   }, [editor]);
@@ -1924,16 +1944,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (id) writeStoredFrames(id, next);
   };
 
-  const insertTable = () => {
-    if (!editor) return;
-    editor.chain().focus().insertTable({
-      rows: Math.min(10, Math.max(1, tableRows)),
-      cols: Math.min(10, Math.max(1, tableColumns)),
-      withHeaderRow: true,
-    }).run();
-    setTableInsertOpen(false);
-  };
-
   const insertPageBreak = () => {
     if (!editor) return;
     insertDocumentBreak(editor, { type: "pageBreak" });
@@ -1971,6 +1981,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       },
       character: () => setCharacterOpen(true),
       paragraph: () => setParagraphOpen(true),
+      tableLayout: () => setTableLayoutOpen(true),
       textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
@@ -2028,6 +2039,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     disabledIds.add("view.fullscreen");
   }
   if (!editor?.isActive("table")) {
+    disabledIds.add("text.tableLayout");
     ([
       "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
       "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn",
@@ -2202,7 +2214,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
-        onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }} />
+        onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
+        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
@@ -2316,34 +2329,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         />
       ) : null}
 
-      {tableInsertOpen ? (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/35 p-4" role="dialog" aria-modal="true" data-studio-dialog={isUr ? "ur" : "en"} aria-label={isUr ? "جدول شامل کریں" : "Insert table"}>
-          <form
-            className={`w-full max-w-sm rounded-xl border border-[#1A3A2A]/15 bg-[#FFFCF6] p-5 shadow-xl ${isUr ? "font-naskh" : ""}`}
-            dir={isUr ? "rtl" : "ltr"}
-            ref={tableDialogDrag.dialogRef}
-            style={tableDialogDrag.style}
-            onSubmit={(event) => { event.preventDefault(); insertTable(); }}
-          >
-            <h2 {...tableDialogDrag.handleProps} style={tableDialogDrag.handleProps.style} className="text-base font-semibold text-[#1A3A2A]">{isUr ? "جدول شامل کریں" : "Insert table"}</h2>
-            <p className="mt-1 text-sm text-[#3D5A47]">{isUr ? "قطاریں اور ستون منتخب کریں۔" : "Choose rows and columns."}</p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <label className="text-sm font-medium text-[#1A3A2A]">
-                {isUr ? "قطاریں" : "Rows"}
-                <input className="mt-1 block w-full rounded-md border border-[#1A3A2A]/20 bg-white px-2 py-1.5" type="number" min={1} max={10} value={tableRows} onChange={(event) => setTableRows(Number(event.target.value))} />
-              </label>
-              <label className="text-sm font-medium text-[#1A3A2A]">
-                {isUr ? "ستون" : "Columns"}
-                <input className="mt-1 block w-full rounded-md border border-[#1A3A2A]/20 bg-white px-2 py-1.5" type="number" min={1} max={10} value={tableColumns} onChange={(event) => setTableColumns(Number(event.target.value))} />
-              </label>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" className="rounded-md px-3 py-1.5 text-sm text-[#1A3A2A] hover:bg-[#EAF2EB]" onClick={() => setTableInsertOpen(false)}>{isUr ? "منسوخ" : "Cancel"}</button>
-              <button type="submit" className="rounded-md bg-[#1A3A2A] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#123020]">{isUr ? "شامل کریں" : "Insert"}</button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+      {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={()=>{setTableInsertOpen(false);setFormattingNotice(0);}} /> : null}
+      {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>{setTextToTableOpen(false);setFormattingNotice(0);}} /> : null}
+      {tableLayoutOpen && editor ? <StudioTableLayoutDialog editor={editor} onClose={()=>{setTableLayoutOpen(false);setFormattingNotice(0);}} /> : null}
 
       {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}
