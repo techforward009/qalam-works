@@ -15,13 +15,13 @@ export function parseTableColumnWidth(value: string, unit: RulerUnit): number | 
   return Math.round(px);
 }
 
-export function createTableContent(rows: number, cols: number, widthPx: number | null): JSONContent {
+export function createTableContent(rows: number, cols: number, widthPx: number | null, dir?: "rtl" | "ltr"): JSONContent {
   if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1 || rows > 100 || cols > 50)
     throw new Error("Rows or columns are outside the supported range.");
   return { type: "table", content: Array.from({ length: rows }, () => ({
     type: "tableRow", content: Array.from({ length: cols }, () => ({
       type: "tableCell", ...(widthPx === null ? {} : { attrs: { colwidth: [widthPx] } }),
-      content: [{ type: "paragraph" }],
+      content: [{ type: "paragraph", ...(dir ? { attrs: { dir, directionMode: "manual" } } : {}) }],
     })),
   })) };
 }

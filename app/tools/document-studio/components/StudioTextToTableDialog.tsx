@@ -3,6 +3,7 @@ import {useEffect,useRef,useState,type KeyboardEvent} from "react";
 import {createPortal} from "react-dom";
 import type {Editor} from "@tiptap/react";
 import {restoreEditorFocus} from "../utils/restoreEditorFocus";
+import {TABLE_DIALOG_CHANGE} from "../utils/formattingSafety";
 import {studioOverlayRoot} from "../utils/inpageToolbar";
 import {convertSelectionToTable,type TextTableMode} from "../utils/tableConversions";
 import {ClassicTitle,ClassicGroup,at,classicButton,useInPage2009Dialog} from "./inpage2009DialogChrome";
@@ -17,7 +18,7 @@ export function StudioTextToTableDialog({editor,onClose}:{editor:Editor;onClose:
    const {from,to,fragment}=selection.current;
    if(from===to)throw new Error("Select text first.");
    const content=convertSelectionToTable(fragment,mode);
-   if(!editor.chain().focus().insertContentAt({from,to},content,{updateSelection:true}).run())throw new Error("Cannot convert this selection.");
+   if(!editor.chain().command(({tr})=>{tr.setMeta(TABLE_DIALOG_CHANGE,true);return true;}).focus().insertContentAt({from,to},content,{updateSelection:true}).run())throw new Error("Cannot convert this selection.");
    close();
   }catch(e){setError(e instanceof Error?e.message:"Cannot convert text.");}
  };

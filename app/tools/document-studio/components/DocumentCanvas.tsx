@@ -934,7 +934,7 @@ export default function DocumentCanvas({
         }
         /* Page breakers are floats. Clearing them moves a heading below ALL
            generated sheets and causes self-feeding page-count growth. */
-        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6,blockquote) { clear: none; }
+        .qalam-editor-content .ProseMirror.qalam-pagination :is(h1,h2,h3,h4,h5,h6,blockquote,table,hr) { clear: none; }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
           outline: 2px solid #B8935A;
           outline-offset: 3px;

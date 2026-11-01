@@ -5,6 +5,7 @@ import StudioQpgSaveAsDialog from "./StudioQpgSaveAsDialog";
 import { deserializeQpg, QPG_FILE_ACCEPT, readStoredQpgLayout, writeStoredQpgLayout, type QpgDocument } from "../utils/qpgFile";
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
+import {moveTableCell} from "../utils/tableCellNavigation";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -500,6 +501,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const textLenRef = useRef(0);
   const fullDeleteRef = useRef(false);
 
+  const tableNavigationEditorRef = useRef<Editor | null>(null);
   const editor = useEditor({
     extensions: [...createDocumentStudioExtensions(), QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
@@ -513,7 +515,17 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       transformPasted: (slice) => transformPastedSlice(slice, dir),
       handleKeyDown: (_view, event) => {
         if (handleStudioDocumentNavigation(_view, event)) return true;
-        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && _view.state.selection.$from.parent.type.name === "paragraph") {
+        const $from = _view.state.selection.$from;
+        const insideTableCell = Array.from({length:$from.depth},(_,depth)=> $from.node(depth+1).type.name).some(name=>name==="tableCell"||name==="tableHeader");
+        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && insideTableCell) {
+          // Tables use document-order navigation; RTL is visualised with the first
+          // cell on the right. Never insert a literal tab inside a table cell.
+          event.preventDefault();
+          if (moveTableCell(_view,event.shiftKey ? -1 : 1)) return true;
+          if (!event.shiftKey && tableNavigationEditorRef.current?.commands.addRowAfter()) moveTableCell(_view,1);
+          return true;
+        }
+        if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && $from.parent.type.name === "paragraph") {
           if (!event.shiftKey) {
             _view.dispatch(closeHistory(_view.state.tr.insertText("\t")));
             _view.dispatch(closeHistory(_view.state.tr));
@@ -623,6 +635,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       }, AUTOSAVE_DEBOUNCE_MS);
     },
   });
+
+  tableNavigationEditorRef.current = editor;
 
   useEffect(() => {
     if (!editor) return;

@@ -5,6 +5,7 @@ import type {Editor} from "@tiptap/react";
 import type {RulerUnit} from "../utils/documentView";
 import {createTableContent,parseTableColumnWidth} from "../utils/tableConversions";
 import {restoreEditorFocus} from "../utils/restoreEditorFocus";
+import {TABLE_DIALOG_CHANGE} from "../utils/formattingSafety";
 import {studioOverlayRoot} from "../utils/inpageToolbar";
 import {ClassicTitle,ClassicSpinner,at,classicField,classicButton,useInPage2009Dialog} from "./inpage2009DialogChrome";
 
@@ -15,8 +16,9 @@ export function StudioInsertTableDialog({editor,unit,onClose}:{editor:Editor;uni
  const apply=()=>{
    try {
      const r=Number(rows),c=Number(columns),px=parseTableColumnWidth(width,unit);
-     const table=createTableContent(r,c,px);
-     if (!editor.chain().focus().insertContent(table).run()) throw new Error("Unable to insert table.");
+     const direction=editor.state.selection.$from.parent.attrs.dir === "ltr" || editor.view.dom.getAttribute("dir") === "ltr" ? "ltr" : "rtl";
+     const table=createTableContent(r,c,px,direction);
+     if (!editor.chain().command(({tr})=>{tr.setMeta(TABLE_DIALOG_CHANGE,true);return true;}).focus().insertContent(table).run()) throw new Error("Unable to insert table.");
      close();
    }catch(e){setError(e instanceof Error?e.message:"Invalid table dimensions");}
  };
