@@ -154,6 +154,8 @@ import DocumentMenuBar from "./DocumentMenuBar";
 import { StudioTextContextMenu, type StudioTextActions } from "./StudioTextContextMenu";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
+import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
+import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import { functionKeyZoom } from "../utils/documentView";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
@@ -301,9 +303,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [qpgSaveAsOpen,setQpgSaveAsOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
-  const tableDialogDrag = useMovableStudioDialog<HTMLFormElement>();
-  const [tableRows, setTableRows] = useState(3);
-  const [tableColumns, setTableColumns] = useState(3);
+  const [textToTableOpen,setTextToTableOpen] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingMetadataWrites,setPendingMetadataWrites] = useState(0);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
@@ -1924,16 +1924,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (id) writeStoredFrames(id, next);
   };
 
-  const insertTable = () => {
-    if (!editor) return;
-    editor.chain().focus().insertTable({
-      rows: Math.min(10, Math.max(1, tableRows)),
-      cols: Math.min(10, Math.max(1, tableColumns)),
-      withHeaderRow: true,
-    }).run();
-    setTableInsertOpen(false);
-  };
-
   const insertPageBreak = () => {
     if (!editor) return;
     insertDocumentBreak(editor, { type: "pageBreak" });
@@ -2202,7 +2192,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
-        onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }} />
+        onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
+        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
@@ -2316,34 +2307,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         />
       ) : null}
 
-      {tableInsertOpen ? (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/35 p-4" role="dialog" aria-modal="true" data-studio-dialog={isUr ? "ur" : "en"} aria-label={isUr ? "جدول شامل کریں" : "Insert table"}>
-          <form
-            className={`w-full max-w-sm rounded-xl border border-[#1A3A2A]/15 bg-[#FFFCF6] p-5 shadow-xl ${isUr ? "font-naskh" : ""}`}
-            dir={isUr ? "rtl" : "ltr"}
-            ref={tableDialogDrag.dialogRef}
-            style={tableDialogDrag.style}
-            onSubmit={(event) => { event.preventDefault(); insertTable(); }}
-          >
-            <h2 {...tableDialogDrag.handleProps} style={tableDialogDrag.handleProps.style} className="text-base font-semibold text-[#1A3A2A]">{isUr ? "جدول شامل کریں" : "Insert table"}</h2>
-            <p className="mt-1 text-sm text-[#3D5A47]">{isUr ? "قطاریں اور ستون منتخب کریں۔" : "Choose rows and columns."}</p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <label className="text-sm font-medium text-[#1A3A2A]">
-                {isUr ? "قطاریں" : "Rows"}
-                <input className="mt-1 block w-full rounded-md border border-[#1A3A2A]/20 bg-white px-2 py-1.5" type="number" min={1} max={10} value={tableRows} onChange={(event) => setTableRows(Number(event.target.value))} />
-              </label>
-              <label className="text-sm font-medium text-[#1A3A2A]">
-                {isUr ? "ستون" : "Columns"}
-                <input className="mt-1 block w-full rounded-md border border-[#1A3A2A]/20 bg-white px-2 py-1.5" type="number" min={1} max={10} value={tableColumns} onChange={(event) => setTableColumns(Number(event.target.value))} />
-              </label>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" className="rounded-md px-3 py-1.5 text-sm text-[#1A3A2A] hover:bg-[#EAF2EB]" onClick={() => setTableInsertOpen(false)}>{isUr ? "منسوخ" : "Cancel"}</button>
-              <button type="submit" className="rounded-md bg-[#1A3A2A] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#123020]">{isUr ? "شامل کریں" : "Insert"}</button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+      {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={()=>setTableInsertOpen(false)} /> : null}
+      {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>setTextToTableOpen(false)} /> : null}
 
       {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}

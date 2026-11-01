@@ -11,7 +11,7 @@ import {textContextItems,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition} 
 const itemStyle:React.CSSProperties={height:20,minHeight:20,width:'100%',padding:'0 20px',textAlign:'left',fontFamily:'Tahoma, MS Sans Serif, sans-serif',fontSize:11,color:'#000',whiteSpace:'nowrap'};
 function enabledItems(menu:HTMLElement|null){return menu?[...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')]:[];}
 export type StudioTextActions = { run: (id: "cut" | "copy" | "paste" | "clear") => void };
-export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;actionRef?:Ref<StudioTextActions>}){
+export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,onTable,onTextToTable,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;onTable:()=>void;onTextToTable:()=>void;actionRef?:Ref<StudioTextActions>}){
  const [menu,setMenu]=useState<{x:number;y:number;hasSelection:boolean}|null>(null),[zoom,setZoom]=useState(false),[message,setMessage]=useState<string|null>(null);
  const root=useRef<HTMLDivElement>(null),submenu=useRef<HTMLDivElement>(null),zoomTrigger=useRef<HTMLButtonElement>(null),bookmark=useRef<SelectionBookmark|null>(null);
  const [position,setPosition]=useState({left:0,top:0}),[subPosition,setSubPosition]=useState({left:0,top:0});
@@ -57,6 +57,7 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
  const action=async(id:string)=>{
   if(!editor)return;close(true);
   if(id==='import'){onImport();return;}if(id==='character'){onCharacter();return;}if(id==='paragraph'){onParagraph();return;}
+  if(id==='textToTable'){if(menu?.hasSelection)onTextToTable();else onTable();return;}
   if(id==='selectAll'){editor.commands.selectAll();return;}if(id==='clear'){editor.commands.deleteSelection();return;}
   const doc=editor.state.doc,selection=editor.state.selection,selected=doc.textBetween(selection.from,selection.to,'\n');
   try{
