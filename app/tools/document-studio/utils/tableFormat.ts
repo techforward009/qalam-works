@@ -2,6 +2,7 @@ import type {Editor} from "@tiptap/core";
 import {CellSelection} from "@tiptap/pm/tables";
 import {closeHistory} from "@tiptap/pm/history";
 import {TABLE_DIALOG_CHANGE} from "./formattingSafety";
+import {mmToTablePx} from "./tableFormatUnits";
 
 export type TableBorderStyle="none"|"solid"|"dotted"|"dashed"|"double";
 export type TableAlignment="left"|"center"|"right";
@@ -74,7 +75,7 @@ export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean
  const fill=safeHex(values.fill),borderColor=safeHex(values.borderColor)??"#000000";
  if(!["none","solid","dashed","dotted","double"].includes(values.borderStyle))throw Error("Invalid border style.");
  const widthPt=clamp(Number(values.borderWidthPt),.25,8);
- const columnWidth=clamp(Number(values.columnWidthPx),64,2000);
+ const columnWidth=clamp(Number(values.columnWidthPx),mmToTablePx(10),mmToTablePx(500));
  const gap=clamp(Number(values.columnGapMm),0,20);
  const indent=clamp(Number(values.indentMm),0,120);
  if(!["left","center","right"].includes(values.alignment))throw Error("Invalid table alignment.");

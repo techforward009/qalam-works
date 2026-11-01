@@ -31,8 +31,8 @@ test("Urdu table format dialog reflects defaults, cancel leaves JSON unchanged, 
  await expect(d.getByLabel("Fill Color")).toHaveValue("None");
  await expect(d.getByLabel("Border Style")).toHaveValue("none");
  expect(await cell.evaluate(el=>getComputedStyle(el).borderTopStyle)).toBe("dotted");
- await expect(d.getByLabel("Border Width")).toHaveValue("1");
- await expect(d.getByLabel("Column Gap")).toHaveValue("1.41");
+ await expect(d.getByLabel("Border Width")).toHaveValue("1pt");
+ await expect(d.getByLabel("Column Gap")).toHaveValue("1.41mm");
  await expect(d.getByLabel("Table Alignment")).toHaveValue("right");
  const original=await ed.evaluate(node=>(node as any).innerHTML);
  await d.getByRole("button",{name:"Cancel"}).click();
@@ -40,8 +40,8 @@ test("Urdu table format dialog reflects defaults, cancel leaves JSON unchanged, 
  const dialog=await openContext(page);
  await dialog.getByLabel("Fill Color").selectOption("#ffe082");
  await dialog.getByLabel("Border Style").selectOption("solid");
- await dialog.getByLabel("Border Width").fill("1");
- await dialog.getByLabel("Column Width").fill("180");
+ await dialog.getByLabel("Border Width").fill("1pt");
+ await dialog.getByLabel("Column Width").fill("47.62mm");
  await dialog.getByLabel("Table Alignment").selectOption("center");
  await dialog.screenshot({path:info.outputPath("table-format-dialog.png")});
  await dialog.getByRole("button",{name:"OK",exact:true}).click();

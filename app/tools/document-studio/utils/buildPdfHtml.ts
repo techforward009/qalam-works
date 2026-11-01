@@ -1,4 +1,5 @@
 import {collectTypographicPaint} from "./typographicPaint";
+import {tableFormatAlignedMargins} from "./tableFormatUnits";
 import {parseTypographicPreferences} from "./typographicPreferences";
 import { preservedSpaceHtml } from "./preservedSpaces";
 import { frameTextNode, renderPrintFrame } from "./printableFrames";
@@ -387,11 +388,10 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
       const align=attrs.tableAlignment==="center"?"center":attrs.tableAlignment==="left"?"left":"right";
       const indent=Math.max(0,Math.min(120,Number(attrs.tableIndentMm)||0));
       const width=Math.max(0,Math.min(2000,Number(attrs.tableFormatWidthPx)||0));
-      const tableStyles=[`margin-inline-start:${indent}mm`];
-      if(align==="center")tableStyles.push("margin-left:auto","margin-right:auto");
-      else if(align==="left")tableStyles.push("margin-left:0","margin-right:auto");
-      else tableStyles.push("margin-left:auto","margin-right:0");
+      const margins=tableFormatAlignedMargins(align,indent);
+      const tableStyles=[`margin-left:${margins.marginLeft}`,`margin-right:${margins.marginRight}`];
       if(width>0)tableStyles.push(`width:${width}px`,"max-width:100%");
+      else if(indent>0)tableStyles.push(`width:calc(100% - ${indent}mm)`);
       const firstRow=(node.content??[]).find(row=>row.type==="tableRow");
       const cols=(firstRow?.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader");
       const colgroup=cols.some(cell=>Array.isArray(cell.attrs?.colwidth))
