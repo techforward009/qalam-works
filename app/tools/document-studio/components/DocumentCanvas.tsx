@@ -872,7 +872,7 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror table.qalam-document-table td {
           min-width: 4rem;
           border: 1px solid #95a89a;
-          padding: 8px 10px !important;
+          padding: 2px 4px !important;
           vertical-align: top;
           text-align: start;
         }
@@ -883,6 +883,14 @@ export default function DocumentCanvas({
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table p {
           margin: 0;
+          /* Story-level first-line indentation must not reach a cell.
+             Explicit paragraph indentation is still respected inline. */
+          text-indent: 0;
+        }
+        /* Within cells, a marked 48pt word must expand its own line box
+           and row, instead of spilling outside a 0-height inline span. */
+        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span {
+          line-height: normal;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] :is(td,th,p) {
           cursor: col-resize !important;

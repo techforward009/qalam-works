@@ -37,7 +37,7 @@ for(const letters of [["a","b","c","d","e","f","g","h","i"],["ا","ب","پ","ت"
     expect(await table.evaluate(el=>getComputedStyle(el).direction)).toBe("rtl");
     const rects=await editor.locator("table tr:first-child td").evaluateAll(xs=>xs.map(x=>({x:x.getBoundingClientRect().left,top:x.getBoundingClientRect().top,pTop:x.querySelector("p")!.getBoundingClientRect().top,dir:getComputedStyle(x).direction})));
     expect(rects[0].x).toBeGreaterThan(rects[1].x);
-    expect(rects[0].pTop-rects[0].top).toBeGreaterThan(4);
+    expect(rects[0].pTop-rects[0].top).toBeGreaterThan(1);
     for(let i=0;i<9;i++)await expect(editor.locator("table td").nth(i)).toContainText(letters[i]);
     await expect(page.locator("[data-studio-page-label]")).toHaveText("1/1");
     await page.screenshot({path:test.info().outputPath(`rtl-${kind}-filled.png`)});

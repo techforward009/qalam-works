@@ -21,14 +21,26 @@ export function moveTableCell(view: EditorView, step: -1 | 1): boolean {
     }
     return true;
   });
-  const selectedNode=view.dom.ownerDocument.getSelection()?.anchorNode;
-  const selectedCell=(selectedNode instanceof Element ? selectedNode : selectedNode?.parentElement)?.closest("td,th");
-  const selectedTable=selectedCell?.closest("table");
-  const domCells=selectedTable ? Array.from(selectedTable.querySelectorAll("tr > td,tr > th")) : [];
-  // Empty RTL cells can have a browser DOM caret in cell 0 while the PM
-  // selection still points at cell 1. Follow the *visible* caret instead.
-  const visualIndex=selectedTable && view.dom.contains(selectedTable) && domCells.length===cells.length ? domCells.indexOf(selectedCell!) : -1;
-  const i=visualIndex>=0?visualIndex:cells.indexOf(currentPos),next=cells[i+step];
+  // ProseMirror's selection is authoritative. Native DOM selection can lag
+  // behind the newly inserted Urdu glyph or a Tab, especially around IME
+  // composition and decorated line spans, and must not override cell order.
+  // ProseMirror may still report the old cell immediately after a pointer
+  // click. Use the browser's *current* caret only when it is inside the
+  // same table and maps one-to-one to the model's cell order.
+  const nativeNode=view.dom.ownerDocument.getSelection()?.anchorNode;
+  const nativeCell=(nativeNode instanceof Element ? nativeNode : nativeNode?.parentElement)?.closest("td,th");
+  const nativeTable=nativeCell?.closest("table.qalam-document-table");
+  const renderedTables=Array.from(view.dom.querySelectorAll("table.qalam-document-table"));
+  const modelTables:number[]=[];
+  state.doc.descendants((node,pos)=>{
+    if(node.type.name==="table"){modelTables.push(pos);return false;}
+    return true;
+  });
+  const tableIndex=modelTables.indexOf(tablePos);
+  const domCells=tableIndex>=0 && renderedTables[tableIndex]===nativeTable
+    ? Array.from(nativeTable.querySelectorAll("tr > td, tr > th")) : [];
+  const nativeIndex=domCells.length===cells.length ? domCells.indexOf(nativeCell!) : -1;
+  const i=nativeIndex>=0 ? nativeIndex : cells.indexOf(currentPos),next=cells[i+step];
   if(i<0||next===undefined)return false;
   const selection=TextSelection.near(state.doc.resolve(next+2),1);
   view.dispatch(state.tr.setSelection(selection).scrollIntoView());

@@ -76,6 +76,7 @@ test("first and subsequent table row content stays below its top border",async({
  const ed=await table(page,"rtl",2,2);
  for(const cell of await ed.locator("table tr td").all()){
   const gap=await cell.evaluate(el=>el.querySelector("p")!.getBoundingClientRect().top-el.getBoundingClientRect().top);
-  expect(gap).toBeGreaterThanOrEqual(7);
+  expect(gap).toBeGreaterThanOrEqual(1);
+  expect(gap).toBeLessThanOrEqual(4);
  }
 });
