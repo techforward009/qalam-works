@@ -10,14 +10,22 @@ export const TEXT_CONTEXT_ITEMS = [
 /** Keep the reference order while hiding actions without an actual range. */
 export const TABLE_CONTEXT_ITEMS=[
  {id:'tableToText',label:'Table To Text…'},
- {id:'tableFormat',label:'Table Format'},
+ {id:'tableFormat',label:'Table Format…'},
  {id:'tableLayout',label:'Table Layout…'},
 ] as const;
 type TextContextItem={id:string;label?:string;separator?:boolean;submenu?:boolean};
 export function textContextItems(hasSelection:boolean,inTable=false):TextContextItem[] {
+ if(inTable)return [
+  {id:"zoom",label:"Zoom",submenu:true},{id:"sep1",separator:true},
+  {id:"import",label:"Import…"},{id:"selectAll",label:"Select All"},{id:"sep2",separator:true},
+  ...(["cut","copy","clear","paste"] as const).map(id=>({id,label:id[0].toUpperCase()+id.slice(1)})),
+  {id:"sep3",separator:true},{id:"character",label:"Character…"},{id:"paragraph",label:"Paragraph…"},
+  {id:"tableToText",label:"Table To Text…"},{id:"sep4",separator:true},
+  {id:"tableFormat",label:"Table Format…"},{id:"tableLayout",label:"Table Layout…"},
+ ];
  const base:TextContextItem[]=TEXT_CONTEXT_ITEMS.filter(item=>hasSelection||!['cut','copy','clear'].includes(item.id));
  return base.flatMap((item):TextContextItem[]=>item.id==='textToTable'
-   ?inTable?[...TABLE_CONTEXT_ITEMS]:[{...item,label:hasSelection?'Text To Table…':'Table…'},{id:'tableToText',label:'Table To Text…'}]
+   ?[{...item,label:hasSelection?'Text To Table…':'Table…'},{id:'tableToText',label:'Table To Text…'}]
    :[item]);
 }
 export const CONTEXT_ZOOMS:ReadonlyArray<{label:string;value:DocumentZoom}>=[

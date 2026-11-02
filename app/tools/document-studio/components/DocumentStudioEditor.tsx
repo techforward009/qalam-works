@@ -6,6 +6,7 @@ import { deserializeQpg, QPG_FILE_ACCEPT, readStoredQpgLayout, writeStoredQpgLay
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
 import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
+import {inheritPreviousTableRow,inheritPreviousCellStoredMarks} from "../utils/tableRowFormatInheritance";
 import {splitTableAbove} from "../utils/splitTableAbove";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
@@ -533,8 +534,15 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           // Tables use document-order navigation; RTL is visualised with the first
           // cell on the right. Never insert a literal tab inside a table cell.
           event.preventDefault();
-          if (moveTableCell(_view,event.shiftKey ? -1 : 1)) return true;
-          if (!event.shiftKey && tableNavigationEditorRef.current?.commands.addRowAfter()) moveToLastTableRow(_view);
+          if (moveTableCell(_view,event.shiftKey ? -1 : 1)) {
+            inheritPreviousCellStoredMarks(_view);
+            return true;
+          }
+          if (!event.shiftKey && tableNavigationEditorRef.current?.commands.addRowAfter()) {
+            inheritPreviousTableRow(_view);
+            moveToLastTableRow(_view);
+            inheritPreviousCellStoredMarks(_view);
+          }
           return true;
         }
         if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey && $from.parent.type.name === "paragraph") {

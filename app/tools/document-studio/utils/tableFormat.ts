@@ -62,7 +62,7 @@ export function getTableFormat(editor:Editor):TableFormatValues {
   fill:typeof attr.tableFill==="string"?attr.tableFill:null,
   borderColor:typeof attr.tableBorderColor==="string"?attr.tableBorderColor:"#000000",
   borderStyle:(attr.tableBorderStyle as TableBorderStyle)||"none",
-  borderWidthPt:Number(attr.tableBorderWidthPt)||1,
+  borderWidthPt:Number(attr.tableBorderWidthPt)||.5,
   columnWidthPx:Math.round(columnWidth*100)/100,
   columnGapMm:attr.tableGapMm===null?1.41:Number(attr.tableGapMm??1.41),
   indentMm:Number(tableAttrs.tableIndentMm)||0,
@@ -83,6 +83,9 @@ export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean
  const tr=editor.state.tr;
  const columns=ctx.cols;
  const selectedPositions=new Set(ctx.selected.map(c=>c.pos));
+ const tableNode=editor.view.nodeDOM(ctx.cells[0].pos) as HTMLElement|null;
+ const tableDom=tableNode?.closest("table");
+ const renderedWidths=Array.from(tableDom?.rows[0]?.cells??[]).map(cell=>cell.getBoundingClientRect().width);
  const previousWidth=ctx.active.attrs.colwidth as number[]|null;
  const widthChanged=Math.abs(columnWidth-(Number(previousWidth?.[0])||getTableFormat(editor).columnWidthPx))>.05;
  const gapChanged=ctx.selected.some(cell=>Math.abs(Number(cell.attrs.tableGapMm??1.41)-gap)>.001);
@@ -96,18 +99,21 @@ export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean
   if(columns.has(cell.column)){
    if(widthChanged){attrs.colwidth=[Math.round(columnWidth*1000)/1000];changed=true;}
    if(gapChanged){attrs.tableGapMm=gap;changed=true;}
+  }else if(widthChanged && !(Number((attrs.colwidth as number[]|null)?.[0])>0) && renderedWidths[cell.column]>0){
+   // Freeze existing Auto columns at their on-screen sizes when a different
+   // column is explicitly resized. RTL indexes stay in logical cell order.
+   attrs.colwidth=[Math.round(renderedWidths[cell.column]*1000)/1000];
+   changed=true;
   }
   if(changed)tr.setNodeMarkup(cell.pos,undefined,attrs);
  });
  const attrs:Record<string,unknown>={...ctx.table.attrs,tableAlignment:values.alignment,tableIndentMm:indent,tableFlow:values.flow,dir:values.flow};
  if(widthChanged){
-  const dom=editor.view.nodeDOM(ctx.cells[0].pos) as HTMLElement|null;
-  const tableDom=dom?.closest("table");
   const before=tableDom?.getBoundingClientRect().width||0;
   if(before>0){
    const row=ctx.cells.filter(c=>c.row===0);
-   const total=row.reduce((sum,cell)=>sum+(columns.has(cell.column)?columnWidth:Number((cell.attrs.colwidth as number[]|null)?.[0])||before/Math.max(1,row.length)),0);
-   attrs.tableFormatWidthPx=Math.round(Math.min(before,Math.max(64,total)));
+   const total=row.reduce((sum,cell)=>sum+(columns.has(cell.column)?columnWidth:Number((cell.attrs.colwidth as number[]|null)?.[0])||renderedWidths[cell.column]||before/Math.max(1,row.length)),0);
+   attrs.tableFormatWidthPx=Math.round(Math.max(64,total)*1000)/1000;
   }
  }
  tr.setNodeMarkup(ctx.tablePos,undefined,attrs);

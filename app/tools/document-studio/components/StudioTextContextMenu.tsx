@@ -24,9 +24,17 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
    const target=event.target instanceof Element?event.target:null;
    if(!target||!editor.view.dom.contains(target)||target.closest('img,[data-resize-container],[data-studio-frame]')){close();return;}
    event.preventDefault();
-   if(editor.state.selection.empty){const hit=editor.view.posAtCoords({left:event.clientX,top:event.clientY});if(hit)editor.commands.setTextSelection(hit.pos);}
-   bookmark.current=editor.state.selection.getBookmark();
    const cell=target.closest("td,th");
+   if(editor.state.selection.empty){
+    if(cell){
+     const pos=editor.view.posAtDOM(cell,0);
+     editor.commands.setTextSelection(pos+2);
+    }else{
+     const hit=editor.view.posAtCoords({left:event.clientX,top:event.clientY});
+     if(hit)editor.commands.setTextSelection(hit.pos);
+    }
+   }
+   bookmark.current=editor.state.selection.getBookmark();
    const selection=editor.state.selection,from=selection.$from,to=selection.$to;
    const tableAt=(pos:typeof from)=>{for(let depth=pos.depth;depth>0;depth--)if(pos.node(depth).type.name==="table")return pos.before(depth);return -1;};
    const selectedTable=tableAt(from),endTable=tableAt(to);

@@ -14,7 +14,7 @@ function setup(){
 describe("InPage Table Format",()=>{
  it("opens with RTL cell/table/column defaults",()=>{
   const editor=setup(),v=getTableFormat(editor);
-  expect(v).toMatchObject({fill:null,borderColor:"#000000",borderStyle:"none",borderWidthPt:1,columnGapMm:1.41,indentMm:0,alignment:"right",flow:"rtl"});
+  expect(v).toMatchObject({fill:null,borderColor:"#000000",borderStyle:"none",borderWidthPt:.5,columnGapMm:1.41,indentMm:0,alignment:"right",flow:"rtl"});
   expect(v.columnWidthPx).toBeGreaterThan(50);editor.destroy();
  });
  it("applies one undoable change to current cell and whole table and Cancel needs no transaction",()=>{

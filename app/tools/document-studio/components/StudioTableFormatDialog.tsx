@@ -10,85 +10,94 @@ import {formatTableLength,parseTableLength,mmToTablePx,tablePxToMm} from "../uti
 
 const palette=[
  ["None","None"],["Black","#000000"],["White","#ffffff"],["Yellow","#ffe082"],["Light Green","#a5d6a7"],["Light Blue","#90caf9"],
- ["Red","#ef9a9a"],["Orange","#ffcc80"],["Purple","#ce93d8"],["Grey","#bdbdbd"],
+ ["Red","#ef9a9a"],["Magenta","#ff00ff"],["Orange","#ffcc80"],["Purple","#ce93d8"],["Gray","#bdbdbd"],
 ] as const;
-const borderPalette:readonly (readonly [string,string])[]=[["Black","#000000"],["Red","#990000"],["Blue","#1d4ed8"],["Green","#166534"],["Grey","#777777"]];
+const borderPalette:readonly (readonly [string,string])[]=[["Black","#000000"],["Gray","#777777"],["Red","#990000"],["Magenta","#ff00ff"],["Blue","#1d4ed8"],["Green","#166534"]];
 const labelStyle={font:classicFont,color:"#000",whiteSpace:"nowrap" as const};
 const inputStyle={...classicField,font:classicFont,height:22};
 export function StudioTableFormatDialog({editor,onClose}:{editor:Editor;onClose:()=>void}){
  const initial=useRef<TableFormatValues>(getTableFormat(editor));
  const bookmark=useRef(editor.state.selection.getBookmark());
  const [v,setV]=useState<TableFormatValues>(initial.current),[error,setError]=useState(""),[help,setHelp]=useState(false);
+ const [splitRequested,setSplitRequested]=useState(false),[borderStyleEdited,setBorderStyleEdited]=useState(false);
  const [lengths,setLengths]=useState({
   width:formatTableLength(tablePxToMm(initial.current.columnWidthPx),"mm"),
   gap:formatTableLength(initial.current.columnGapMm,"mm"),
   indent:formatTableLength(initial.current.indentMm,"mm"),
-  border:formatTableLength(initial.current.borderWidthPt,"pt"),
+  border:initial.current.borderStyle==="none"?"0.5pt":formatTableLength(initial.current.borderWidthPt,"pt"),
  });
  const length=(name:keyof typeof lengths)=>(
   <input aria-label={name==="width"?"Column Width":name==="gap"?"Column Gap":name==="indent"?"Table Indent":"Border Width"}
    type="text" inputMode="decimal" onFocus={e=>e.currentTarget.select()} onClick={e=>e.currentTarget.select()} onMouseUp={e=>e.currentTarget.select()} onMouseDown={e=>{e.preventDefault();e.currentTarget.focus();e.currentTarget.select();}} style={{...inputStyle,width:82}} value={lengths[name]} onChange={e=>setLengths(old=>({...old,[name]:e.target.value}))}/>
  );
- const drag=useInPage2009Dialog<HTMLFormElement>(530,352,18);
+ const drag=useInPage2009Dialog<HTMLFormElement>(505,282,18);
  const update=<K extends keyof TableFormatValues>(key:K,value:TableFormatValues[K])=>setV(old=>({...old,[key]:value}));
  const close=()=>{onClose();restoreEditorFocus(editor);};
  const apply=()=>{
   try{
    editor.view.dispatch(editor.state.tr.setSelection(bookmark.current.resolve(editor.state.doc)));
    applyTableFormat(editor,{...v,
+    borderStyle:!borderStyleEdited&&initial.current.borderStyle==="none"?"none":v.borderStyle,
     columnWidthPx:mmToTablePx(parseTableLength(lengths.width,"mm",10,500)),
     columnGapMm:parseTableLength(lengths.gap,"mm",0,20),
     indentMm:parseTableLength(lengths.indent,"mm",0,120),
     borderWidthPt:parseTableLength(lengths.border,"pt",.25,8),
    });
+   if(splitRequested)splitTableRow(editor);
    close();
   }catch(e){setError(e instanceof Error?e.message:"Table formatting failed.");}
  };
- const split=()=>{
-  try {
-   editor.view.dispatch(editor.state.tr.setSelection(bookmark.current.resolve(editor.state.doc)));
-   if(!splitTableRow(editor))throw Error("Position the caret inside a row.");
-   close();
-  }catch(e){setError(e instanceof Error?e.message:"Cannot split row.");}
- };
  const onKey=(e:KeyboardEvent)=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();close();}};
- const field=(text:string,top:number,left:number,width:number,child:ReactNode)=><label key={text} style={{...at(left,top,width,23),display:"flex",gap:4,alignItems:"center",...labelStyle}}><span style={{minWidth:75}}>{text}</span>{child}</label>;
- const select=(name:string,value:string,options:readonly (readonly [string,string])[],change:(value:string)=>void)=>(
-  <select aria-label={name} autoFocus={name==="Fill Color"} style={{...inputStyle,width:93}} value={value} onChange={e=>change(e.target.value)}>
-   {options.map(([label,code])=><option key={code} value={code}>{label}</option>)}
-  </select>
+ const field=(text:string,top:number,left:number,width:number,child:ReactNode)=><label key={text} style={{...at(left,top,width,23),display:"flex",gap:4,alignItems:"center",...labelStyle}}><span style={{minWidth:width<170?55:73}}>{text}</span>{child}</label>;
+ const select=(name:string,value:string,options:readonly (readonly [string,string])[],change:(value:string)=>void,colours=false)=>(
+  <span style={{display:"inline-flex",position:"relative",alignItems:"center",gap:3}}>
+   {colours?<span aria-hidden data-colour-swatch style={{width:11,height:11,border:"1px solid #777",backgroundColor:value==="None"?"transparent":value}}/>:null}
+   <select aria-label={name} autoFocus={name==="Fill Color"} style={{...inputStyle,width:colours?100:90}} value={value} onChange={e=>change(e.target.value)}>
+    {options.map(([label,code])=><option key={code} value={code} style={colours?{color:code==="None"?"#111":code}:undefined}>{colours?"■  ":""}{label}</option>)}
+   </select>
+  </span>
  );
  return createPortal(
   <div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onPointerDown={e=>e.stopPropagation()} onKeyDown={onKey}>
    <form ref={drag.dialogRef} role="dialog" aria-modal="true" aria-label="Table Format" data-inpage2009-dialog="true" data-studio-table-format-dialog="true" dir="ltr"
      style={drag.style} onSubmit={e=>{e.preventDefault();apply();}}>
-    <ClassicTitle title="Table Format" onHelp={()=>setHelp(true)} onClose={close} handleProps={drag.handleProps}/>
-    <ClassicGroup name="Cell" box={[11,37,255,160]}>
-     {field("Fill Color",17,8,235,select("Fill Color",v.fill??"None",palette,x=>update("fill",x==="None"?null:x)))}
-     <div style={{...at(9,50),...labelStyle,fontWeight:"bold"}}>Border</div>
-     {field("Color",66,8,235,select("Border Color",v.borderColor,borderPalette,x=>update("borderColor",x)))}
-     {field("Style",94,8,235,select("Border Style",v.borderStyle,[["None","none"],["Solid","solid"],["Dotted","dotted"],["Dashed","dashed"],["Double","double"]],x=>update("borderStyle",x as TableBorderStyle)))}
-     {field("Width",122,8,235,length("border"))}
+    <style>{`
+      [data-studio-table-format-dialog] button[aria-label="Title bar help"]{display:none}
+      [data-studio-table-format-dialog] input[type=number]{appearance:auto;-moz-appearance:auto}
+      [data-studio-table-format-dialog] input[type=number]::-webkit-inner-spin-button{appearance:auto}
+      [data-studio-table-format-dialog] select option{color:inherit}
+    `}</style>
+    <ClassicTitle hideHelp title="Table Format" onHelp={()=>setHelp(true)} onClose={close} handleProps={drag.handleProps}/>
+    <ClassicGroup name="Cell" box={[11,37,226,205]}>
+     {field("Fill Color",18,8,209,select("Fill Color",v.fill??"None",palette,x=>update("fill",x==="None"?null:x),true))}
+     <ClassicGroup name="Border" box={[8,60,210,137]}>
+      {field("Color",19,8,195,select("Border Color",v.borderColor,borderPalette,x=>update("borderColor",x),true))}
+      {field("Style",54,8,195,select("Border Style",v.borderStyle==="none"?"solid":v.borderStyle,[
+       ["━━━━━━━━","solid"],["┄┄┄┄┄","dotted"],["━ ━ ━","dashed"],["══════","double"],
+      ],x=>{update("borderStyle",x as TableBorderStyle);setBorderStyleEdited(true);}))}
+      {field("Width",88,8,195,<span style={{display:"inline-flex",alignItems:"center",gap:3}}>
+       <input aria-label="Border Width" type="number" step="0.25" min="0.25" max="8" onFocus={e=>e.currentTarget.select()} onClick={e=>e.currentTarget.select()}
+        style={{...inputStyle,width:67}} value={parseFloat(lengths.border)} onChange={e=>setLengths(old=>({...old,border:e.target.value+"pt"}))}/>
+       <span>pt</span>
+      </span>)}
+     </ClassicGroup>
     </ClassicGroup>
-    <ClassicGroup name="Column" box={[275,37,243,100]}>
-     {field("Width",17,8,227,length("width"))}
-     {field("Gap",49,8,227,length("gap"))}
+    <ClassicGroup name="Column" box={[246,37,164,88]}>
+     {field("Width",17,8,151,length("width"))}
+     {field("Gap",49,8,151,length("gap"))}
     </ClassicGroup>
-    <ClassicGroup name="Table" box={[275,145,243,104]}>
-     {field("Indent",16,8,226,length("indent"))}
-     {field("Alignment",49,8,226,select("Table Alignment",v.alignment,[["Left","left"],["Centre","center"],["Right","right"]],x=>update("alignment",x as TableAlignment)))}
+    <ClassicGroup name="Table" box={[246,135,164,107]}>
+     {field("Indent",16,8,151,length("indent"))}
+     {field("Alignment",44,8,151,select("Table Alignment",v.alignment,[["Left","left"],["Centre","center"],["Right","right"]],x=>update("alignment",x as TableAlignment)))}
+     <label style={{...at(10,77,148,21),display:"flex",alignItems:"center",gap:5,...labelStyle}}>
+      <input type="checkbox" checked={splitRequested} onChange={e=>setSplitRequested(e.target.checked)}/>Split Table Row
+     </label>
     </ClassicGroup>
-    <ClassicGroup name="Flow" box={[11,206,255,58]}>
-     {(["rtl","ltr"] as const).map((flow,i)=><label key={flow} style={{...at(14+i*118,21,105,23),...labelStyle,display:"flex",gap:7,alignItems:"center"}}>
-       <input type="radio" name="tableFlow" checked={v.flow===flow} value={flow} onChange={()=>update("flow",flow)}/>{flow==="rtl"?"Right to Left":"Left to Right"}
-      </label>)}
-    </ClassicGroup>
-    <button type="button" onClick={split} style={{...classicButton,...at(275,260,243,27)}}>Split Table Row</button>
-    <button type="submit" style={{...classicButton,...at(232,304,88,25)}}>OK</button>
-    <button type="button" onClick={close} style={{...classicButton,...at(327,304,88,25)}}>Cancel</button>
-    <button type="button" onClick={()=>setHelp(true)} style={{...classicButton,...at(422,304,88,25)}}>Help</button>
-    {help?<p style={{...at(11,285,210),fontSize:10}}>Changes affect selected cells, columns and table.</p>:null}
-    {error?<p role="alert" style={{...at(11,331,500),color:"#b00000",fontSize:10}}>{error}</p>:null}
+    <button type="submit" style={{...classicButton,...at(421,40,73,24)}}>OK</button>
+    <button type="button" onClick={close} style={{...classicButton,...at(421,72,73,24)}}>Cancel</button>
+    <button type="button" onClick={()=>setHelp(h=>!h)} style={{...classicButton,...at(421,104,73,24)}}>Help</button>
+    {help?<p style={{...at(247,250,240),fontSize:10}}>Changes affect selected cells, columns and table.</p>:null}
+    {error?<p role="alert" style={{...at(11,257,480),color:"#b00000",fontSize:10}}>{error}</p>:null}
    </form>
   </div>,studioOverlayRoot()
  );

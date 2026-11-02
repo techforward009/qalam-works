@@ -21,17 +21,17 @@ async function makeTable(page:Page) {
 async function openContext(page:Page) {
  await page.locator(".ProseMirror table tr:first-child td").first().click({button:"right"});
  const menu=page.getByRole("menu",{name:"Text context menu"});
- await expect(menu.getByRole("menuitem",{name:"Table Format",exact:true})).toBeEnabled();
- await menu.getByRole("menuitem",{name:"Table Format",exact:true}).click();
+ await expect(menu.getByRole("menuitem",{name:"Table Format…",exact:true})).toBeEnabled();
+ await menu.getByRole("menuitem",{name:"Table Format…",exact:true}).click();
  return page.getByRole("dialog",{name:"Table Format"});
 }
 test("Urdu table format dialog reflects defaults, cancel leaves JSON unchanged, OK is one undo",async({page},info)=>{
  const ed=await makeTable(page),cell=ed.locator("table td").first();
  const d=await openContext(page);
  await expect(d.getByLabel("Fill Color")).toHaveValue("None");
- await expect(d.getByLabel("Border Style")).toHaveValue("none");
- expect(await cell.evaluate(el=>getComputedStyle(el).borderTopStyle)).toBe("dotted");
- await expect(d.getByLabel("Border Width")).toHaveValue("1pt");
+ await expect(d.getByLabel("Border Style")).toHaveValue("solid");
+ expect(await cell.evaluate(el=>getComputedStyle(el).borderTopStyle)).toBe("solid");
+ await expect(d.getByLabel("Border Width")).toHaveValue("0.5");
  await expect(d.getByLabel("Column Gap")).toHaveValue("1.41mm");
  await expect(d.getByLabel("Table Alignment")).toHaveValue("right");
  const original=await ed.evaluate(node=>(node as any).innerHTML);
@@ -40,7 +40,7 @@ test("Urdu table format dialog reflects defaults, cancel leaves JSON unchanged, 
  const dialog=await openContext(page);
  await dialog.getByLabel("Fill Color").selectOption("#ffe082");
  await dialog.getByLabel("Border Style").selectOption("solid");
- await dialog.getByLabel("Border Width").fill("1pt");
+ await dialog.getByLabel("Border Width").fill("1");
  await dialog.getByLabel("Column Width").fill("47.62mm");
  await dialog.getByLabel("Table Alignment").selectOption("center");
  await dialog.screenshot({path:info.outputPath("table-format-dialog.png")});
@@ -86,7 +86,8 @@ test("selected Urdu cells share fill and borders, and Split Table Row adds only 
  await cells.first().click();
  await page.keyboard.press("Control+Alt+f");
  const dialog=page.getByRole("dialog",{name:"Table Format"});
- await expect(dialog.getByRole("button",{name:"Split Table Row"})).toBeEnabled();
- await dialog.getByRole("button",{name:"Split Table Row"}).click();
+ await expect(dialog.getByRole("checkbox",{name:"Split Table Row"})).toBeEnabled();
+ await dialog.getByRole("checkbox",{name:"Split Table Row"}).check();
+ await dialog.getByRole("button",{name:"OK",exact:true}).click();
  await expect(ed.locator("table tr")).toHaveCount(4);
 });

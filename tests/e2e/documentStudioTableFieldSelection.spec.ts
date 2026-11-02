@@ -12,14 +12,15 @@ test("Insert Table and Table Format text fields select all on both mouse focus a
  await insert.getByRole("button",{name:"OK"}).click();
  await expect(editor.locator("table tr")).toHaveCount(3);
  await editor.locator("table td").first().click({button:"right"});
- await page.getByRole("menuitem",{name:"Table Format",exact:true}).click();
+ await page.getByRole("menuitem",{name:"Table Format…",exact:true}).click();
  const format=page.getByRole("dialog",{name:"Table Format"});
  for(const [field,value] of [["Column Width","30mm"],["Column Gap","2mm"],["Table Indent","10mm"],["Border Width","1.5pt"]] as const){
-   await format.getByRole("textbox",{name:field}).click();await page.keyboard.type(value);
-   await expect(format.getByRole("textbox",{name:field})).toHaveValue(value);
+   const control=format.getByRole(field==="Border Width"?"spinbutton":"textbox",{name:field});
+   await control.click();await page.keyboard.type(field==="Border Width"?"1.5":value);
+   await expect(control).toHaveValue(field==="Border Width"?"1.5":value);
  }
  await format.getByRole("button",{name:"OK"}).click();
  await editor.locator("table td").first().click({button:"right"});
- await page.getByRole("menuitem",{name:"Table Format",exact:true}).click();
+ await page.getByRole("menuitem",{name:"Table Format…",exact:true}).click();
  await expect(page.getByRole("dialog",{name:"Table Format"}).getByRole("textbox",{name:"Column Width"})).toHaveValue("30mm");
 });
