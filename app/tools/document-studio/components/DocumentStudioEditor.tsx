@@ -6,6 +6,7 @@ import { deserializeQpg, QPG_FILE_ACCEPT, readStoredQpgLayout, writeStoredQpgLay
 
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
 import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
+import {splitTableAbove} from "../utils/splitTableAbove";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -2003,6 +2004,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       tableFormat: () => setTableFormatOpen(true),
       tableToText: () => {if(editor?.isActive("table"))setTableToTextOpen(true);},
       textToTable: () => {if(editor && !editor.isActive("table") && !editor.state.selection.empty)setTextToTableOpen(true);},
+      splitTable: () => {if(editor)splitTableAbove(editor);},
       textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
@@ -2061,6 +2063,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     disabledIds.add("view.fullscreen");
   }
   if (insertTableMode !== "selection") disabledIds.add("insert.textToTable");
+  if (!editor?.isActive("table")) disabledIds.add("insert.splitTable");
   if (!editor?.isActive("table")) {
     disabledIds.add("text.tableLayout");
     disabledIds.add("text.tableFormat");

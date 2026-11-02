@@ -57,7 +57,6 @@ describe("Insert > Split Table (InPage 2009)",()=>{
   const {editor}=makeEditor(true);
   const before=editor.getJSON(),table=editor.state.doc.child(1).toJSON();
   expect(splitTableAbove(editor)).toBe(true);
-  editor.commands.setTextSelection(1+editor.state.doc.child(0).nodeSize+2+4);
   // Explicitly target a cell in the same table for the repeated action.
   const tableStart=editor.state.doc.child(0).nodeSize+editor.state.doc.child(1).nodeSize;
   editor.commands.setTextSelection(tableStart+4);

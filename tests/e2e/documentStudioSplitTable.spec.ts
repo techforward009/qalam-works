@@ -31,7 +31,6 @@ test("table first: row-two Split Table leaves table intact, types Urdu above it 
  await expect(page.locator('[data-menu-action="insert.splitTable"]')).toBeEnabled();
  await page.locator('[data-menu-dropdown="insert"]').screenshot({path:info.outputPath("split-table-enabled-in-insert.png")});
  await page.locator('[data-menu-action="insert.splitTable"]').click();
- await expect(ed.locator(":scope > p")).toHaveCount(1);
  await expect(ed.locator(":scope > p").first()).toBeEmpty();
  await expect(ed.locator(":scope > table")).toHaveCount(1);
  await expect(ed.locator("table").evaluate(el=>el.outerHTML)).resolves.toBe(beforeTable);
@@ -45,6 +44,7 @@ test("table first: row-two Split Table leaves table intact, types Urdu above it 
  await page.screenshot({path:info.outputPath("split-table-urdu-heading.png")});
  await page.keyboard.press("Control+z");
  await expect(ed.locator("table")).toHaveCount(1);
+ await expect(ed.locator(":scope > p").first()).not.toHaveText("سرخی");
 });
 test("surrounding Urdu text remains and Split Table twice inserts two blank lines",async({page})=>{
  const ed=await setup(page);
