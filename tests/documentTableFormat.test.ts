@@ -64,6 +64,23 @@ describe("mixed cells preserve unchanged border properties",()=>{
  });
 });
 
+describe("screen border paint follows the resolved cell border",()=>{
+ it("uses a changed colour for default grid cells even while border style remains none",()=>{
+  const ed=setup();
+  const cell=ed.view.dom.querySelector("td") as HTMLElement;
+  expect(cell.style.borderColor).toBe("#000000");
+  expect(cell.style.borderWidth).toBe("0.5pt");
+  expect(cell.style.borderStyle).toBe("solid");
+  const values=getTableFormat(ed);
+  expect(applyTableFormat(ed,{...values,borderColor:"#0000ff",borderStyle:null,borderWidthPt:null})).toBe(true);
+  const updated=ed.view.dom.querySelector("td") as HTMLElement;
+  expect(updated.dataset.tableBorderStyle).toBe("none");
+  expect(updated.style.borderColor).toBe("#0000ff");
+  expect(updated.style.borderWidth).toBe("0.5pt");
+  expect(updated.style.borderStyle).toBe("solid");
+  ed.destroy();
+ });
+});
 describe("InPage whole-table blue borders",()=>{
  it("updates exactly the nine selected RTL cells, preserving style outside the table",()=>{
   const ed=setup(),positions:number[]=[];

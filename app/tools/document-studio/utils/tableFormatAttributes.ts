@@ -107,7 +107,16 @@ export const QalamTableFormatAttributes=Extension.create({
   {types:["tableCell","tableHeader"],attributes:{
    tableFill:{default:null,parseHTML:el=>safeColor(el.getAttribute("data-table-fill")),renderHTML:a=>a.tableFill?{"data-table-fill":a.tableFill,style:`background-color:${safeColor(a.tableFill)??"transparent"}`}:{}},
    tableBorderColor:{default:"#000000",parseHTML:el=>safeColor(el.getAttribute("data-table-border-color"))??"#000000",renderHTML:a=>({"data-table-border-color":safeColor(a.tableBorderColor)??"#000000"})},
-   tableBorderStyle:{default:"none",parseHTML:el=>safeBorder(el.getAttribute("data-table-border-style")),renderHTML:a=>({"data-table-border-style":safeBorder(a.tableBorderStyle),style:safeBorder(a.tableBorderStyle)==="none"?"border:0.5pt solid #000000":`border:${numeric(a.tableBorderWidthPt,.5,.25,8)}pt ${safeBorder(a.tableBorderStyle)} ${safeColor(a.tableBorderColor)??"#000000"}`})},
+   tableBorderStyle:{default:"none",parseHTML:el=>safeBorder(el.getAttribute("data-table-border-style")),renderHTML:a=>{
+    const borderStyle=safeBorder(a.tableBorderStyle);
+    const borderColor=safeColor(a.tableBorderColor)??"#000000";
+    const borderWidth=numeric(a.tableBorderWidthPt,.5,.25,8);
+    // none means no authored print style; the visible grid still resolves solid.
+    // Keep its colour and width tied to saved cell attrs, so colour-only
+    // Table Format changes repaint default-width cells immediately.
+    const resolvedStyle=borderStyle==="none"?"solid":borderStyle;
+    return {"data-table-border-style":borderStyle,style:"border:"+borderWidth+"pt "+resolvedStyle+" "+borderColor};
+   }},
    tableBorderWidthPt:{default:.5,parseHTML:el=>numeric(el.getAttribute("data-table-border-width"),.5,.25,8),renderHTML:a=>({"data-table-border-width":numeric(a.tableBorderWidthPt,.5,.25,8)})},
    tableGapMm:{default:1.41,parseHTML:el=>numeric(el.getAttribute("data-table-gap"),1.41,0,20),renderHTML:a=>({"data-table-gap":numeric(a.tableGapMm,1.41,0,20),style:`padding-inline-end:${numeric(a.tableGapMm,1.41,0,20)}mm`})},
   }},
