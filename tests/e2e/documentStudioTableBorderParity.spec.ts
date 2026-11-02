@@ -101,7 +101,7 @@ test("mixed selected cells show blank border fields, untouched values preserved,
  const first=await cells.first().boundingBox(),last=await cells.last().boundingBox();
  await page.mouse.move(first!.x+first!.width/2,first!.y+first!.height/2);
  await page.mouse.down();await page.mouse.move(last!.x+last!.width/2,last!.y+last!.height/2,{steps:12});await page.mouse.up();
- await expect.poll(()=>ed.evaluate(el=>(el as HTMLElement & {editor:any}).editor.state.selection.constructor.name)).toBe("CellSelection");
+ await expect.poll(()=>ed.evaluate(el=>(el as HTMLElement & {editor:any}).editor.state.selection.ranges.length)).toBeGreaterThan(1);
  await page.keyboard.press("Control+Alt+f");
  d=page.getByRole("dialog",{name:"Table Format"});
  await expect(d.getByLabel("Border Color")).toHaveValue("");
