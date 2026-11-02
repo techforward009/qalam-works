@@ -394,10 +394,18 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
       else if(indent>0)tableStyles.push(`width:calc(100% - ${indent}mm)`);
       const firstRow=(node.content??[]).find(row=>row.type==="tableRow");
       const cols=(firstRow?.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader");
+      const specifiedWidths=cols.map(cell=>Number((cell.attrs?.colwidth as number[]|undefined)?.[0])||0);
+      const allWidthsExplicit=specifiedWidths.length>0&&specifiedWidths.every(w=>Number.isFinite(w)&&w>0);
+      // A fixed 100%-wide table stretches the <col> lengths in Chromium print.
+      // For a fully sized table the total of the saved cell widths is physical.
+      if(allWidthsExplicit){
+        tableStyles.splice(2);
+        tableStyles.push(`width:${specifiedWidths.reduce((sum,w)=>sum+w,0)}px`,"max-width:100%");
+      }
       const colgroup=cols.some(cell=>Array.isArray(cell.attrs?.colwidth))
         ?`<colgroup>${cols.map(cell=>{
           const w=Number((cell.attrs?.colwidth as number[]|undefined)?.[0])||0;
-          return `<col${w>0?` style="width:${Math.max(64,Math.min(2000,w))}px"`:""}>`;
+          return `<col${w>0?` style="width:${Math.min(2000,w)}px"`:""}>`;
          }).join("")}</colgroup>`:"";
       const rows=(node.content??[]).filter(row=>row.type==="tableRow").map(row=>{
         const cells=(row.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader").map(cell=>{
