@@ -69,7 +69,7 @@ export function StudioTableFormatDialog({editor,onClose}:{editor:Editor;onClose:
      background:"#fff",color:"#000",boxShadow:"inset 1px 1px #fff",cursor:"default"}}>
     {colours?<span data-picker-swatch aria-hidden style={{flex:"0 0 11px",width:11,height:11,marginLeft:5,marginRight:4,
       border:"1px solid #777",background:value==="None"||!value?"#fff":value}}/>:null}
-    {name==="Border Style"
+    {name==="Border Style" && value
      ?<span data-style-line aria-hidden style={{display:"block",marginLeft:5,width:49,flex:"1 1 auto",
        borderTop:`3px ${value==="dotted"?"dotted":value==="dashed"?"dashed":value==="double"?"double":"solid"} #000`}}/>
      :<span style={{font:classicFont,fontSize:11,flex:1,overflow:"hidden",whiteSpace:"nowrap",marginLeft:colours?0:5}}>{optionsWithLegacy.find(o=>o[1].toLowerCase()===value.toLowerCase())?.[0]??value}</span>}

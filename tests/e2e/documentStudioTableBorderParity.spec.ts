@@ -74,13 +74,12 @@ test("one middle RTL cell: Red 2pt paints all 4 shared sides, outer cells unchan
  const stream=pdf.context.lookup(pdf.getPages()[0].node.Contents()) as unknown as {contents:Uint8Array};
  const pdfOps=inflateSync(stream.contents).toString("latin1");
  expect(pdfOps).toMatch(/1 0 0 RG/);
- expect((pdfOps.match(/1 0 0 RG/g)||[]).length).toBe(1);
- // Chromium prints the border as four independent red filled rectangles.
- const redPart=pdfOps.slice(pdfOps.indexOf("1 0 0 RG"),pdfOps.indexOf(".0667 .0667 .0667 RG"));
- const edges=[...redPart.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re\s+f/g)];
- expect(edges).toHaveLength(4);
- expect(edges.filter(x=>Number(x[3])<3)).toHaveLength(2);
- expect(edges.filter(x=>Number(x[4])<3)).toHaveLength(2);
+ // Adjacent default black cells may interleave the four independently painted red edges.
+ const redEdges=[...pdfOps.matchAll(/1 0 0 RG 1 0 0 rg\s+((?:[\d.]+ [\d.]+ [\d.]+ [\d.]+ re\s+f\s*)+)/g)]
+  .flatMap(x=>[...x[1].matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re\s+f/g)]);
+ expect(redEdges).toHaveLength(4);
+ expect(redEdges.filter(x=>Number(x[3])<=2)).toHaveLength(2);
+ expect(redEdges.filter(x=>Number(x[4])<=2)).toHaveLength(2);
 });
 test("Esc closes only active picker, then cancels Table Format",async({page})=>{
  await setup(page);const d=await format(page,4);
@@ -101,11 +100,14 @@ test("mixed selected cells show blank border fields, untouched values preserved,
  const first=await cells.first().boundingBox(),last=await cells.last().boundingBox();
  await page.mouse.move(first!.x+first!.width/2,first!.y+first!.height/2);
  await page.mouse.down();await page.mouse.move(last!.x+last!.width/2,last!.y+last!.height/2,{steps:12});await page.mouse.up();
- await expect.poll(()=>ed.evaluate(el=>(el as HTMLElement & {editor:any}).editor.state.selection.ranges.length)).toBeGreaterThan(1);
- await page.keyboard.press("Control+Alt+f");
+ await expect(ed.locator("table td.selectedCell")).toHaveCount(9);
+ await expect.poll(()=>ed.evaluate(el=>(el as HTMLElement & {editor:any}).editor.state.selection.ranges.length)).toBe(9);
+ await cells.nth(4).click({button:"right"});
+ await page.getByRole("menu",{name:"Text context menu"}).getByRole("menuitem",{name:"Table Format…"}).click();
  d=page.getByRole("dialog",{name:"Table Format"});
  await expect(d.getByLabel("Border Color")).toHaveValue("");
  await expect(d.getByLabel("Border Style")).toHaveValue("");
+ await expect(d.locator('[data-classic-picker="Border Style"] [data-style-line]')).toHaveCount(0);
  await expect(d.getByRole("textbox",{name:"Border Width"})).toHaveValue("");
  await d.getByRole("button",{name:"Cancel"}).click();
  await expect(cells.nth(4)).toHaveAttribute("data-table-border-color","#ff0000");
@@ -116,6 +118,41 @@ test("mixed selected cells show blank border fields, untouched values preserved,
  await d.getByLabel("Border Style").selectOption("solid");
  await d.getByRole("textbox",{name:"Border Width"}).fill("2pt");
  await d.getByRole("button",{name:"OK",exact:true}).click();
- for(let i=0;i<9;i++)await expect(cells.nth(i)).toHaveAttribute("data-table-border-color","#0000ff");
+ for(let i=0;i<9;i++){
+  await expect(cells.nth(i)).toHaveAttribute("data-table-border-color","#0000ff");
+  await expect(cells.nth(i)).toHaveAttribute("data-table-border-style","solid");
+  await expect(cells.nth(i)).toHaveCSS("border-top-color","rgb(0, 0, 255)");
+ }
+ await cells.last().click();
  await page.screenshot({path:info.outputPath("whole-table-blue.png")});
+ await page.locator('[data-menu-root="file"]').click();
+ await page.locator('[data-menu-submenu="file.download"]').hover();
+ const [download]=await Promise.all([page.waitForEvent("download",{timeout:80000}),page.locator('[data-menu-action="file.downloadPdf"]').click()]);
+ const file=info.outputPath("all-blue-borders.pdf");await download.saveAs(file);
+ const pdf=await PDFDocument.load(readFileSync(file));
+ const stream=pdf.context.lookup(pdf.getPages()[0].node.Contents()) as unknown as {contents:Uint8Array};
+ const ops=inflateSync(stream.contents).toString("latin1");
+ expect(ops).toMatch(/0 0 1 RG/);
+ expect(ops).not.toMatch(/0 0 0 RG/);
+ await page.keyboard.press("Escape");
+ await cells.last().click();await page.keyboard.press("Control+z");
+ for(let i=0;i<9;i++)await expect(cells.nth(i)).not.toHaveAttribute("data-table-border-color","#0000ff");
+});
+
+test("default Urdu table PDF has black 0.5pt border around every cell",async({page},info)=>{
+ await setup(page);
+ await page.locator('[data-menu-root="file"]').click();
+ await page.locator('[data-menu-submenu="file.download"]').hover();
+ const [file]=await Promise.all([page.waitForEvent("download",{timeout:80000}),page.locator('[data-menu-action="file.downloadPdf"]').click()]);
+ const path=info.outputPath("default-black-05pt.pdf");await file.saveAs(path);
+ const pdf=await PDFDocument.load(readFileSync(path));
+ const stream=pdf.context.lookup(pdf.getPages()[0].node.Contents()) as unknown as {contents:Uint8Array};
+ const ops=inflateSync(stream.contents).toString("latin1");
+ expect(pdf.getPageCount()).toBe(1);
+ expect(ops).toMatch(/0 0 0 RG/);
+ const shapes=[...ops.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re\s+f/g)];
+ expect(shapes.length).toBeGreaterThanOrEqual(24);
+ const narrow=shapes.filter(x=>Math.min(Number(x[3]),Number(x[4]))>0&&Math.min(Number(x[3]),Number(x[4]))<=1);
+ expect(narrow.length).toBeGreaterThanOrEqual(18);
+ for(const bar of narrow)expect(Math.min(Number(bar[3]),Number(bar[4]))).toBeLessThanOrEqual(1);
 });

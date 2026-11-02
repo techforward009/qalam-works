@@ -413,8 +413,8 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           const a=cell.attrs??{};
           const fill=typeof a.tableFill==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableFill)?a.tableFill:"transparent";
           const color=typeof a.tableBorderColor==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableBorderColor)?a.tableBorderColor:"#000000";
-          const style=["solid","dotted","dashed","double"].includes(String(a.tableBorderStyle))?String(a.tableBorderStyle):"none";
-          const pt=Math.max(.25,Math.min(8,Number(a.tableBorderWidthPt)||1));
+          const style=["solid","dotted","dashed","double"].includes(String(a.tableBorderStyle))?String(a.tableBorderStyle):"solid";
+          const pt=Math.max(.25,Math.min(8,Number(a.tableBorderWidthPt)||.5));
           const gap=Math.max(0,Math.min(20,Number(a.tableGapMm??1.41)||1.41));
           const css=`background-color:${fill};border:${style==="none"?"0 none transparent":`${pt}pt ${style} ${color}`};padding-inline-end:${gap}mm;vertical-align:top`;
           const inner=(cell.content??[]).map(child=>convertNode(child,ctx)).join("");
