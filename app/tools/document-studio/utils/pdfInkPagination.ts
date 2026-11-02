@@ -1,7 +1,6 @@
 import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
 import type { Page } from "puppeteer-core";
 export const PDF_TABLE_SELECTOR = "table.qalam-document-table,table[data-pdf-table]";
-export const PDF_TABLE_BORDER_CSS = "1px solid #222";
 export const isPdfTableBlock = (tagName: string) => tagName.toUpperCase() === "TABLE";
 
 
@@ -218,9 +217,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       const originals = block.querySelectorAll<HTMLElement>("td,th");
       source.querySelectorAll<HTMLElement>("td,th").forEach((cell, index) => {
         const style = getComputedStyle(originals[index] ?? block);
-        const none=(originals[index]?.dataset.tableBorderStyle??"none")==="none";
-        const border=none?"0 none transparent":style.border;
-        cell.style.cssText += `;border:${border};background-color:${style.backgroundColor};box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
+        cell.style.cssText += `;border-top:${style.borderTop};border-right:${style.borderRight};border-bottom:${style.borderBottom};border-left:${style.borderLeft};background-color:${style.backgroundColor};box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
       });
       snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false,
         left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height),
@@ -452,7 +449,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
   }
   const measurement = document.createElement("style"); measurement.id = "pdf-ink-measure-style";
   measurement.textContent = "body{background:white!important}[data-pdf-ink-stage] *{color:black!important;background:transparent!important;border-color:transparent!important;text-shadow:none!important}[data-pdf-ink-stage] [style*=background]{background:black!important}";
-  measurement.textContent += `[data-pdf-table] td,[data-pdf-table] th{border:1px solid #222!important}[data-pdf-table]{border-collapse:collapse!important}`;
+  measurement.textContent += `[data-pdf-table]{border-collapse:collapse!important}`;
   document.head.append(measurement); return lines;
 }
 

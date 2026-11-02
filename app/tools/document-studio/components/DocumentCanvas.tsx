@@ -18,6 +18,7 @@ import { EditorContent } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { blockLeadingPt } from "../utils/autoLeading";
+import { TABLE_CELL_VERTICAL_ALIGNMENT } from "../utils/tableCellVerticalAlignment";
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
@@ -860,6 +861,7 @@ export default function DocumentCanvas({
         }
         .qalam-editor-content .ProseMirror.qalam-pagination table.qalam-document-table:has(tr:nth-child(18)) tr {
           display: flex;
+          align-items: center;
           width: 100%;
           break-inside: avoid;
         }
@@ -873,7 +875,7 @@ export default function DocumentCanvas({
           min-width: 4rem;
           border: 1px solid #95a89a;
           padding: 2px 4px !important;
-          vertical-align: top;
+          vertical-align: ${TABLE_CELL_VERTICAL_ALIGNMENT};
           text-align: start;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table th {

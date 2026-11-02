@@ -9,6 +9,7 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 // Effective CSS classes are chosen only from faces that fully loaded.
 
 import { blockLeadingPt } from "./autoLeading";
+import { TABLE_CELL_VERTICAL_ALIGNMENT } from "./tableCellVerticalAlignment";
 import type { DocNode, Direction } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
@@ -407,28 +408,45 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           const w=Number((cell.attrs?.colwidth as number[]|undefined)?.[0])||0;
           return `<col${w>0?` style="width:${Math.min(2000,w)}px"`:""}>`;
          }).join("")}</colgroup>`:"";
-      const rows=(node.content??[]).filter(row=>row.type==="tableRow").map(row=>{
-        const cells=(row.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader").map(cell=>{
+      const tableRows=(node.content??[]).filter(row=>row.type==="tableRow");
+      const styleRank:Record<string,number>={dotted:0,dashed:1,solid:2,double:3};
+      const borderRows=tableRows.map((row,rowIndex)=>(row.content??[])
+        .filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader")
+        .map((cell,columnIndex)=>{
+          const a=cell.attrs??{};
+          const color=typeof a.tableBorderColor==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableBorderColor)?a.tableBorderColor:"#000000";
+          const storedStyle=["solid","dotted","dashed","double","none"].includes(String(a.tableBorderStyle))?String(a.tableBorderStyle):"none";
+          const style=storedStyle==="none"?"solid":storedStyle;
+          const pt=Math.max(.25,Math.min(8,Number(a.tableBorderWidthPt)||.5));
+          // A formatted cell owns each shared edge against a default cell.
+          // Width and line style break ties; document order resolves exact ties.
+          const explicit=color.toLowerCase()!=="#000000"||Math.abs(pt-.5)>.0001||storedStyle!=="none";
+          return {color,style,pt,explicit,order:rowIndex*10000+columnIndex};
+        }));
+      const chooseBorder=(a:typeof borderRows[number][number],b:typeof borderRows[number][number])=>{
+        if(a.explicit!==b.explicit)return a.explicit?a:b;
+        if(Math.abs(a.pt-b.pt)>.0001)return a.pt>b.pt?a:b;
+        if(styleRank[a.style]!==styleRank[b.style])return styleRank[a.style]>styleRank[b.style]?a:b;
+        return a.order<b.order?a:b;
+      };
+      const sideCss=(owner:typeof borderRows[number][number],neighbor?:typeof borderRows[number][number])=>
+        !neighbor||chooseBorder(owner,neighbor)===owner?`${owner.pt}pt ${owner.style} ${owner.color}`:"0 none transparent";
+      const rows=tableRows.map((row,rowIndex)=>{
+        const cells=(row.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader").map((cell,columnIndex)=>{
           const tag=cell.type==="tableHeader"?"th":"td";
           const a=cell.attrs??{};
           const fill=typeof a.tableFill==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableFill)?a.tableFill:"transparent";
-          const color=typeof a.tableBorderColor==="string"&&/^#[0-9a-f]{6}$/i.test(a.tableBorderColor)?a.tableBorderColor:"#000000";
-          const style=["solid","dotted","dashed","double"].includes(String(a.tableBorderStyle))?String(a.tableBorderStyle):"solid";
-          const pt=Math.max(.25,Math.min(8,Number(a.tableBorderWidthPt)||.5));
+          const own=borderRows[rowIndex][columnIndex];
+          const above=borderRows[rowIndex-1]?.[columnIndex];
+          const below=borderRows[rowIndex+1]?.[columnIndex];
+          const left=borderRows[rowIndex]?.[columnIndex-1];
+          const right=borderRows[rowIndex]?.[columnIndex+1];
           const gap=Math.max(0,Math.min(20,Number(a.tableGapMm??1.41)||1.41));
-          // SVG paths keep physical point widths; Chromium rounds CSS borders to pixels.
-          const strokePx=pt*96/72;
-          const strokeDash=style==="dotted"?"stroke-dasharray:1 2;":style==="dashed"?"stroke-dasharray:5 3;":"";
-          const rect=(inset:number,width:number,sharedEdges=false)=>`<rect x="${sharedEdges?0:inset}px" y="${sharedEdges?0:inset}px" width="${sharedEdges?"100%":`calc(100% - ${2*inset}px)`}" height="${sharedEdges?"100%":`calc(100% - ${2*inset}px)`}" fill="none" stroke="${color}" stroke-width="${width}px" style="${strokeDash}"/>`;
-          const outline=style==="double"
-            ?rect(strokePx/6,strokePx/3)+rect(strokePx*5/6,strokePx/3)
-            :rect(0,strokePx,true);
-          const svgBorder=`<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:-0.5px;width:calc(100% + 1px);height:calc(100% + 1px);pointer-events:none;overflow:visible">${outline}</svg>`;
-          const css=`position:relative;background-color:${fill};border:0.5px solid transparent;padding-inline-end:${gap}mm;vertical-align:top`;
+          const css=`position:relative;background-color:${fill};border-top:${sideCss(own,above)};border-right:${sideCss(own,right)};border-bottom:${sideCss(own,below)};border-left:${sideCss(own,left)};padding-inline-end:${gap}mm;vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}`;
           const inner=(cell.content??[]).map(child=>child.type==="paragraph"&&!(child.content?.length)
             ?`<p${openAttrs(child,directionForNode(child,tableDir),ctx)}><br></p>`
             :convertNode(child,ctx)).join("");
-          return `<${tag} data-table-border-style="${style}" style="${escapeAttr(css)}">${inner}${svgBorder}</${tag}>`;
+          return `<${tag} data-table-border-style="${own.style}" style="${escapeAttr(css)}">${inner}</${tag}>`;
         }).join("");
         return `<tr>${cells}</tr>`;
       }).join("");
@@ -584,9 +602,9 @@ ${classRulesCss()}
     padding-inline-start: 1rem;
     color: #444;
   }
-  table.qalam-document-table { width:100%; max-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; margin:0.75em 0; }
+  table.qalam-document-table { width:100%; max-width:100%; border-collapse:collapse; border-spacing:0; table-layout:fixed; margin:0.75em 0; }
   table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
-  table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:2px 4px; vertical-align:top; text-align:start; overflow-wrap:anywhere; }
+  table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:2px 4px; vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}; text-align:start; overflow-wrap:anywhere; }
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
   table.qalam-document-table p { margin:0; }
   table.qalam-document-table :is(th,td) p span { line-height:normal; }

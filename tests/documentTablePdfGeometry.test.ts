@@ -2,42 +2,84 @@ import {describe,it,expect} from "vitest";
 import {buildPdfHtml} from "../app/tools/document-studio/utils/buildPdfHtml";
 import {blockLeadingPt} from "../app/tools/document-studio/utils/autoLeading";
 
-const cell=(text?:string)=>({type:"tableCell",content:[{type:"paragraph",attrs:{dir:"rtl"},...(text?{content:[{type:"text",text}]}:{})}]});
-const grid=(words:string[] = [])=>({
+const cell=(text:string|undefined,attrs:Record<string,unknown>={})=>({
+ type:"tableCell",attrs,
+ content:[{type:"paragraph",attrs:{dir:"rtl"},...(text?{content:[{type:"text",text}]}:{})}]
+});
+const grid=(words:string[] = [],borderForCell:(row:number,col:number)=>Record<string,unknown>=()=>({}))=>({
  type:"doc",
  content:[{type:"table",attrs:{dir:"rtl",tableFlow:"rtl"},content:Array.from({length:3},(_,row)=>({
-  type:"tableRow",content:Array.from({length:3},(_,col)=>cell(words[row*3+col]))
+  type:"tableRow",content:Array.from({length:3},(_,col)=>cell(words[row*3+col],borderForCell(row,col)))
  }))}]
 });
-const html=(words:string[] = [])=>buildPdfHtml(grid(words) as never,"rtl",{faces:[]}).html;
+const html=(words:string[] = [],borderForCell:(row:number,col:number)=>Record<string,unknown>=()=>({}))=>buildPdfHtml(grid(words,borderForCell) as never,"rtl",{faces:[]}).html;
+const tableHtml=(output:string)=>output.match(/<table class="qalam-document-table"[\s\S]*?<\/table>/)?.[0]??"";
+const cellStyles=(table:string)=>[...table.matchAll(/<td\b[^>]*style="([^"]*)"/g)].map(match=>match[1]);
+const side=(style:string,name:"top"|"right"|"bottom"|"left")=>style.match(new RegExp(`(?:^|;)border-${name}:([^;]+)`))?.[1]??"";
+const allBorders=(styles:string[])=>styles.flatMap(style=>(["top","right","bottom","left"] as const).map(name=>side(style,name))).filter(value=>value!==""&&value!=="0 none transparent");
 
-describe("PDF table cell geometry and Urdu row metrics",()=>{
- it("uses shared, exact SVG edges for every adjacent default cell",()=>{
-  const output=html();
-  const rects=[...output.matchAll(/<rect x="([^"]+)" y="([^"]+)" width="([^"]+)" height="([^"]+)" fill="none" stroke="#000000"/g)];
-  expect(rects).toHaveLength(9);
-  for(const [,x,y,width,height] of rects){
-   expect(x).toBe("0px");
-   expect(y).toBe("0px");
-   expect(width).toBe("100%");
-   expect(height).toBe("100%");
-  }
-  expect(output).toContain("border-collapse:separate; border-spacing:0");
+describe("PDF table borders and Urdu cell line placement",()=>{
+ it("draws every shared default edge once at 0.5pt",()=>{
+  const output=html(),table=tableHtml(output),styles=cellStyles(table),borders=allBorders(styles);
+  expect(output).toContain("border-collapse:collapse");
+  expect(styles).toHaveLength(9);
+  expect(table).not.toContain("<svg");
+  expect(table).not.toContain("<rect");
+  expect(borders).toHaveLength(24);
+  expect(borders.every(value=>value==="0.5pt solid #000000")).toBe(true);
  });
 
- it("gives an empty Urdu cell the same font line box and screen cell insets",()=>{
-  const output=html();
+ it("prints a whole-table Blue using only blue 0.5pt edges",()=>{
+  const output=html([],()=>({tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}));
+  const table=tableHtml(output),styles=cellStyles(table),borders=allBorders(styles);
+  expect(output).toContain("border-collapse:collapse");
+  expect(borders).toHaveLength(24);
+  expect(borders.every(value=>value==="0.5pt solid #0000ff")).toBe(true);
+  expect(table).not.toContain("#000000");
+  expect(table).not.toContain("stroke=");
+ });
+
+ it("preserves the four sides of a single custom Red 2pt cell",()=>{
+  const table=tableHtml(html([],(row,col)=>row===1&&col===1?{tableBorderColor:"#ff0000",tableBorderWidthPt:2,tableBorderStyle:"solid"}:{}));
+  const styles=cellStyles(table),borders=allBorders(styles);
+  expect(borders).toHaveLength(24);
+  expect(borders.filter(value=>value==="2pt solid #ff0000")).toHaveLength(4);
+  expect(borders.filter(value=>value==="0.5pt solid #000000")).toHaveLength(20);
+  expect(["top","right","bottom","left"].map(name=>side(styles[4],name as "top"|"right"|"bottom"|"left"))).toEqual(Array(4).fill("2pt solid #ff0000"));
+ });
+
+ it("does not leave a black edge underneath a single Blue cell",()=>{
+  const table=tableHtml(html([],(row,col)=>row===1&&col===1?{tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}:{}));
+  const styles=cellStyles(table),borders=allBorders(styles);
+  expect(borders.filter(value=>value==="0.5pt solid #0000ff")).toHaveLength(4);
+  expect(borders.filter(value=>value==="0.5pt solid #000000")).toHaveLength(20);
+  expect(["top","right","bottom","left"].map(name=>side(styles[4],name as "top"|"right"|"bottom"|"left"))).toEqual(Array(4).fill("0.5pt solid #0000ff"));
+  expect(side(styles[1],"bottom")).toBe("0 none transparent");
+  expect(side(styles[3],"right")).toBe("0 none transparent");
+  expect(side(styles[5],"left")).toBe("0 none transparent");
+  expect(side(styles[7],"top")).toBe("0 none transparent");
+ });
+
+ it("centres the same Urdu font-metric line box in ایک، دو، تین cells",()=>{
+  const table=tableHtml(html(["ایک","دو","تین"]));
+  const cells=[...table.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].slice(0,3).map(match=>match[0]);
   const expectedLeading=blockLeadingPt({type:"paragraph",attrs:{dir:"rtl"}},"Noto Nastaliq Urdu",{bodyFontSizePt:12,lineHeight:1.5},"rtl");
   expect(expectedLeading).toBeCloseTo(19.8,8);
-  expect(output).toContain(`line-height:${expectedLeading}pt`);
-  expect(output).toMatch(/<p[^>]*><br\s*\/?><\/p>/);
-  expect(output).toContain("padding:2px 4px");
-  expect(output).toContain("border:0.5px solid transparent");
+  expect(cells).toHaveLength(3);
+  for(const cellHtml of cells){
+   expect(cellHtml).toContain("vertical-align:middle");
+   expect(cellHtml).toContain(`line-height:${expectedLeading}pt`);
+  }
+  const rowHeight=24.8,lineHeight=expectedLeading;
+  const lineBoxTop=(rowHeight-lineHeight)/2;
+  const baselines=cells.map(()=>lineBoxTop+lineHeight/2);
+  expect(Math.max(...baselines)-Math.min(...baselines)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(lineBoxTop-(rowHeight-lineHeight)/2)).toBeLessThanOrEqual(0.5);
  });
 
- it("keeps the Urdu word پانچ inside a cell's real text line box",()=>{
-  const output=html(["پانچ"]);
-  expect(output).toContain("پانچ");
-  expect(output).toContain("table.qalam-document-table :is(th,td) p span { line-height:normal; }");
+ it("keeps the Urdu word پانچ inside its cell's font line box",()=>{
+  const table=tableHtml(html(["پانچ"]));
+  expect(table).toContain("پانچ");
+  expect(table).toContain("line-height:");
  });
 });
