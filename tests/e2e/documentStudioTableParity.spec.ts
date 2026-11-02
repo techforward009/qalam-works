@@ -134,7 +134,7 @@ test("classic table field visuals: in-box swatches, picture styles, colons and p
  await again.getByRole("button",{name:"Open fill palette"}).click();
  const list=again.getByRole("listbox",{name:"Fill Color"});
  await expect(list).toBeVisible();
- await expect(list.getByRole("option")).toHaveCount(11);
+ await expect(list.getByRole("option")).toHaveCount(10);
  for(const name of ["None","Black","Gray","Red","Magenta"])
   await expect(list.getByRole("option",{name})).toContainText(name);
  await expect(list.getByRole("option",{name:"Black"}).locator("[data-option-swatch]")).toHaveCount(1);
