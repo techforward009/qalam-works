@@ -38,6 +38,7 @@ export type DocumentMenuHandlers = {
   tableFormat?: () => void;
   tableToText?: () => void;
   textToTable?: () => void;
+  splitTable?: () => void;
   textAction?: (action: "cut" | "copy" | "paste" | "clear") => void;
   newDocument: () => void;
   openLibrary: () => void;
@@ -217,6 +218,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.tableToText":
       handlers.tableToText?.();
+      return;
+    case "insert.splitTable":
+      handlers.splitTable?.();
       return;
     case "insert.image":
       handlers.openImageInsert?.();

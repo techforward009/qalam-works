@@ -55,6 +55,7 @@ export type MenuActionId =
   | "insert.table"
   | "insert.textToTable"
   | "insert.tableToText"
+  | "insert.splitTable"
   | "insert.image"
   | "insert.pageBreak"
   | "insert.sectionBreakNextPage"
@@ -463,7 +464,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   ] },
   { ...original("insert"), items: [
     soon("page.date", "Date & Time…"), separator, ready("insert.pageBreak", "Page…", "Alt+Ins"), soon("page.number", "Page Number…"), separator,
-    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), soon("page.splitTable", "Split Table"), separator,
+    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), ready("insert.splitTable", "Split Table"), separator,
     soon("page.index", "Index Entry…", "Ctrl+Alt+I"), soon("page.lock", "Object Lock…"), soon("page.footnote", "Footnote"), separator, qalamSection,
     submenu("insert", "insert.sectionBreak"),
   ] },

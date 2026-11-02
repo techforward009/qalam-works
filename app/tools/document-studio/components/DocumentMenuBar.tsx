@@ -1,6 +1,7 @@
 "use client";
 
 import { studioOverlayRoot } from "../utils/inpageToolbar";
+import type { Editor } from "@tiptap/core";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StudioHomeButton } from "./StudioHomeButton";
@@ -21,7 +22,7 @@ import {
   type MenuId,
   type MenuNode,
   type MenuOpenState,
-  type InsertTableMode,
+
 } from "../utils/documentMenus";
 
 function topMenuPosition(anchor: HTMLElement | null, isUr: boolean, menuId: MenuId): React.CSSProperties {
@@ -136,7 +137,7 @@ export default function DocumentMenuBar({
   onAction,
   disabledIds,
   checkedIds,
-  insertTableMode = "plain",
+  editor,
   showHome = false,
   documentOpen = true,
   endSlot,
@@ -148,7 +149,7 @@ export default function DocumentMenuBar({
   onAction: (id: MenuActionId) => void;
   disabledIds?: ReadonlySet<MenuActionId>;
   checkedIds?: ReadonlySet<MenuActionId>;
-  insertTableMode?: InsertTableMode;
+  editor?: Editor | null;
   showHome?: boolean;
   documentOpen?: boolean;
   endSlot?: React.ReactNode;
@@ -289,6 +290,23 @@ export default function DocumentMenuBar({
     };
   }, [openState.menuId, openState.submenuId, isUr, inlineSubmenus]);
 
+  // The menu-opening render must read live selection, not a parent
+  // render cached before a mouse click, arrow move or undo.
+  const insertTableMode = editor?.isActive("table") ? "table"
+    : editor && !editor.state.selection.empty ? "selection" : "plain";
+  const insertDisabledIds = new Set(disabledIds);
+  if (documentOpen && editor) {
+    if (insertTableMode === "table") {
+      insertDisabledIds.delete("insert.splitTable");
+      insertDisabledIds.delete("insert.tableToText");
+      insertDisabledIds.add("insert.textToTable");
+    } else {
+      insertDisabledIds.add("insert.splitTable");
+      insertDisabledIds.add("insert.tableToText");
+      if (insertTableMode === "selection") insertDisabledIds.delete("insert.textToTable");
+      else insertDisabledIds.add("insert.textToTable");
+    }
+  }
   const baseMenu = DOCUMENT_MENU_BAR.find((menu) => menu.id === openState.menuId) ?? null;
   const openMenu = baseMenu?.id === "window" && openDocuments.length
     ? { ...baseMenu, items: [...baseMenu.items, { type: "separator" } as MenuNode,
@@ -340,7 +358,7 @@ export default function DocumentMenuBar({
               <MenuItems
                 items={openMenu.items}
                 isUr={isUr}
-                disabledIds={disabledIds}
+                disabledIds={openMenu.id === "insert" ? insertDisabledIds : disabledIds}
                 checkedIds={sessionCheckedIds}
                 openSubmenuId={openState.submenuId}
                 inlineSubmenus={inlineSubmenus}
