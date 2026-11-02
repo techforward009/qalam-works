@@ -1,86 +1,95 @@
 import {test,expect,type Page} from "@playwright/test";
 const words=["ایک","دو","تین","چار"];
-async function setup(page:Page){
+async function openUrduEditor(page:Page){
  await page.addInitScript(()=>{localStorage.clear();localStorage.setItem("qalam-site-language","en");});
  await page.goto("/tools/document-studio");
- const ed=page.locator(".ProseMirror");await expect(ed).toBeEditable({timeout:30000});
+ const ed=page.locator(".ProseMirror");
+ await expect(ed).toBeEditable({timeout:30000});
  await ed.click();
+ return ed;
+}
+async function insertTwoByTwo(page:Page){
  await page.locator('[data-menu-root="insert"]').click();
  await page.locator('[data-menu-action="insert.table"]').click();
  const dlg=page.getByRole("dialog",{name:"Insert Table"});
  await dlg.getByRole("spinbutton",{name:"Rows"}).fill("2");
  await dlg.getByRole("spinbutton",{name:"Columns"}).fill("2");
  await dlg.getByRole("button",{name:"OK",exact:true}).click();
- for(let i=0;i<4;i++){await page.keyboard.insertText(words[i]);if(i!==3)await page.keyboard.press("Tab");}
- await expect(ed.locator("table td")).toHaveCount(4);
- return ed;
+ for(let i=0;i<4;i++){
+  await page.keyboard.insertText(words[i]);
+  if(i!==3)await page.keyboard.press("Tab");
+ }
+ await expect(page.locator(".ProseMirror table td")).toHaveCount(4);
 }
 async function split(page:Page){
  await page.locator('[data-menu-root="insert"]').click();
- const item=page.locator('[data-menu-action="insert.splitTable"]');
- await expect(item).toBeEnabled();
- await item.click();
+ const action=page.locator('[data-menu-action="insert.splitTable"]');
+ await expect(action).toBeEnabled();
+ await action.click();
 }
-test("table first: row-two Split Table leaves table intact, types Urdu above it and undo restores",async({page},info)=>{
- const ed=await setup(page);
- await expect(ed.locator(":scope > table")).toHaveCount(1);
+test("first-block Urdu table: row-two action creates one nonoverlapping paragraph and undo restores it",async({page},info)=>{
+ const ed=await openUrduEditor(page);
+ await insertTwoByTwo(page);
+ await expect.poll(()=>ed.evaluate(el=>el.firstElementChild?.tagName)).toBe("TABLE");
  const beforeTable=await ed.locator("table").evaluate(el=>el.outerHTML);
  const count=await page.locator("[data-studio-page-count]").getAttribute("data-studio-page-count");
  await ed.locator("table td").nth(2).click();
  await page.locator('[data-menu-root="insert"]').click();
  await expect(page.locator('[data-menu-action="insert.splitTable"]')).toBeEnabled();
- await page.locator('[data-menu-dropdown="insert"]').screenshot({path:info.outputPath("split-table-enabled-in-insert.png")});
+ await page.locator('[data-menu-dropdown="insert"]').screenshot({path:info.outputPath("split-table-menu.png")});
  await page.locator('[data-menu-action="insert.splitTable"]').click();
+ await expect.poll(()=>ed.evaluate(el=>el.firstElementChild?.tagName)).toBe("P");
  await expect(ed.locator(":scope > p").first()).toBeEmpty();
- await expect(ed.locator(":scope > table")).toHaveCount(1);
- await expect(ed.locator("table").evaluate(el=>el.outerHTML)).resolves.toBe(beforeTable);
- await page.keyboard.insertText("سرخی");
- await expect(ed.locator(":scope > p").first()).toHaveText("سرخی");
+ expect(await ed.locator("table").evaluate(el=>el.outerHTML)).toBe(beforeTable);
  await expect.poll(async()=>{
   const p=await ed.locator(":scope > p").first().boundingBox(),t=await ed.locator("table").boundingBox();
   return !!p&&!!t&&p.y+p.height<=t.y+2;
  }).toBe(true);
  await expect(page.locator("[data-studio-page-count]")).toHaveAttribute("data-studio-page-count",count!);
- await page.screenshot({path:info.outputPath("split-table-urdu-heading.png")});
  await page.keyboard.press("Control+z");
- await expect(ed.locator("table")).toHaveCount(1);
- await expect(ed.locator(":scope > p").first()).not.toHaveText("سرخی");
+ await expect.poll(()=>ed.evaluate(el=>el.firstElementChild?.tagName)).toBe("TABLE");
+ expect(await ed.locator("table").evaluate(el=>el.outerHTML)).toBe(beforeTable);
+ // Repeat, then use the inserted empty paragraph for Urdu text.
+ await ed.locator("table td").nth(2).click();
+ await split(page);
+ await page.keyboard.insertText("سرخی");
+ await expect(ed.locator(":scope > p").first()).toHaveText("سرخی");
+ await page.screenshot({path:info.outputPath("split-table-heading.png")});
 });
-test("surrounding Urdu text remains and Split Table twice inserts two blank lines",async({page})=>{
- const ed=await setup(page);
- await ed.locator("table").first().click();
- await page.keyboard.press("Control+Home");
+test("surrounding Urdu paragraphs remain when Split Table runs twice",async({page})=>{
+ const ed=await openUrduEditor(page);
  await page.keyboard.insertText("پہلے");
- await page.keyboard.press("End");
  await page.keyboard.press("Enter");
- await ed.locator("table td").nth(2).click();
- await split(page);
- await ed.locator("table td").nth(2).click();
- await split(page);
- const paragraphs=ed.locator(":scope > p");
- await expect(paragraphs).toHaveCount(3);
- await expect(paragraphs.nth(0)).toHaveText("پہلے");
- await expect(paragraphs.nth(1)).toBeEmpty();
- await expect(paragraphs.nth(2)).toBeEmpty();
+ await page.keyboard.insertText("بعد");
+ await page.keyboard.press("Home");
+ await insertTwoByTwo(page);
  await expect(ed.locator("table td")).toHaveCount(4);
+ const tableHtml=await ed.locator("table").evaluate(el=>el.outerHTML);
+ await ed.locator("table td").nth(2).click();
+ await split(page);
+ await ed.locator("table td").nth(2).click();
+ await split(page);
+ const structure=await ed.evaluate(el=>{
+  const table=el.querySelector("table")!;
+  const previous:string[]=[];
+  for(let node=table.previousElementSibling;node;node=node.previousElementSibling)previous.unshift(node.textContent||"");
+  return {previous,next:table.nextElementSibling?.textContent||""};
+ });
+ expect(structure.previous.slice(-3)).toEqual(["پہلے","",""]);
+ expect(structure.next).toBe("بعد");
+ expect(await ed.locator("table").evaluate(el=>el.outerHTML)).toBe(tableHtml);
 });
-test("Split Table only enabled in table and absent from cell context menu",async({page})=>{
- const ed=await setup(page);
+test("Insert-only item is grey in normal Urdu text; cell menu never contains it",async({page})=>{
+ const ed=await openUrduEditor(page);
+ await page.keyboard.insertText("عام عبارت");
+ await page.locator('[data-menu-root="insert"]').click();
+ await expect(page.locator('[data-menu-action="insert.splitTable"]')).toBeDisabled();
+ await page.keyboard.press("Escape");
+ await insertTwoByTwo(page);
  await ed.locator("table td").first().click();
  await page.locator('[data-menu-root="insert"]').click();
  await expect(page.locator('[data-menu-action="insert.splitTable"]')).toBeEnabled();
  await page.keyboard.press("Escape");
  await ed.locator("table td").first().click({button:"right"});
  await expect(page.getByRole("menu",{name:"Text context menu"}).getByRole("menuitem",{name:"Split Table"})).toHaveCount(0);
- await page.keyboard.press("Escape");
- await ed.locator("table").last().click();
- await page.keyboard.press("Control+End");
- await page.keyboard.press("ArrowDown");
- await page.locator('[data-menu-root="insert"]').click();
- // When the caret is still inside the final cell, navigate to normal prose before asserting disabled.
- await page.keyboard.press("Escape");
- await page.keyboard.press("Control+Home");
- await page.keyboard.press("ArrowLeft");
- await page.locator('[data-menu-root="insert"]').click();
- await expect(page.locator('[data-menu-action="insert.splitTable"]')).toBeDisabled();
 });
