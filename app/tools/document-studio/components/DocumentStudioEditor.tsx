@@ -157,6 +157,7 @@ import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
+import { StudioTableToTextDialog } from "./StudioTableToTextDialog";
 import {StudioTableLayoutDialog} from "./StudioTableLayoutDialog";
 import {StudioTableFormatDialog} from "./StudioTableFormatDialog";
 import {QalamTableFormatAttributes} from "../utils/tableFormatAttributes";
@@ -310,10 +311,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [textToTableOpen,setTextToTableOpen] = useState(false);
+  const [tableToTextOpen,setTableToTextOpen] = useState(false);
   const [tableLayoutOpen,setTableLayoutOpen] = useState(false);
   const [tableFormatOpen,setTableFormatOpen] = useState(false);
   const tableDialogsActive=useRef(false);
-  tableDialogsActive.current=tableInsertOpen||textToTableOpen||tableLayoutOpen||tableFormatOpen;
+  tableDialogsActive.current=tableInsertOpen||textToTableOpen||tableToTextOpen||tableLayoutOpen||tableFormatOpen;
   const [imageError, setImageError] = useState<string | null>(null);
   const [pendingMetadataWrites,setPendingMetadataWrites] = useState(0);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
@@ -1999,6 +2001,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       paragraph: () => setParagraphOpen(true),
       tableLayout: () => setTableLayoutOpen(true),
       tableFormat: () => setTableFormatOpen(true),
+      tableToText: () => {if(editor?.isActive("table"))setTableToTextOpen(true);},
       textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
@@ -2058,6 +2061,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   if (!editor?.isActive("table")) {
     disabledIds.add("text.tableLayout");
     disabledIds.add("text.tableFormat");
+    disabledIds.add("insert.tableToText");
     ([
       "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
       "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn",
@@ -2233,7 +2237,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
-        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} onTableFormat={()=>setTableFormatOpen(true)} />
+        onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} onTableFormat={()=>setTableFormatOpen(true)} onTableToText={()=>setTableToTextOpen(true)} />
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
@@ -2349,6 +2353,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
       {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={()=>{setTableInsertOpen(false);setFormattingNotice(0);}} /> : null}
       {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>{setTextToTableOpen(false);setFormattingNotice(0);}} /> : null}
+      {tableToTextOpen && editor ? <StudioTableToTextDialog editor={editor} onClose={()=>{setTableToTextOpen(false);setFormattingNotice(0);}} /> : null}
       {tableLayoutOpen && editor ? <StudioTableLayoutDialog editor={editor} onClose={()=>{setTableLayoutOpen(false);setFormattingNotice(0);}} /> : null}
       {tableFormatOpen && editor ? <StudioTableFormatDialog editor={editor} onClose={()=>{setTableFormatOpen(false);setFormattingNotice(0);}} /> : null}
 

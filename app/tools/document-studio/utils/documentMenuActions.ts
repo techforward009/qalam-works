@@ -36,6 +36,7 @@ export type DocumentMenuHandlers = {
   paragraph?: () => void;
   tableLayout?: () => void;
   tableFormat?: () => void;
+  tableToText?: () => void;
   textAction?: (action: "cut" | "copy" | "paste" | "clear") => void;
   newDocument: () => void;
   openLibrary: () => void;
@@ -209,6 +210,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.table":
       handlers.openTableInsert?.();
+      return;
+    case "insert.tableToText":
+      handlers.tableToText?.();
       return;
     case "insert.image":
       handlers.openImageInsert?.();
