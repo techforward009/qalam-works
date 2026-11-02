@@ -6,8 +6,8 @@ describe("InPage table screen-only grid and cell menu",()=>{
   const doc={type:"doc",content:[{type:"table",attrs:{dir:"rtl",tableFlow:"rtl"},content:[
    {type:"tableRow",content:[{type:"tableCell",attrs:{tableBorderStyle:"none"},content:[{type:"paragraph",attrs:{dir:"rtl"},content:[{type:"text",text:"ایک"}]}]}]}]}]};
   const html=buildPdfHtml(doc as never,"rtl",{faces:[]}).html;
-  expect(html).toMatch(/border:0.5pt solid #000000/);
-  expect(html).toMatch(/<td[^>]*border:0.5pt solid #000000/);
+  expect(html).toMatch(/stroke="#000000" stroke-width="0.6666666666666666px"/);
+  expect(html).toMatch(/<td[^>]*border:0 none transparent[^>]*>.*<svg/s);
  });
  it("orders the cell context actions and separators like InPage",()=>{
   const items=textContextItems(false,true);

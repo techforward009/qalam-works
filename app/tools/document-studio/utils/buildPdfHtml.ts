@@ -416,9 +416,18 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           const style=["solid","dotted","dashed","double"].includes(String(a.tableBorderStyle))?String(a.tableBorderStyle):"solid";
           const pt=Math.max(.25,Math.min(8,Number(a.tableBorderWidthPt)||.5));
           const gap=Math.max(0,Math.min(20,Number(a.tableGapMm??1.41)||1.41));
-          const css=`background-color:${fill};border:${style==="none"?"0 none transparent":`${pt}pt ${style} ${color}`};padding-inline-end:${gap}mm;vertical-align:top`;
+          // SVG paths keep physical point widths; Chromium rounds CSS borders to pixels.
+          const strokePx=pt*96/72;
+          const strokeInset=strokePx/2;
+          const strokeDash=style==="dotted"?"stroke-dasharray:1 2;":style==="dashed"?"stroke-dasharray:5 3;":"";
+          const rect=(inset:number,width:number)=>`<rect x="${inset}px" y="${inset}px" width="calc(100% - ${2*inset}px)" height="calc(100% - ${2*inset}px)" fill="none" stroke="${color}" stroke-width="${width}px" style="${strokeDash}"/>`;
+          const outline=style==="double"
+            ?rect(strokePx/6,strokePx/3)+rect(strokePx*5/6,strokePx/3)
+            :rect(strokeInset,strokePx);
+          const svgBorder=`<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0;pointer-events:none;overflow:visible">${outline}</svg>`;
+          const css=`position:relative;background-color:${fill};border:0 none transparent;padding-inline-end:${gap}mm;vertical-align:top`;
           const inner=(cell.content??[]).map(child=>convertNode(child,ctx)).join("");
-          return `<${tag} data-table-border-style="${style}" style="${escapeAttr(css)}">${inner}</${tag}>`;
+          return `<${tag} data-table-border-style="${style}" style="${escapeAttr(css)}">${inner}${svgBorder}</${tag}>`;
         }).join("");
         return `<tr>${cells}</tr>`;
       }).join("");
@@ -574,7 +583,7 @@ ${classRulesCss()}
     padding-inline-start: 1rem;
     color: #444;
   }
-  table.qalam-document-table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed; margin:0.75em 0; }
+  table.qalam-document-table { width:100%; max-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; margin:0.75em 0; }
   table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
   table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:0.45em 0.6em; vertical-align:top; text-align:start; overflow-wrap:anywhere; }
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }

@@ -2,8 +2,14 @@ import {test,expect,type Page} from "@playwright/test";
 import {PDFDocument} from "pdf-lib";
 import {inflateSync} from "node:zlib";
 import {readFileSync} from "node:fs";
+import sharp from "sharp";
+// The inset of each SVG border path in CSS px equals 2/3 of its width in pt.
+function pdfBorderStrokes(ops:string){
+ return [...ops.matchAll(/(0 0 0|0 0 1|1 0 0) RG [^\n]* rg\n[\s\S]{0,100}?\n([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re\nS/g)]
+  .map(m=>({color:m[1],widthPt:Number(m[2])*1.5}));
+}
 async function setup(page:Page){
- await page.addInitScript(()=>{localStorage.clear();localStorage.setItem("qalam-site-language","en")});
+ await page.addInitScript(()=>{if(!sessionStorage.getItem("qalam-border-test-initialized")){localStorage.clear();sessionStorage.setItem("qalam-border-test-initialized","1");}localStorage.setItem("qalam-site-language","en")});
  await page.goto(process.env.QALAM_PARITY_URL||"/tools/document-studio");
  const ed=page.locator(".ProseMirror");await expect(ed).toBeEditable({timeout:30000});
  await ed.click();await page.locator('[data-menu-root="insert"]').click();await page.locator('[data-menu-action="insert.table"]').click();
@@ -75,11 +81,10 @@ test("one middle RTL cell: Red 2pt paints all 4 shared sides, outer cells unchan
  const pdfOps=inflateSync(stream.contents).toString("latin1");
  expect(pdfOps).toMatch(/1 0 0 RG/);
  // Adjacent default black cells may interleave the four independently painted red edges.
- const redEdges=[...pdfOps.matchAll(/1 0 0 RG 1 0 0 rg\s+((?:[\d.]+ [\d.]+ [\d.]+ [\d.]+ re\s+f\s*)+)/g)]
-  .flatMap(x=>[...x[1].matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re\s+f/g)]);
- expect(redEdges).toHaveLength(4);
- expect(redEdges.filter(x=>Number(x[3])<=2)).toHaveLength(2);
- expect(redEdges.filter(x=>Number(x[4])<=2)).toHaveLength(2);
+ const strokes=pdfBorderStrokes(pdfOps);
+ expect(strokes).toHaveLength(9);
+ expect(strokes.filter(edge=>edge.color==="1 0 0")).toHaveLength(1);
+ for(const stroke of strokes)expect(stroke.widthPt).toBeCloseTo(stroke.color==="1 0 0"?2:.5,1);
 });
 test("Esc closes only active picker, then cancels Table Format",async({page})=>{
  await setup(page);const d=await format(page,4);
@@ -124,7 +129,28 @@ test("mixed selected cells show blank border fields, untouched values preserved,
   await expect(cells.nth(i)).toHaveCSS("border-top-color","rgb(0, 0, 255)");
  }
  await cells.last().click();
- await page.screenshot({path:info.outputPath("whole-table-blue.png")});
+ const blueScreen=await page.screenshot({path:info.outputPath("whole-table-blue.png")});
+ const pixels=await sharp(blueScreen).raw().toBuffer({resolveWithObject:true});
+ const points=await cells.evaluateAll(nodes=>nodes.map(el=>{
+  const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,midX:(r.left+r.right)/2,midY:(r.top+r.bottom)/2};
+ }));
+ const isBlue=(x:number,y:number)=>{
+  const {info,data}=pixels,{width,height,channels}=info;
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
+   const xx=Math.round(x)+dx,yy=Math.round(y)+dy;
+   if(xx<0||xx>=width||yy<0||yy>=height)continue;
+   const o=(yy*width+xx)*channels,r=data[o],g=data[o+1],b=data[o+2];
+   if(r<100&&g<150&&b>165)return true;
+  }
+  return false;
+ };
+ for(const p of points){
+  expect(isBlue(p.left,p.midY),"left edge pixels").toBe(true);
+  expect(isBlue(p.right,p.midY),"right edge pixels").toBe(true);
+  expect(isBlue(p.midX,p.top),"top edge pixels").toBe(true);
+  expect(isBlue(p.midX,p.bottom),"bottom edge pixels").toBe(true);
+ }
+
  await page.locator('[data-menu-root="file"]').click();
  await page.locator('[data-menu-submenu="file.download"]').hover();
  const [download]=await Promise.all([page.waitForEvent("download",{timeout:80000}),page.locator('[data-menu-action="file.downloadPdf"]').click()]);
@@ -134,9 +160,24 @@ test("mixed selected cells show blank border fields, untouched values preserved,
  const ops=inflateSync(stream.contents).toString("latin1");
  expect(ops).toMatch(/0 0 1 RG/);
  expect(ops).not.toMatch(/0 0 0 RG/);
+ const blueStrokes=pdfBorderStrokes(ops);
+ expect(blueStrokes).toHaveLength(9);
+ for(const stroke of blueStrokes){
+  expect(stroke.color).toBe("0 0 1");
+  expect(stroke.widthPt).toBeCloseTo(2,1);
+ }
  await page.keyboard.press("Escape");
  await cells.last().click();await page.keyboard.press("Control+z");
  for(let i=0;i<9;i++)await expect(cells.nth(i)).not.toHaveAttribute("data-table-border-color","#0000ff");
+ await page.keyboard.press("Control+y");
+ for(let i=0;i<9;i++)await expect(cells.nth(i)).toHaveCSS("border-top-color","rgb(0, 0, 255)");
+ await page.locator('[data-menu-root="file"]').click();
+ await page.locator('[data-menu-action="file.save"]').click();
+ await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible();
+ await page.reload();
+ const restored=page.locator(".ProseMirror table td");
+ await expect(restored).toHaveCount(9);
+ for(let i=0;i<9;i++)await expect(restored.nth(i)).toHaveCSS("border-top-color","rgb(0, 0, 255)");
 });
 
 test("default Urdu table PDF has black 0.5pt border around every cell",async({page},info)=>{
@@ -150,9 +191,10 @@ test("default Urdu table PDF has black 0.5pt border around every cell",async({pa
  const ops=inflateSync(stream.contents).toString("latin1");
  expect(pdf.getPageCount()).toBe(1);
  expect(ops).toMatch(/0 0 0 RG/);
- const shapes=[...ops.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re\s+f/g)];
- expect(shapes.length).toBeGreaterThanOrEqual(24);
- const narrow=shapes.filter(x=>Math.min(Number(x[3]),Number(x[4]))>0&&Math.min(Number(x[3]),Number(x[4]))<=1);
- expect(narrow.length).toBeGreaterThanOrEqual(18);
- for(const bar of narrow)expect(Math.min(Number(bar[3]),Number(bar[4]))).toBeLessThanOrEqual(1);
+ const blackStrokes=pdfBorderStrokes(ops);
+ expect(blackStrokes).toHaveLength(9);
+ for(const stroke of blackStrokes){
+  expect(stroke.color).toBe("0 0 0");
+  expect(stroke.widthPt).toBeCloseTo(.5,1);
+ }
 });
