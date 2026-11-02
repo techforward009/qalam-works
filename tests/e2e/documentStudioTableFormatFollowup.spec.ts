@@ -61,7 +61,7 @@ test("Table Format mm and pt fields and right indent change screen and PDF geome
  await expect(dialog.getByLabel("Column Width")).toHaveValue(/mm$/);
  await expect(dialog.getByLabel("Column Gap")).toHaveValue("1.41mm");
  await expect(dialog.getByLabel("Table Indent")).toHaveValue("0mm");
- await expect(dialog.getByLabel("Border Width")).toHaveValue("0.5");
+ await expect(dialog.getByLabel("Border Width")).toHaveValue("0.5pt");
  await dialog.getByLabel("Column Width").fill("30mm");
  await dialog.getByLabel("Table Indent").fill("10mm");
  await dialog.getByLabel("Table Alignment").selectOption("right");

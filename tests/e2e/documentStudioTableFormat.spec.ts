@@ -31,7 +31,7 @@ test("Urdu table format dialog reflects defaults, cancel leaves JSON unchanged, 
  await expect(d.getByLabel("Fill Color")).toHaveValue("None");
  await expect(d.getByLabel("Border Style")).toHaveValue("solid");
  expect(await cell.evaluate(el=>getComputedStyle(el).borderTopStyle)).toBe("solid");
- await expect(d.getByLabel("Border Width")).toHaveValue("0.5");
+ await expect(d.getByLabel("Border Width")).toHaveValue("0.5pt");
  await expect(d.getByLabel("Column Gap")).toHaveValue("1.41mm");
  await expect(d.getByLabel("Table Alignment")).toHaveValue("right");
  const original=await ed.evaluate(node=>(node as any).innerHTML);
