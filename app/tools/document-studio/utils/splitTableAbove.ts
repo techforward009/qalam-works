@@ -16,5 +16,6 @@ export function splitTableAbove(editor:Editor):boolean {
  tr.setSelection(TextSelection.create(tr.doc,target.pos+1));
  tr.setMeta(TABLE_DIALOG_CHANGE,true);
  editor.view.dispatch(tr);
+ editor.view.focus();
  return true;
 }
