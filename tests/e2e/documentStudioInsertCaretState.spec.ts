@@ -58,35 +58,40 @@ test("Insert menu reads current mouse-only Urdu caret and selected text, both di
  await editor.locator(":scope > p").last().click();
  await state(page,"Table…",false);
 });
-test("Insert menu follows Tab, Shift+Tab, arrows, Home/End, undo and redo without cell typing",async({page})=>{
+async function matchesCurrentCaret(page:Page){
+ const value=await page.evaluate(()=>{
+  const selection=window.getSelection();
+  const anchor=selection?.anchorNode;
+  const element=anchor?.nodeType===Node.ELEMENT_NODE?anchor as Element:anchor?.parentElement;
+  const inTable=!!element?.closest("table");
+  return {label:inTable?"Table To Text…":selection&&!selection.isCollapsed?"Text To Table…":"Table…",inTable};
+ });
+ await state(page,value.label as "Table…"|"Text To Table…"|"Table To Text…",value.inTable);
+}
+test("Insert follows Tab, Shift+Tab, arrow keys, Home/End and undo/redo caret without typing",async({page})=>{
  const editor=await setup(page);
  await editor.locator("table td").first().click();
  await page.keyboard.press("Tab");
- await state(page,"Table To Text…",true);
+ await matchesCurrentCaret(page);
+ await editor.locator("table td").nth(2).click();
  await page.keyboard.press("Shift+Tab");
- await state(page,"Table To Text…",true);
- await page.keyboard.press("Home");
- await page.keyboard.press("ArrowRight");
- await page.keyboard.press("End");
- await state(page,"Table To Text…",true);
+ await matchesCurrentCaret(page);
+ await editor.locator("table td").nth(1).click();
+ for(const key of ["Home","ArrowLeft","ArrowRight","End"])await page.keyboard.press(key);
+ await matchesCurrentCaret(page);
  await editor.locator(":scope > p").first().click();
  await page.keyboard.press("End");
  await page.keyboard.press("ArrowDown");
- const inside=await page.evaluate(()=>!!(window.getSelection()?.anchorNode?.parentElement?.closest("table")));
- await state(page,inside?"Table To Text…":"Table…",inside);
+ await matchesCurrentCaret(page);
  await editor.locator("table td").nth(2).click();
  await page.locator('[data-menu-root="insert"]').click();
  await page.locator('[data-menu-action="insert.splitTable"]').click();
  for(const key of ["Control+z","Control+y"]){
+   await editor.focus();
    await page.keyboard.press(key);
-   const selected=await page.evaluate(()=>{
-    const sel=window.getSelection();
-    const ancestor=sel?.anchorNode?.nodeType===Node.ELEMENT_NODE?sel.anchorNode as Element:sel?.anchorNode?.parentElement;
-    return !!ancestor?.closest("table");
-   });
-   await state(page,selected?"Table To Text…":"Table…",selected);
+   await matchesCurrentCaret(page);
  }
+ await editor.focus();
  await page.keyboard.press("Control+End");
- const inTable=await page.evaluate(()=>!!window.getSelection()?.anchorNode?.parentElement?.closest("table"));
- await state(page,inTable?"Table To Text…":"Table…",inTable);
+ await matchesCurrentCaret(page);
 });
