@@ -8,6 +8,7 @@ import {
   applyMenuEscape,
   CLOSED_MENU_STATE,
   DOCUMENT_MENU_BAR,
+  contextualInsertTableMenu,
   findSubmenuItems,
   menuLabel,
   nextOpenMenu,
@@ -20,6 +21,7 @@ import {
   type MenuId,
   type MenuNode,
   type MenuOpenState,
+  type InsertTableMode,
 } from "../utils/documentMenus";
 
 function topMenuPosition(anchor: HTMLElement | null, isUr: boolean, menuId: MenuId): React.CSSProperties {
@@ -134,6 +136,7 @@ export default function DocumentMenuBar({
   onAction,
   disabledIds,
   checkedIds,
+  insertTableMode = "plain",
   showHome = false,
   documentOpen = true,
   endSlot,
@@ -145,6 +148,7 @@ export default function DocumentMenuBar({
   onAction: (id: MenuActionId) => void;
   disabledIds?: ReadonlySet<MenuActionId>;
   checkedIds?: ReadonlySet<MenuActionId>;
+  insertTableMode?: InsertTableMode;
   showHome?: boolean;
   documentOpen?: boolean;
   endSlot?: React.ReactNode;
@@ -289,7 +293,7 @@ export default function DocumentMenuBar({
   const openMenu = baseMenu?.id === "window" && openDocuments.length
     ? { ...baseMenu, items: [...baseMenu.items, { type: "separator" } as MenuNode,
         ...openDocuments.map((doc, index): MenuNode => ({ type: "action", id: `window.document:${doc.id}`, labelEn: `${index + 1}  ${doc.title}`, labelUr: `${index + 1}  ${doc.title}` }))] }
-    : baseMenu;
+    : baseMenu?.id === "insert" ? contextualInsertTableMenu(baseMenu, insertTableMode) : baseMenu;
   const sessionCheckedIds = new Set(checkedIds);
   if (activeDocumentId) sessionCheckedIds.add(`window.document:${activeDocumentId}`);
   const submenuItems =

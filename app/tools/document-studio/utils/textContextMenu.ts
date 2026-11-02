@@ -17,14 +17,14 @@ type TextContextItem={id:string;label?:string;separator?:boolean;submenu?:boolea
 export function textContextItems(hasSelection:boolean,inTable=false):TextContextItem[] {
  const base:TextContextItem[]=TEXT_CONTEXT_ITEMS.filter(item=>hasSelection||!['cut','copy','clear'].includes(item.id));
  return base.flatMap((item):TextContextItem[]=>item.id==='textToTable'
-   ?inTable?[...TABLE_CONTEXT_ITEMS]:[{...item,label:hasSelection?'Text To Table…':'Table…'}]
+   ?inTable?[...TABLE_CONTEXT_ITEMS]:[{...item,label:hasSelection?'Text To Table…':'Table…'},{id:'tableToText',label:'Table To Text…'}]
    :[item]);
 }
 export const CONTEXT_ZOOMS:ReadonlyArray<{label:string;value:DocumentZoom}>=[
  {label:'50%',value:50},{label:'75%',value:75},{label:'100%',value:100},{label:'200%',value:200},{label:'300%',value:300},{label:'Fit width',value:'fit-width'},{label:'Fit page',value:'fit-page'},
 ];
 export function textContextDisabled(id:string,hasSelection:boolean,inTable=false):boolean {
- return (id==="tableToText"||((id==="tableLayout")&&!inTable)||(!hasSelection&&['cut','copy','clear'].includes(id)));
+ return ((id==="tableToText"&&!inTable)||((id==="tableLayout")&&!inTable)||(!hasSelection&&['cut','copy','clear'].includes(id)));
 }
 export function contextMenuPosition(x:number,y:number,width:number,height:number,viewportWidth:number,viewportHeight:number){
  return {left:Math.max(4,Math.min(x,viewportWidth-width-4)),top:Math.max(4,Math.min(y,viewportHeight-height-4))};

@@ -32,7 +32,8 @@ describe("table reference behaviours",()=>{
   expect(tableContextMode(true,true)).toBe("text");
   expect(textContextItems(false,true).filter(item=>"label"in item).map(item=>"label"in item?item.label:"")).toContain("Table Layout…");
   expect(textContextDisabled("tableFormat",false,true)).toBe(false);
-  expect(textContextDisabled("tableToText",false,true)).toBe(true);
+  expect(textContextDisabled("tableToText",false,true)).toBe(false);
+  expect(textContextDisabled("tableToText",false,false)).toBe(true);
  });
  it("merges and splits selected cells without losing table structure",()=>{
   const e=editorWithTable();

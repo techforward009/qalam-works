@@ -45,7 +45,7 @@ describe('automatic pagination safety',()=>{
 });
 
 it.each([false,true])('context items hide selection actions and label the table correctly (%s)',selected=>{
- const items=textContextItems(selected);expect(items.map(item=>'label' in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All',...(selected?['Cut','Copy','Clear']:[]),'Paste','—','Character…','Paragraph…','—',selected?'Text To Table…':'Table…']);
+ const items=textContextItems(selected);expect(items.map(item=>'label' in item?item.label:'—')).toEqual(['Zoom','—','Import…','—','Select All',...(selected?['Cut','Copy','Clear']:[]),'Paste','—','Character…','Paragraph…','—',selected?'Text To Table…':'Table…','Table To Text…']);
  for(let i=0;i<items.length;i++)if('separator' in items[i]){expect(i).toBeGreaterThan(0);expect(i).toBeLessThan(items.length-1);expect('separator' in items[i-1]).toBe(false);expect('separator' in items[i+1]).toBe(false);}
  expect(textContextDisabled('textToTable',selected)).toBe(false);
 });
