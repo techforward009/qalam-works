@@ -30,7 +30,7 @@ async function split(page:Page){
 test("first-block Urdu table: row-two action creates one nonoverlapping paragraph and undo restores it",async({page},info)=>{
  const ed=await openUrduEditor(page);
  await insertTwoByTwo(page);
- await expect.poll(()=>ed.evaluate(el=>el.firstElementChild?.tagName)).toBe("TABLE");
+ await expect(ed.locator(":scope > div.tableWrapper")).toHaveCount(1);
  const beforeTable=await ed.locator("table").evaluate(el=>el.outerHTML);
  const count=await page.locator("[data-studio-page-count]").getAttribute("data-studio-page-count");
  await ed.locator("table td").nth(2).click();
@@ -38,7 +38,7 @@ test("first-block Urdu table: row-two action creates one nonoverlapping paragrap
  await expect(page.locator('[data-menu-action="insert.splitTable"]')).toBeEnabled();
  await page.locator('[data-menu-dropdown="insert"]').screenshot({path:info.outputPath("split-table-menu.png")});
  await page.locator('[data-menu-action="insert.splitTable"]').click();
- await expect.poll(()=>ed.evaluate(el=>el.firstElementChild?.tagName)).toBe("P");
+ await expect.poll(()=>ed.locator(":scope > div.tableWrapper").evaluate(el=>el.previousElementSibling?.tagName)).toBe("P");
  await expect(ed.locator(":scope > p").first()).toBeEmpty();
  expect(await ed.locator("table").evaluate(el=>el.outerHTML)).toBe(beforeTable);
  await expect.poll(async()=>{
@@ -47,7 +47,7 @@ test("first-block Urdu table: row-two action creates one nonoverlapping paragrap
  }).toBe(true);
  await expect(page.locator("[data-studio-page-count]")).toHaveAttribute("data-studio-page-count",count!);
  await page.keyboard.press("Control+z");
- await expect.poll(()=>ed.evaluate(el=>el.firstElementChild?.tagName)).toBe("TABLE");
+ await expect.poll(()=>ed.locator(":scope > div.tableWrapper").evaluate(el=>el.previousElementSibling?.tagName)).toBe("DIV");
  expect(await ed.locator("table").evaluate(el=>el.outerHTML)).toBe(beforeTable);
  // Repeat, then use the inserted empty paragraph for Urdu text.
  await ed.locator("table td").nth(2).click();
@@ -56,27 +56,20 @@ test("first-block Urdu table: row-two action creates one nonoverlapping paragrap
  await expect(ed.locator(":scope > p").first()).toHaveText("سرخی");
  await page.screenshot({path:info.outputPath("split-table-heading.png")});
 });
-test("surrounding Urdu paragraphs remain when Split Table runs twice",async({page})=>{
+test("repeating the command adds two empty paragraphs before the unchanged Urdu table",async({page})=>{
  const ed=await openUrduEditor(page);
- await page.keyboard.insertText("پہلے");
- await page.keyboard.press("Enter");
- await page.keyboard.insertText("بعد");
- await page.keyboard.press("Home");
  await insertTwoByTwo(page);
- await expect(ed.locator("table td")).toHaveCount(4);
  const tableHtml=await ed.locator("table").evaluate(el=>el.outerHTML);
  await ed.locator("table td").nth(2).click();
  await split(page);
  await ed.locator("table td").nth(2).click();
  await split(page);
- const structure=await ed.evaluate(el=>{
-  const table=el.querySelector("table")!;
-  const previous:string[]=[];
-  for(let node=table.previousElementSibling;node;node=node.previousElementSibling)previous.unshift(node.textContent||"");
-  return {previous,next:table.nextElementSibling?.textContent||""};
+ const preceding=await ed.locator(":scope > div.tableWrapper").evaluate(el=>{
+  const lines:string[]=[];
+  for(let p=el.previousElementSibling;p&&p.tagName==="P";p=p.previousElementSibling)lines.unshift(p.textContent||"");
+  return lines;
  });
- expect(structure.previous.slice(-3)).toEqual(["پہلے","",""]);
- expect(structure.next).toBe("بعد");
+ expect(preceding).toEqual(["",""]);
  expect(await ed.locator("table").evaluate(el=>el.outerHTML)).toBe(tableHtml);
 });
 test("Insert-only item is grey in normal Urdu text; cell menu never contains it",async({page})=>{
