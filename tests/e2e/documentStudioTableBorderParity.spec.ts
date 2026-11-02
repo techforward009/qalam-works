@@ -11,6 +11,12 @@ function pdfBorderStrokes(ops:string){
 async function setup(page:Page){
  await page.addInitScript(()=>{if(!sessionStorage.getItem("qalam-border-test-initialized")){localStorage.clear();sessionStorage.setItem("qalam-border-test-initialized","1");}localStorage.setItem("qalam-site-language","en")});
  await page.goto(process.env.QALAM_PARITY_URL||"/tools/document-studio");
+ // Each Playwright context starts with fresh localStorage. Create an actual
+ // right-to-left Urdu document through the File menu before testing tables.
+ await page.locator('[data-menu-root="file"]').click();
+ await page.locator('[data-menu-action="file.new"]').click();
+ const newDocument=page.getByRole("dialog",{name:"New Document"});
+ await newDocument.getByRole("button",{name:"OK",exact:true}).click();
  await expect.poll(()=>page.evaluate(()=>localStorage.getItem("qalam-document-studio-active-document-v1")),{timeout:30000}).not.toBeNull();
  const ed=page.locator(".ProseMirror");await expect(ed).toBeEditable({timeout:30000});
  await ed.click();await page.locator('[data-menu-root="insert"]').click();await page.locator('[data-menu-action="insert.table"]').click();
