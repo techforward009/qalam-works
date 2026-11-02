@@ -71,8 +71,11 @@ describe("PDF table borders and Urdu cell line placement",()=>{
    expect(cellHtml).toContain(`line-height:${expectedLeading}pt`);
   }
   const rowHeight=24.8,lineHeight=expectedLeading;
+  const fontAscent=14.2,fontDescent=5.6;
+  expect(fontAscent+fontDescent).toBeCloseTo(lineHeight,1);
   const lineBoxTop=(rowHeight-lineHeight)/2;
-  const baselines=cells.map(()=>lineBoxTop+lineHeight/2);
+  const halfLeading=(lineHeight-fontAscent-fontDescent)/2;
+  const baselines=cells.map(()=>lineBoxTop+halfLeading+fontAscent);
   expect(Math.max(...baselines)-Math.min(...baselines)).toBeLessThanOrEqual(0.5);
   expect(Math.abs(lineBoxTop-(rowHeight-lineHeight)/2)).toBeLessThanOrEqual(0.5);
  });
