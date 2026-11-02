@@ -33,7 +33,7 @@ describe("Insert > Split Table (InPage 2009)",()=>{
   expect(editor.state.doc.firstChild?.type.name).toBe("table");
   expect(splitTableAbove(editor)).toBe(true);
   const doc=editor.state.doc;
-  expect(doc.childCount).toBe(2);
+  expect(doc.childCount).toBe((before.content?.length ?? 0)+1);
   expect(doc.child(0).type.name).toBe("paragraph");
   expect(doc.child(0).textContent).toBe("");
   expect(doc.child(0).attrs.dir).toBe("rtl");
