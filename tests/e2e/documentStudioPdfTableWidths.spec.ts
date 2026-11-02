@@ -25,7 +25,7 @@ async function formatCell(page:Page,col:number,widthMm:number){
  await page.getByRole("menu",{name:"Text context menu"}).getByRole("menuitem",{name:"Table Format…",exact:true}).click();
  const d=page.getByRole("dialog",{name:"Table Format"});
  await d.getByRole("textbox",{name:"Column Width"}).fill(widthMm+"mm");
- await d.getByLabel("Fill Color").selectOption("#ffe082");
+ await d.getByLabel("Fill Color").selectOption("#FFFF00");
  await d.getByLabel("Border Style").selectOption("solid");
  await d.getByRole("button",{name:"OK",exact:true}).click();
 }
