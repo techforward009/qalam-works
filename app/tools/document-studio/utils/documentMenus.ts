@@ -53,6 +53,7 @@ export type MenuActionId =
   | "view.stats"
   | "insert.link"
   | "insert.table"
+  | "insert.textToTable"
   | "insert.tableToText"
   | "insert.image"
   | "insert.pageBreak"
@@ -462,7 +463,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   ] },
   { ...original("insert"), items: [
     soon("page.date", "Date & Time…"), separator, ready("insert.pageBreak", "Page…", "Alt+Ins"), soon("page.number", "Page Number…"), separator,
-    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), ready("insert.tableToText", "Table To Text…"), soon("page.splitTable", "Split Table"), separator,
+    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), soon("page.splitTable", "Split Table"), separator,
     soon("page.index", "Index Entry…", "Ctrl+Alt+I"), soon("page.lock", "Object Lock…"), soon("page.footnote", "Footnote"), separator, qalamSection,
     submenu("insert", "insert.sectionBreak"),
   ] },
@@ -498,6 +499,22 @@ export const OMITTED_FUTURE_ACTIONS = [
   "spellcheck",
   "grammar",
 ] as const;
+
+export type InsertTableMode = "plain" | "selection" | "table";
+
+export function contextualInsertTableMenu(menu: MenuDefinition, mode: InsertTableMode): MenuDefinition {
+  if (menu.id !== "insert") return menu;
+  const id: MenuActionId = mode === "table" ? "insert.tableToText" : mode === "selection" ? "insert.textToTable" : "insert.table";
+  const label = mode === "table" ? "Table To Text…" : mode === "selection" ? "Text To Table…" : "Table…";
+  return {
+    ...menu,
+    items: menu.items
+      .filter(item => !(item.type === "action" && item.id === "insert.tableToText"))
+      .map(item => item.type === "action" && item.id === "insert.table"
+        ? { ...item, id, labelEn: label, labelUr: label }
+        : item),
+  };
+}
 
 export function menuLabel(item: { labelEn: string; labelUr: string }, isUr: boolean): string {
   return isUr ? item.labelUr : item.labelEn;

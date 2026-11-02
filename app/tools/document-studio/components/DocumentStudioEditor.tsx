@@ -2002,6 +2002,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       tableLayout: () => setTableLayoutOpen(true),
       tableFormat: () => setTableFormatOpen(true),
       tableToText: () => {if(editor?.isActive("table"))setTableToTextOpen(true);},
+      textToTable: () => {if(editor && !editor.isActive("table") && !editor.state.selection.empty)setTextToTableOpen(true);},
       textAction: (action) => textMenuActions.current?.run(action),
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
@@ -2047,6 +2048,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     });
   };
 
+  const insertTableMode = editor?.isActive("table") ? "table" : editor && !editor.state.selection.empty ? "selection" : "plain";
   const disabledIds = new Set<MenuActionId>();
   if(noDocumentOpen)allMenuActionIds().filter(id=>!availableWithoutDocument(id)).forEach(id=>disabledIds.add(id));
   if (!editor?.can().undo()) disabledIds.add("edit.undo");
@@ -2058,6 +2060,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   if (typeof document !== "undefined" && !document.fullscreenEnabled) {
     disabledIds.add("view.fullscreen");
   }
+  if (insertTableMode !== "selection") disabledIds.add("insert.textToTable");
   if (!editor?.isActive("table")) {
     disabledIds.add("text.tableLayout");
     disabledIds.add("text.tableFormat");
@@ -2371,6 +2374,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             hasUnsavedChanges={hasUnsavedChanges}
             openDocuments={openDocuments}
             activeDocumentId={activeDocumentId}
+            insertTableMode={insertTableMode}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
