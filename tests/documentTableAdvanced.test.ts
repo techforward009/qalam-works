@@ -10,6 +10,9 @@ import {buildPdfHtml} from "../app/tools/document-studio/utils/buildPdfHtml";
 import {closeHistory} from "@tiptap/pm/history";
 import {createTableContent} from "../app/tools/document-studio/utils/tableConversions";
 import {textContextItems,textContextDisabled} from "../app/tools/document-studio/utils/textContextMenu";
+import {QalamTableFormatAttributes} from "../app/tools/document-studio/utils/tableFormatAttributes";
+import {QalamTableStableDirection} from "../app/tools/document-studio/utils/tableStableDirection";
+import {getHandle} from "../app/tools/document-studio/utils/tableColumnResizing";
 function editorWithTable() {
  const e=new Editor({extensions:createDocumentStudioExtensions(),content:{type:"doc",content:[createTableContent(2,2,null,"rtl")]}});
  e.commands.setTextSelection(4);
@@ -154,6 +157,137 @@ describe("table reference behaviours",()=>{
   const pdfHtml = buildPdfHtml(e.getJSON(), "rtl", { faces: [] }).html;
   expect(pdfHtml).toContain('style="width:180px"');
   expect(pdfHtml).toContain('style="width:150px"');
+  e.destroy();
+ });
+
+ it("اردو 3x3 جدول: چاروں کالم لائنوں کو کھینچنا، درست پوزیشن، ہٹ ایریا اور سنگل انڈو",()=>{
+  // 3x3 RTL Urdu table: ایک دو تین / چار پانچ چھ / سات آٹھ نو
+  const words=["ایک","دو","تین","چار","پانچ","چھ","سات","آٹھ","نو"];
+  const initialWidths=[150,150,150]; // Total 450px
+  const e=new Editor({
+   extensions:[...createDocumentStudioExtensions(),QalamTableStableDirection,QalamTableFormatAttributes],
+   content:{
+    type:"doc",
+    content:[{
+     type:"table",
+     attrs:{dir:"rtl",tableFlow:"rtl",tableFormatWidthPx:450,tableAlignment:"right",tableIndentMm:0},
+     content:Array.from({length:3},(_,r)=>({
+      type:"tableRow",
+      content:Array.from({length:3},(_,c)=>({
+       type:"tableCell",
+       attrs:{colwidth:[initialWidths[c]]},
+       content:[{type:"paragraph",attrs:{dir:"rtl"},content:[{type:"text",text:words[r*3+c]}]}]
+      }))
+     }))
+    }]
+   }
+  });
+
+  const getColWidths=()=>(e.getJSON().content?.[0] as any).content[0].content.map((c:any)=>c.attrs.colwidth[0]);
+  const getTableAttrs=()=>e.state.doc.firstChild?.attrs??{};
+  expect(getColWidths()).toEqual([150,150,150]);
+  expect(getTableAttrs().tableFormatWidthPx).toBe(450);
+  expect(getTableAttrs().tableIndentMm).toBe(0);
+
+  // 1. Dragging OUTER RIGHT column line (line 0) 40px left:
+  // Col 0 narrows by 40px (150 -> 110).
+  // Table's right edge moves 40px left (tableIndentMm increases by 40 / (96/25.4) mm).
+  // Col 1 and Col 2 and left outer line ALL stay stationary!
+  const resizedLine0=tableResizeColumnLine(initialWidths,0,-40,64);
+  expect(resizedLine0).toEqual([110,150,150]);
+
+  // Commit line 0 drag into editor
+  const pxPerMm=96/25.4;
+  const indentDeltaMm=Math.round((40/pxPerMm)*100)/100;
+  const tr0=e.state.tr;
+  const pos=0;
+  const node=e.state.doc.nodeAt(pos)!;
+  node.forEach((row,rowOffset)=>{
+   let col=0;
+   row.forEach((cell,cellOffset)=>{
+    const colspan=Number(cell.attrs.colspan)||1;
+    const attrs={...cell.attrs,colwidth:resizedLine0.slice(col,col+colspan)};
+    tr0.setNodeMarkup(pos+2+rowOffset+cellOffset,undefined,attrs);
+    col+=colspan;
+   });
+  });
+  tr0.setNodeMarkup(pos,undefined,{...node.attrs,tableFormatWidthPx:410,tableIndentMm:indentDeltaMm});
+  e.view.dispatch(closeHistory(tr0.setMeta("TABLE_DIALOG_CHANGE",true)));
+  e.view.dispatch(closeHistory(e.state.tr));
+
+  expect(getColWidths()).toEqual([110,150,150]);
+  expect(getTableAttrs().tableFormatWidthPx).toBe(410);
+  expect(getTableAttrs().tableIndentMm).toBeCloseTo(indentDeltaMm,2);
+
+  // Single undo restores initial widths and indent in ONE step:
+  expect(e.can().undo()).toBe(true);
+  e.commands.undo();
+  expect(getColWidths()).toEqual([150,150,150]);
+  expect(getTableAttrs().tableFormatWidthPx).toBe(450);
+  expect(getTableAttrs().tableIndentMm).toBe(0);
+
+  // 2. Dragging INNER LINE 1 (between Col 0 and Col 1):
+  // Moving 30px left in RTL: Col 0 widens by 30px, Col 1 narrows by 30px.
+  // Total width stays 450px; outer left and right stay stationary.
+  const resizedLine1=tableResizeColumnLine(initialWidths,1,30,64);
+  expect(resizedLine1).toEqual([180,120,150]);
+
+  // 3. Dragging INNER LINE 2 (between Col 1 and Col 2):
+  // Moving 20px left in RTL: Col 1 widens by 20px, Col 2 narrows by 20px.
+  // Total width stays 450px; outer left and right stay stationary.
+  const resizedLine2=tableResizeColumnLine(initialWidths,2,20,64);
+  expect(resizedLine2).toEqual([150,170,130]);
+
+  // 4. Dragging OUTER LEFT column line (line 3) 30px left:
+  // Moving 30px left in RTL: Col 2 widens by 30px (150 -> 180).
+  // Total width becomes 480px. Col 0, Col 1, and outer right line stay stationary.
+  const resizedLine3=tableResizeColumnLine(initialWidths,3,30,64);
+  expect(resizedLine3).toEqual([150,150,180]);
+
+  // 5. Test HIT AREA (±8px) for every line (outer right, inner 1, inner 2, outer left)
+  const domTable=document.createElement("table");
+  domTable.className="qalam-document-table";
+  domTable.style.direction="rtl";
+  const tr=document.createElement("tr");
+  const td0=document.createElement("td"); // col 0 (rightmost in RTL): x from 300 to 450
+  const td1=document.createElement("td"); // col 1: x from 150 to 300
+  const td2=document.createElement("td"); // col 2 (leftmost in RTL): x from 0 to 150
+  tr.appendChild(td0);
+  tr.appendChild(td1);
+  tr.appendChild(td2);
+  domTable.appendChild(tr);
+  document.body.appendChild(domTable);
+
+  domTable.getBoundingClientRect=()=>({left:0,right:450,top:0,bottom:100,width:450,height:100,x:0,y:0,toJSON:()=>{}} as any);
+  tr.getBoundingClientRect=()=>({left:0,right:450,top:0,bottom:100,width:450,height:100,x:0,y:0,toJSON:()=>{}} as any);
+  td0.getBoundingClientRect=()=>({left:300,right:450,top:0,bottom:100,width:150,height:100,x:300,y:0,toJSON:()=>{}} as any);
+  td1.getBoundingClientRect=()=>({left:150,right:300,top:0,bottom:100,width:150,height:100,x:150,y:0,toJSON:()=>{}} as any);
+  td2.getBoundingClientRect=()=>({left:0,right:150,top:0,bottom:100,width:150,height:100,x:0,y:0,toJSON:()=>{}} as any);
+
+  // Outer right line (x = 450): hit zone extends ±8px (e.g. 445 and 455)
+  expect(getHandle({target:domTable,clientX:450,clientY:50} as any)?.lineIndex).toBe(0);
+  expect(getHandle({target:domTable,clientX:444,clientY:50} as any)?.lineIndex).toBe(0);
+  expect(getHandle({target:domTable,clientX:456,clientY:50} as any)?.lineIndex).toBe(0);
+
+  // Inner line 1 (x = 300): hit zone extends ±8px (e.g. 295 and 305)
+  expect(getHandle({target:domTable,clientX:300,clientY:50} as any)?.lineIndex).toBe(1);
+  expect(getHandle({target:domTable,clientX:295,clientY:50} as any)?.lineIndex).toBe(1);
+  expect(getHandle({target:domTable,clientX:305,clientY:50} as any)?.lineIndex).toBe(1);
+
+  // Inner line 2 (x = 150): hit zone extends ±8px (e.g. 145 and 155)
+  expect(getHandle({target:domTable,clientX:150,clientY:50} as any)?.lineIndex).toBe(2);
+  expect(getHandle({target:domTable,clientX:145,clientY:50} as any)?.lineIndex).toBe(2);
+  expect(getHandle({target:domTable,clientX:155,clientY:50} as any)?.lineIndex).toBe(2);
+
+  // Outer left line (x = 0): hit zone extends ±8px (e.g. -5 and +5)
+  expect(getHandle({target:domTable,clientX:0,clientY:50} as any)?.lineIndex).toBe(3);
+  expect(getHandle({target:domTable,clientX:-5,clientY:50} as any)?.lineIndex).toBe(3);
+  expect(getHandle({target:domTable,clientX:5,clientY:50} as any)?.lineIndex).toBe(3);
+
+  // Center of cell (x = 225): far from any border line -> null
+  expect(getHandle({target:domTable,clientX:225,clientY:50} as any)).toBeNull();
+
+  domTable.remove();
   e.destroy();
  });
 });

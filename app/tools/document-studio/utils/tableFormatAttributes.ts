@@ -63,10 +63,9 @@ export const QalamTableFormatAttributes=Extension.create({
      const cell=(event.target instanceof Element?event.target:null)?.closest<HTMLTableCellElement>("td,th");
      const table=cell?.closest("table.qalam-document-table");
      if(!cell||!table)return;
-     const rtl=getComputedStyle(table).direction==="rtl";
      const nearGrip=Array.from(cell.parentElement?.querySelectorAll<HTMLTableCellElement>("td,th")??[]).some(sibling=>{
       const rect=sibling.getBoundingClientRect();
-      return Math.abs(event.clientX-(rtl?rect.left:rect.right))<=8;
+      return Math.abs(event.clientX-rect.left)<=8 || Math.abs(event.clientX-rect.right)<=8;
      });
      const pos=view.posAtDOM(cell,0);
      const $cell=view.state.doc.resolve(Math.min(pos,view.state.doc.content.size));

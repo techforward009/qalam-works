@@ -4,17 +4,34 @@ import {Plugin} from "@tiptap/pm/state";
 import type {EditorView} from "@tiptap/pm/view";
 import {TABLE_DIALOG_CHANGE} from "./formattingSafety";
 import {TABLE_MIN_COL_WIDTH,tableResizeColumnLine} from "./tableOperations";
+import {TABLE_PX_PER_MM,tableFormatAlignedMargins} from "./tableFormatUnits";
 
 type Handle={table:HTMLTableElement;lineIndex:number;rtl:boolean};
-function getHandle(event:PointerEvent):Handle|null {
+
+function findTable(event:PointerEvent):HTMLTableElement|null {
   const element=event.target instanceof Element?event.target:null;
-  // At a collapsed border the browser may hit a TR or the neighbouring cell
-  // rather than the TD owning that edge. Detect by physical coordinates.
   const table=element?.closest<HTMLTableElement>("table.qalam-document-table");
+  if(table)return table;
+  const root=(element?.getRootNode() as Document|ShadowRoot|undefined)??document;
+  const tables=Array.from(root.querySelectorAll<HTMLTableElement>("table.qalam-document-table"));
+  for(const t of tables){
+    const box=t.getBoundingClientRect();
+    if(event.clientX>=box.left-12&&event.clientX<=box.right+12&&
+       event.clientY>=box.top-4&&event.clientY<=box.bottom+4){
+      return t;
+    }
+  }
+  return null;
+}
+
+const HIT_PAD=8;
+
+export function getHandle(event:PointerEvent):Handle|null {
+  const table=findTable(event);
   if(!table)return null;
   const box=table.getBoundingClientRect();
-  if(event.clientX<box.left-8||event.clientX>box.right+8||
-     event.clientY<box.top||event.clientY>box.bottom)return null;
+  if(event.clientX<box.left-12||event.clientX>box.right+12||
+     event.clientY<box.top-4||event.clientY>box.bottom+4)return null;
   const row=Array.from(table.rows).find(r=>{
     const rect=r.getBoundingClientRect();
     return event.clientY>=rect.top&&event.clientY<=rect.bottom;
@@ -22,41 +39,41 @@ function getHandle(event:PointerEvent):Handle|null {
   const cells=Array.from(row?.cells||[]);
   if(cells.length===0)return null;
   const rtl=getComputedStyle(table).direction==="rtl";
-  // In RTL:
-  // line 0: outer right line of cell 0 (rect.right)
-  // line 1: boundary between cell 0 and cell 1 (cell 0 rect.left / cell 1 rect.right)
-  // ...
-  // line n: outer left line of cell n-1 (rect.left)
-  // In LTR:
-  // line 0: outer left line of cell 0 (rect.left)
-  // line 1: boundary between cell 0 and cell 1 (cell 0 rect.right / cell 1 rect.left)
-  // ...
-  // line n: outer right line of cell n-1 (rect.right)
   if(rtl){
     // line 0: outer right
     const firstRect=cells[0].getBoundingClientRect();
-    if(Math.abs(event.clientX-firstRect.right)<=8){
+    if(Math.abs(event.clientX-firstRect.right)<=HIT_PAD){
       return {table,lineIndex:0,rtl};
     }
-    // line 1..n: left edges of cells 0..n-1
-    for(let index=0;index<cells.length;index++){
+    // line 1..n-1: left edges of cells 0..n-2
+    for(let index=0;index<cells.length-1;index++){
       const rect=cells[index].getBoundingClientRect();
-      if(Math.abs(event.clientX-rect.left)<=8){
+      if(Math.abs(event.clientX-rect.left)<=HIT_PAD){
         return {table,lineIndex:index+1,rtl};
       }
+    }
+    // line n: outer left
+    const lastRect=cells[cells.length-1].getBoundingClientRect();
+    if(Math.abs(event.clientX-lastRect.left)<=HIT_PAD){
+      return {table,lineIndex:cells.length,rtl};
     }
   }else{
     // line 0: outer left
     const firstRect=cells[0].getBoundingClientRect();
-    if(Math.abs(event.clientX-firstRect.left)<=8){
+    if(Math.abs(event.clientX-firstRect.left)<=HIT_PAD){
       return {table,lineIndex:0,rtl};
     }
-    // line 1..n: right edges of cells 0..n-1
-    for(let index=0;index<cells.length;index++){
+    // line 1..n-1: right edges of cells 0..n-2
+    for(let index=0;index<cells.length-1;index++){
       const rect=cells[index].getBoundingClientRect();
-      if(Math.abs(event.clientX-rect.right)<=8){
+      if(Math.abs(event.clientX-rect.right)<=HIT_PAD){
         return {table,lineIndex:index+1,rtl};
       }
+    }
+    // line n: outer right
+    const lastRect=cells[cells.length-1].getBoundingClientRect();
+    if(Math.abs(event.clientX-lastRect.right)<=HIT_PAD){
+      return {table,lineIndex:cells.length,rtl};
     }
   }
   return null;
@@ -70,7 +87,7 @@ function tablePosition(view:EditorView,table:HTMLTableElement):number|null {
  if(view.state.doc.nodeAt(p)?.type.name==="table")return p;
  return null;
 }
-function updateWidths(view:EditorView,table:HTMLTableElement,widths:number[]) {
+function updateWidths(view:EditorView,table:HTMLTableElement,widths:number[],indentMm?:number) {
  const pos=tablePosition(view,table),node=pos===null?null:view.state.doc.nodeAt(pos);
  if(pos===null||!node||node.type.name!=="table")return;
  const tr=view.state.tr;
@@ -85,7 +102,11 @@ function updateWidths(view:EditorView,table:HTMLTableElement,widths:number[]) {
    });
  });
  const total=widths.reduce((sum,w)=>sum+Math.round(w),0);
- tr.setNodeMarkup(pos,undefined,{...node.attrs,tableFormatWidthPx:total});
+ const newAttrs:Record<string,unknown>={...node.attrs,tableFormatWidthPx:total};
+ if(indentMm!==undefined){
+   newAttrs.tableIndentMm=Math.round(indentMm*100)/100;
+ }
+ tr.setNodeMarkup(pos,undefined,newAttrs);
  if(tr.docChanged){view.dispatch(closeHistory(tr.setMeta(TABLE_DIALOG_CHANGE,true)));view.dispatch(closeHistory(view.state.tr));}
 }
 export const QalamTableColumnResizing=Extension.create({
@@ -93,7 +114,7 @@ export const QalamTableColumnResizing=Extension.create({
  addProseMirrorPlugins(){
    return [new Plugin({
      view(view){
-       let drag:{handle:Handle;startX:number;widths:number[];preview:number[]}|null=null;
+       let drag:{handle:Handle;startX:number;widths:number[];preview:number[];startIndentMm:number;startTotalWidth:number;previewIndentMm:number}|null=null;
        let hover:HTMLTableElement|null=null;
        const setHover=(table:HTMLTableElement|null)=>{
          if(hover&&hover!==table){hover.style.cursor="";delete hover.dataset.tableResizeHover;}
@@ -102,32 +123,73 @@ export const QalamTableColumnResizing=Extension.create({
        };
        const move=(event:PointerEvent)=>{
          if(!drag)return;
-         const {handle,startX,widths}=drag;
-         // In RTL:
-         // line 0 is outer right line: moving right (clientX - startX > 0) widens col 0 -> raw = event.clientX - startX
-         // line 1..n-1 are inner lines: moving left (clientX - startX < 0) widens left of line (col i-1) -> raw = (event.clientX - startX) * -1
-         // line n is outer left line: moving left (clientX - startX < 0) widens col n-1 -> raw = (event.clientX - startX) * -1
-         // In LTR:
-         // line 0 is outer left line: moving left (clientX - startX < 0) widens col 0 -> raw = -(event.clientX - startX)
-         // line 1..n: moving right (clientX - startX > 0) widens col i-1 / col n-1 -> raw = event.clientX - startX
-         const delta=handle.rtl
-          ?(handle.lineIndex===0?(event.clientX-startX):-(event.clientX-startX))
-          :(handle.lineIndex===0?-(event.clientX-startX):(event.clientX-startX));
-         drag.preview=tableResizeColumnLine(widths,handle.lineIndex,delta);
+         const {handle,startX,widths,startIndentMm,startTotalWidth}=drag;
+         const rawDelta=event.clientX-startX;
+         let delta=0;
+         let previewIndentMm=startIndentMm;
+
+         if(handle.rtl){
+           if(handle.lineIndex===0){
+             // Dragging outer right line in RTL: moving left (rawDelta < 0) narrows col 0
+             delta=rawDelta;
+             drag.preview=tableResizeColumnLine(widths,0,delta);
+             const diff=drag.preview[0]-widths[0];
+             const newTotal=startTotalWidth+diff;
+             previewIndentMm=Math.max(0,startIndentMm+(-diff)/TABLE_PX_PER_MM);
+             drag.previewIndentMm=previewIndentMm;
+             handle.table.style.width=Math.round(newTotal)+"px";
+             handle.table.style.marginRight=(previewIndentMm*TABLE_PX_PER_MM)+"px";
+           }else if(handle.lineIndex===widths.length){
+             // Dragging outer left line in RTL: moving left (rawDelta < 0) widens col n-1
+             delta=-rawDelta;
+             drag.preview=tableResizeColumnLine(widths,handle.lineIndex,delta);
+             const diff=drag.preview[widths.length-1]-widths[widths.length-1];
+             const newTotal=startTotalWidth+diff;
+             handle.table.style.width=Math.round(newTotal)+"px";
+           }else{
+             // Dragging inner line in RTL
+             delta=-rawDelta;
+             drag.preview=tableResizeColumnLine(widths,handle.lineIndex,delta);
+           }
+         }else{
+           if(handle.lineIndex===0){
+             // Dragging outer left line in LTR: moving right (rawDelta > 0) narrows col 0
+             delta=-rawDelta;
+             drag.preview=tableResizeColumnLine(widths,0,delta);
+             const diff=drag.preview[0]-widths[0];
+             const newTotal=startTotalWidth+diff;
+             previewIndentMm=Math.max(0,startIndentMm+(-diff)/TABLE_PX_PER_MM);
+             drag.previewIndentMm=previewIndentMm;
+             handle.table.style.width=Math.round(newTotal)+"px";
+             handle.table.style.marginLeft=(previewIndentMm*TABLE_PX_PER_MM)+"px";
+           }else if(handle.lineIndex===widths.length){
+             // Dragging outer right line in LTR: moving right (rawDelta > 0) widens col n-1
+             delta=rawDelta;
+             drag.preview=tableResizeColumnLine(widths,handle.lineIndex,delta);
+             const diff=drag.preview[widths.length-1]-widths[widths.length-1];
+             const newTotal=startTotalWidth+diff;
+             handle.table.style.width=Math.round(newTotal)+"px";
+           }else{
+             // Dragging inner line in LTR
+             delta=rawDelta;
+             drag.preview=tableResizeColumnLine(widths,handle.lineIndex,delta);
+           }
+         }
+
          const cols=handle.table.querySelectorAll<HTMLTableColElement>("colgroup col");
          drag.preview.forEach((w,i)=>{if(cols[i])cols[i].style.width=Math.round(w)+"px";});
          event.preventDefault();
        };
        const finish=()=>{
          if(!drag)return;
-         const {handle,preview}=drag;
+         const {handle,preview,previewIndentMm}=drag;
          drag=null;
          document.removeEventListener("pointermove",move,true);
          document.removeEventListener("pointerup",finish,true);
          document.removeEventListener("pointercancel",finish,true);
          setHover(null);
 
-         updateWidths(view,handle.table,preview);
+         updateWidths(view,handle.table,preview,previewIndentMm);
        };
        const onMove=(event:PointerEvent)=>{if(!drag)setHover(getHandle(event)?.table??null);};
        const onDown=(event:PointerEvent)=>{
@@ -135,7 +197,11 @@ export const QalamTableColumnResizing=Extension.create({
          const handle=getHandle(event);if(!handle)return;
          const widths=geometry(handle.table);
          if(widths.length<2)return;
-         drag={handle,startX:event.clientX,widths,preview:widths};
+         const pos=tablePosition(view,handle.table);
+         const node=pos===null?null:view.state.doc.nodeAt(pos);
+         const startIndentMm=Number(node?.attrs?.tableIndentMm)||0;
+         const startTotalWidth=widths.reduce((sum,w)=>sum+w,0);
+         drag={handle,startX:event.clientX,widths,preview:widths,startIndentMm,startTotalWidth,previewIndentMm:startIndentMm};
 
          setHover(handle.table);
          document.addEventListener("pointermove",move,true);
@@ -161,6 +227,17 @@ export const QalamTableColumnResizing=Extension.create({
              if(col.style.width!==expected)col.style.width=expected;
            });
            if(widths.every(w=>!w)){table.style.width="";table.style.minWidth="";}
+           else if(node?.attrs){
+             const width=Number(node.attrs.tableFormatWidthPx)||0;
+             if(width>0)table.style.width=`${width}px`;
+             const indent=Number(node.attrs.tableIndentMm)||0;
+             const dir=node.attrs.tableFlow==="ltr"?"ltr":node.attrs.dir==="ltr"?"ltr":"rtl";
+             const alignment=node.attrs.tableAlignment;
+             const side=(alignment==="left"||alignment==="center"||alignment==="right"?alignment:(dir==="rtl"?"right":"left")) as "left"|"center"|"right";
+             const margins=tableFormatAlignedMargins(side,indent);
+             table.style.marginLeft=margins.marginLeft;
+             table.style.marginRight=margins.marginRight;
+           }
          });
        },destroy(){
          view.dom.removeEventListener("pointermove",onMove,true);

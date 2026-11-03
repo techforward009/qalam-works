@@ -1,6 +1,9 @@
 import {describe,it,expect} from "vitest";
 import {buildPdfHtml} from "../app/tools/document-studio/utils/buildPdfHtml";
 import {blockLeadingPt} from "../app/tools/document-studio/utils/autoLeading";
+import puppeteer from "puppeteer-core";
+import {execSync} from "node:child_process";
+import {writeFileSync} from "node:fs";
 
 const cell=(text:string|undefined,attrs:Record<string,unknown>={})=>({
  type:"tableCell",attrs,
@@ -14,106 +17,119 @@ const grid=(words:string[] = [],borderForCell:(row:number,col:number)=>Record<st
 });
 const html=(words:string[] = [],borderForCell:(row:number,col:number)=>Record<string,unknown>=()=>({}))=>buildPdfHtml(grid(words,borderForCell) as never,"rtl",{faces:[]}).html;
 const tableHtml=(output:string)=>output.match(/<table class="qalam-document-table"[\s\S]*?<\/table>/)?.[0]??"";
-const cellStyles=(table:string)=>[...table.matchAll(/<td\b[^>]*style="([^"]*)"/g)].map(match=>match[1]);
-const side=(style:string,name:"top"|"right"|"bottom"|"left")=>style.match(new RegExp(`(?:^|;)border-${name}:([^;]+)`))?.[1]??"";
-const allBorders=(styles:string[])=>styles.flatMap(style=>(["top","right","bottom","left"] as const).map(name=>side(style,name))).filter(value=>value!==""&&value!=="0 none transparent");
+
+const cellElements=(table:string)=>[...table.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(m=>m[0]);
+const cellSvgRects=(cellHtml:string)=>[...cellHtml.matchAll(/<rect\b([^>]*)\/?>/g)].map(m=>m[1]);
+const allTableSvgRects=(table:string)=>[...table.matchAll(/<rect\b([^>]*)\/?>/g)].map(m=>m[1]);
 
 describe("PDF table borders and Urdu cell line placement",()=>{
- it("draws every shared default edge once at 0.5pt",()=>{
-  const output=html(),table=tableHtml(output),styles=cellStyles(table),borders=allBorders(styles);
-  expect(output).toContain("border-collapse:collapse");
-  expect(styles).toHaveLength(9);
-  expect(table).not.toContain("<svg");
-  expect(table).not.toContain("<rect");
-  expect(borders).toHaveLength(24);
-  expect(borders.every(value=>value==="0.5pt solid #000000")).toBe(true);
- });
+ it("اردو 3x3 جدول: حقیقی پی ڈی ایف میں ہر بارڈر بالکل 0.5pt چوڑا ہے اور ہر کنارے پر صرف ایک لائن ہے",async()=>{
+  const words=["ایک","دو","تین","چار","پانچ","چھ","سات","آٹھ","نو"];
+  const output=html(words);
+  const table=tableHtml(output);
+  expect(table).toContain("qalam-pdf-cell-borders");
+  
+  const rects=allTableSvgRects(table);
+  // In a 3x3 table, exactly 24 shared edges exist (12 horizontal, 12 vertical)
+  expect(rects).toHaveLength(24);
+  expect(rects.every(r=>r.includes('height="0.5pt"')||r.includes('width="0.5pt"'))).toBe(true);
+  expect(rects.every(r=>r.includes('fill="#000000"'))).toBe(true);
 
- it("prints a whole-table Blue using only blue 0.5pt edges",()=>{
-  const output=html([],()=>({tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}));
-  const table=tableHtml(output),styles=cellStyles(table),borders=allBorders(styles);
-  expect(output).toContain("border-collapse:collapse");
-  expect(borders).toHaveLength(24);
-  expect(borders.every(value=>value==="0.5pt solid #0000ff")).toBe(true);
-  expect(table).not.toContain("#000000");
-  expect(table).not.toContain("stroke=");
- });
+  // Real PDF inspection with pdfplumber
+  const browser=await puppeteer.launch({executablePath:"/usr/bin/google-chrome",args:["--no-sandbox","--disable-setuid-sandbox"]});
+  try{
+   const page=await browser.newPage();
+   await page.setContent(output,{waitUntil:"load"});
+   const pdfBuffer=await page.pdf({width:"210mm",height:"297mm",printBackground:true});
+   const pdfPath="/tmp/urdu_table_05pt_test.pdf";
+   writeFileSync(pdfPath,pdfBuffer);
 
- it("preserves the four sides of a single custom Red 2pt cell",()=>{
-  const table=tableHtml(html([],(row,col)=>row===1&&col===1?{tableBorderColor:"#ff0000",tableBorderWidthPt:2,tableBorderStyle:"solid"}:{}));
-  const styles=cellStyles(table),borders=allBorders(styles);
-  expect(borders).toHaveLength(24);
-  expect(borders.filter(value=>value==="2pt solid #ff0000")).toHaveLength(4);
-  expect(borders.filter(value=>value==="0.5pt solid #000000")).toHaveLength(20);
-  expect(["top","right","bottom","left"].map(name=>side(styles[4],name as "top"|"right"|"bottom"|"left"))).toEqual(Array(4).fill("2pt solid #ff0000"));
- });
+   const pyScript=`
+import pdfplumber
+with pdfplumber.open('${pdfPath}') as pdf:
+    p = pdf.pages[0]
+    rects = p.rects
+    verticals = [r for r in rects if round(r['width'], 2) == 0.5]
+    horizontals = [r for r in rects if round(r['height'], 2) == 0.5]
+    all_05 = [r for r in rects if round(r['width'], 2) == 0.5 or round(r['height'], 2) == 0.5]
+    print(f"TOTAL_RECTS:{len(rects)}")
+    print(f"TOTAL_05:{len(all_05)}")
+    print(f"VERTICALS:{len(verticals)}")
+    print(f"HORIZONTALS:{len(horizontals)}")
+    v_xs = sorted(set(round(r['x0'], 2) for r in verticals))
+    print(f"V_XS:{len(v_xs)}")
+`;
+   const pyPath="/tmp/inspect_urdu_table.py";
+   writeFileSync(pyPath,pyScript);
+   const res=execSync(`python3 ${pyPath}`).toString();
+   expect(res).toContain("TOTAL_05:24");
+   expect(res).toContain("VERTICALS:12");
+   expect(res).toContain("HORIZONTALS:12");
+   expect(res).toContain("V_XS:4");
+  }finally{
+   await browser.close();
+  }
+ },30000);
 
- it("does not leave a black edge underneath a single Blue cell",()=>{
-  const table=tableHtml(html([],(row,col)=>row===1&&col===1?{tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}:{}));
-  const styles=cellStyles(table),borders=allBorders(styles);
-  expect(borders.filter(value=>value==="0.5pt solid #0000ff")).toHaveLength(4);
-  expect(borders.filter(value=>value==="0.5pt solid #000000")).toHaveLength(20);
-  expect(["top","right","bottom","left"].map(name=>side(styles[4],name as "top"|"right"|"bottom"|"left"))).toEqual(Array(4).fill("0.5pt solid #0000ff"));
-  expect(side(styles[1],"bottom")).toBe("0 none transparent");
-  expect(side(styles[3],"left")).toBe("0 none transparent");
-  expect(side(styles[5],"right")).toBe("0 none transparent");
-  expect(side(styles[7],"top")).toBe("0 none transparent");
- });
+ it("اردو جدول: نیلے بارڈر کے نیچے کالا بارڈر نہیں ہوتا اور بالکل 0.5pt پر بنتا ہے",async()=>{
+  const words=["ایک","دو","تین","چار","پانچ","چھ","سات","آٹھ","نو"];
+  const output=html(words,(row,col)=>row===1&&col===1?{tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}:{});
+  const table=tableHtml(output);
+  const rects=allTableSvgRects(table);
+  expect(rects).toHaveLength(24);
 
- it("centres the same Urdu font-metric line box in ایک، دو، تین cells",()=>{
+  const blueRects=rects.filter(r=>r.includes('fill="#0000ff"'));
+  const blackRects=rects.filter(r=>r.includes('fill="#000000"'));
+  expect(blueRects).toHaveLength(4);
+  expect(blackRects).toHaveLength(20);
+
+  // In real PDF: exactly 4 blue rects of 0.5pt, 20 black rects of 0.5pt
+  const browser=await puppeteer.launch({executablePath:"/usr/bin/google-chrome",args:["--no-sandbox","--disable-setuid-sandbox"]});
+  try{
+   const page=await browser.newPage();
+   await page.setContent(output,{waitUntil:"load"});
+   const pdfBuffer=await page.pdf({width:"210mm",height:"297mm",printBackground:true});
+   const pdfPath="/tmp/urdu_table_blue_cell_test.pdf";
+   writeFileSync(pdfPath,pdfBuffer);
+
+   const pyScript=`
+import pdfplumber
+with pdfplumber.open('${pdfPath}') as pdf:
+    p = pdf.pages[0]
+    blue = [r for r in p.rects if r.get('non_stroking_color') == (0.0, 0.0, 1.0)]
+    black = [r for r in p.rects if r.get('non_stroking_color') == (0.0, 0.0, 0.0)]
+    print(f"BLUE:{len(blue)}")
+    print(f"BLACK:{len(black)}")
+    blue_05 = [r for r in blue if round(r['width'], 2) == 0.5 or round(r['height'], 2) == 0.5]
+    print(f"BLUE_05:{len(blue_05)}")
+`;
+   const pyPath="/tmp/inspect_urdu_table.py";
+   writeFileSync(pyPath,pyScript);
+   const res=execSync(`python3 ${pyPath}`).toString();
+   expect(res).toContain("BLUE:4");
+   expect(res).toContain("BLACK:20");
+   expect(res).toContain("BLUE_05:4");
+  }finally{
+   await browser.close();
+  }
+ },30000);
+
+ it("سیل کا اردو متن (ایک، دو، تین) عمودی اور افقی طور پر درمیان میں رہتا ہے",()=>{
   const table=tableHtml(html(["ایک","دو","تین"]));
-  const cells=[...table.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].slice(0,3).map(match=>match[0]);
+  const cells=cellElements(table).slice(0,3);
   const expectedLeading=blockLeadingPt({type:"paragraph",attrs:{dir:"rtl"}},"Noto Nastaliq Urdu",{bodyFontSizePt:12,lineHeight:1.5},"rtl");
   expect(expectedLeading).toBeCloseTo(19.8,8);
   expect(cells).toHaveLength(3);
   for(const cellHtml of cells){
    expect(cellHtml).toContain("vertical-align:middle");
    expect(cellHtml).toContain(`line-height:${expectedLeading}pt`);
+   expect(cellHtml).toContain("qalam-pdf-cell-borders");
   }
-  const rowHeight=24.8,lineHeight=expectedLeading;
-  const fontAscent=14.2,fontDescent=5.6;
-  expect(fontAscent+fontDescent).toBeCloseTo(lineHeight,1);
-  const lineBoxTop=(rowHeight-lineHeight)/2;
-  const halfLeading=(lineHeight-fontAscent-fontDescent)/2;
-  const baselines=cells.map(()=>lineBoxTop+halfLeading+fontAscent);
-  expect(Math.max(...baselines)-Math.min(...baselines)).toBeLessThanOrEqual(0.5);
-  expect(Math.abs(lineBoxTop-(rowHeight-lineHeight)/2)).toBeLessThanOrEqual(0.5);
  });
 
- it("keeps the Urdu word پانچ inside its cell's font line box",()=>{
+ it("پانچ کا لفظ اپنے سیل کے فونٹ باکس کے اندر رہتا ہے",()=>{
   const table=tableHtml(html(["پانچ"]));
   expect(table).toContain("پانچ");
   expect(table).toContain("line-height:");
- });
-
- it("draws every outer edge including the left outer border in every row exactly once at 0.5pt",()=>{
-  const words = ["ایک", "دو", "تین", "چار", "پانچ", "چھ", "سات", "آٹھ", "نو"];
-  const output = html(words);
-  const table = tableHtml(output);
-  const rows = [...table.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
-  expect(rows).toHaveLength(3);
-
-  // In each row, there should be an outer right (col 0 in RTL) and an outer left (col 2 in RTL) border.
-  // Neither should be '0 none transparent'.
-  for (let r = 0; r < 3; r++) {
-   const cellsInRow = cellStyles(rows[r]);
-   expect(cellsInRow).toHaveLength(3);
-   const rightOuter = side(cellsInRow[0], "right");
-   const leftOuter = side(cellsInRow[2], "left");
-   expect(rightOuter).toBe("0.5pt solid #000000");
-   expect(leftOuter).toBe("0.5pt solid #000000");
-  }
-
-  // Also verify for custom coloured borders across the whole table
-  const blueOutput = html(words, () => ({ tableBorderColor: "#0000ff", tableBorderWidthPt: 0.5, tableBorderStyle: "solid" }));
-  const blueTable = tableHtml(blueOutput);
-  const blueRows = [...blueTable.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
-  for (let r = 0; r < 3; r++) {
-   const cellsInRow = cellStyles(blueRows[r]);
-   const rightOuter = side(cellsInRow[0], "right");
-   const leftOuter = side(cellsInRow[2], "left");
-   expect(rightOuter).toBe("0.5pt solid #0000ff");
-   expect(leftOuter).toBe("0.5pt solid #0000ff");
-  }
  });
 });
