@@ -12,6 +12,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
+import { QalamTableCellSelectionGuard } from "./tableCellSelectionGuard";
 import Image from "@tiptap/extension-image";
 import { Node, Extension, getStyleProperty, type Editor } from "@tiptap/core";
 import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
@@ -781,6 +782,7 @@ export function createDocumentStudioExtensions() {
     TableKit.configure({
       table: { resizable: false, HTMLAttributes: { class: "qalam-document-table" } },
     }),
+    QalamTableCellSelectionGuard,
     DocumentImage.configure({
       allowBase64: true,
       HTMLAttributes: { class: "qalam-document-image" },
