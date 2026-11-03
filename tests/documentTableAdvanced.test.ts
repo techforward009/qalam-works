@@ -5,7 +5,9 @@ import {CellSelection} from "@tiptap/pm/tables";
 import {serializeQpg,deserializeQpg} from "../app/tools/document-studio/utils/qpgFile";
 import {defaultDocumentSettings} from "../app/tools/document-studio/utils/documentSettings";
 import {createDocumentStudioExtensions} from "../app/tools/document-studio/utils/documentSchema";
-import {tableContextMode,tableResizePair,normalizeTableWidths,tableLayoutCommand} from "../app/tools/document-studio/utils/tableOperations";
+import {tableContextMode,tableResizePair,tableResizeColumnLine,normalizeTableWidths,tableLayoutCommand} from "../app/tools/document-studio/utils/tableOperations";
+import {buildPdfHtml} from "../app/tools/document-studio/utils/buildPdfHtml";
+import {closeHistory} from "@tiptap/pm/history";
 import {createTableContent} from "../app/tools/document-studio/utils/tableConversions";
 import {textContextItems,textContextDisabled} from "../app/tools/document-studio/utils/textContextMenu";
 function editorWithTable() {
@@ -64,6 +66,94 @@ describe("table reference behaviours",()=>{
   expect(((e.getJSON() as any).content?.[0].content?.[0].content||[]).length).toBe(3);
   expect(tableLayoutCommand(e,"row","before","delete")).toBe(true);
   expect((e.getJSON().content?.[0].content||[]).length).toBe(2);
+  e.destroy();
+ });
+
+ it("handles outer and inner column-line dragging with single undo and PDF width parity",()=>{
+  // 3-column table with initial widths [150, 150, 150] and Urdu text: ایک، دو، تین
+  const initialWidths = [150, 150, 150];
+  // tableResizeColumnLine(widths, lineIndex, delta, min):
+  // lines in an N-column table:
+  // line 0: outer right line (in RTL, outer right of col 0) -> changes only col 0
+  // line 1: inner boundary between col 0 and col 1 -> changes col 0 and col 1, total sum stays 450
+  // line 2: inner boundary between col 1 and col 2 -> changes col 1 and col 2, total sum stays 450
+  // line 3: outer left line (in RTL, outer left of col 2) -> changes only col 2
+  // Inner line drag:
+  const innerResized = tableResizeColumnLine(initialWidths, 1, 30, 64);
+  expect(innerResized).toEqual([180, 120, 150]);
+
+  // Outer right line drag (delta = +20):
+  const rightResized = tableResizeColumnLine(initialWidths, 0, 20, 64);
+  expect(rightResized).toEqual([170, 150, 150]);
+
+  // Outer left line drag (delta = -30, meaning wider to the left in RTL):
+  const leftResized = tableResizeColumnLine(initialWidths, 3, 30, 64);
+  expect(leftResized).toEqual([150, 150, 180]);
+
+  // Check respect for TABLE_MIN_COL_WIDTH (64):
+  const clamped = tableResizeColumnLine(initialWidths, 0, -100, 64);
+  expect(clamped).toEqual([64, 150, 150]);
+
+  // Test editor transaction, single undo step, and PDF export following new widths
+  const e = new Editor({
+   extensions: createDocumentStudioExtensions(),
+   content: {
+    type: "doc",
+    content: [{
+     type: "table",
+     attrs: { dir: "rtl", tableFlow: "rtl" },
+     content: [
+      {
+       type: "tableRow",
+       content: [
+        { type: "tableCell", attrs: { colwidth: [150] }, content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "ایک" }] }] },
+        { type: "tableCell", attrs: { colwidth: [150] }, content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "دو" }] }] },
+        { type: "tableCell", attrs: { colwidth: [150] }, content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "تین" }] }] }
+       ]
+      }
+     ]
+    }]
+   }
+  });
+
+  const getColWidths = () => (e.getJSON().content?.[0] as any).content[0].content.map((c: any) => c.attrs.colwidth[0]);
+  expect(getColWidths()).toEqual([150, 150, 150]);
+
+  // Simulate column resize dispatch as in tableColumnResizing
+  const tableEl = document.createElement("table");
+  tableEl.className = "qalam-document-table";
+  // Resize column 0 from 150 to 180 (outer right drag)
+  const newWidths = [180, 150, 150];
+  const tr = e.state.tr;
+  const pos = 0;
+  const node = e.state.doc.nodeAt(pos)!;
+  node.forEach((row, rowOffset) => {
+   let col = 0;
+   row.forEach((cell, cellOffset) => {
+    const colspan = Number(cell.attrs.colspan) || 1;
+    const attrs = { ...cell.attrs, colwidth: newWidths.slice(col, col + colspan).map(w => Math.round(w)) };
+    const at = pos + 2 + rowOffset + cellOffset;
+    tr.setNodeMarkup(at, undefined, attrs);
+    col += colspan;
+   });
+  });
+  tr.setNodeMarkup(pos, undefined, { ...node.attrs, tableFormatWidthPx: 480 });
+  e.view.dispatch(closeHistory(tr.setMeta("TABLE_DIALOG_CHANGE", true)));
+  e.view.dispatch(closeHistory(e.state.tr));
+
+  expect(getColWidths()).toEqual([180, 150, 150]);
+
+  // One undo step restores original widths
+  expect(e.can().undo()).toBe(true);
+  e.commands.undo();
+  expect(getColWidths()).toEqual([150, 150, 150]);
+
+  // PDF reflects the new widths when resized
+  e.commands.redo();
+  expect(getColWidths()).toEqual([180, 150, 150]);
+  const pdfHtml = buildPdfHtml(e.getJSON(), "rtl", { faces: [] }).html;
+  expect(pdfHtml).toContain('style="width:180px"');
+  expect(pdfHtml).toContain('style="width:150px"');
   e.destroy();
  });
 });

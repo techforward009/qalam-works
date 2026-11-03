@@ -14,7 +14,7 @@ function setup(){
 describe("InPage Table Format",()=>{
  it("opens with RTL cell/table/column defaults",()=>{
   const editor=setup(),v=getTableFormat(editor);
-  expect(v).toMatchObject({fill:null,borderColor:"#000000",borderStyle:"none",borderWidthPt:1,columnGapMm:1.41,indentMm:0,alignment:"right",flow:"rtl"});
+  expect(v).toMatchObject({fill:null,borderColor:"#000000",borderStyle:"none",borderWidthPt:.5,columnGapMm:1.41,indentMm:0,alignment:"right",flow:"rtl"});
   expect(v.columnWidthPx).toBeGreaterThan(50);editor.destroy();
  });
  it("applies one undoable change to current cell and whole table and Cancel needs no transaction",()=>{
@@ -44,5 +44,56 @@ describe("InPage Table Format",()=>{
   expect(table.content[1].content[0].attrs.colwidth).toEqual([140]);
   expect(table.content[1].content[1].attrs.colwidth).toEqual([140]);
   editor.destroy();
+ });
+});
+describe("mixed cells preserve unchanged border properties",()=>{
+ it("shows empty colour/style/width for mixed cells, and keeps each when untouched",()=>{
+  const ed=setup();const positions:number[]=[];
+  ed.state.doc.descendants((n,pos)=>{if(n.type.name==="tableCell")positions.push(pos)});
+  ed.commands.setTextSelection(positions[4]+2);
+  const single={...getTableFormat(ed),borderColor:"#ff0000",borderStyle:"solid" as const,borderWidthPt:2};
+  applyTableFormat(ed,single);
+  ed.view.dispatch(ed.state.tr.setSelection(CellSelection.create(ed.state.doc,positions[0],positions[4])));
+  const mixed=getTableFormat(ed);
+  expect(mixed.borderColor).toBeNull();expect(mixed.borderStyle).toBeNull();expect(mixed.borderWidthPt).toBeNull();
+  applyTableFormat(ed,{...mixed,fill:"#ffff00"});
+  const cells=(ed.getJSON() as any).content[0].content;
+  expect(cells[1].content[1].attrs.tableBorderColor).toBe("#ff0000");
+  expect(cells[0].content[0].attrs.tableBorderStyle).toBe("none");
+  ed.destroy();
+ });
+});
+
+describe("screen border paint follows the resolved cell border",()=>{
+ it("uses a changed colour for default grid cells even while border style remains none",()=>{
+  const ed=setup();
+  const cell=ed.view.dom.querySelector("td") as HTMLElement;
+  expect(cell.style.borderColor).toBe("#000000");
+  expect(cell.style.borderWidth).toBe("0.5pt");
+  expect(cell.style.borderStyle).toBe("solid");
+  const values=getTableFormat(ed);
+  expect(applyTableFormat(ed,{...values,borderColor:"#0000ff",borderStyle:null,borderWidthPt:null})).toBe(true);
+  const updated=ed.view.dom.querySelector("td") as HTMLElement;
+  expect(updated.dataset.tableBorderStyle).toBe("none");
+  expect(updated.style.borderColor).toBe("#0000ff");
+  expect(updated.style.borderWidth).toBe("0.5pt");
+  expect(updated.style.borderStyle).toBe("solid");
+  ed.destroy();
+ });
+});
+describe("InPage whole-table blue borders",()=>{
+ it("updates exactly the nine selected RTL cells, preserving style outside the table",()=>{
+  const ed=setup(),positions:number[]=[];
+  ed.state.doc.descendants((node,pos)=>{if(node.type.name==="tableCell")positions.push(pos)});
+  ed.view.dispatch(ed.state.tr.setSelection(CellSelection.create(ed.state.doc,positions[0],positions[8])));
+  const values=getTableFormat(ed);
+  expect(applyTableFormat(ed,{...values,borderColor:"#0000FF",borderStyle:"solid",borderWidthPt:2})).toBe(true);
+  const table=(ed.getJSON() as any).content[0];
+  for(const row of table.content)for(const cell of row.content){
+   expect(cell.attrs.tableBorderColor).toBe("#0000ff");
+   expect(cell.attrs.tableBorderStyle).toBe("solid");
+   expect(cell.attrs.tableBorderWidthPt).toBe(2);
+  }
+  ed.destroy();
  });
 });

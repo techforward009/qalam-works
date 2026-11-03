@@ -3,9 +3,9 @@ import {closeHistory} from "@tiptap/pm/history";
 import {Plugin} from "@tiptap/pm/state";
 import type {EditorView} from "@tiptap/pm/view";
 import {TABLE_DIALOG_CHANGE} from "./formattingSafety";
-import {TABLE_MIN_COL_WIDTH,tableResizePair} from "./tableOperations";
+import {TABLE_MIN_COL_WIDTH,tableResizeColumnLine} from "./tableOperations";
 
-type Handle={table:HTMLTableElement;index:number;outer:boolean;rtl:boolean};
+type Handle={table:HTMLTableElement;lineIndex:number;rtl:boolean};
 function getHandle(event:PointerEvent):Handle|null {
   const element=event.target instanceof Element?event.target:null;
   // At a collapsed border the browser may hit a TR or the neighbouring cell
@@ -20,15 +20,43 @@ function getHandle(event:PointerEvent):Handle|null {
     return event.clientY>=rect.top&&event.clientY<=rect.bottom;
   }) ?? table.rows[0];
   const cells=Array.from(row?.cells||[]);
-  if(cells.length<2)return null;
+  if(cells.length===0)return null;
   const rtl=getComputedStyle(table).direction==="rtl";
-  // Column 0 is the rightmost in an RTL table. The outer far-left
-  // boundary of the last column is also a resize handle.
-  for(let index=0;index<cells.length;index++){
-    const rect=cells[index].getBoundingClientRect();
-    const line=rtl?rect.left:rect.right;
-    if(Math.abs(event.clientX-line)<=8){
-      return {table,index,outer:index===cells.length-1,rtl};
+  // In RTL:
+  // line 0: outer right line of cell 0 (rect.right)
+  // line 1: boundary between cell 0 and cell 1 (cell 0 rect.left / cell 1 rect.right)
+  // ...
+  // line n: outer left line of cell n-1 (rect.left)
+  // In LTR:
+  // line 0: outer left line of cell 0 (rect.left)
+  // line 1: boundary between cell 0 and cell 1 (cell 0 rect.right / cell 1 rect.left)
+  // ...
+  // line n: outer right line of cell n-1 (rect.right)
+  if(rtl){
+    // line 0: outer right
+    const firstRect=cells[0].getBoundingClientRect();
+    if(Math.abs(event.clientX-firstRect.right)<=8){
+      return {table,lineIndex:0,rtl};
+    }
+    // line 1..n: left edges of cells 0..n-1
+    for(let index=0;index<cells.length;index++){
+      const rect=cells[index].getBoundingClientRect();
+      if(Math.abs(event.clientX-rect.left)<=8){
+        return {table,lineIndex:index+1,rtl};
+      }
+    }
+  }else{
+    // line 0: outer left
+    const firstRect=cells[0].getBoundingClientRect();
+    if(Math.abs(event.clientX-firstRect.left)<=8){
+      return {table,lineIndex:0,rtl};
+    }
+    // line 1..n: right edges of cells 0..n-1
+    for(let index=0;index<cells.length;index++){
+      const rect=cells[index].getBoundingClientRect();
+      if(Math.abs(event.clientX-rect.right)<=8){
+        return {table,lineIndex:index+1,rtl};
+      }
     }
   }
   return null;
@@ -56,6 +84,8 @@ function updateWidths(view:EditorView,table:HTMLTableElement,widths:number[]) {
      col+=colspan;
    });
  });
+ const total=widths.reduce((sum,w)=>sum+Math.round(w),0);
+ tr.setNodeMarkup(pos,undefined,{...node.attrs,tableFormatWidthPx:total});
  if(tr.docChanged){view.dispatch(closeHistory(tr.setMeta(TABLE_DIALOG_CHANGE,true)));view.dispatch(closeHistory(view.state.tr));}
 }
 export const QalamTableColumnResizing=Extension.create({
@@ -73,10 +103,17 @@ export const QalamTableColumnResizing=Extension.create({
        const move=(event:PointerEvent)=>{
          if(!drag)return;
          const {handle,startX,widths}=drag;
-         const raw=(event.clientX-startX)*(handle.rtl?-1:1);
-         drag.preview=handle.outer
-          ?tableResizePair(widths,widths.length-2,-raw)
-          :tableResizePair(widths,handle.index,raw);
+         // In RTL:
+         // line 0 is outer right line: moving right (clientX - startX > 0) widens col 0 -> raw = event.clientX - startX
+         // line 1..n-1 are inner lines: moving left (clientX - startX < 0) widens left of line (col i-1) -> raw = (event.clientX - startX) * -1
+         // line n is outer left line: moving left (clientX - startX < 0) widens col n-1 -> raw = (event.clientX - startX) * -1
+         // In LTR:
+         // line 0 is outer left line: moving left (clientX - startX < 0) widens col 0 -> raw = -(event.clientX - startX)
+         // line 1..n: moving right (clientX - startX > 0) widens col i-1 / col n-1 -> raw = event.clientX - startX
+         const delta=handle.rtl
+          ?(handle.lineIndex===0?(event.clientX-startX):-(event.clientX-startX))
+          :(handle.lineIndex===0?-(event.clientX-startX):(event.clientX-startX));
+         drag.preview=tableResizeColumnLine(widths,handle.lineIndex,delta);
          const cols=handle.table.querySelectorAll<HTMLTableColElement>("colgroup col");
          drag.preview.forEach((w,i)=>{if(cols[i])cols[i].style.width=Math.round(w)+"px";});
          event.preventDefault();

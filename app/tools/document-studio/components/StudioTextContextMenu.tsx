@@ -4,6 +4,7 @@ import {createPortal} from 'react-dom';
 import {studioOverlayRoot} from '../utils/inpageToolbar';
 import type {Editor} from '@tiptap/react';
 import type {SelectionBookmark} from '@tiptap/pm/state';
+import {CellSelection} from '@tiptap/pm/tables';
 import type {DocumentZoom} from '../utils/documentView';
 import {plainTextToDocNodeWithDir} from '../utils/plainTextToDocNode';
 import {textContextItems,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition} from '../utils/textContextMenu';
@@ -15,6 +16,7 @@ export type StudioTextActions = { run: (id: "cut" | "copy" | "paste" | "clear") 
 export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,onTable,onTextToTable,onTableLayout,onTableFormat,onTableToText,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;onTable:()=>void;onTextToTable:()=>void;onTableLayout:()=>void;onTableFormat:()=>void;onTableToText:()=>void;actionRef?:Ref<StudioTextActions>}){
  const [menu,setMenu]=useState<{x:number;y:number;hasSelection:boolean;inTable:boolean}|null>(null),[zoom,setZoom]=useState(false),[message,setMessage]=useState<string|null>(null);
  const root=useRef<HTMLDivElement>(null),submenu=useRef<HTMLDivElement>(null),zoomTrigger=useRef<HTMLButtonElement>(null),bookmark=useRef<SelectionBookmark|null>(null);
+ const rightClickCellSelection=useRef<{bookmark:SelectionBookmark;table:HTMLTableElement|null}|null>(null);
  const [position,setPosition]=useState({left:0,top:0}),[subPosition,setSubPosition]=useState({left:0,top:0});
  const restore=()=>{if(!editor||editor.isDestroyed)return;try{if(bookmark.current)editor.view.dispatch(editor.state.tr.setSelection(bookmark.current.resolve(editor.state.doc)));editor.view.focus();}catch{/* document replaced while the menu was open */}};
  const close=(focus=false)=>{setMenu(null);setZoom(false);if(focus)restore();};
@@ -24,16 +26,38 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
    const target=event.target instanceof Element?event.target:null;
    if(!target||!editor.view.dom.contains(target)||target.closest('img,[data-resize-container],[data-studio-frame]')){close();return;}
    event.preventDefault();
-   if(editor.state.selection.empty){const hit=editor.view.posAtCoords({left:event.clientX,top:event.clientY});if(hit)editor.commands.setTextSelection(hit.pos);}
-   bookmark.current=editor.state.selection.getBookmark();
    const cell=target.closest("td,th");
+   const saved=rightClickCellSelection.current;
+   rightClickCellSelection.current=null;
+   if(cell&&saved?.table===cell.closest("table")&&!(editor.state.selection instanceof CellSelection)){
+    try{editor.view.dispatch(editor.state.tr.setSelection(saved.bookmark.resolve(editor.state.doc)));}
+    catch{/* selection no longer valid */}
+   }
+   if(editor.state.selection.empty){
+    if(cell){
+     const pos=editor.view.posAtDOM(cell,0);
+     editor.commands.setTextSelection(pos+2);
+    }else{
+     const hit=editor.view.posAtCoords({left:event.clientX,top:event.clientY});
+     if(hit)editor.commands.setTextSelection(hit.pos);
+    }
+   }
+   bookmark.current=editor.state.selection.getBookmark();
    const selection=editor.state.selection,from=selection.$from,to=selection.$to;
    const tableAt=(pos:typeof from)=>{for(let depth=pos.depth;depth>0;depth--)if(pos.node(depth).type.name==="table")return pos.before(depth);return -1;};
    const selectedTable=tableAt(from),endTable=tableAt(to);
    const inTable=tableContextMode(Boolean(cell||selectedTable>=0),!selection.empty&&(selectedTable<0||selectedTable!==endTable))==="table";
    setMenu({x:event.clientX,y:event.clientY,hasSelection:!selection.empty,inTable});setZoom(false);
   };
-  document.addEventListener('contextmenu',open);return()=>document.removeEventListener('contextmenu',open);
+  const capture=(event:PointerEvent)=>{
+   if(event.button!==2){rightClickCellSelection.current=null;return;}
+   const target=event.target instanceof Element?event.target:null;
+   const cell=target?.closest<HTMLTableCellElement>("td.selectedCell,th.selectedCell");
+   rightClickCellSelection.current=cell&&editor.state.selection instanceof CellSelection
+    ?{bookmark:editor.state.selection.getBookmark(),table:cell.closest("table")}:null;
+  };
+  document.addEventListener('pointerdown',capture,true);
+  document.addEventListener('contextmenu',open);return()=>{document.removeEventListener('pointerdown',capture,true);document.removeEventListener('contextmenu',open);};
  },[editor]);
  useEffect(()=>{
   if(!menu)return;
