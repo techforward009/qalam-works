@@ -8,6 +8,7 @@ import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigatio
 import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
 import {inheritPreviousTableRow,inheritPreviousCellStoredMarks} from "../utils/tableRowFormatInheritance";
 import {splitTableAbove} from "../utils/splitTableAbove";
+import {hasTableForFormat} from "../utils/tableFormat";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -663,7 +664,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const shortcut=(event:KeyboardEvent)=>{
       if(!(event.ctrlKey||event.metaKey)||!event.altKey||event.shiftKey||event.key.toLowerCase()!=="f")return;
       const target=event.target instanceof Element?event.target:null;
-      if(!target||!editor.view.dom.contains(target)||!editor.isActive("table")||tableFormatOpen)return;
+      if(!target||!editor.view.dom.contains(target)||!hasTableForFormat(editor)||tableFormatOpen)return;
       event.preventDefault();event.stopPropagation();setTableFormatOpen(true);
     };
     // Capture before TipTap or browser text commands consume Ctrl+Alt+F.
@@ -1260,6 +1261,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setLastResolved(null);
   }, [processingLanguage]);
 
+  const [canFormatTable, setCanFormatTable] = useState(false);
+  const [inTableSelection, setInTableSelection] = useState(false);
   useEffect(() => {
     if (!editor) return;
     const sync = () => {
@@ -1270,6 +1273,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         nodes.push({ typeName: node.type.name, directionMode: node.attrs.directionMode, dir: node.attrs.dir });
       }
       setDir(rulerDirectionAtSelection(nodes));
+      setCanFormatTable(hasTableForFormat(editor));
+      setInTableSelection(editor.isActive("table"));
     };
     sync();
     editor.on("selectionUpdate", sync);
@@ -2072,9 +2077,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }
   if (insertTableMode !== "selection") disabledIds.add("insert.textToTable");
   if (!editor?.isActive("table")) disabledIds.add("insert.splitTable");
-  if (!editor?.isActive("table")) {
-    disabledIds.add("text.tableLayout");
+  if (!canFormatTable && !hasTableForFormat(editor)) {
     disabledIds.add("text.tableFormat");
+  }
+  if (!inTableSelection && !editor?.isActive("table")) {
+    disabledIds.add("text.tableLayout");
     disabledIds.add("insert.tableToText");
     ([
       "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
@@ -2369,7 +2376,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>{setTextToTableOpen(false);setFormattingNotice(0);}} /> : null}
       {tableToTextOpen && editor ? <StudioTableToTextDialog editor={editor} onClose={()=>{setTableToTextOpen(false);setFormattingNotice(0);}} /> : null}
       {tableLayoutOpen && editor ? <StudioTableLayoutDialog editor={editor} onClose={()=>{setTableLayoutOpen(false);setFormattingNotice(0);}} /> : null}
-      {tableFormatOpen && editor ? <StudioTableFormatDialog editor={editor} onClose={()=>{setTableFormatOpen(false);setFormattingNotice(0);}} /> : null}
+      {tableFormatOpen && editor && hasTableForFormat(editor) ? <StudioTableFormatDialog editor={editor} onClose={()=>{setTableFormatOpen(false);setFormattingNotice(0);}} /> : null}
 
       {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}

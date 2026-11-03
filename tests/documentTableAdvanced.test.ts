@@ -244,7 +244,7 @@ describe("table reference behaviours",()=>{
   const resizedLine3=tableResizeColumnLine(initialWidths,3,30,64);
   expect(resizedLine3).toEqual([150,150,180]);
 
-  // 5. Test HIT AREA (±8px) for every line (outer right, inner 1, inner 2, outer left)
+  // 5. Test HIT AREA (±5px) for every line (outer right, inner 1, inner 2, outer left)
   const domTable=document.createElement("table");
   domTable.className="qalam-document-table";
   domTable.style.direction="rtl";
@@ -264,10 +264,11 @@ describe("table reference behaviours",()=>{
   td1.getBoundingClientRect=()=>({left:150,right:300,top:0,bottom:100,width:150,height:100,x:150,y:0,toJSON:()=>{}} as any);
   td2.getBoundingClientRect=()=>({left:0,right:150,top:0,bottom:100,width:150,height:100,x:0,y:0,toJSON:()=>{}} as any);
 
-  // Outer right line (x = 450): hit zone extends ±8px (e.g. 445 and 455)
+  // Outer right line (x = 450): hit zone extends ±5px (445..455) without stealing cell clicks inside (443)
   expect(getHandle({target:domTable,clientX:450,clientY:50} as any)?.lineIndex).toBe(0);
-  expect(getHandle({target:domTable,clientX:444,clientY:50} as any)?.lineIndex).toBe(0);
-  expect(getHandle({target:domTable,clientX:456,clientY:50} as any)?.lineIndex).toBe(0);
+  expect(getHandle({target:domTable,clientX:445,clientY:50} as any)?.lineIndex).toBe(0);
+  expect(getHandle({target:domTable,clientX:455,clientY:50} as any)?.lineIndex).toBe(0);
+  expect(getHandle({target:domTable,clientX:443,clientY:50} as any)).toBeNull();
 
   // Inner line 1 (x = 300): hit zone extends ±8px (e.g. 295 and 305)
   expect(getHandle({target:domTable,clientX:300,clientY:50} as any)?.lineIndex).toBe(1);
