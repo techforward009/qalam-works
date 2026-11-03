@@ -24,7 +24,7 @@ function findTable(event:PointerEvent):HTMLTableElement|null {
   return null;
 }
 
-const HIT_PAD=8;
+export const TABLE_RESIZE_HIT_PX=5;
 
 export function getHandle(event:PointerEvent):Handle|null {
   const table=findTable(event);
@@ -42,37 +42,37 @@ export function getHandle(event:PointerEvent):Handle|null {
   if(rtl){
     // line 0: outer right
     const firstRect=cells[0].getBoundingClientRect();
-    if(Math.abs(event.clientX-firstRect.right)<=HIT_PAD){
+    if(Math.abs(event.clientX-firstRect.right)<=TABLE_RESIZE_HIT_PX){
       return {table,lineIndex:0,rtl};
     }
     // line 1..n-1: left edges of cells 0..n-2
     for(let index=0;index<cells.length-1;index++){
       const rect=cells[index].getBoundingClientRect();
-      if(Math.abs(event.clientX-rect.left)<=HIT_PAD){
+      if(Math.abs(event.clientX-rect.left)<=TABLE_RESIZE_HIT_PX){
         return {table,lineIndex:index+1,rtl};
       }
     }
     // line n: outer left
     const lastRect=cells[cells.length-1].getBoundingClientRect();
-    if(Math.abs(event.clientX-lastRect.left)<=HIT_PAD){
+    if(Math.abs(event.clientX-lastRect.left)<=TABLE_RESIZE_HIT_PX){
       return {table,lineIndex:cells.length,rtl};
     }
   }else{
     // line 0: outer left
     const firstRect=cells[0].getBoundingClientRect();
-    if(Math.abs(event.clientX-firstRect.left)<=HIT_PAD){
+    if(Math.abs(event.clientX-firstRect.left)<=TABLE_RESIZE_HIT_PX){
       return {table,lineIndex:0,rtl};
     }
     // line 1..n-1: right edges of cells 0..n-2
     for(let index=0;index<cells.length-1;index++){
       const rect=cells[index].getBoundingClientRect();
-      if(Math.abs(event.clientX-rect.right)<=HIT_PAD){
+      if(Math.abs(event.clientX-rect.right)<=TABLE_RESIZE_HIT_PX){
         return {table,lineIndex:index+1,rtl};
       }
     }
     // line n: outer right
     const lastRect=cells[cells.length-1].getBoundingClientRect();
-    if(Math.abs(event.clientX-lastRect.right)<=HIT_PAD){
+    if(Math.abs(event.clientX-lastRect.right)<=TABLE_RESIZE_HIT_PX){
       return {table,lineIndex:cells.length,rtl};
     }
   }
@@ -114,17 +114,25 @@ export const QalamTableColumnResizing=Extension.create({
  addProseMirrorPlugins(){
    return [new Plugin({
      view(view){
-       let drag:{handle:Handle;startX:number;widths:number[];preview:number[];startIndentMm:number;startTotalWidth:number;previewIndentMm:number}|null=null;
+       let drag:{handle:Handle;startX:number;widths:number[];preview:number[];startIndentMm:number;startTotalWidth:number;previewIndentMm:number;moved:boolean}|null=null;
        let hover:HTMLTableElement|null=null;
        const setHover=(table:HTMLTableElement|null)=>{
          if(hover&&hover!==table){hover.style.cursor="";delete hover.dataset.tableResizeHover;}
          hover=table;
-         if(table){table.dataset.tableResizeHover="true";table.style.cursor="col-resize";}
+         if(table){
+           table.dataset.tableResizeHover="true";table.style.cursor="col-resize";
+           view.dom.dataset.tableResizeHover="true";view.dom.style.cursor="col-resize";
+         }else{
+           view.dom.style.cursor="";delete view.dom.dataset.tableResizeHover;
+         }
        };
        const move=(event:PointerEvent)=>{
          if(!drag)return;
          const {handle,startX,widths,startIndentMm,startTotalWidth}=drag;
          const rawDelta=event.clientX-startX;
+         if(!drag.moved&&Math.abs(rawDelta)<2)return;
+         drag.moved=true;
+         document.body.style.cursor="col-resize";
          let delta=0;
          let previewIndentMm=startIndentMm;
 
@@ -182,26 +190,28 @@ export const QalamTableColumnResizing=Extension.create({
        };
        const finish=()=>{
          if(!drag)return;
-         const {handle,preview,previewIndentMm}=drag;
+         const {handle,preview,previewIndentMm,moved}=drag;
          drag=null;
+         document.body.style.cursor="";
          document.removeEventListener("pointermove",move,true);
          document.removeEventListener("pointerup",finish,true);
          document.removeEventListener("pointercancel",finish,true);
          setHover(null);
 
-         updateWidths(view,handle.table,preview,previewIndentMm);
+         if(moved)updateWidths(view,handle.table,preview,previewIndentMm);
        };
        const onMove=(event:PointerEvent)=>{if(!drag)setHover(getHandle(event)?.table??null);};
+       const onLeave=()=>{if(!drag)setHover(null);};
        const onDown=(event:PointerEvent)=>{
          if(event.button!==0)return;
          const handle=getHandle(event);if(!handle)return;
          const widths=geometry(handle.table);
-         if(widths.length<2)return;
+         if(widths.length<1)return;
          const pos=tablePosition(view,handle.table);
          const node=pos===null?null:view.state.doc.nodeAt(pos);
          const startIndentMm=Number(node?.attrs?.tableIndentMm)||0;
          const startTotalWidth=widths.reduce((sum,w)=>sum+w,0);
-         drag={handle,startX:event.clientX,widths,preview:widths,startIndentMm,startTotalWidth,previewIndentMm:startIndentMm};
+         drag={handle,startX:event.clientX,widths,preview:widths,startIndentMm,startTotalWidth,previewIndentMm:startIndentMm,moved:false};
 
          setHover(handle.table);
          document.addEventListener("pointermove",move,true);
@@ -210,6 +220,7 @@ export const QalamTableColumnResizing=Extension.create({
          event.preventDefault();
        };
        view.dom.addEventListener("pointermove",onMove,true);
+       view.dom.addEventListener("pointerleave",onLeave,true);
        view.dom.addEventListener("pointerdown",onDown,true);
        return {update(){
          if(drag)return;
@@ -241,10 +252,12 @@ export const QalamTableColumnResizing=Extension.create({
          });
        },destroy(){
          view.dom.removeEventListener("pointermove",onMove,true);
+         view.dom.removeEventListener("pointerleave",onLeave,true);
          view.dom.removeEventListener("pointerdown",onDown,true);
          document.removeEventListener("pointermove",move,true);
          document.removeEventListener("pointerup",finish,true);
          document.removeEventListener("pointercancel",finish,true);
+         document.body.style.cursor="";
          setHover(null);
        }};
      }

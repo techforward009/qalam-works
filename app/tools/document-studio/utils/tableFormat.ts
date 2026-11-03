@@ -1,4 +1,6 @@
 import type {Editor} from "@tiptap/core";
+import type {Node as ProseMirrorNode} from "@tiptap/pm/model";
+import {AllSelection,type EditorState} from "@tiptap/pm/state";
 import {CellSelection} from "@tiptap/pm/tables";
 import {closeHistory} from "@tiptap/pm/history";
 import {TABLE_DIALOG_CHANGE} from "./formattingSafety";
@@ -26,29 +28,54 @@ const safeHex=(value:string|null)=>{
  if(!/^#[0-9a-f]{6}$/i.test(value))throw Error("Choose a valid hex colour.");
  return value.toLowerCase();
 };
+function findTableInState(state:EditorState):{table:ProseMirrorNode;tablePos:number}|null {
+ const {$from,$to}=state.selection;
+ for(let d=$from.depth;d>0;d--)if($from.node(d).type.name==="table")return {table:$from.node(d),tablePos:$from.before(d)};
+ for(let d=$to.depth;d>0;d--)if($to.node(d).type.name==="table")return {table:$to.node(d),tablePos:$to.before(d)};
+ if(!state.selection.empty){
+  let found:{table:ProseMirrorNode;tablePos:number}|null=null;
+  state.doc.nodesBetween(state.selection.from,state.selection.to,(node,pos)=>{
+   if(found)return false;
+   if(node.type.name==="table"){found={table:node,tablePos:pos};return false;}
+   return !node.isTextblock;
+  });
+  if(found)return found;
+ }
+ return null;
+}
+export function hasTableForFormat(editor:Editor|null|undefined):boolean {
+ if(!editor||editor.isDestroyed)return false;
+ return findTableInState(editor.state)!==null;
+}
 function context(editor:Editor){
  const {state}=editor;const $from=state.selection.$from;
- let depth=-1;
- for(let d=$from.depth;d>0;d--)if($from.node(d).type.name==="table"){depth=d;break;}
- if(depth<0)throw Error("Place the caret inside a table.");
- const table=$from.node(depth),tablePos=$from.before(depth);
- const cells:{pos:number;row:number;column:number;attrs:Record<string,unknown>}[]=[];
+ const found=findTableInState(state);
+ if(!found)throw Error("Place the caret inside a table.");
+ const {table,tablePos}=found;
+ const cells:{pos:number;end:number;row:number;column:number;colspan:number;attrs:Record<string,unknown>}[]=[];
  table.forEach((row,rowOffset,rowIndex)=>{
   let col=0;
   row.forEach((cell,cellOffset)=>{
    const span=Math.max(1,Number(cell.attrs.colspan)||1);
+   const pos=tablePos+2+rowOffset+cellOffset;
    if(cell.type.name==="tableCell"||cell.type.name==="tableHeader")
-    cells.push({pos:tablePos+2+rowOffset+cellOffset,row:rowIndex,column:col,attrs:cell.attrs});
+    cells.push({pos,end:pos+cell.nodeSize,row:rowIndex,column:col,colspan:span,attrs:cell.attrs});
    col+=span;
   });
  });
  const selected=state.selection instanceof CellSelection
-  ?cells.filter(c=>state.selection.ranges.some(r=>r.$from.pos>=c.pos&&r.$from.pos<c.pos+state.doc.nodeAt(c.pos)!.nodeSize))
-  :cells.filter(c=>$from.pos>=c.pos&&$from.pos<c.pos+state.doc.nodeAt(c.pos)!.nodeSize);
+  ?cells.filter(c=>state.selection.ranges.some(r=>r.$from.pos>=c.pos&&r.$from.pos<c.end))
+  :state.selection instanceof AllSelection
+   ?cells
+   :!state.selection.empty
+    ?cells.filter(c=>state.selection.from<c.end&&state.selection.to>c.pos)
+    :cells.filter(c=>$from.pos>=c.pos&&$from.pos<c.end);
  const active=selected[0]??cells[0];
  if(!active)throw Error("Table has no cells.");
- const cols=new Set(selected.length?selected.map(c=>c.column):[active.column]);
- return {table,tablePos,cells,selected:selected.length?selected:[active],active,cols};
+ const chosen=selected.length?selected:[active];
+ const cols=new Set<number>();
+ for(const c of chosen)for(let k=0;k<c.colspan;k++)cols.add(c.column+k);
+ return {table,tablePos,cells,selected:chosen,active,cols};
 }
 export function getTableFormat(editor:Editor):TableFormatValues {
  const {table,active,cells,selected}=context(editor);

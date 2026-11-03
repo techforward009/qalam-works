@@ -890,11 +890,19 @@ export default function DocumentCanvas({
           text-indent: 0;
         }
         /* Within cells, a marked 48pt word must expand its own line box
-           and row, instead of spilling outside a 0-height inline span. */
-        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span {
+           and row, instead of spilling outside a 0-height inline span.
+           Preserved-space and script-run helper spans must stay 0-height so
+           typing Space never inflates Nastaliq row height by font ascender/descender. */
+        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span[style*="font-size"]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) {
           line-height: normal;
         }
-        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] :is(td,th,p) {
+        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span[data-studio-preserved-space] {
+          line-height: 0;
+        }
+        .qalam-editor-content .ProseMirror[data-table-resize-hover],
+        .qalam-editor-content .ProseMirror[data-table-resize-hover] *,
+        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover],
+        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] * {
           cursor: col-resize !important;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table .selectedCell {
@@ -907,8 +915,7 @@ export default function DocumentCanvas({
           pointer-events: none;
           z-index: 3;
           background: rgba(30, 99, 185, 0.29) !important;
-          outline: 2px solid rgba(30, 99, 185, 0.65);
-          outline-offset: -2px;
+          outline: 0;
         }
         .qalam-editor-content .ProseMirror img.qalam-document-image {
           display: block;
