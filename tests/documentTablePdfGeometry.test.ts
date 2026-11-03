@@ -14,50 +14,57 @@ const grid=(words:string[] = [],borderForCell:(row:number,col:number)=>Record<st
 });
 const html=(words:string[] = [],borderForCell:(row:number,col:number)=>Record<string,unknown>=()=>({}))=>buildPdfHtml(grid(words,borderForCell) as never,"rtl",{faces:[]}).html;
 const tableHtml=(output:string)=>output.match(/<table class="qalam-document-table"[\s\S]*?<\/table>/)?.[0]??"";
-const cellStyles=(table:string)=>[...table.matchAll(/<td\b[^>]*style="([^"]*)"/g)].map(match=>match[1]);
-const side=(style:string,name:"top"|"right"|"bottom"|"left")=>style.match(new RegExp(`(?:^|;)border-${name}:([^;]+)`))?.[1]??"";
-const allBorders=(styles:string[])=>styles.flatMap(style=>(["top","right","bottom","left"] as const).map(name=>side(style,name))).filter(value=>value!==""&&value!=="0 none transparent");
+const cellElements=(table:string)=>[...table.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(m=>m[0]);
+const svgRects=(cellHtml:string)=>[...cellHtml.matchAll(/<rect\b[^>]*\/>/g)].map(m=>m[0]);
+const allSvgRects=(table:string)=>[...table.matchAll(/<rect\b[^>]*\/>/g)].map(m=>m[0]);
 
 describe("PDF table borders and Urdu cell line placement",()=>{
  it("draws every shared default edge once at 0.5pt",()=>{
-  const output=html(),table=tableHtml(output),styles=cellStyles(table),borders=allBorders(styles);
+  const output=html(),table=tableHtml(output),cells=cellElements(table),rects=allSvgRects(table);
   expect(output).toContain("border-collapse:collapse");
-  expect(styles).toHaveLength(9);
-  expect(table).not.toContain("<svg");
-  expect(table).not.toContain("<rect");
-  expect(borders).toHaveLength(24);
-  expect(borders.every(value=>value==="0.5pt solid #000000")).toBe(true);
+  expect(cells).toHaveLength(9);
+  expect(rects).toHaveLength(24);
+  for(const r of rects){
+   expect(r).toContain('fill="#000000"');
+   expect(r).toMatch(/(?:width="0\.5pt"|height="0\.5pt")/);
+  }
  });
 
  it("prints a whole-table Blue using only blue 0.5pt edges",()=>{
   const output=html([],()=>({tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}));
-  const table=tableHtml(output),styles=cellStyles(table),borders=allBorders(styles);
+  const table=tableHtml(output),rects=allSvgRects(table);
   expect(output).toContain("border-collapse:collapse");
-  expect(borders).toHaveLength(24);
-  expect(borders.every(value=>value==="0.5pt solid #0000ff")).toBe(true);
+  expect(rects).toHaveLength(24);
+  expect(rects.every(r=>r.includes('fill="#0000ff"') && (r.includes('width="0.5pt"') || r.includes('height="0.5pt"')))).toBe(true);
   expect(table).not.toContain("#000000");
-  expect(table).not.toContain("stroke=");
  });
 
  it("preserves the four sides of a single custom Red 2pt cell",()=>{
   const table=tableHtml(html([],(row,col)=>row===1&&col===1?{tableBorderColor:"#ff0000",tableBorderWidthPt:2,tableBorderStyle:"solid"}:{}));
-  const styles=cellStyles(table),borders=allBorders(styles);
-  expect(borders).toHaveLength(24);
-  expect(borders.filter(value=>value==="2pt solid #ff0000")).toHaveLength(4);
-  expect(borders.filter(value=>value==="0.5pt solid #000000")).toHaveLength(20);
-  expect(["top","right","bottom","left"].map(name=>side(styles[4],name as "top"|"right"|"bottom"|"left"))).toEqual(Array(4).fill("2pt solid #ff0000"));
+  const cells=cellElements(table),rects=allSvgRects(table);
+  expect(rects).toHaveLength(24);
+  const redRects=rects.filter(r=>r.includes('fill="#ff0000"'));
+  const blackRects=rects.filter(r=>r.includes('fill="#000000"'));
+  expect(redRects).toHaveLength(4);
+  expect(blackRects).toHaveLength(20);
+  expect(svgRects(cells[4])).toHaveLength(4);
+  expect(svgRects(cells[4]).every(r=>r.includes('fill="#ff0000"') && (r.includes('width="2pt"') || r.includes('height="2pt"')))).toBe(true);
  });
 
  it("does not leave a black edge underneath a single Blue cell",()=>{
   const table=tableHtml(html([],(row,col)=>row===1&&col===1?{tableBorderColor:"#0000ff",tableBorderWidthPt:0.5,tableBorderStyle:"solid"}:{}));
-  const styles=cellStyles(table),borders=allBorders(styles);
-  expect(borders.filter(value=>value==="0.5pt solid #0000ff")).toHaveLength(4);
-  expect(borders.filter(value=>value==="0.5pt solid #000000")).toHaveLength(20);
-  expect(["top","right","bottom","left"].map(name=>side(styles[4],name as "top"|"right"|"bottom"|"left"))).toEqual(Array(4).fill("0.5pt solid #0000ff"));
-  expect(side(styles[1],"bottom")).toBe("0 none transparent");
-  expect(side(styles[3],"left")).toBe("0 none transparent");
-  expect(side(styles[5],"right")).toBe("0 none transparent");
-  expect(side(styles[7],"top")).toBe("0 none transparent");
+  const cells=cellElements(table),rects=allSvgRects(table);
+  const blueRects=rects.filter(r=>r.includes('fill="#0000ff"'));
+  const blackRects=rects.filter(r=>r.includes('fill="#000000"'));
+  expect(blueRects).toHaveLength(4);
+  expect(blackRects).toHaveLength(20);
+  expect(svgRects(cells[4])).toHaveLength(4);
+  expect(svgRects(cells[4]).every(r=>r.includes('fill="#0000ff"'))).toBe(true);
+  // Neighbors facing cell 4 do not draw the shared edge:
+  expect(svgRects(cells[1]).some(r=>r.includes('y="calc(100% - 0.5pt)"') && r.includes('width="100%"'))).toBe(false); // cell 1 bottom
+  expect(svgRects(cells[3]).some(r=>r.includes('x="0"') && r.includes('height="100%"'))).toBe(false); // cell 3 left (in RTL)
+  expect(svgRects(cells[5]).some(r=>r.includes('x="calc(100% - 0.5pt)"') && r.includes('height="100%"'))).toBe(false); // cell 5 right (in RTL)
+  expect(svgRects(cells[7]).some(r=>r.includes('y="0"') && r.includes('width="100%"'))).toBe(false); // cell 7 top
  });
 
  it("centres the same Urdu font-metric line box in ایک، دو، تین cells",()=>{
@@ -94,14 +101,13 @@ describe("PDF table borders and Urdu cell line placement",()=>{
   expect(rows).toHaveLength(3);
 
   // In each row, there should be an outer right (col 0 in RTL) and an outer left (col 2 in RTL) border.
-  // Neither should be '0 none transparent'.
   for (let r = 0; r < 3; r++) {
-   const cellsInRow = cellStyles(rows[r]);
+   const cellsInRow = cellElements(rows[r]);
    expect(cellsInRow).toHaveLength(3);
-   const rightOuter = side(cellsInRow[0], "right");
-   const leftOuter = side(cellsInRow[2], "left");
-   expect(rightOuter).toBe("0.5pt solid #000000");
-   expect(leftOuter).toBe("0.5pt solid #000000");
+   const col0Rects = svgRects(cellsInRow[0]);
+   const col2Rects = svgRects(cellsInRow[2]);
+   expect(col0Rects.some(rect => rect.includes('x="calc(100% - 0.5pt)"') && rect.includes('fill="#000000"'))).toBe(true);
+   expect(col2Rects.some(rect => rect.includes('x="0"') && rect.includes('fill="#000000"'))).toBe(true);
   }
 
   // Also verify for custom coloured borders across the whole table
@@ -109,11 +115,11 @@ describe("PDF table borders and Urdu cell line placement",()=>{
   const blueTable = tableHtml(blueOutput);
   const blueRows = [...blueTable.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => m[1]);
   for (let r = 0; r < 3; r++) {
-   const cellsInRow = cellStyles(blueRows[r]);
-   const rightOuter = side(cellsInRow[0], "right");
-   const leftOuter = side(cellsInRow[2], "left");
-   expect(rightOuter).toBe("0.5pt solid #0000ff");
-   expect(leftOuter).toBe("0.5pt solid #0000ff");
+   const cellsInRow = cellElements(blueRows[r]);
+   const col0Rects = svgRects(cellsInRow[0]);
+   const col2Rects = svgRects(cellsInRow[2]);
+   expect(col0Rects.some(rect => rect.includes('x="calc(100% - 0.5pt)"') && rect.includes('fill="#0000ff"'))).toBe(true);
+   expect(col2Rects.some(rect => rect.includes('x="0"') && rect.includes('fill="#0000ff"'))).toBe(true);
   }
  });
 });

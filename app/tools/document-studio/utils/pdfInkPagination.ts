@@ -16,6 +16,7 @@ export interface InkLine {
   text?: string;
   forceBreak?: boolean;
   image?: boolean;
+  table?: boolean;
 }
 export interface InkPlacement { page: number; baseline: number }
 /** CSS top used when painting a measured line back onto the PDF page. */
@@ -437,7 +438,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       return range.getBoundingClientRect().top;
     });
     const paintBoxTop = fontTops.length ? Math.min(...fontTops) - measuredBaseline : undefined;
-    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, paintBoxTop, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image });
+    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, paintBoxTop, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image, table: Boolean(element.dataset.pdfTable) });
     element.dataset.pdfMeasureBaseline = String(measuredBaseline); cursor = frameBottom + Math.max(measurementGap, Math.ceil(item.fontHeight));
     if (cursor > maxStagingHeight) throw new Error(`PDF measurement exceeds the supported ${maxStagingHeight}px staging limit; export blocked`);
   }
@@ -573,14 +574,21 @@ export async function paginatePdfInk(
     }
     if (!line.image && (line.inkTop <= line.frameTop || line.inkBottom >= line.frameBottom)) throw new Error(`PDF glyph ink could not be bounded safely for line ${i}: ${line.inkTop}..${line.inkBottom} in ${line.frameTop}..${line.frameBottom}; export blocked`);
     line.inkTop -= baselines[i]; line.inkBottom -= baselines[i];
+    // Table cells are measured per cell within the table grid. For tables where
+    // minor border or column width rounding exceeds the content frame by a fraction
+    // (e.g. ~1.3px), clamp the table block boundaries within the printable margins.
+    const tableFrameLeft = line.table ? Math.max(0, line.frameLeft) : line.frameLeft;
+    const tableFrameRight = line.table ? Math.min(width, line.frameRight) : line.frameRight;
+    const tableInkLeft = line.table ? Math.max(-leftMarginPx, line.inkLeft) : line.inkLeft;
+    const tableInkRight = line.table ? Math.min(width + rightMarginPx, line.inkRight) : line.inkRight;
     line.horizontalShift = fitHorizontalInk(
-      line.inkLeft,
-      line.inkRight,
+      tableInkLeft,
+      tableInkRight,
       width,
       i,
       line.text,
-      line.frameLeft,
-      line.frameRight,
+      tableFrameLeft,
+      tableFrameRight,
       leftMarginPx,
       rightMarginPx,
     );

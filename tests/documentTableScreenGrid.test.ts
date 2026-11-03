@@ -7,8 +7,8 @@ describe("InPage table screen-only grid and cell menu",()=>{
    {type:"tableRow",content:[{type:"tableCell",attrs:{tableBorderStyle:"none"},content:[{type:"paragraph",attrs:{dir:"rtl"},content:[{type:"text",text:"ایک"}]}]}]}]}]};
   const html=buildPdfHtml(doc as never,"rtl",{faces:[]}).html;
   expect(html).toContain("border-collapse:collapse");
-  expect(html).toMatch(/<td[^>]*border-top:0\.5pt solid #000000[^>]*>/);
-  expect(html).not.toContain("<svg");
+  expect(html).toMatch(/<svg/);
+  expect(html).toMatch(/fill="#000000"/);
  });
  it("orders the cell context actions and separators like InPage",()=>{
   const items=textContextItems(false,true);

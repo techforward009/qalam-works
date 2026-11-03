@@ -429,8 +429,32 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
         if(styleRank[a.style]!==styleRank[b.style])return styleRank[a.style]>styleRank[b.style]?a:b;
         return a.order<b.order?a:b;
       };
+      const isSideOwned=(owner:typeof borderRows[number][number],neighbor?:typeof borderRows[number][number])=>
+        !neighbor||chooseBorder(owner,neighbor)===owner;
       const sideCss=(owner:typeof borderRows[number][number],neighbor?:typeof borderRows[number][number])=>
-        !neighbor||chooseBorder(owner,neighbor)===owner?`${owner.pt}pt ${owner.style} ${owner.color}`:"0 none transparent";
+        isSideOwned(owner,neighbor)?`${owner.pt}pt ${owner.style} ${owner.color}`:"0 none transparent";
+      const edgeSvg=(side:"top"|"right"|"bottom"|"left",owner:typeof borderRows[number][number])=>{
+        const {color,style,pt}=owner;
+        if(style==="double"){
+          const p3=pt/3;
+          if(side==="top")return `<rect x="0" y="0" width="100%" height="${p3}pt" fill="${color}"/><rect x="0" y="${p3*2}pt" width="100%" height="${p3}pt" fill="${color}"/>`;
+          if(side==="bottom")return `<rect x="0" y="calc(100% - ${pt}pt)" width="100%" height="${p3}pt" fill="${color}"/><rect x="0" y="calc(100% - ${p3}pt)" width="100%" height="${p3}pt" fill="${color}"/>`;
+          if(side==="left")return `<rect x="0" y="0" width="${p3}pt" height="100%" fill="${color}"/><rect x="${p3*2}pt" y="0" width="${p3}pt" height="100%" fill="${color}"/>`;
+          if(side==="right")return `<rect x="calc(100% - ${pt}pt)" y="0" width="${p3}pt" height="100%" fill="${color}"/><rect x="calc(100% - ${p3}pt)" y="0" width="${p3}pt" height="100%" fill="${color}"/>`;
+        }
+        if(style==="dotted"||style==="dashed"){
+          const dash=style==="dotted"?"1 2":"5 3";
+          if(side==="top")return `<line x1="0" y1="${pt/2}pt" x2="100%" y2="${pt/2}pt" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${dash}"/>`;
+          if(side==="bottom")return `<line x1="0" y1="calc(100% - ${pt/2}pt)" x2="100%" y2="calc(100% - ${pt/2}pt)" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${dash}"/>`;
+          if(side==="left")return `<line x1="${pt/2}pt" y1="0" x2="${pt/2}pt" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${dash}"/>`;
+          if(side==="right")return `<line x1="calc(100% - ${pt/2}pt)" y1="0" x2="calc(100% - ${pt/2}pt)" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${dash}"/>`;
+        }
+        if(side==="top")return `<rect x="0" y="0" width="100%" height="${pt}pt" fill="${color}"/>`;
+        if(side==="bottom")return `<rect x="0" y="calc(100% - ${pt}pt)" width="100%" height="${pt}pt" fill="${color}"/>`;
+        if(side==="left")return `<rect x="0" y="0" width="${pt}pt" height="100%" fill="${color}"/>`;
+        if(side==="right")return `<rect x="calc(100% - ${pt}pt)" y="0" width="${pt}pt" height="100%" fill="${color}"/>`;
+        return "";
+      };
       const rows=tableRows.map((row,rowIndex)=>{
         const cells=(row.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader").map((cell,columnIndex)=>{
           const tag=cell.type==="tableHeader"?"th":"td";
@@ -444,11 +468,19 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           const left=tableDir==="rtl"?borderRows[rowIndex]?.[columnIndex+1]:borderRows[rowIndex]?.[columnIndex-1];
           const right=tableDir==="rtl"?borderRows[rowIndex]?.[columnIndex-1]:borderRows[rowIndex]?.[columnIndex+1];
           const gap=Math.max(0,Math.min(20,Number(a.tableGapMm??1.41)||1.41));
-          const css=`position:relative;background-color:${fill};border-top:${sideCss(own,above)};border-right:${sideCss(own,right)};border-bottom:${sideCss(own,below)};border-left:${sideCss(own,left)};padding-inline-end:${gap}mm;vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}`;
+          const hasTop=isSideOwned(own,above),hasRight=isSideOwned(own,right),hasBottom=isSideOwned(own,below),hasLeft=isSideOwned(own,left);
+          const svgLines=[
+            hasTop?edgeSvg("top",own):"",
+            hasBottom?edgeSvg("bottom",own):"",
+            hasRight?edgeSvg("right",own):"",
+            hasLeft?edgeSvg("left",own):"",
+          ].filter(Boolean).join("");
+          const svgBorder=svgLines?`<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0;pointer-events:none;overflow:visible">${svgLines}</svg>`:"";
+          const css=`position:relative;background-color:${fill};border:0 none transparent;padding-inline-end:${gap}mm;vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}`;
           const inner=(cell.content??[]).map(child=>child.type==="paragraph"&&!(child.content?.length)
             ?`<p${openAttrs(child,directionForNode(child,tableDir),ctx)}><br></p>`
             :convertNode(child,ctx)).join("");
-          return `<${tag} data-table-border-style="${own.style}" style="${escapeAttr(css)}">${inner}</${tag}>`;
+          return `<${tag} data-table-border-style="${own.style}" style="${escapeAttr(css)}">${inner}${svgBorder}</${tag}>`;
         }).join("");
         return `<tr>${cells}</tr>`;
       }).join("");
