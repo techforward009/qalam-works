@@ -714,6 +714,22 @@ const StudioTextStyle = TextStyle.extend({
       { tag: "span[data-kaaf]" },
     ];
   },
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      removeEmptyTextStyle: () => ({ tr }) => {
+        for (const { $from, $to } of tr.selection.ranges) {
+          tr.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+            if (node.isTextblock) return true;
+            if (!node.marks.filter((mark) => mark.type === this.type).some((mark) => Object.values(mark.attrs).some((value) => !!value))) {
+              tr.removeMark(pos, pos + node.nodeSize, this.type);
+            }
+          });
+        }
+        return true;
+      },
+    };
+  },
 });
 
 const QuotedFontFamily = FontFamily.extend({

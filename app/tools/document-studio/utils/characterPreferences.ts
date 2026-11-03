@@ -147,20 +147,25 @@ function scaleOf(attrs: Record<string, unknown>): number {
 type Sample = { attrs: Record<string, unknown>; bold: boolean; italic: boolean };
 
 function samples(editor: Editor): Sample[] {
-  const { from, to, empty } = editor.state.selection;
+  const { empty, ranges } = editor.state.selection;
   if (empty) {
     return [{ attrs: { ...editor.getAttributes("textStyle") }, bold: editor.isActive("bold"), italic: editor.isActive("italic") }];
   }
   const found: Sample[] = [];
-  editor.state.doc.nodesBetween(from, to, (node) => {
-    if (!node.isText) return;
-    const mark = node.marks.find((item) => item.type.name === "textStyle");
-    found.push({
-      attrs: { ...(mark?.attrs ?? {}) },
-      bold: node.marks.some((item) => item.type.name === "bold"),
-      italic: node.marks.some((item) => item.type.name === "italic"),
+  for (const { $from, $to } of ranges) {
+    editor.state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+      if (!node.isText) return;
+      const localFrom = Math.max(0, $from.pos - pos);
+      const localTo = Math.min(node.text?.length ?? 0, $to.pos - pos);
+      if (localTo <= localFrom) return;
+      const mark = node.marks.find((item) => item.type.name === "textStyle");
+      found.push({
+        attrs: { ...(mark?.attrs ?? {}) },
+        bold: node.marks.some((item) => item.type.name === "bold"),
+        italic: node.marks.some((item) => item.type.name === "italic"),
+      });
     });
-  });
+  }
   return found.length ? found : [{ attrs: { ...editor.getAttributes("textStyle") }, bold: editor.isActive("bold"), italic: editor.isActive("italic") }];
 }
 
@@ -336,10 +341,10 @@ export function applyCharacterPreferences(editor: Editor, patch: CharacterPatch)
   if (!type) return false;
   const boldType = state.schema.marks.bold;
   const italicType = state.schema.marks.italic;
-  const { from, to } = state.selection;
+  const { empty, ranges } = state.selection;
   let tr = state.tr;
   let changed = false;
-  if (from === to) {
+  if (empty) {
     const marks = state.storedMarks ?? state.selection.$from.marks();
     const current = marks.find((mark) => mark.type === type);
     const next = paint({ ...(current?.attrs ?? {}) }, patch, "both");
@@ -360,18 +365,27 @@ export function applyCharacterPreferences(editor: Editor, patch: CharacterPatch)
     storedFlag(italicType, patch.italic);
   } else {
     const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
-    state.doc.nodesBetween(from, to, (node, pos) => {
-      if (!node.isText || !node.text) return;
-      const localFrom = Math.max(0, from - pos);
-      const localTo = Math.min(node.text.length, to - pos);
-      const slice = node.text.slice(localFrom, localTo);
-      const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
-      for (const piece of pieces(slice)) {
-        const next = paint(base, patch, piece.script);
-        if (sameAttrs(next, base)) continue;
-        jobs.push({ from: pos + localFrom + piece.start, to: pos + localFrom + piece.end, attrs: next });
-      }
-    });
+    const seen = new Set<string>();
+    for (const { $from, $to } of ranges) {
+      state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+        if (!node.isText || !node.text) return;
+        const localFrom = Math.max(0, $from.pos - pos);
+        const localTo = Math.min(node.text.length, $to.pos - pos);
+        if (localTo <= localFrom) return;
+        const slice = node.text.slice(localFrom, localTo);
+        const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
+        for (const piece of pieces(slice)) {
+          const next = paint(base, patch, piece.script);
+          if (sameAttrs(next, base)) continue;
+          const jobFrom = pos + localFrom + piece.start;
+          const jobTo = pos + localFrom + piece.end;
+          const key = `${jobFrom}:${jobTo}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          jobs.push({ from: jobFrom, to: jobTo, attrs: next });
+        }
+      });
+    }
     jobs.sort((a, b) => b.from - a.from);
     for (const job of jobs) {
       tr = tr.removeMark(job.from, job.to, type);
@@ -380,9 +394,12 @@ export function applyCharacterPreferences(editor: Editor, patch: CharacterPatch)
     }
     const paintMark = (markType: typeof boldType, on: boolean | null | undefined) => {
       if (!markType || on == null) return;
-      if (on) tr = tr.addMark(from, to, markType.create());
-      else tr = tr.removeMark(from, to, markType);
-      changed = true;
+      for (const { $from, $to } of ranges) {
+        if ($to.pos <= $from.pos) continue;
+        if (on) tr = tr.addMark($from.pos, $to.pos, markType.create());
+        else tr = tr.removeMark($from.pos, $to.pos, markType);
+        changed = true;
+      }
     };
     paintMark(boldType, patch.bold);
     paintMark(italicType, patch.italic);

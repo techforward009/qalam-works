@@ -76,13 +76,18 @@ export function parsePtField(raw: string): number | null {
 }
 
 function selectedBlocks(editor: Editor): PMNode[] {
-  const { from, to } = editor.state.selection;
   const blocks: PMNode[] = [];
-  editor.state.doc.nodesBetween(from, to, (node) => {
-    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
-    blocks.push(node);
-    return false;
-  });
+  const seen = new Set<number>();
+  for (const { $from, $to } of editor.state.selection.ranges) {
+    editor.state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+      if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+      if (!seen.has(pos)) {
+        seen.add(pos);
+        blocks.push(node);
+      }
+      return false;
+    });
+  }
   return blocks;
 }
 
@@ -214,28 +219,32 @@ const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "inde
 /** One transaction, so one Undo restores every selected paragraph. */
 export function applyParagraphPreferences(editor: Editor, attrs: Record<string, unknown>): boolean {
   const { state } = editor;
-  const { from, to } = state.selection;
   let tr = state.tr;
   let changed = false;
-  state.doc.nodesBetween(from, to, (node, pos) => {
-    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
-    const next = { ...node.attrs };
-    let nodeChanged = false;
-    for (const [key, value] of Object.entries(attrs)) {
-      if (node.type.name === "heading" && HEADING_INDENT_KEYS.has(key)) continue;
-      const current = next[key];
-      const equal = typeof value === "object" && value !== null ? JSON.stringify(current) === JSON.stringify(value) : current === value;
-      if (!equal) {
-        next[key] = value;
-        nodeChanged = true;
+  const seen = new Set<number>();
+  for (const { $from, $to } of state.selection.ranges) {
+    state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+      if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+      if (seen.has(pos)) return false;
+      seen.add(pos);
+      const next = { ...node.attrs };
+      let nodeChanged = false;
+      for (const [key, value] of Object.entries(attrs)) {
+        if (node.type.name === "heading" && HEADING_INDENT_KEYS.has(key)) continue;
+        const current = next[key];
+        const equal = typeof value === "object" && value !== null ? JSON.stringify(current) === JSON.stringify(value) : current === value;
+        if (!equal) {
+          next[key] = value;
+          nodeChanged = true;
+        }
       }
-    }
-    if (nodeChanged) {
-      tr = tr.setNodeMarkup(pos, undefined, next);
-      changed = true;
-    }
-    return false;
-  });
+      if (nodeChanged) {
+        tr = tr.setNodeMarkup(pos, undefined, next);
+        changed = true;
+      }
+      return false;
+    });
+  }
   if (changed) editor.view.dispatch(tr);
   return changed;
 }
