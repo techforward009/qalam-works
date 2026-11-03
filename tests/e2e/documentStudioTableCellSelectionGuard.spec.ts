@@ -45,13 +45,14 @@ test("clicking another cell after a 4-cell selection clears it; Space only adds 
   expect((await cells.nth(8).innerText()).replace(/\s/g,"")).toBe(WORDS[8].replace(/\s/g,""));
 });
 
-test("typing over an active cell selection is undone for every cell with one Ctrl+Z",async({page})=>{
+test("typing over an active cell selection replaces only the drag-start cell; one Ctrl+Z restores it",async({page})=>{
   const {cells}=await urduTable(page);
   await dragSelect(page,cells,0,4);
   await page.keyboard.press("Space");
-  await expect(cells.nth(1)).toHaveText("");
-  await expect(cells.nth(3)).toHaveText("");
-  await expect(cells.nth(4)).toHaveText("");
+  await expect(cells.nth(0)).toHaveText(" ");
+  await expect(cells.nth(1)).toHaveText(WORDS[1]);
+  await expect(cells.nth(3)).toHaveText(WORDS[3]);
+  await expect(cells.nth(4)).toHaveText(WORDS[4]);
   await page.keyboard.press("Control+z");
   for(let i=0;i<WORDS.length;i++)await expect(cells.nth(i)).toHaveText(WORDS[i]);
 });

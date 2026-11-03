@@ -1,7 +1,7 @@
 import {Extension} from "@tiptap/core";
 import type {Node as ProseMirrorNode} from "@tiptap/pm/model";
 import {Plugin,TextSelection,type EditorState} from "@tiptap/pm/state";
-import {TableMap} from "@tiptap/pm/tables";
+import {TableMap,CellSelection} from "@tiptap/pm/tables";
 import {Decoration,DecorationSet} from "@tiptap/pm/view";
 import {tableFormatAlignedMargins} from "./tableFormatUnits";
 import {TABLE_RESIZE_HIT_PX} from "./tableColumnResizing";
@@ -162,7 +162,7 @@ export const QalamTableFormatAttributes=Extension.create({
     // finishes, using the actual clicked cell's model position.
     let down:{x:number;y:number;cellFrom:number;cellTo:number;nearGrip:boolean}|null=null;
     const onDown=(event:PointerEvent)=>{
-     if(event.button!==0)return;
+     if(event.button!==0||event.shiftKey||event.ctrlKey||event.metaKey||event.altKey)return;
      const cell=(event.target instanceof Element?event.target:null)?.closest<HTMLTableCellElement>("td,th");
      const table=cell?.closest("table.qalam-document-table");
      if(!cell||!table)return;
@@ -178,10 +178,10 @@ export const QalamTableFormatAttributes=Extension.create({
     };
     const onUp=(event:PointerEvent)=>{
      const start=down;down=null;
-     if(!start||event.button!==0||Math.hypot(event.clientX-start.x,event.clientY-start.y)>3)return;
+     if(!start||event.button!==0||event.shiftKey||event.ctrlKey||event.metaKey||event.altKey||Math.hypot(event.clientX-start.x,event.clientY-start.y)>3)return;
      // A plain click can leave ProseMirror in the previous RTL column even
      // though the DOM received the click. Never interfere with a real drag.
-     if(!start.nearGrip && view.state.selection.from>=start.cellFrom && view.state.selection.from<=start.cellTo)return;
+     if(!start.nearGrip && !(view.state.selection instanceof CellSelection) && view.state.selection.from>=start.cellFrom && view.state.selection.from<=start.cellTo)return;
      // The column-resize plugin may replace TD nodes during pointerup. Use
      // the original ProseMirror cell range, not the now-detached DOM node.
      const hit=view.posAtCoords({left:event.clientX,top:event.clientY});

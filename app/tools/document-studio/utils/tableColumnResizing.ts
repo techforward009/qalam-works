@@ -1,6 +1,7 @@
 import {Extension} from "@tiptap/core";
 import {closeHistory} from "@tiptap/pm/history";
-import {Plugin} from "@tiptap/pm/state";
+import {Plugin,TextSelection} from "@tiptap/pm/state";
+import {CellSelection} from "@tiptap/pm/tables";
 import type {EditorView} from "@tiptap/pm/view";
 import {TABLE_DIALOG_CHANGE} from "./formattingSafety";
 import {TABLE_MIN_COL_WIDTH,tableResizeColumnLine} from "./tableOperations";
@@ -188,7 +189,7 @@ export const QalamTableColumnResizing=Extension.create({
          drag.preview.forEach((w,i)=>{if(cols[i])cols[i].style.width=Math.round(w)+"px";});
          event.preventDefault();
        };
-       const finish=()=>{
+       const finish=(event?:PointerEvent)=>{
          if(!drag)return;
          const {handle,preview,previewIndentMm,moved}=drag;
          drag=null;
@@ -199,12 +200,27 @@ export const QalamTableColumnResizing=Extension.create({
          setHover(null);
 
          if(moved)updateWidths(view,handle.table,preview,previewIndentMm);
+         else if(view.state.selection instanceof CellSelection && !event?.shiftKey && !event?.ctrlKey && !event?.metaKey && !event?.altKey){
+           const hit=view.posAtCoords({left:event?.clientX??handle.table.getBoundingClientRect().left,top:event?.clientY??handle.table.getBoundingClientRect().top});
+           const safePos=hit?hit.pos:tablePosition(view,handle.table);
+           if(safePos!=null){
+             view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(safePos))));
+             view.focus();
+           }
+         }
        };
        const onMove=(event:PointerEvent)=>{if(!drag)setHover(getHandle(event)?.table??null);};
        const onLeave=()=>{if(!drag)setHover(null);};
        const onDown=(event:PointerEvent)=>{
-         if(event.button!==0)return;
+         if(event.button!==0||event.shiftKey||event.ctrlKey||event.metaKey||event.altKey)return;
          const handle=getHandle(event);if(!handle)return;
+         if(view.state.selection instanceof CellSelection){
+           const hit=view.posAtCoords({left:event.clientX,top:event.clientY});
+           const safePos=hit?hit.pos:tablePosition(view,handle.table);
+           if(safePos!=null){
+             view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(safePos))));
+           }
+         }
          const widths=geometry(handle.table);
          if(widths.length<1)return;
          const pos=tablePosition(view,handle.table);

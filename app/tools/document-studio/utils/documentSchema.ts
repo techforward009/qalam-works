@@ -776,13 +776,16 @@ export function createDocumentStudioExtensions() {
     Color,
     StudioRunStyle,
     Highlight.configure({ multicolor: true }),
+    // Table cell-selection guard sits before TableKit so its mousedown,
+    // pointerdown, keydown (Backspace/Delete/Space) and beforeinput hooks
+    // run before prosemirror-tables default handlers.
+    QalamTableCellSelectionGuard,
     // Official TipTap 3 table nodes: table → tableRow → tableHeader/tableCell
     // → normal block content. This stays in the document JSON and therefore
     // uses the existing persistence path without a parallel table model.
     TableKit.configure({
       table: { resizable: false, HTMLAttributes: { class: "qalam-document-table" } },
     }),
-    QalamTableCellSelectionGuard,
     DocumentImage.configure({
       allowBase64: true,
       HTMLAttributes: { class: "qalam-document-image" },

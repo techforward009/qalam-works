@@ -131,6 +131,14 @@ function clickCell(editor: Editor, index: number, init: MouseEventInit = {}) {
   target.dispatchEvent(new MouseEvent("click", { ...base, buttons: 0 }));
 }
 
+function pressKey(editor: Editor, key: string) {
+  const { view } = editor;
+  const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+  view.dom.dispatchEvent(event);
+  if (event.defaultPrevented) return;
+  view.someProp("handleKeyDown", (f) => f(view, event));
+}
+
 /**
  * Typing as ProseMirror receives it: a cancelable `beforeinput`, then (if the
  * app left it alone) the `handleTextInput` hook, then PM's own default of
@@ -209,7 +217,7 @@ describe("Qalam Page table: clicking after a cell selection clears it; undo rest
     expect(cellTexts(editor)).toEqual(ORIGINAL);
   });
 
-  it("5. typing over an active CellSelection puts the text in the first selected cell, empties the other selected cells, and one Ctrl+Z restores every cell", () => {
+  it("5. typing over an active CellSelection puts the text only in the drag-start cell, keeps the other selected cells, and one Ctrl+Z restores it", () => {
     const editor = makeEditor(makeTable(URDU_3X3_ROWS));
     selectCells(editor, 0, 4);
     expect(undoDepth(editor.state)).toBe(0);
@@ -218,7 +226,7 @@ describe("Qalam Page table: clicking after a cell selection clears it; undo rest
 
     const typed = cellTexts(editor);
     expect(typed[SELECTED_4[0]]).toBe(" ");
-    for (const idx of SELECTED_4.slice(1)) expect(typed[idx]).toBe("");
+    for (const idx of SELECTED_4.slice(1)) expect(typed[idx]).toBe(ORIGINAL[idx]);
     for (const idx of UNSELECTED_5) expect(typed[idx]).toBe(ORIGINAL[idx]);
     // The table keeps its 3x3 shape and the caret leaves cell-selection mode.
     expect(cellPositions(editor)).toHaveLength(9);
@@ -242,6 +250,7 @@ describe("Qalam Page table: clicking after a cell selection clears it; undo rest
     typeText(editor, "پ");
 
     expect(cellTexts(editor)[0]).toBe("پ");
+    for (const idx of SELECTED_4.slice(1)) expect(cellTexts(editor)[idx]).toBe(ORIGINAL[idx]);
     const firstCell = (editor.getJSON() as any).content[0].content[0].content[0];
     expect(firstCell.content[0].content[0].marks).toEqual([{ type: "bold" }]);
     expect(undoDepth(editor.state)).toBe(1);
@@ -261,5 +270,57 @@ describe("Qalam Page table: clicking after a cell selection clears it; undo rest
     // First undo may peel the typing burst, but a bounded number of undos must bring every cell back.
     for (let i = 0; i < 3 && cellTexts(editor).join("|") !== ORIGINAL.join("|"); i++) undo(editor);
     expect(cellTexts(editor)).toEqual(ORIGINAL);
+  });
+
+  it("8. Backspace over an active CellSelection empties only the drag-start cell, keeps other cells, and one Ctrl+Z restores it", () => {
+    const editor = makeEditor(makeTable(URDU_3X3_ROWS));
+    selectCells(editor, 0, 4);
+    expect(undoDepth(editor.state)).toBe(0);
+
+    pressKey(editor, "Backspace");
+
+    const after = cellTexts(editor);
+    expect(after[0]).toBe("");
+    for (const idx of [1, 2, 3, 4, 5, 6, 7, 8]) expect(after[idx]).toBe(ORIGINAL[idx]);
+    expect(editor.state.selection).not.toBeInstanceOf(CellSelection);
+    expect(undoDepth(editor.state)).toBe(1);
+
+    undo(editor);
+    expect(cellTexts(editor)).toEqual(ORIGINAL);
+    expect(undoDepth(editor.state)).toBe(0);
+  });
+
+  it("9. drag selecting starting from bottom-right (cell 4 to 0) targets cell 4 on typing or Backspace", () => {
+    const editor = makeEditor(makeTable(URDU_3X3_ROWS));
+    selectCells(editor, 4, 0);
+
+    pressKey(editor, "Backspace");
+
+    const after = cellTexts(editor);
+    expect(after[4]).toBe("");
+    for (const idx of [0, 1, 2, 3, 5, 6, 7, 8]) expect(after[idx]).toBe(ORIGINAL[idx]);
+    expect(editor.state.selection).not.toBeInstanceOf(CellSelection);
+
+    undo(editor);
+    expect(cellTexts(editor)).toEqual(ORIGINAL);
+  });
+
+  it("10. Delete over an active CellSelection empties ALL selected cells, and one Ctrl+Z restores and re-selects the block", () => {
+    const editor = makeEditor(makeTable(URDU_3X3_ROWS));
+    selectCells(editor, 0, 4);
+    expect(undoDepth(editor.state)).toBe(0);
+
+    pressKey(editor, "Delete");
+
+    const after = cellTexts(editor);
+    for (const idx of SELECTED_4) expect(after[idx]).toBe("");
+    for (const idx of UNSELECTED_5) expect(after[idx]).toBe(ORIGINAL[idx]);
+    expect(undoDepth(editor.state)).toBe(1);
+
+    undo(editor);
+    expect(cellTexts(editor)).toEqual(ORIGINAL);
+    expect(editor.state.selection).toBeInstanceOf(CellSelection);
+    expect(editor.state.selection.ranges).toHaveLength(4);
+    expect(undoDepth(editor.state)).toBe(0);
   });
 });
