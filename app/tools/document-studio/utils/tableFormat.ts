@@ -8,9 +8,9 @@ export type TableBorderStyle="none"|"solid"|"dotted"|"dashed"|"double";
 export type TableAlignment="left"|"center"|"right";
 export interface TableFormatValues {
  fill:string|null;
- borderColor:string;
- borderStyle:TableBorderStyle;
- borderWidthPt:number;
+ borderColor:string|null;
+ borderStyle:TableBorderStyle|null;
+ borderWidthPt:number|null;
  columnWidthPx:number;
  columnGapMm:number;
  indentMm:number;
@@ -51,18 +51,22 @@ function context(editor:Editor){
  return {table,tablePos,cells,selected:selected.length?selected:[active],active,cols};
 }
 export function getTableFormat(editor:Editor):TableFormatValues {
- const {table,active,cells}=context(editor);
+ const {table,active,cells,selected}=context(editor);
  const attr=active.attrs,tableAttrs=table.attrs;
  const dir=tableAttrs.tableFlow==="ltr"||tableAttrs.dir==="ltr"?"ltr":"rtl";
  const dom=editor.view.nodeDOM(cells[0].pos) as HTMLElement|null;
  const currentTable=dom?.closest("table");
  const widths=Array.from(currentTable?.rows[0]?.cells??[]).map(cell=>cell.getBoundingClientRect().width);
  const columnWidth=Number((attr.colwidth as number[]|null)?.[0])||widths[active.column]||120;
+ const consistent=(key:string,defaultValue:unknown)=>{
+  const first=active.attrs[key]??defaultValue;
+  return selected.every(cell=>(cell.attrs[key]??defaultValue)===first)?first:null;
+ };
  return {
   fill:typeof attr.tableFill==="string"?attr.tableFill:null,
-  borderColor:typeof attr.tableBorderColor==="string"?attr.tableBorderColor:"#000000",
-  borderStyle:(attr.tableBorderStyle as TableBorderStyle)||"none",
-  borderWidthPt:Number(attr.tableBorderWidthPt)||1,
+  borderColor:consistent("tableBorderColor","#000000") as string|null,
+  borderStyle:consistent("tableBorderStyle","none") as TableBorderStyle|null,
+  borderWidthPt:consistent("tableBorderWidthPt",.5) as number|null,
   columnWidthPx:Math.round(columnWidth*100)/100,
   columnGapMm:attr.tableGapMm===null?1.41:Number(attr.tableGapMm??1.41),
   indentMm:Number(tableAttrs.tableIndentMm)||0,
@@ -72,9 +76,9 @@ export function getTableFormat(editor:Editor):TableFormatValues {
 }
 export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean {
  const ctx=context(editor);
- const fill=safeHex(values.fill),borderColor=safeHex(values.borderColor)??"#000000";
- if(!["none","solid","dashed","dotted","double"].includes(values.borderStyle))throw Error("Invalid border style.");
- const widthPt=clamp(Number(values.borderWidthPt),.25,8);
+ const fill=safeHex(values.fill),borderColor=safeHex(values.borderColor);
+ if(values.borderStyle!==null&&!["none","solid","dashed","dotted","double"].includes(values.borderStyle))throw Error("Invalid border style.");
+ const widthPt=values.borderWidthPt===null?null:clamp(Number(values.borderWidthPt),.25,8);
  const columnWidth=clamp(Number(values.columnWidthPx),mmToTablePx(10),mmToTablePx(500));
  const gap=clamp(Number(values.columnGapMm),0,20);
  const indent=clamp(Number(values.indentMm),0,120);
@@ -83,6 +87,9 @@ export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean
  const tr=editor.state.tr;
  const columns=ctx.cols;
  const selectedPositions=new Set(ctx.selected.map(c=>c.pos));
+ const tableNode=editor.view.nodeDOM(ctx.cells[0].pos) as HTMLElement|null;
+ const tableDom=tableNode?.closest("table");
+ const renderedWidths=Array.from(tableDom?.rows[0]?.cells??[]).map(cell=>cell.getBoundingClientRect().width);
  const previousWidth=ctx.active.attrs.colwidth as number[]|null;
  const widthChanged=Math.abs(columnWidth-(Number(previousWidth?.[0])||getTableFormat(editor).columnWidthPx))>.05;
  const gapChanged=ctx.selected.some(cell=>Math.abs(Number(cell.attrs.tableGapMm??1.41)-gap)>.001);
@@ -90,24 +97,30 @@ export function applyTableFormat(editor:Editor,values:TableFormatValues):boolean
   const attrs={...cell.attrs};
   let changed=false;
   if(selectedPositions.has(cell.pos)){
-   Object.assign(attrs,{tableFill:fill,tableBorderColor:borderColor,tableBorderStyle:values.borderStyle,tableBorderWidthPt:widthPt});
+   attrs.tableFill=fill;
+   if(borderColor!==null)attrs.tableBorderColor=borderColor;
+   if(values.borderStyle!==null)attrs.tableBorderStyle=values.borderStyle;
+   if(widthPt!==null)attrs.tableBorderWidthPt=widthPt;
    changed=true;
   }
   if(columns.has(cell.column)){
    if(widthChanged){attrs.colwidth=[Math.round(columnWidth*1000)/1000];changed=true;}
    if(gapChanged){attrs.tableGapMm=gap;changed=true;}
+  }else if(widthChanged && !(Number((attrs.colwidth as number[]|null)?.[0])>0) && renderedWidths[cell.column]>0){
+   // Freeze existing Auto columns at their on-screen sizes when a different
+   // column is explicitly resized. RTL indexes stay in logical cell order.
+   attrs.colwidth=[Math.round(renderedWidths[cell.column]*1000)/1000];
+   changed=true;
   }
   if(changed)tr.setNodeMarkup(cell.pos,undefined,attrs);
  });
  const attrs:Record<string,unknown>={...ctx.table.attrs,tableAlignment:values.alignment,tableIndentMm:indent,tableFlow:values.flow,dir:values.flow};
  if(widthChanged){
-  const dom=editor.view.nodeDOM(ctx.cells[0].pos) as HTMLElement|null;
-  const tableDom=dom?.closest("table");
   const before=tableDom?.getBoundingClientRect().width||0;
   if(before>0){
    const row=ctx.cells.filter(c=>c.row===0);
-   const total=row.reduce((sum,cell)=>sum+(columns.has(cell.column)?columnWidth:Number((cell.attrs.colwidth as number[]|null)?.[0])||before/Math.max(1,row.length)),0);
-   attrs.tableFormatWidthPx=Math.round(Math.min(before,Math.max(64,total)));
+   const total=row.reduce((sum,cell)=>sum+(columns.has(cell.column)?columnWidth:Number((cell.attrs.colwidth as number[]|null)?.[0])||renderedWidths[cell.column]||before/Math.max(1,row.length)),0);
+   attrs.tableFormatWidthPx=Math.round(Math.max(64,total)*1000)/1000;
   }
  }
  tr.setNodeMarkup(ctx.tablePos,undefined,attrs);

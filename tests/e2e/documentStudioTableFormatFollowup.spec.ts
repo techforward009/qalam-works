@@ -56,12 +56,12 @@ test("Table Format mm and pt fields and right indent change screen and PDF geome
  const {editor,cells}=await table(page,2,2);
  const before=await editor.locator("table").evaluate(el=>el.getBoundingClientRect().right);
  await cells.first().click({button:"right"});
- await page.getByRole("menuitem",{name:"Table Format",exact:true}).click();
+ await page.getByRole("menuitem",{name:"Table Format…",exact:true}).click();
  const dialog=page.getByRole("dialog",{name:"Table Format"});
  await expect(dialog.getByLabel("Column Width")).toHaveValue(/mm$/);
  await expect(dialog.getByLabel("Column Gap")).toHaveValue("1.41mm");
  await expect(dialog.getByLabel("Table Indent")).toHaveValue("0mm");
- await expect(dialog.getByLabel("Border Width")).toHaveValue("1pt");
+ await expect(dialog.getByLabel("Border Width")).toHaveValue("0.5pt");
  await dialog.getByLabel("Column Width").fill("30mm");
  await dialog.getByLabel("Table Indent").fill("10mm");
  await dialog.getByLabel("Table Alignment").selectOption("right");
@@ -93,7 +93,7 @@ test("Table Format mm and pt fields and right indent change screen and PDF geome
  copyFileSync(file,info.outputPath("rtl-table-30mm-10mm.pdf"));
  // A 15mm column is smaller than the unrelated drag-resize grip minimum.
  await cells.first().click({button:"right"});
- await page.getByRole("menuitem",{name:"Table Format",exact:true}).click();
+ await page.getByRole("menuitem",{name:"Table Format…",exact:true}).click();
  const narrow=page.getByRole("dialog",{name:"Table Format"});
  await narrow.getByLabel("Column Width").fill("15mm");
  await narrow.getByRole("button",{name:"OK"}).click();

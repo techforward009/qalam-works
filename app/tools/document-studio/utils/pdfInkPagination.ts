@@ -1,7 +1,6 @@
 import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
 import type { Page } from "puppeteer-core";
 export const PDF_TABLE_SELECTOR = "table.qalam-document-table,table[data-pdf-table]";
-export const PDF_TABLE_BORDER_CSS = "1px solid #222";
 export const isPdfTableBlock = (tagName: string) => tagName.toUpperCase() === "TABLE";
 
 
@@ -17,6 +16,15 @@ export interface InkLine {
   text?: string;
   forceBreak?: boolean;
   image?: boolean;
+  tableCells?: Array<{
+    index: number;
+    text: string;
+    frameLeft: number;
+    frameRight: number;
+    width: number;
+    top: number;
+    bottom: number;
+  }>;
 }
 export interface InkPlacement { page: number; baseline: number }
 /** CSS top used when painting a measured line back onto the PDF page. */
@@ -189,7 +197,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     .filter(node => Boolean(node.parentElement?.closest(blockSelector)))
     .map(node => node.data)
     .join("");
-  const snapshots: Array<{ element: HTMLElement; baseline: number; block: number; heading: boolean; left: number; width: number; fontHeight: number; inkAscent: number; inkDescent: number; blank?: boolean; forceBreak?: boolean; image?: boolean }> = [];
+  const snapshots: Array<{ element: HTMLElement; baseline: number; block: number; heading: boolean; left: number; width: number; fontHeight: number; inkAscent: number; inkDescent: number; blank?: boolean; forceBreak?: boolean; image?: boolean; tableCells?: InkLine["tableCells"] }> = [];
   const origin = document.body.getBoundingClientRect();
   const quotes = Array.from(document.querySelectorAll("blockquote"));
   const sourceLists = Array.from(document.querySelectorAll<HTMLElement>("ul,ol"));
@@ -218,13 +226,24 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       const originals = block.querySelectorAll<HTMLElement>("td,th");
       source.querySelectorAll<HTMLElement>("td,th").forEach((cell, index) => {
         const style = getComputedStyle(originals[index] ?? block);
-        const none=(originals[index]?.dataset.tableBorderStyle??"none")==="none";
-        const border=none?"0 none transparent":style.border;
-        cell.style.cssText += `;border:${border};background-color:${style.backgroundColor};box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
+        cell.style.cssText += `;border-top:${style.borderTop};border-right:${style.borderRight};border-bottom:${style.borderBottom};border-left:${style.borderLeft};background-color:${style.backgroundColor};box-sizing:border-box;direction:${style.direction};text-align:${style.textAlign};font-family:${style.fontFamily};font-size:${style.fontSize};font-weight:${style.fontWeight};padding:${style.padding};`;
+      });
+      const tableCells = Array.from(originals).map((cell, idx) => {
+        const cRect = cell.getBoundingClientRect();
+        return {
+          index: idx,
+          text: cell.textContent?.trim() ?? "",
+          frameLeft: cRect.left - origin.left,
+          frameRight: cRect.right - origin.left,
+          width: cRect.width,
+          top: cRect.top,
+          bottom: cRect.bottom,
+        };
       });
       snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false,
         left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height),
-        inkAscent: 0, inkDescent: Math.max(1, rect.height), forceBreak, image: true });
+        inkAscent: 0, inkDescent: Math.max(1, rect.height), forceBreak, image: true,
+        tableCells });
       continue;
     }
     if (block.matches(imageSelector)) {
@@ -440,7 +459,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       return range.getBoundingClientRect().top;
     });
     const paintBoxTop = fontTops.length ? Math.min(...fontTops) - measuredBaseline : undefined;
-    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, paintBoxTop, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image });
+    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, paintBoxTop, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image, tableCells: item.tableCells });
     element.dataset.pdfMeasureBaseline = String(measuredBaseline); cursor = frameBottom + Math.max(measurementGap, Math.ceil(item.fontHeight));
     if (cursor > maxStagingHeight) throw new Error(`PDF measurement exceeds the supported ${maxStagingHeight}px staging limit; export blocked`);
   }
@@ -452,7 +471,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
   }
   const measurement = document.createElement("style"); measurement.id = "pdf-ink-measure-style";
   measurement.textContent = "body{background:white!important}[data-pdf-ink-stage] *{color:black!important;background:transparent!important;border-color:transparent!important;text-shadow:none!important}[data-pdf-ink-stage] [style*=background]{background:black!important}";
-  measurement.textContent += `[data-pdf-table] td,[data-pdf-table] th{border:1px solid #222!important}[data-pdf-table]{border-collapse:collapse!important}`;
+  measurement.textContent += `[data-pdf-table]{border-collapse:collapse!important}`;
   document.head.append(measurement); return lines;
 }
 
@@ -576,17 +595,35 @@ export async function paginatePdfInk(
     }
     if (!line.image && (line.inkTop <= line.frameTop || line.inkBottom >= line.frameBottom)) throw new Error(`PDF glyph ink could not be bounded safely for line ${i}: ${line.inkTop}..${line.inkBottom} in ${line.frameTop}..${line.frameBottom}; export blocked`);
     line.inkTop -= baselines[i]; line.inkBottom -= baselines[i];
-    line.horizontalShift = fitHorizontalInk(
-      line.inkLeft,
-      line.inkRight,
-      width,
-      i,
-      line.text,
-      line.frameLeft,
-      line.frameRight,
-      leftMarginPx,
-      rightMarginPx,
-    );
+    if (line.tableCells && line.tableCells.length > 0) {
+      for (const cell of line.tableCells) {
+        if (!cell.text) continue;
+        fitHorizontalInk(
+          cell.frameLeft,
+          cell.frameRight,
+          width,
+          cell.index,
+          cell.text,
+          Math.max(-PDF_INK_HORIZONTAL_EPSILON, cell.frameLeft),
+          Math.min(width + PDF_INK_HORIZONTAL_EPSILON, cell.frameRight),
+          leftMarginPx,
+          rightMarginPx,
+        );
+      }
+      line.horizontalShift = 0;
+    } else {
+      line.horizontalShift = fitHorizontalInk(
+        line.inkLeft,
+        line.inkRight,
+        width,
+        i,
+        line.text,
+        line.frameLeft,
+        line.frameRight,
+        leftMarginPx,
+        rightMarginPx,
+      );
+    }
   });
   const placements = placeInkLines(lines, height);
   await page.evaluate(({ lines, placements, height }) => {
