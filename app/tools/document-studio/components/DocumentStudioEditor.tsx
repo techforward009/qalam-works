@@ -19,7 +19,7 @@ import { migrateDocumentLeading } from "../utils/leading";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { InpageKeyboard } from "../utils/inpageKeyboardExtension";
 import { useInpageKeyboard } from "../utils/useInpageKeyboard";
-import type { KeyboardLayout } from "../utils/inpageKeyboard";
+import { KEYBOARD_LAYOUT_LABELS, type KeyboardLayout } from "../utils/inpageKeyboard";
 import rawKeyboardLayouts from "../utils/keyboardLayouts.json";
 import { CustomKeyboardDialog } from "./CustomKeyboardDialog";
 
@@ -2534,6 +2534,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             visiblePage={visiblePage}
             zoom={zoom}
             zoomPercent={zoomPercent}
+            keyboardName={KEYBOARD_LAYOUT_LABELS[kb.layoutId]}
             onPageStep={(delta) => {
               const root = document.querySelector("[data-studio-print-root]") as HTMLElement | null;
               const stride = Number(root?.getAttribute("data-page-stride-px") || 0);

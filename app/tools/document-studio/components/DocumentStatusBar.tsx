@@ -19,6 +19,7 @@ export default function DocumentStatusBar({
   zoom = 100,
   zoomPercent = null,
   onPageStep,
+  keyboardName,
 }: {
   isUr: boolean;
   dir: "rtl" | "ltr";
@@ -33,6 +34,8 @@ export default function DocumentStatusBar({
   zoom?: DocumentZoom;
   zoomPercent?: number | null;
   onPageStep?: (delta: number) => void;
+  /** English name of the active keyboard layout (display-only panel). */
+  keyboardName?: string;
 }) {
   const status = describeSaveStatus({ saveStatus, online, isUr, storageDurability });
   void stats;
@@ -63,7 +66,8 @@ export default function DocumentStatusBar({
     >
       <span>{isUr ? "مدد کے لیے F1 دبائیں" : "For Help, press F1"}</span>
       <div className="absolute right-[2px] flex gap-[2px]" style={{ height: 15 }}>
-        <span role="status" aria-live="polite" data-studio-status-panel="left" data-studio-save-status={status.tone} dir={dir} title={status.label} style={{ width: 150, paddingInline: 3, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "15px", boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }}>{status.label}</span>
+        <span role="status" aria-live="polite" data-studio-status-panel="left" data-studio-save-status={status.tone} dir={dir} title={status.label} style={{ width: 110, paddingInline: 3, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "15px", boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }}>{status.label}</span>
+        {keyboardName ? <span data-studio-keyboard-status="true" dir="ltr" title={`Keyboard: ${keyboardName}`} style={{ width: 112, paddingInline: 3, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "15px", boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }}>{keyboardName}</span> : null}
         <span data-studio-num-lock="true" className="grid place-items-center" style={{ width: 34, boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }}><span style={{ width: 26, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, letterSpacing: 1 }}>NUM</span></span>
         <span aria-hidden="true" data-studio-status-panel="right" style={{ width: 32, boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }} />
       </div>

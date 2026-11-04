@@ -58,3 +58,17 @@ describe("Document Studio storage status", () => {
     expect(panel.style.fontFamily).toContain("Tahoma");
   });
 });
+
+describe("Document Studio keyboard status panel", () => {
+  it("shows the selected keyboard name in its own panel next to the save status", () => {
+    render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online keyboardName="InPage Phonetic" />);
+    const panel = document.querySelector<HTMLElement>("[data-studio-keyboard-status]");
+    expect(panel?.textContent).toBe("InPage Phonetic");
+    expect(panel?.title).toBe("Keyboard: InPage Phonetic");
+    expect(panel?.previousElementSibling?.getAttribute("data-studio-status-panel")).toBe("left");
+  });
+  it("omits the panel without a keyboard name", () => {
+    render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online />);
+    expect(document.querySelector("[data-studio-keyboard-status]")).toBeNull();
+  });
+});

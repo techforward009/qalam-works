@@ -567,6 +567,35 @@ export const DocumentSectionBreak = Node.create({
 
 const ALIGNMENTS = ["left", "center", "right", "justify", "justify-all"] as const;
 
+/**
+ * Chrome keeps the native caret of an empty textblock (only a trailing <br>)
+ * at its old x-position when ProseMirror patches the block's text-align in
+ * place, because the DOM selection itself never changes. When the alignment
+ * of the caret's block changes, re-apply the same DOM range so the browser
+ * recomputes the caret rect immediately.
+ */
+export function shouldRefreshCaretForAlign(prev: EditorView["state"], next: EditorView["state"]): boolean {
+  if (!next.selection.empty || prev.doc === next.doc) return false;
+  const nextBlock = next.selection.$from.parent;
+  if (!nextBlock.isTextblock) return false;
+  const prevPos = next.selection.$from.before();
+  if (prevPos > prev.doc.content.size) return false;
+  const prevBlock = prev.doc.nodeAt(prevPos);
+  return !!prevBlock && prevBlock.type === nextBlock.type
+    && (prevBlock.attrs.textAlign ?? null) !== (nextBlock.attrs.textAlign ?? null);
+}
+
+export function refreshDomCaret(view: EditorView): void {
+  if (!view.hasFocus()) return;
+  const sel = view.dom.ownerDocument.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0).cloneRange();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+const alignCaretRefreshKey = new PluginKey("studioAlignCaretRefresh");
+
 const StudioTextAlign = TextAlign.extend({
   addGlobalAttributes() {
     return [{
@@ -592,6 +621,19 @@ const StudioTextAlign = TextAlign.extend({
         },
       },
     }];
+  },
+  addProseMirrorPlugins() {
+    return [
+      ...(this.parent?.() ?? []),
+      new Plugin({
+        key: alignCaretRefreshKey,
+        view: () => ({
+          update: (view, prevState) => {
+            if (shouldRefreshCaretForAlign(prevState, view.state)) refreshDomCaret(view);
+          },
+        }),
+      }),
+    ];
   },
   addKeyboardShortcuts() {
     const align = (value: string) => () => this.editor.commands.setTextAlign(value);

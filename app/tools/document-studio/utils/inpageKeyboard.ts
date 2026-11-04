@@ -8,8 +8,8 @@ export const KEYBOARD_LAYOUT_LABELS: Record<KeyboardLayoutId, string> = {
   off: "System Keyboard",
   inpageMonotype: "InPage Monotype",
   inpagePhonetic: "InPage Phonetic",
-  arabic: "Arabic",
-  persian: "Persian",
+  arabic: "Arabic (Monotype)",
+  persian: "Persian (Monotype)",
   custom: "Custom Keyboard"
 };
 
