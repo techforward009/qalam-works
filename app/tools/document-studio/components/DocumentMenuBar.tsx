@@ -24,6 +24,17 @@ import {
   type MenuOpenState,
 
 } from "../utils/documentMenus";
+import { forgetCellSelection, rememberCellSelection } from "../utils/tableCellSelectionGuard";
+
+function keepsCellSpacing(id: string): boolean {
+  return id === "format.paragraph" || id.startsWith("format.lh.");
+}
+
+function trackCellSpacing(editor: Editor | null | undefined, id: string) {
+  if (!editor) return;
+  if (keepsCellSpacing(id)) rememberCellSelection(editor.view);
+  else forgetCellSelection(editor.view);
+}
 
 function topMenuPosition(anchor: HTMLElement | null, isUr: boolean, menuId: MenuId): React.CSSProperties {
   if (!anchor || typeof window === "undefined") {
@@ -56,7 +67,7 @@ const labelStyle = { flex: "1 1 auto", minWidth: 0, whiteSpace: "nowrap", overfl
 
 function MenuItems({
   items, isUr, disabledIds, checkedIds, openSubmenuId, inlineSubmenus,
-  onOpenSubmenu, onToggleSubmenu, onAction,
+  onOpenSubmenu, onToggleSubmenu, onAction, editor,
 }: {
   items: MenuNode[];
   isUr: boolean;
@@ -67,6 +78,7 @@ function MenuItems({
   onOpenSubmenu: (id: string) => void;
   onToggleSubmenu: (id: string) => void;
   onAction: (id: MenuActionId) => void;
+  editor?: Editor | null;
 }) {
   return <>{items.map((item, index) => {
     if (item.type === "section") return <div key={`section-${index}`} role="presentation" data-menu-section style={{ height: 20, padding: "0 20px 0 32px", fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 11, lineHeight: "20px", color: "#606060" }}>{menuLabel(item, isUr)}</div>;
@@ -85,6 +97,7 @@ function MenuItems({
         <button type="button" role="menuitem" aria-haspopup="true" aria-expanded={open}
           data-menu-row data-menu-submenu={item.id} style={{ ...dropdownItemStyle, paddingRight: 26 }}
           className={`flex w-full items-center text-left ${open ? "bg-[#d6dff2]" : "hover:bg-[#d6dff2]"}`}
+          onMouseDown={() => { if (editor) rememberCellSelection(editor.view); }}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -99,7 +112,7 @@ function MenuItems({
         {open && inlineSubmenus ? <div role="menu" data-menu-flyout={item.id} className="border-y border-[#a0a0a0] bg-[#f0f0f0] py-0.5">
           <MenuItems items={item.items} isUr={isUr} disabledIds={disabledIds} checkedIds={checkedIds}
             openSubmenuId={null} inlineSubmenus={inlineSubmenus} onOpenSubmenu={onOpenSubmenu}
-            onToggleSubmenu={onToggleSubmenu} onAction={onAction} />
+            onToggleSubmenu={onToggleSubmenu} onAction={onAction} editor={editor} />
         </div> : null}
       </div>;
     }
@@ -113,6 +126,7 @@ function MenuItems({
       data-menu-row data-menu-action={item.id} style={dropdownItemStyle}
       className={`flex w-full items-center text-left ${disabled ? "cursor-default" : "hover:bg-[#d6dff2] focus:bg-[#d6dff2]"}`}
       onPointerEnter={(event) => { if (event.pointerType === "mouse" && !inlineSubmenus && openSubmenuId) onOpenSubmenu(""); }}
+      onMouseDown={() => trackCellSpacing(editor, item.id)}
       onClick={() => { if (!disabled) onAction(item.id); }}>
       {checked && item.id !== "view.ruler" ? <span aria-hidden style={{ position: "absolute", left: 6, top: 3, width: 16, height: 16, border: "1px solid #9cb9df", background: "#f8fbff", display: "grid", placeItems: "center" }}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6 L5 9 L10 2" fill="none" stroke="#1455a0" strokeWidth="1.5" /></svg></span> : null}
       <span data-menu-label style={labelStyle}>{item.id === "view.ruler" && checked ? "Hide Rulers" : menuLabel(item, isUr)}</span>
@@ -181,7 +195,9 @@ export default function DocumentMenuBar({
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "insert") id = "insert.pageBreak";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "f12") id = "window.page";
       if (!id) return;
-      event.preventDefault(); closeAndAct(id);
+      event.preventDefault();
+      trackCellSpacing(editor, id);
+      closeAndAct(id);
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
@@ -318,6 +334,7 @@ export default function DocumentMenuBar({
     openMenu && openState.submenuId && !inlineSubmenus ? findSubmenuItems(openMenu.items, openState.submenuId) : null;
 
   const closeAndAct = (id: MenuActionId) => {
+    trackCellSpacing(editor, id);
     setOpenState(CLOSED_MENU_STATE);
     const run = () => onAction(id);
     // Page/section breaks are atomic; inserting them while the submenu button
@@ -367,6 +384,7 @@ export default function DocumentMenuBar({
                 }
                 onToggleSubmenu={(id) => setOpenState((prev) => nextOpenSubmenu(prev, id))}
                 onAction={closeAndAct}
+                editor={editor}
               />
             </div>
             {submenuItems && openState.submenuId ? (
@@ -396,6 +414,7 @@ export default function DocumentMenuBar({
                   onOpenSubmenu={() => undefined}
                   onToggleSubmenu={() => undefined}
                   onAction={closeAndAct}
+                  editor={editor}
                 />
               </div>
             ) : null}
@@ -528,6 +547,11 @@ export default function DocumentMenuBar({
                   fontWeight: 400,
                   color: "#000",
                   background: open ? "#d6dff2" : "transparent",
+                }}
+                onMouseDown={() => {
+                  if (!editor) return;
+                  if (menu.id === "format") rememberCellSelection(editor.view);
+                  else forgetCellSelection(editor.view);
                 }}
                 onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
                 onPointerEnter={(e) => {

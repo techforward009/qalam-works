@@ -14,6 +14,7 @@ import {
   readParagraphForm,
   type ParagraphForm,
 } from "../utils/paragraphPreferences";
+import { forgetCellSelection, rememberCellSelection } from "../utils/tableCellSelectionGuard";
 
 const FIELD = "data-paragraph-field";
 function Mark({ text, at }: { text: string; at: number }) {
@@ -33,7 +34,7 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
   const drag=useInPage2009Dialog<HTMLFormElement>(349,283,24);
   const root=drag.dialogRef;
   const patch = (next: Partial<ParagraphForm>) => setForm((current) => ({ ...current, ...next }));
-  const close = () => { onClose(); restoreEditorFocus(editor); };
+  const close = () => { forgetCellSelection(editor.view); onClose(); restoreEditorFocus(editor); };
   const apply = () => {
     const parsed = preferencesFromForm(form, initial.current);
     if (!parsed.ok) {
@@ -44,7 +45,7 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
     applyParagraphPreferences(editor, parsed.attrs);
     close();
   };
-  useEffect(() => { root.current?.querySelector<HTMLElement>(`[${FIELD}]`)?.focus(); }, []);
+  useEffect(() => { rememberCellSelection(editor.view); root.current?.querySelector<HTMLElement>(`[${FIELD}]`)?.focus(); }, [editor]);
   const tab = (event: KeyboardEvent) => {
     if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); return; }
     if (event.key !== "Tab") return;
@@ -59,7 +60,7 @@ export function StudioParagraphDialog({ editor, settings, onClose }: { editor: E
     <label htmlFor={`paragraph-${name}`} style={{...at(lx,ly),whiteSpace:'nowrap'}}><Mark text={label+':'} at={label.toLowerCase().indexOf(key)}/></label>
     <input id={`paragraph-${name}`} name={name} aria-label={label} accessKey={key} data-paragraph-field="true" value={form[name]} onChange={event=>patch({[name]:event.target.value})} style={{...classicField,...at(ix,iy,width,20)}}/>
   </Fragment>;
-  return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={event=>event.stopPropagation()}>
+  return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-3" onKeyDown={tab} onMouseDown={event=>{event.stopPropagation();rememberCellSelection(editor.view);}}>
     <form ref={root} role="dialog" aria-modal="true" aria-label="Paragraph Preferences" data-studio-paragraph-dialog="true" data-inpage2009-dialog="true" dir="ltr" onSubmit={event=>{event.preventDefault();apply();}} style={drag.style}>
       <ClassicTitle title="Paragraph Preferences" onHelp={()=>setHelp(true)} onClose={close} handleProps={drag.handleProps}/>
       <label htmlFor="paragraph-alignment" style={at(8,40)}><Mark text="Alignment:" at={0}/></label>

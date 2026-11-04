@@ -23,6 +23,35 @@ import type {EditorView} from "@tiptap/pm/view";
  */
 export const tableCellSelectionGuardKey=new PluginKey("qalamTableCellSelectionGuard");
 
+/**
+ * Toolbar and menu controls take focus and replace a CellSelection with a caret
+ * before the spacing command runs. Remember only while the selection is still
+ * cells: a later caret must not erase a bookmark captured on the earlier press.
+ */
+const rememberedCellSelections=new WeakMap<EditorView,ReturnType<CellSelection["getBookmark"]>>();
+
+export function rememberCellSelection(view:EditorView):void {
+  if(view.state.selection instanceof CellSelection){
+    rememberedCellSelections.set(view,view.state.selection.getBookmark());
+  }
+}
+
+export function forgetCellSelection(view:EditorView):void {
+  rememberedCellSelections.delete(view);
+}
+
+/** Restore the cells, then drop the bookmark. No history step and no change when the selection is already cells. */
+export function restoreRememberedCellSelection(view:EditorView):void {
+  const bookmark=rememberedCellSelections.get(view);
+  if(!bookmark)return;
+  rememberedCellSelections.delete(view);
+  if(view.state.selection instanceof CellSelection)return;
+  let selection;
+  try{selection=bookmark.resolve(view.state.doc);}catch{return;}
+  if(!(selection instanceof CellSelection))return;
+  view.dispatch(view.state.tr.setSelection(selection).setMeta("addToHistory",false));
+}
+
 function plainPrimaryClick(event:MouseEvent|PointerEvent):boolean {
   return event.button===0&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey;
 }
@@ -44,6 +73,7 @@ function clickedTextPosition(view:EditorView,event:MouseEvent|PointerEvent):numb
 }
 
 export function collapseCellSelection(view:EditorView,pos:number|null):boolean {
+  forgetCellSelection(view);
   if(!(view.state.selection instanceof CellSelection))return false;
   const {doc}=view.state;
   let targetPos=pos;
@@ -62,6 +92,7 @@ export function collapseCellSelection(view:EditorView,pos:number|null):boolean {
  * Exactly one history step (one Ctrl+Z restores the anchor cell and re-selects the block).
  */
 export function overwriteCellSelection(view:EditorView,text:string):boolean {
+  forgetCellSelection(view);
   const {state}=view,selection=state.selection;
   if(!(selection instanceof CellSelection))return false;
 
@@ -109,6 +140,7 @@ export function overwriteCellSelection(view:EditorView,text:string):boolean {
  * Exactly one history step (one Ctrl+Z restores all of them and re-selects the block).
  */
 export function emptyAllSelectedCells(view:EditorView):boolean {
+  forgetCellSelection(view);
   const {state}=view,selection=state.selection;
   if(!(selection instanceof CellSelection))return false;
 
@@ -181,12 +213,14 @@ export const QalamTableCellSelectionGuard=Extension.create({
         props:{
           handleDOMEvents:{
             pointerdown(view,event){
-              if(!plainPrimaryClick(event)||!(view.state.selection instanceof CellSelection))return false;
+              if(!plainPrimaryClick(event))return false;
+              if(!(view.state.selection instanceof CellSelection)){forgetCellSelection(view);return false;}
               collapseCellSelection(view,clickedTextPosition(view,event));
               return false;
             },
             mousedown(view,event){
-              if(!plainPrimaryClick(event)||!(view.state.selection instanceof CellSelection))return false;
+              if(!plainPrimaryClick(event))return false;
+              if(!(view.state.selection instanceof CellSelection)){forgetCellSelection(view);return false;}
               collapseCellSelection(view,clickedTextPosition(view,event));
               return false;
             },
@@ -219,9 +253,9 @@ export const QalamTableCellSelectionGuard=Extension.create({
             },
           },
           handleClick(view,pos,event){
-            if(plainPrimaryClick(event)&&view.state.selection instanceof CellSelection){
-              collapseCellSelection(view,pos);
-            }
+            if(!plainPrimaryClick(event))return false;
+            if(view.state.selection instanceof CellSelection)collapseCellSelection(view,pos);
+            else forgetCellSelection(view);
             return false;
           },
           handleTextInput(view,_from,_to,text){
