@@ -127,7 +127,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.spaceBeforePt === "number" ? validateSpacingPt(attributes.spaceBeforePt) : null;
-      return v !== null ? { "data-space-before-pt": String(v), style: `margin-block-start:${v}pt` } : {};
+      return v !== null ? { "data-space-before-pt": String(v), style: `margin-block-start:${v}pt;--qalam-space-before:${v}pt` } : {};
     },
   },
   spaceAfterPt: {
@@ -139,7 +139,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.spaceAfterPt === "number" ? validateSpacingPt(attributes.spaceAfterPt) : null;
-      return v !== null ? { "data-space-after-pt": String(v), style: `margin-block-end:${v}pt` } : {};
+      return v !== null ? { "data-space-after-pt": String(v), style: `margin-block-end:${v}pt;--qalam-space-after:${v}pt` } : {};
     },
   },
   lineGapPt: {

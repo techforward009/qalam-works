@@ -333,8 +333,8 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
     indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
     indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",
-    spaceBeforePt !== null ? `margin-block-start:${spaceBeforePt}pt` : "",
-    spaceAfterPt !== null ? `margin-block-end:${spaceAfterPt}pt` : "",
+    spaceBeforePt !== null ? `margin-block-start:${spaceBeforePt}pt;--qalam-space-before:${spaceBeforePt}pt` : "",
+    spaceAfterPt !== null ? `margin-block-end:${spaceAfterPt}pt;--qalam-space-after:${spaceAfterPt}pt` : "",
     node.attrs?.breakBefore === "column" ? "break-before:column" : node.attrs?.breakBefore === "page" || node.attrs?.breakBefore === "odd-page" || node.attrs?.breakBefore === "even-page" ? "break-before:page" : "",
     node.attrs?.keepTogether === true ? "break-inside:avoid;page-break-inside:avoid" : "",
     node.attrs?.keepWithNext === true ? "break-after:avoid;page-break-after:avoid" : "",
@@ -606,7 +606,7 @@ ${classRulesCss()}
   table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
   table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:2px 4px; vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}; text-align:start; overflow-wrap:anywhere; }
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
-  table.qalam-document-table p { margin:0; }
+  table.qalam-document-table p { margin:0 !important; padding-block-start:var(--qalam-space-before,0); padding-block-end:var(--qalam-space-after,0); }
   table.qalam-document-table :is(th,td) p span { line-height:max(1em,1lh); }
   figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
   figure.qalam-document-image.image-left { margin-left:0; margin-right:auto; }

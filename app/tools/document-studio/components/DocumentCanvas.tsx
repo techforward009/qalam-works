@@ -884,7 +884,11 @@ export default function DocumentCanvas({
           font-weight: 700;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table p {
-          margin: 0;
+          /* Use additive point padding: adjacent paragraph margins collapse
+             in CSS, unlike InPage paragraph-before/after spacing. */
+          margin: 0 !important;
+          padding-block-start: var(--qalam-space-before, 0);
+          padding-block-end: var(--qalam-space-after, 0);
           /* Story-level first-line indentation must not reach a cell.
              Explicit paragraph indentation is still respected inline. */
           text-indent: 0;

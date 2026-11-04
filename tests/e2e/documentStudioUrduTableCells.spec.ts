@@ -136,7 +136,18 @@ test("48pt Urdu word enlarges only its own row; Enter and explicit paragraph spa
     if(!node||node.type.name!=="paragraph")throw Error("paragraph position not found");
     editor.view.dispatch(editor.state.tr.setNodeMarkup(pos-1,undefined,{...node.attrs,spaceBeforePt:9,spaceAfterPt:8,lineGapPt:8}));
   });
-  await expect.poll(()=>second.locator("p").first().evaluate(p=>getComputedStyle(p).marginTop)).toBe("12px");
+  await second.locator("p").nth(1).evaluate(p=>{
+    const editor=(p.closest(".ProseMirror") as HTMLElement & {editor:import("@tiptap/core").Editor}).editor;
+    const pos=editor.view.posAtDOM(p,0)-1,node=editor.state.doc.nodeAt(pos);
+    if(!node||node.type.name!=="paragraph")throw Error("second paragraph position not found");
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(pos,undefined,{...node.attrs,spaceBeforePt:6}));
+  });
+  await expect.poll(()=>second.locator("p").first().evaluate(p=>getComputedStyle(p).paddingBlockStart)).toBe("12px");
+  const paragraphGap=await second.locator("p").evaluateAll(ps=>{
+    const box=(p:Element)=>{const r=document.createRange();r.selectNodeContents(p);return r.getBoundingClientRect();};
+    return box(ps[1]).top-box(ps[0]).bottom;
+  });
+  expect(paragraphGap).toBeGreaterThanOrEqual(18); // 8pt after + 6pt before; do not collapse to 8pt.
   const spaced=await rows.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
   expect(spaced[1]).toBeGreaterThan(multiline[1]+10);
   expect(Math.abs(spaced[2]-before[2])).toBeLessThanOrEqual(3);
