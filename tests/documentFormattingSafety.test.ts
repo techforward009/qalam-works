@@ -108,6 +108,72 @@ describe('formatting target safety', () => {
     expect(formattingSafetyMessage(false)).toBe('Formatting selected text inside a text box is not yet available.');
     expect(formattingSafetyMessage(true)).toBe('ٹیکسٹ باکس میں منتخب عبارت کی فارمیٹنگ ابھی دستیاب نہیں۔');
   });
+
+  function selectFrame(kind: string) {
+    const frame = document.createElement('div');
+    frame.setAttribute('data-studio-frame', kind);
+    const handle = document.createElement('div');
+    handle.setAttribute('data-studio-frame-handle', 'se');
+    frame.append(handle);
+    document.querySelector('[data-studio-scroller]')!.append(frame);
+    return frame;
+  }
+
+  it('does not treat a selected picture box as a text box after the picture tool', () => {
+    const { guard, reject, before } = setup();
+    const tool = document.createElement('button');
+    tool.setAttribute('data-studio-tool-button', 'cross-square');
+    document.querySelector('[data-studio-root]')!.append(tool);
+    tool.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(reject).not.toHaveBeenCalled();
+    for (const kind of ['picture-rect', 'picture-ellipse', 'picture-round-rect']) {
+      document.querySelectorAll('[data-studio-frame]').forEach((node) => node.remove());
+      selectFrame(kind);
+      reject.mockClear();
+      const snapshot = editor.getJSON();
+      expect(guard.canFormat()).toBe(true);
+      expect(reject).not.toHaveBeenCalled();
+      editor.commands.toggleBold();
+      expect(reject).not.toHaveBeenCalled();
+      expect(editor.getJSON()).not.toEqual(snapshot);
+      editor.commands.toggleBold();
+    }
+    expect(editor.getJSON()).toEqual(before);
+  });
+
+  it('keeps story formatting when the pointer target is a picture box', () => {
+    const { guard, reject, before } = setup();
+    const frame = selectFrame('picture-round-rect');
+    frame.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(guard.canFormat()).toBe(true);
+    editor.commands.toggleBold();
+    expect(reject).not.toHaveBeenCalled();
+    expect(editor.getJSON()).not.toEqual(before);
+  });
+
+  it('still rejects formatting for a selected shape that is not a picture box', () => {
+    const { guard, reject, before } = setup();
+    const tool = document.createElement('button');
+    tool.setAttribute('data-studio-tool-button', 'rect');
+    document.querySelector('[data-studio-root]')!.append(tool);
+    tool.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    selectFrame('rect');
+    expect(guard.canFormat()).toBe(false);
+    expect(reject).toHaveBeenCalled();
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).toEqual(before);
+  });
+
+  it('still rejects a claimed text box when a picture box is also on the page', () => {
+    const { claim, guard, reject, before, box } = setup();
+    selectFrame('picture-rect');
+    claim();
+    expect(guard.canFormat()).toBe(false);
+    expect(reject).toHaveBeenCalled();
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).toEqual(before);
+    expect(box.value).toBe('محفوظ عبارت');
+  });
 });
 
 describe('deliberate story clipboard edits', () => {

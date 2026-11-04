@@ -73,12 +73,10 @@ import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
 import {
+  compressDocumentImage,
   documentImagePayloadBytes,
-  getImageDimensions,
   imageDataUrlByteLength,
-  MAX_DOCUMENT_IMAGE_BYTES,
   MAX_DOCUMENT_IMAGE_TOTAL_BYTES,
-  readImageAsDataUrl,
   sanitizeImageMetadata,
   validateDocumentImage,
 } from "../utils/documentImages";
@@ -152,7 +150,7 @@ import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
 import { readStoredFrames, writeStoredFrames, isPictureBox, type StudioFrame } from "./StudioObjectLayer";
-import { fitPictureInBox } from "../utils/pictureFit";
+import { fitPictureInBox, PICTURE_SOURCE_HARD_CAP_BYTES } from "../utils/pictureFit";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
@@ -1946,22 +1944,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const error = await validateDocumentImage(file);
     if (error) {
       setImageError(isUr
-        ? (error === "oversized" ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "درست PNG، JPEG یا WebP تصویر منتخب کریں۔")
-        : (error === "oversized" ? "Images must be smaller than 2 MB." : "Choose a valid PNG, JPEG, or WebP image."));
+        ? (error === "oversized" ? "تصویر 25 ایم بی سے چھوٹی ہونی چاہیے۔" : "درست PNG، JPEG یا WebP تصویر منتخب کریں۔")
+        : (error === "oversized" ? "Images must be smaller than 25 MB." : "Choose a valid PNG, JPEG, or WebP image."));
       return;
     }
     try {
-      const src = await readImageAsDataUrl(file);
+      const compressed = await compressDocumentImage(file);
+      const src = compressed.src;
       const imageBytes = imageDataUrlByteLength(src);
-      if (imageBytes > MAX_DOCUMENT_IMAGE_BYTES) {
-        setImageError(isUr ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 2 MB.");
-        return;
-      }
       if ((editor ? documentImagePayloadBytes(editor.getJSON()) : 0) + imageBytes > MAX_DOCUMENT_IMAGE_TOTAL_BYTES) {
         setImageError(isUr ? "اس دستاویز میں تصاویر کی 8 ایم بی حد پوری ہو چکی ہے۔" : "This document has reached its 8 MB image limit.");
         return;
       }
-      const dimensions = await getImageDimensions(src);
+      const dimensions = { width: compressed.width, height: compressed.height };
       const width = Math.max(80, Math.min(480, dimensions.width));
       const height = Math.max(1, Math.round((dimensions.height / dimensions.width) * width));
       editor?.chain().focus().insertContent({
@@ -2017,25 +2012,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const targetFrame = frames.find((f) => f.id === targetId);
     if (!targetFrame) return;
 
-    if (file.size <= 0 || file.size > MAX_DOCUMENT_IMAGE_BYTES) {
-      setImageError(isUr ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 2 MB.");
+    if (file.size <= 0 || file.size > PICTURE_SOURCE_HARD_CAP_BYTES) {
+      setImageError(isUr ? "تصویر 25 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 25 MB.");
       return;
     }
 
     try {
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("Failed to read image"));
-        reader.readAsDataURL(file);
-      });
-      const dimensions = await getImageDimensions(dataUrl);
-      const fit = fitPictureInBox(targetFrame.wMm, targetFrame.hMm, dimensions.width, dimensions.height);
+      const compressed = await compressDocumentImage(file);
+      const fit = fitPictureInBox(targetFrame.wMm, targetFrame.hMm, compressed.width, compressed.height);
       changeFrames(frames.map((f) => f.id === targetId ? {
         ...f,
-        imageSrc: dataUrl,
-        imageNaturalW: dimensions.width,
-        imageNaturalH: dimensions.height,
+        imageSrc: compressed.src,
+        imageNaturalW: compressed.width,
+        imageNaturalH: compressed.height,
         imageXMm: fit.x,
         imageYMm: fit.y,
         imageWMm: fit.w,
@@ -2065,6 +2054,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const handleMenuAction = (id: MenuActionId) => {
     if(noDocumentOpen && !availableWithoutDocument(id)) return;
     if (transitionRef.current) return;
+    // Picture import is not a text-box formatting command. Open the chooser
+    // before the formatting guard so a selected picture box cannot toast.
+    if (id === "file.importPicture") { openPictureChooser(); return; }
     if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
     if (id === "preferences.typographic") { setTypographicOpen(true); return; }
     if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }

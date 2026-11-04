@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { isPictureBox } from '../components/StudioObjectLayer';
 
 /** Read-only visual subscribers must follow the same ownership as the guard. */
 export const FORMATTING_TARGET_CHANGE = 'studio-formatting-target-change';
@@ -36,9 +37,32 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   // including story selections. Programmatic focus in the new document must
   // not authorize formatting until the user explicitly selects/edits there.
   const documentChanged = () => invalidate();
+  const pictureFrame = (target: Element | null) => {
+    const frame = target?.closest<HTMLElement>('[data-studio-frame]');
+    return Boolean(frame && root.contains(frame) && isPictureBox(frame.getAttribute('data-studio-frame') ?? ''));
+  };
+  // A selected picture box is not a text box. Handles mark the selection
+  // after a draw, before the next pointer event lands on the frame itself.
+  // A real text box in the same selection still blocks formatting.
+  const selectedPictureBox = () => {
+    const frames = new Set<HTMLElement>();
+    for (const handle of root.querySelectorAll<HTMLElement>('[data-studio-frame-handle]')) {
+      const frame = handle.closest<HTMLElement>('[data-studio-frame]');
+      if (frame) frames.add(frame);
+    }
+    let picture = false;
+    for (const frame of frames) {
+      const kind = frame.getAttribute('data-studio-frame') ?? '';
+      if (kind === 'text' || frame.querySelector('textarea[data-studio-text-frame]')) return false;
+      if (isPictureBox(kind)) picture = true;
+    }
+    return picture;
+  };
   const canFormat = () => {
     if (owner === 'frame' && (!input?.isConnected || input.readOnly)) invalidate();
     if (owner === 'story') return true;
+    if (owner === 'frame') { reject(); return false; }
+    if (selectedPictureBox()) return true;
     reject(); return false;
   };
   const keyId = new PluginKey('studio-formatting-safety');
@@ -61,8 +85,15 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     if (box.readOnly) invalidate(); else { owner = 'frame'; input = box; publish(); }
     return true;
   };
+  const releaseClaimedTextBox = () => {
+    if (owner !== 'frame') return;
+    owner = 'none'; input = null; publish(); clearNotice();
+  };
   const pointer = (event: Event) => {
     const target = element(event);
+    // Picture boxes live in the scroller. They must not be claimed as text
+    // frames and must not invalidate into the text-box formatting toast.
+    if (pictureFrame(target)) { releaseClaimedTextBox(); return; }
     if (claimFrame(target)) return;
     if (isFormattingSurface(target) && dom.contains(document.activeElement)) storyClipboardFocus = true;
     if (target && dom.contains(target)) { owner = 'story'; input = null; publish(); clearNotice(); }
@@ -70,6 +101,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   };
   const focus = (event: Event) => {
     const target = element(event);
+    if (pictureFrame(target)) return;
     if (claimFrame(target)) return;
     if (target && dom.contains(target)) storyClipboardFocus = true;
     else if (!isFormattingSurface(target)) storyClipboardFocus = false;

@@ -43,3 +43,42 @@ export function fitPictureInBox(
     return { x, y, w, h };
   }
 }
+
+/** Longest side of a stored picture, in pixels. Larger sources are scaled down. */
+export const PICTURE_MAX_LONG_EDGE = 2000;
+/** JPEG quality used when a picture is re-encoded. */
+export const PICTURE_JPEG_QUALITY = 0.85;
+/** Transparent PNGs at or under this size stay PNG; larger ones become JPEG. */
+export const PICTURE_PNG_KEEP_BYTES = 2 * 1024 * 1024;
+/** Source files above this size are rejected. Smaller files are downscaled instead. */
+export const PICTURE_SOURCE_HARD_CAP_BYTES = 25 * 1024 * 1024;
+
+/**
+ * Pixel size after downscale. Does not upscale. Non-positive or non-finite
+ * input returns zeros so callers can fail closed.
+ */
+export function pictureOutputSize(
+  width: number,
+  height: number,
+  maxEdge = PICTURE_MAX_LONG_EDGE
+): { width: number; height: number } {
+  if (!(width > 0) || !(height > 0) || !Number.isFinite(width) || !Number.isFinite(height) || !(maxEdge > 0) || !Number.isFinite(maxEdge)) {
+    return { width: 0, height: 0 };
+  }
+  const long = Math.max(width, height);
+  if (long <= maxEdge) return { width: Math.round(width), height: Math.round(height) };
+  const scale = maxEdge / long;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+export type PictureEncoding = "png" | "jpeg";
+
+/** PNG is kept only for a transparent image whose PNG payload still fits. */
+export function pictureEncoding(input: { hasTransparency: boolean; pngBytes: number; maxBytes?: number }): PictureEncoding {
+  const maxBytes = input.maxBytes ?? PICTURE_PNG_KEEP_BYTES;
+  if (input.hasTransparency && input.pngBytes > 0 && input.pngBytes <= maxBytes) return "png";
+  return "jpeg";
+}
