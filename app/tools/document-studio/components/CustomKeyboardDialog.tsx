@@ -645,6 +645,7 @@ export function CustomKeyboardDialog(props: CustomKeyboardDialogProps): React.JS
   return (
     <div
       role="dialog"
+      dir="ltr"
       aria-label="Custom Keyboard"
       data-custom-keyboard-dialog
       style={{
@@ -654,6 +655,7 @@ export function CustomKeyboardDialog(props: CustomKeyboardDialogProps): React.JS
         right: 0,
         bottom: 0,
         zIndex: 9999,
+        direction: "ltr",
         pointerEvents: "auto",
         display: "flex",
         alignItems: "center",
@@ -937,7 +939,7 @@ export function CustomKeyboardDialog(props: CustomKeyboardDialogProps): React.JS
                     alignItems: "center",
                     fontFamily: URDU_FONT,
                     fontSize: "24px",
-                    direction: "rtl",
+                    direction: "ltr",
                     color: "#000",
                     height: "36px",
                   }}

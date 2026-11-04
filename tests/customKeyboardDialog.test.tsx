@@ -154,3 +154,15 @@ describe("CustomKeyboardDialog Component", () => {
     expect(handleSave).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CustomKeyboardDialog direction", () => {
+  it("is left-to-right even inside an RTL page", async () => {
+    const { render } = await import("@testing-library/react");
+    const React = await import("react");
+    const { CustomKeyboardDialog } = await import("../app/tools/document-studio/components/CustomKeyboardDialog");
+    const view = render(React.createElement("div", { dir: "rtl" }, React.createElement(CustomKeyboardDialog, { open: true, initial: null, baseLayouts: { inpageMonotype: {}, inpagePhonetic: {}, arabic: {}, persian: {} } as never, onSave: () => {}, onClose: () => {} })));
+    const dialog = view.container.querySelector("[data-custom-keyboard-dialog]") as HTMLElement;
+    expect(dialog.getAttribute("dir")).toBe("ltr");
+    view.unmount();
+  });
+});
