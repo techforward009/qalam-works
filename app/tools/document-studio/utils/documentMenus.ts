@@ -57,6 +57,7 @@ export type MenuActionId =
   | "insert.tableToText"
   | "insert.splitTable"
   | "insert.image"
+  | "insert.symbols"
   | "insert.pageBreak"
   | "insert.sectionBreakNextPage"
   | "insert.sectionBreakContinuous"
@@ -344,6 +345,7 @@ const QALAM_MENU_ITEMS: MenuDefinition[] = [
       { type: "action", id: "insert.table", labelEn: "Table…", labelUr: "جدول…" },
       { type: "action", id: "insert.tableToText", labelEn: "Table To Text…", labelUr: "جدول کو عبارت بنائیں…" },
       { type: "action", id: "insert.image", labelEn: "Image…", labelUr: "تصویر…" },
+      { type: "action", id: "insert.symbols", labelEn: "Symbols...", labelUr: "Symbols..." },
       { type: "separator" },
       { type: "action", id: "insert.pageBreak", labelEn: "Page break", labelUr: "صفحہ وقفہ" },
       {
@@ -466,7 +468,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   ] },
   { ...original("insert"), items: [
     soon("page.date", "Date & Time…"), separator, ready("insert.pageBreak", "Page…", "Alt+Ins"), soon("page.number", "Page Number…"), separator,
-    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), ready("insert.splitTable", "Split Table"), separator,
+    ready("insert.image", "Picture…"), ready("insert.table", "Table…"), ready("insert.splitTable", "Split Table"), ready("insert.symbols", "Symbols..."), separator,
     soon("page.index", "Index Entry…", "Ctrl+Alt+I"), soon("page.lock", "Object Lock…"), soon("page.footnote", "Footnote"), separator, qalamSection,
     submenu("insert", "insert.sectionBreak"),
   ] },

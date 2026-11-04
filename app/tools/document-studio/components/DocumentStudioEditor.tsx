@@ -165,6 +165,7 @@ import { StudioTextContextMenu, type StudioTextActions } from "./StudioTextConte
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
+import { SymbolsDialog, insertSymbolIntoEditor } from "./SymbolsDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import { StudioTableToTextDialog } from "./StudioTableToTextDialog";
 import {StudioTableLayoutDialog} from "./StudioTableLayoutDialog";
@@ -319,6 +320,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [qpgSaveAsOpen,setQpgSaveAsOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
+  const [symbolsOpen, setSymbolsOpen] = useState(false);
   const [textToTableOpen,setTextToTableOpen] = useState(false);
   const [tableToTextOpen,setTableToTextOpen] = useState(false);
   const [tableLayoutOpen,setTableLayoutOpen] = useState(false);
@@ -2044,6 +2046,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       loadExample: handleLoadExample,
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
+      openSymbols: () => setSymbolsOpen(true),
       openImageInsert: () => imageInputRef.current?.click(),
       insertPageBreak,
       insertSectionBreak,
@@ -2369,6 +2372,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         />
       ) : null}
 
+      <SymbolsDialog open={symbolsOpen && !!editor} onInsert={(item)=>{insertSymbolIntoEditor(editor, item);}} onClose={()=>{setSymbolsOpen(false); editor?.commands.focus();}} />
       {tableInsertOpen && editor ? <StudioInsertTableDialog editor={editor} unit={rulerUnit} onClose={()=>{setTableInsertOpen(false);setFormattingNotice(0);}} /> : null}
       {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>{setTextToTableOpen(false);setFormattingNotice(0);}} /> : null}
       {tableToTextOpen && editor ? <StudioTableToTextDialog editor={editor} onClose={()=>{setTableToTextOpen(false);setFormattingNotice(0);}} /> : null}
