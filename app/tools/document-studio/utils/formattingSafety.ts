@@ -17,6 +17,8 @@ export function readFormattingTarget(element: HTMLElement): FormattingTarget | u
 export const CONTENT_REPLACEMENT = 'studio-content-replacement';
 /** Explicit table-dialog transactions are valid in a document with no active formatting target. */
 export const TABLE_DIALOG_CHANGE = 'studio-table-dialog-change';
+/** Plain-text symbol insertion from the Symbols dialog: not formatting, allowed unless a text box owns the target. */
+export const SYMBOL_INSERT = 'studio-symbol-insert';
 export const formattingSafetyMessage = (urdu: boolean) => urdu
   ? 'ٹیکسٹ باکس میں منتخب عبارت کی فارمیٹنگ ابھی دستیاب نہیں۔'
   : 'Formatting selected text inside a text box is not yet available.';
@@ -47,6 +49,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     filterTransaction(tr) {
       if (tr.getMeta(CONTENT_REPLACEMENT)) { documentChanged(); return true; }
       if (tr.docChanged && tr.getMeta(TABLE_DIALOG_CHANGE) === true && owner === 'none') return true;
+      if (tr.getMeta(SYMBOL_INSERT) === true && owner !== 'frame') { if (owner === 'none') { owner = 'story'; input = null; publish(); clearNotice(); } return true; }
       // Includes collapsed-selection stored marks and direct dialog/shortcut
       // transactions. Layout-only and selection-only transactions still work.
       return !(tr.docChanged || tr.storedMarksSet) || canFormat();
