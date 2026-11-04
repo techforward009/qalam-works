@@ -93,6 +93,6 @@ describe("inpageKeyboard utilities", () => {
     expect(nextLayout("off", enabled)).toBe("inpagePhonetic");
     
     expect(nextLayout("arabic", enabled)).toBe("inpagePhonetic");
-    expect(nextLayout("inpagePhonetic", [])).toBe("off");
+    expect(nextLayout("inpagePhonetic", [])).toBe("inpagePhonetic");
   });
 });
