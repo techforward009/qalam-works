@@ -50,10 +50,10 @@ const CODE_LABELS: Record<string, string> = {
 };
 
 const STATE_OPTIONS: { id: KeyState; label: string }[] = [
-  { id: "normal", label: "عام" },
-  { id: "shift", label: "شفٹ" },
-  { id: "altgr", label: "آلٹ جی آر" },
-  { id: "shiftAltgr", label: "شفٹ + آلٹ جی آر" }
+  { id: "normal", label: "Normal" },
+  { id: "shift", label: "Shift" },
+  { id: "altgr", label: "AltGr" },
+  { id: "shiftAltgr", label: "Shift + AltGr" }
 ];
 
 export function CustomKeyboardDialog({
@@ -199,7 +199,7 @@ export function CustomKeyboardDialog({
     >
       <div
         ref={dialogRef}
-        dir="rtl"
+        dir="ltr"
         style={{
           width: "560px",
           backgroundColor: "#f0f0f0",
@@ -224,7 +224,7 @@ export function CustomKeyboardDialog({
             alignItems: "center",
           }}
         >
-          <span>اپنا کی بورڈ</span>
+          <span>Custom Keyboard</span>
           <button
             type="button"
             onClick={onClose}
@@ -243,7 +243,7 @@ export function CustomKeyboardDialog({
 
         <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <label htmlFor="base-layout-select">شروع کریں:</label>
+            <label htmlFor="base-layout-select">Start from:</label>
             <select
               id="base-layout-select"
               defaultValue=""
@@ -251,12 +251,12 @@ export function CustomKeyboardDialog({
               style={{ fontSize: "12px", fontFamily: "Tahoma", padding: "1px 4px" }}
             >
               <option value="" disabled>
-                -- بنیادی لے آؤٹ منتخب کریں --
+                -- Select base layout --
               </option>
-              <option value="inpagePhonetic">ان پیج فونیٹک</option>
-              <option value="inpageMonotype">ان پیج مونوٹائپ</option>
-              <option value="arabic">عربی</option>
-              <option value="persian">فارسی</option>
+              <option value="inpagePhonetic">InPage Phonetic</option>
+              <option value="inpageMonotype">InPage Monotype</option>
+              <option value="arabic">Arabic</option>
+              <option value="persian">Persian</option>
             </select>
           </div>
 
@@ -364,8 +364,8 @@ export function CustomKeyboardDialog({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span>منتخب بٹن ({CODE_LABELS[selectedCode] || selectedCode}):</span>
-            <label htmlFor="char-input">حرف:</label>
+            <span>Selected key ({CODE_LABELS[selectedCode] || selectedCode}):</span>
+            <label htmlFor="char-input">Character:</label>
             <input
               id="char-input"
               ref={charInputRef}
@@ -414,7 +414,7 @@ export function CustomKeyboardDialog({
                   cursor: "pointer",
                 }}
               >
-                فائل سے لائیں…
+                Import...
               </button>
               <button
                 type="button"
@@ -427,7 +427,7 @@ export function CustomKeyboardDialog({
                   cursor: "pointer",
                 }}
               >
-                فائل میں محفوظ کریں…
+                Export...
               </button>
             </div>
 
@@ -443,7 +443,7 @@ export function CustomKeyboardDialog({
                   cursor: "pointer",
                 }}
               >
-                ٹھیک ہے
+                OK
               </button>
               <button
                 type="button"
@@ -456,7 +456,7 @@ export function CustomKeyboardDialog({
                   cursor: "pointer",
                 }}
               >
-                منسوخ
+                Cancel
               </button>
             </div>
           </div>

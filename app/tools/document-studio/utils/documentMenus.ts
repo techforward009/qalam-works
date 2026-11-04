@@ -4,7 +4,7 @@
  * non-dispatchable rows rather than fake working actions.
  */
 
-export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | "window" | "help";
+export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | "keyboard" | "window" | "help";
 
 export type MenuActionId =
   | "file.save"
@@ -104,6 +104,8 @@ export type MenuActionId =
   | "format.image.break"
   | "format.image.alt"
   | "format.image.delete"
+  | `keyboard.layout:${string}`
+  | "keyboard.editCustom"
   | "window.page"
   | `window.document:${string}`
   | "window.outline"
@@ -539,7 +541,9 @@ export function menuCatalogText(): string {
 }
 
 // Raster-reference widths; File is content-sized without fabricated MRU paths.
-export const MENU_WIDTHS: Record<MenuId, number> = { file: 250, edit: 244, view: 202, format: 263, insert: 225, tools: 243, window: 197, help: 168 };
+export const MENU_WIDTHS: Record<Exclude<MenuId, "keyboard">, number> = { file: 250, edit: 244, view: 202, format: 263, insert: 225, tools: 243, window: 197, help: 168 };
+/** The optional Keyboard menu is injected by DocumentMenuBar only in the editor. */
+export const KEYBOARD_MENU_WIDTH_PX = 210;
 export const TOP_MENU_WIDTH_PX = 250;
 export const SUBMENU_WIDTH_PX = 220;
 

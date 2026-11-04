@@ -5,12 +5,12 @@ export type KeyState = "normal" | "shift" | "altgr" | "shiftAltgr";
 export type KeyboardLayout = Record<string, Partial<Record<KeyState, string>>>;
 
 export const KEYBOARD_LAYOUT_LABELS: Record<KeyboardLayoutId, string> = {
-  off: "سسٹم کا کی بورڈ",
-  inpageMonotype: "ان پیج مونوٹائپ",
-  inpagePhonetic: "ان پیج فونیٹک",
-  arabic: "عربی",
-  persian: "فارسی",
-  custom: "اپنا کی بورڈ"
+  off: "System Keyboard",
+  inpageMonotype: "InPage Monotype",
+  inpagePhonetic: "InPage Phonetic",
+  arabic: "Arabic",
+  persian: "Persian",
+  custom: "Custom Keyboard"
 };
 
 export interface KeyEventModifiers {
@@ -67,18 +67,18 @@ export function parseCustomLayout(json: string): { ok: true; layout: KeyboardLay
   try {
     const parsed = JSON.parse(json) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return { ok: false, error: "کی بورڈ لے آؤٹ درست نہیں ہے (JSON Object ہونا چاہیے)۔" };
+      return { ok: false, error: "Invalid keyboard layout (must be a JSON object)." };
     }
 
     const layout: KeyboardLayout = {};
     for (const code of Object.keys(parsed)) {
       if (!VALID_CODES.has(code)) {
-        return { ok: false, error: `نامعلوم کی بورڈ کوڈ: ${code}` };
+        return { ok: false, error: `Unknown key code: ${code}` };
       }
       
       const states = (parsed as Record<string, unknown>)[code];
       if (!states || typeof states !== "object" || Array.isArray(states)) {
-        return { ok: false, error: `کوڈ ${code} کی حالتیں درست نہیں ہیں۔` };
+        return { ok: false, error: `Invalid states for key ${code}.` };
       }
 
       layout[code] = {};
@@ -86,10 +86,10 @@ export function parseCustomLayout(json: string): { ok: true; layout: KeyboardLay
         if (state in states) {
           const val = (states as Record<string, unknown>)[state];
           if (typeof val !== "string") {
-            return { ok: false, error: `${code} میں ${state} کی قیمت حرف نہیں ہے۔` };
+            return { ok: false, error: `The ${state} value of ${code} is not a character.` };
           }
           if (val.length > 8) {
-            return { ok: false, error: `${code} میں ${state} کی قیمت بہت لمبی ہے۔` };
+            return { ok: false, error: `The ${state} value of ${code} is too long.` };
           }
           layout[code][state] = val;
         }
@@ -98,7 +98,7 @@ export function parseCustomLayout(json: string): { ok: true; layout: KeyboardLay
     
     return { ok: true, layout };
   } catch {
-    return { ok: false, error: "فائل درست JSON نہیں ہے۔" };
+    return { ok: false, error: "The file is not valid JSON." };
   }
 }
 

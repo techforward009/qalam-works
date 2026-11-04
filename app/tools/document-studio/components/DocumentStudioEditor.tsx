@@ -2432,6 +2432,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
+            keyboard={{ layoutId: kb.layoutId, hasCustom: Boolean(kb.customLayout), onSelectLayout: kb.setLayoutId, onEditCustom: () => setCustomKeyboardOpen(true) }}
             endSlot={noDocumentOpen?null:
               <div className="flex h-[20px] min-w-0 items-center gap-1" data-studio-title-slot="true">
                 {storageDurability === "memory" ? (
@@ -2521,7 +2522,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         }
         statusBar={
           <DocumentStatusBar
-            keyboard={{ layoutId: kb.layoutId, onChange: kb.setLayoutId, hasCustom: Boolean(kb.customLayout), onOpenCustom: () => setCustomKeyboardOpen(true) }}
             isUr={isUr}
             dir={dir}
             stats={stats}

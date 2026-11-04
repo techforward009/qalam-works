@@ -18,19 +18,45 @@ import {
   setOpenSubmenu,
   SUBMENU_WIDTH_PX,
   MENU_WIDTHS,
+  KEYBOARD_MENU_WIDTH_PX,
   type MenuActionId,
+  type MenuDefinition,
   type MenuId,
   type MenuNode,
   type MenuOpenState,
 
 } from "../utils/documentMenus";
+import { KEYBOARD_LAYOUT_LABELS, type KeyboardLayoutId } from "../utils/inpageKeyboard";
+
+const KEYBOARD_MENU_LAYOUTS: KeyboardLayoutId[] = ["off", "inpageMonotype", "inpagePhonetic", "arabic", "persian", "custom"];
+
+export type DocumentMenuKeyboard = {
+  layoutId: KeyboardLayoutId;
+  hasCustom: boolean;
+  onSelectLayout: (id: KeyboardLayoutId) => void;
+  onEditCustom: () => void;
+};
+
+/** InPage 2009 style "Keyboard" menu, placed immediately before "Window". */
+function withKeyboardMenu(menus: MenuDefinition[]): MenuDefinition[] {
+  const keyboardMenu: MenuDefinition = {
+    id: "keyboard", labelEn: "Keyboard", labelUr: "Keyboard",
+    items: [
+      ...KEYBOARD_MENU_LAYOUTS.map((id): MenuNode => ({ type: "action", id: `keyboard.layout:${id}`, labelEn: KEYBOARD_LAYOUT_LABELS[id], labelUr: KEYBOARD_LAYOUT_LABELS[id] })),
+      { type: "separator" } as MenuNode,
+      { type: "action", id: "keyboard.editCustom", labelEn: "Edit Custom Keyboard…", labelUr: "Edit Custom Keyboard…" },
+    ],
+  };
+  const at = menus.findIndex((menu) => menu.id === "window");
+  return at < 0 ? [...menus, keyboardMenu] : [...menus.slice(0, at), keyboardMenu, ...menus.slice(at)];
+}
 
 function topMenuPosition(anchor: HTMLElement | null, isUr: boolean, menuId: MenuId): React.CSSProperties {
   if (!anchor || typeof window === "undefined") {
     return { position: "fixed", top: 0, left: 0, visibility: "hidden" };
   }
   const rect = anchor.getBoundingClientRect();
-  const width = Math.min(MENU_WIDTHS[menuId], Math.max(1, window.innerWidth - 16));
+  const width = Math.min(menuId === "keyboard" ? KEYBOARD_MENU_WIDTH_PX : MENU_WIDTHS[menuId], Math.max(1, window.innerWidth - 16));
   const pad = 8;
   const maxLeft = Math.max(pad, window.innerWidth - width - pad);
   const left = Math.min(Math.max(pad, isUr ? rect.right - width + 7 : rect.left - 7), maxLeft);
@@ -144,6 +170,7 @@ export default function DocumentMenuBar({
   hasUnsavedChanges = false,
   openDocuments = [],
   activeDocumentId,
+  keyboard,
 }: {
   isUr: boolean;
   onAction: (id: MenuActionId) => void;
@@ -156,7 +183,9 @@ export default function DocumentMenuBar({
   hasUnsavedChanges?: boolean;
   openDocuments?: { id: string; title: string }[];
   activeDocumentId?: string | null;
+  keyboard?: DocumentMenuKeyboard;
 }) {
+  const menuBar = keyboard ? withKeyboardMenu(DOCUMENT_MENU_BAR) : DOCUMENT_MENU_BAR;
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [inlineSubmenus, setInlineSubmenus] = useState(false);
@@ -307,18 +336,27 @@ export default function DocumentMenuBar({
       else insertDisabledIds.add("insert.textToTable");
     }
   }
-  const baseMenu = DOCUMENT_MENU_BAR.find((menu) => menu.id === openState.menuId) ?? null;
+  const baseMenu = menuBar.find((menu) => menu.id === openState.menuId) ?? null;
   const openMenu = baseMenu?.id === "window" && openDocuments.length
     ? { ...baseMenu, items: [...baseMenu.items, { type: "separator" } as MenuNode,
         ...openDocuments.map((doc, index): MenuNode => ({ type: "action", id: `window.document:${doc.id}`, labelEn: `${index + 1}  ${doc.title}`, labelUr: `${index + 1}  ${doc.title}` }))] }
     : baseMenu?.id === "insert" ? contextualInsertTableMenu(baseMenu, insertTableMode) : baseMenu;
   const sessionCheckedIds = new Set(checkedIds);
   if (activeDocumentId) sessionCheckedIds.add(`window.document:${activeDocumentId}`);
+  if (keyboard) sessionCheckedIds.add(`keyboard.layout:${keyboard.layoutId}`);
   const submenuItems =
     openMenu && openState.submenuId && !inlineSubmenus ? findSubmenuItems(openMenu.items, openState.submenuId) : null;
 
   const closeAndAct = (id: MenuActionId) => {
     setOpenState(CLOSED_MENU_STATE);
+    if (keyboard && id === "keyboard.editCustom") { keyboard.onEditCustom(); return; }
+    if (keyboard && id.startsWith("keyboard.layout:")) {
+      const layout = id.slice("keyboard.layout:".length) as KeyboardLayoutId;
+      // Without a saved custom layout, choosing Custom opens the editor instead.
+      if (layout === "custom" && !keyboard.hasCustom) keyboard.onEditCustom();
+      else keyboard.onSelectLayout(layout);
+      return;
+    }
     const run = () => onAction(id);
     // Page/section breaks are atomic; inserting them while the submenu button
     // still holds DOM focus lets the unmount steal the caret onto the marker
@@ -404,7 +442,7 @@ export default function DocumentMenuBar({
         )
       : null;
 
-  const menuLeft = [31, 63, 96, 136, 187, 231, 283, 342];
+  const menuLeft = keyboard ? [31, 63, 96, 136, 187, 231, 283, 346, 405] : [31, 63, 96, 136, 187, 231, 283, 342];
 
   return (
     <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "Segoe UI, Tahoma, sans-serif", color: "#000" }}>
@@ -469,7 +507,7 @@ export default function DocumentMenuBar({
         onKeyDown={(event) => {
           const current = (event.target as HTMLElement).getAttribute("data-menu-root") as MenuId | null;
           if (!current) return;
-          const ids = DOCUMENT_MENU_BAR.map((menu) => menu.id);
+          const ids = menuBar.map((menu) => menu.id);
           const index = ids.indexOf(current);
           if (index < 0) return;
           const forward = isUr ? "ArrowLeft" : "ArrowRight";
@@ -505,7 +543,7 @@ export default function DocumentMenuBar({
             <path d="M5 5 H10 M5 8 H10 M5 11 H8" stroke="#000" />
           </svg>
         </span>
-        {DOCUMENT_MENU_BAR.map((menu, index) => {
+        {menuBar.map((menu, index) => {
           const open = openState.menuId === menu.id;
           return (
             <div key={menu.id} className={pinMenus ? "" : "relative shrink-0"} style={pinMenus ? { position: "absolute", left: menuLeft[index] ?? 0, top: 0 } : undefined}>

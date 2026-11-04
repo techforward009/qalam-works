@@ -125,3 +125,26 @@ describe("Window session menu", () => {
     expect(action).toHaveBeenCalledExactlyOnceWith("window.page");
   });
 });
+
+describe("Keyboard menu", () => {
+  it("sits immediately before Window and selects layouts", () => {
+    const onSelectLayout = vi.fn();
+    const onEditCustom = vi.fn();
+    render(<DocumentMenuBar isUr={false} onAction={vi.fn()} keyboard={{ layoutId: "off", hasCustom: false, onSelectLayout, onEditCustom }} />);
+    const roots = [...document.querySelectorAll("[data-menu-root]")].map((el) => el.getAttribute("data-menu-root"));
+    expect(roots.indexOf("keyboard")).toBe(roots.indexOf("window") - 1);
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Keyboard$/ }));
+    expect(document.querySelector('[data-menu-dropdown="keyboard"] [aria-checked="true"]')?.textContent).toContain("System Keyboard");
+    fireEvent.click(screen.getByRole("menuitem", { name: /^InPage Phonetic/ }));
+    expect(onSelectLayout).toHaveBeenCalledWith("inpagePhonetic");
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Keyboard$/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Custom Keyboard/ }));
+    expect(onEditCustom).toHaveBeenCalledTimes(1);
+    expect(onSelectLayout).toHaveBeenCalledTimes(1);
+  });
+
+  it("is absent without the keyboard prop", () => {
+    render(<DocumentMenuBar isUr={false} onAction={vi.fn()} />);
+    expect(document.querySelector('[data-menu-root="keyboard"]')).toBeNull();
+  });
+});
