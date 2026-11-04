@@ -6,23 +6,57 @@ import { blockLeadingPt } from './autoLeading';
 import type { DocNode } from './extractPlainText';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
-const kinds = new Set(['rect', 'ellipse', 'round-rect', 'line', 'text']);
+const kinds = new Set([
+  'rect', 'ellipse', 'round-rect', 'line', 'text',
+  'picture-rect', 'picture-ellipse', 'picture-round-rect',
+]);
+
+function withoutFrameImagePayloads(input: unknown): unknown {
+  if (!Array.isArray(input)) return input;
+  return input.map(item => {
+    if (!item || typeof item !== 'object') return item;
+    const { imageSrc: _, ...rest } = item as Record<string, unknown>;
+    return rest;
+  });
+}
+
 const escape = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 export function validatePrintFrames(input: unknown): StudioFrame[] {
   if (input === undefined) return [];
   if (!Array.isArray(input) || input.length > PRINT_FRAME_LIMITS.count) throw new Error('Invalid drawing frames: count; export blocked');
-  measureJsonUtf8Bytes(input, 256 * 1024);
+  measureJsonUtf8Bytes(withoutFrameImagePayloads(input), 256 * 1024);
   let text = 0;
   return input.map(value => {
     if (!value || typeof value !== 'object') throw new Error('Invalid drawing frame; export blocked');
     const f = value as StudioFrame;
     if (typeof f.id !== 'string' || f.id.length > 160 || !kinds.has(f.kind) || !Number.isInteger(f.page) || f.page < 1 || f.page > PRINT_FRAME_LIMITS.pages || typeof f.flip !== 'boolean' || typeof f.text !== 'string' || f.text.length > PRINT_FRAME_LIMITS.text) throw new Error('Invalid drawing frame fields; export blocked');
     for (const key of ['xMm', 'yMm', 'wMm', 'hMm'] as const) if (typeof f[key] !== 'number' || !Number.isFinite(f[key]) || Math.abs(f[key]) > PRINT_FRAME_LIMITS.mm || ((key === 'wMm' || key === 'hMm') && f[key] <= 0)) throw new Error('Invalid drawing frame geometry; export blocked');
+    if (f.imageSrc !== undefined) {
+      if (typeof f.imageSrc !== 'string' || !/^data:image\/(?:png|jpeg|webp|gif|bmp);base64,/i.test(f.imageSrc)) {
+        throw new Error('Invalid drawing frame image; export blocked');
+      }
+      if (f.imageSrc.length > 6 * 1024 * 1024) {
+        throw new Error('Drawing image exceeds supported limit; export blocked');
+      }
+    }
+    for (const key of ['imageXMm', 'imageYMm', 'imageWMm', 'imageHMm', 'imageNaturalW', 'imageNaturalH'] as const) {
+      if (f[key] !== undefined && (typeof f[key] !== 'number' || !Number.isFinite(f[key]))) {
+        throw new Error('Invalid drawing frame picture geometry; export blocked');
+      }
+    }
     text += f.text.length;
     if (text > PRINT_FRAME_LIMITS.totalText) throw new Error('Drawing text exceeds supported limit; export blocked');
     if (f.typography !== undefined && (!f.typography || typeof f.typography !== 'object')) throw new Error('Invalid drawing typography; export blocked');
     return { id: f.id, kind: f.kind, page: f.page, xMm: f.xMm, yMm: f.yMm, wMm: f.wMm, hMm: f.hMm, flip: f.flip, text: f.text,
-      ...(f.typography ? { typography: parseDocumentSettings({ typography: f.typography }).typography } : {}) };
+      ...(f.typography ? { typography: parseDocumentSettings({ typography: f.typography }).typography } : {}),
+      ...(f.imageSrc !== undefined ? { imageSrc: f.imageSrc } : {}),
+      ...(f.imageNaturalW !== undefined ? { imageNaturalW: f.imageNaturalW } : {}),
+      ...(f.imageNaturalH !== undefined ? { imageNaturalH: f.imageNaturalH } : {}),
+      ...(f.imageXMm !== undefined ? { imageXMm: f.imageXMm } : {}),
+      ...(f.imageYMm !== undefined ? { imageYMm: f.imageYMm } : {}),
+      ...(f.imageWMm !== undefined ? { imageWMm: f.imageWMm } : {}),
+      ...(f.imageHMm !== undefined ? { imageHMm: f.imageHMm } : {}),
+    };
   });
 }
 export function frameTypography(frame: StudioFrame) {
@@ -46,6 +80,36 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
     return `<div ${attr} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}border:0.2645833333mm solid #000;padding:0.5291666667mm;overflow:hidden;background:transparent;color:#000;font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:start;white-space:pre-wrap;overflow-wrap:break-word;text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${textHtml ?? escape(frame.text)}</div>`;
   }
   const stroke = 'fill="none" stroke="#000" stroke-width="0.2645833333"'; const inset = 0.1322916667;
+  if (frame.kind === 'picture-rect' || frame.kind === 'picture-ellipse' || frame.kind === 'picture-round-rect') {
+    const clipId = `print-clip-${escape(frame.id)}-${frame.page}`;
+    let clipShape = '';
+    let outlineShape = '';
+    if (frame.kind === 'picture-ellipse') {
+      clipShape = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}"/>`;
+      outlineShape = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - inset)}" ry="${Math.max(0, h / 2 - inset)}" ${stroke}/>`;
+    } else if (frame.kind === 'picture-round-rect') {
+      clipShape = `<rect x="0" y="0" width="${w}" height="${h}" rx="6.35"/>`;
+      outlineShape = `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" rx="6.35" ${stroke}/>`;
+    } else {
+      clipShape = `<rect x="0" y="0" width="${w}" height="${h}"/>`;
+      outlineShape = `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" ${stroke}/>`;
+    }
+
+    const defs = `<defs><clipPath id="${clipId}">${clipShape}</clipPath></defs>`;
+    let content = '';
+    if (frame.imageSrc) {
+      const ix = frame.imageXMm ?? 0;
+      const iy = frame.imageYMm ?? 0;
+      const iw = frame.imageWMm ?? w;
+      const ih = frame.imageHMm ?? h;
+      content = `<rect x="0" y="0" width="${w}" height="${h}" fill="#ffffff" clip-path="url(#${clipId})"/><image href="${escape(frame.imageSrc)}" xlink:href="${escape(frame.imageSrc)}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none" clip-path="url(#${clipId})"/>`;
+    } else {
+      const diags = `<line x1="0" y1="0" x2="${w}" y2="${h}" ${stroke}/><line x1="${w}" y1="0" x2="0" y2="${h}" ${stroke}/>`;
+      content = frame.kind === 'picture-ellipse' ? `<g clip-path="url(#${clipId})">${diags}</g>` : diags;
+    }
+
+    return `<svg ${attr} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${w} ${h}" style="${geometry}overflow:hidden;" aria-hidden="true">${defs}${content}${outlineShape}</svg>`;
+  }
   let shape = '';
   if (frame.kind === 'line') shape = `<line x1="${frame.flip ? w - inset : inset}" y1="${inset}" x2="${frame.flip ? inset : w - inset}" y2="${h - inset}" ${stroke}/>`;
   else if (frame.kind === 'ellipse') shape = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - inset)}" ry="${Math.max(0, h / 2 - inset)}" ${stroke}/>`;

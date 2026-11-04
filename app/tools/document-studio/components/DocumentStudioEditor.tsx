@@ -151,7 +151,8 @@ import DocumentToolbar from "./DocumentToolbar";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
-import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioObjectLayer";
+import { readStoredFrames, writeStoredFrames, isPictureBox, type StudioFrame } from "./StudioObjectLayer";
+import { fitPictureInBox } from "../utils/pictureFit";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
@@ -418,6 +419,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [inpageError, setInpageError] = useState<string | null>(null);
   const [inpageImportNotice, setInpageImportNotice] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const pictureInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
+  const [pictureTargetFrameId, setPictureTargetFrameId] = useState<string | null>(null);
 
   const [preview, setPreview] = useState<{
     document: DocNode;
@@ -527,6 +531,25 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         spellcheck: EDITOR_SPELLCHECK_ATTR,
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
+      transformPastedHTML: (html) => html.replace(/<img\b[^>]*>/gi, ""),
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []);
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const hasImage = files.some((f) => f.type.startsWith("image/")) || items.some((item) => item.type.startsWith("image/"));
+        const types = event.clipboardData?.types ?? [];
+        const hasText = types.includes("text/plain") || types.includes("text/html");
+        if (hasImage && !hasText) {
+          return true;
+        }
+        return false;
+      },
+      handleDrop: (_view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []);
+        if (files.some((f) => f.type.startsWith("image/"))) {
+          return true;
+        }
+        return false;
+      },
       handleKeyDown: (_view, event) => {
         if (handleStudioDocumentNavigation(_view, event)) return true;
         const $from = _view.state.selection.$from;
@@ -1976,6 +1999,54 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (id) writeStoredFrames(id, next);
   };
 
+  const selectedPictureBox = frames.find((f) => selectedFrameIds.includes(f.id) && isPictureBox(f.kind));
+
+  const openPictureChooser = (frameId?: string) => {
+    const targetId = frameId ?? selectedPictureBox?.id;
+    if (!targetId) return;
+    setPictureTargetFrameId(targetId);
+    pictureInputRef.current?.click();
+  };
+
+  const handlePictureFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const targetId = pictureTargetFrameId ?? selectedPictureBox?.id;
+    if (!targetId) return;
+    const targetFrame = frames.find((f) => f.id === targetId);
+    if (!targetFrame) return;
+
+    if (file.size <= 0 || file.size > MAX_DOCUMENT_IMAGE_BYTES) {
+      setImageError(isUr ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 2 MB.");
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+      const dimensions = await getImageDimensions(dataUrl);
+      const fit = fitPictureInBox(targetFrame.wMm, targetFrame.hMm, dimensions.width, dimensions.height);
+      changeFrames(frames.map((f) => f.id === targetId ? {
+        ...f,
+        imageSrc: dataUrl,
+        imageNaturalW: dimensions.width,
+        imageNaturalH: dimensions.height,
+        imageXMm: fit.x,
+        imageYMm: fit.y,
+        imageWMm: fit.w,
+        imageHMm: fit.h,
+      } : f));
+      setImageError(null);
+    } catch {
+      setImageError(isUr ? "تصویر لوڈ کرنے میں خرابی ہوئی۔" : "Failed to load picture.");
+    }
+  };
+
   const insertPageBreak = () => {
     if (!editor) return;
     insertDocumentBreak(editor, { type: "pageBreak" });
@@ -2047,6 +2118,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
       openImageInsert: () => imageInputRef.current?.click(),
+      importPicture: () => openPictureChooser(),
       insertPageBreak,
       insertSectionBreak,
       setDir: (direction) => {
@@ -2066,6 +2138,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const insertTableMode = editor?.isActive("table") ? "table" : editor && !editor.state.selection.empty ? "selection" : "plain";
   const disabledIds = new Set<MenuActionId>();
   if(noDocumentOpen)allMenuActionIds().filter(id=>!availableWithoutDocument(id)).forEach(id=>disabledIds.add(id));
+  if (!selectedPictureBox) disabledIds.add("file.importPicture");
   if (!editor?.can().undo()) disabledIds.add("edit.undo");
   if (!editor?.can().redo()) disabledIds.add("edit.redo");
   if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
@@ -2254,6 +2327,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           if (file) void insertImageFile(file);
           event.target.value = "";
         }}
+      />
+      <input
+        ref={pictureInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/bmp,image/webp"
+        className="hidden"
+        data-studio-picture-input="true"
+        onChange={(event) => void handlePictureFileChange(event)}
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
@@ -2569,6 +2650,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             minimumPages={minimumPages}
             frames={frames}
             onFramesChange={changeFrames}
+            selectedFrameIds={selectedFrameIds}
+            onSelectedFramesChange={setSelectedFrameIds}
+            onDoubleClickFrame={(frame) => openPictureChooser(frame.id)}
             englishFont={englishFont}
             tool={canvasTool}
             onToolAction={onCanvasTool}

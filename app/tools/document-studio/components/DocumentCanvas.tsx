@@ -80,6 +80,9 @@ export default function DocumentCanvas({
   minimumPages = 1,
   frames = [],
   onFramesChange,
+  selectedFrameIds,
+  onSelectedFramesChange,
+  onDoubleClickFrame,
   tool: toolProp,
   englishFont = "Arial Unicode MS",
 }: {
@@ -107,6 +110,9 @@ export default function DocumentCanvas({
   minimumPages?: number;
   frames?: StudioFrame[];
   onFramesChange?: (frames: StudioFrame[]) => void;
+  selectedFrameIds?: string[];
+  onSelectedFramesChange?: (ids: string[]) => void;
+  onDoubleClickFrame?: (frame: StudioFrame) => void;
   tool?: StudioToolId;
   englishFont?: string;
 }) {
@@ -629,6 +635,9 @@ export default function DocumentCanvas({
                             typography={documentSettings.typography}
                             onFramesChange={onFramesChange ?? (() => undefined)}
                             onToolAction={chooseTool}
+                            selectedIds={selectedFrameIds}
+                            onSelectedChange={onSelectedFramesChange}
+                            onDoubleClickFrame={onDoubleClickFrame}
                             pageCount={pageCount}
                             pageWidthPx={natural.widthPx}
                             pageHeightPx={natural.heightPx}

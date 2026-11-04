@@ -568,7 +568,8 @@ function pastedDirection(text: string, fallbackDir: "rtl" | "ltr"): "rtl" | "ltr
 
 export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
   if (!slice.content.size) return slice;
-  function assignDir(node: PMNode): PMNode {
+  function processNode(node: PMNode): PMNode | null {
+    if (node.type.name === "image") return null;
     if (node.isText) {
       const marks = node.marks.flatMap((mark) => {
         const cleaned = cleanTextStyle(mark);
@@ -580,9 +581,13 @@ export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): 
     const children: PMNode[] = [];
     let changed = false;
     node.forEach((child) => {
-      const next = assignDir(child);
-      if (next !== child) changed = true;
-      children.push(next);
+      const next = processNode(child);
+      if (next === null) {
+        changed = true;
+      } else {
+        if (next !== child) changed = true;
+        children.push(next);
+      }
     });
     const content = changed ? pmFragment.from(children) : node.content;
     if (!node.isTextblock) return changed ? node.copy(content) : node;
@@ -595,7 +600,10 @@ export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): 
     if (!changed && detectedDir === node.attrs.dir) return node;
     return node.type.create({ ...node.attrs, dir: detectedDir }, content, node.marks);
   }
-  const nodes = slice.content.content.map(assignDir);
+  const nodes = slice.content.content.flatMap((child) => {
+    const res = processNode(child);
+    return res ? [res] : [];
+  });
   return new Slice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
 }
 

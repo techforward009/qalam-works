@@ -175,7 +175,13 @@ export default function DocumentMenuBar({
       if (event.defaultPrevented || !target?.closest("[data-studio-shell]") || target.closest('[role="dialog"], [role="alertdialog"]')) return;
       const key = event.key.toLowerCase();
       let id: MenuActionId | undefined;
-      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+        if (key === "y") {
+          if (!disabledIds?.has("file.importPicture")) id = "file.importPicture";
+        } else {
+          id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
+        }
+      }
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "y") id = "file.downloadTxt";
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "f") id = "text.tableFormat";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "insert") id = "insert.pageBreak";
@@ -185,7 +191,7 @@ export default function DocumentMenuBar({
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, [onAction]);
+  }, [onAction, disabledIds]);
 
   useEffect(() => {
     const sync = () => setPortalRoot(studioOverlayRoot());

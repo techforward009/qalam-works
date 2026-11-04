@@ -49,7 +49,14 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       typeof frame.kind === "string" && typeof frame.page === "number" &&
       typeof frame.xMm === "number" && typeof frame.yMm === "number" &&
       typeof frame.wMm === "number" && typeof frame.hMm === "number" &&
-      typeof frame.text === "string") ||
+      typeof frame.text === "string" &&
+      (frame.imageSrc === undefined || typeof frame.imageSrc === "string") &&
+      (frame.imageNaturalW === undefined || typeof frame.imageNaturalW === "number") &&
+      (frame.imageNaturalH === undefined || typeof frame.imageNaturalH === "number") &&
+      (frame.imageXMm === undefined || typeof frame.imageXMm === "number") &&
+      (frame.imageYMm === undefined || typeof frame.imageYMm === "number") &&
+      (frame.imageWMm === undefined || typeof frame.imageWMm === "number") &&
+      (frame.imageHMm === undefined || typeof frame.imageHMm === "number")) ||
     !Number.isInteger(value.minimumPages) || (value.minimumPages as number) < 1 ||
     !isObject(value.columns) || !Number.isInteger(value.columns.count) ||
     (value.columns.count as number) < 1 || (value.columns.count as number) > 32 ||

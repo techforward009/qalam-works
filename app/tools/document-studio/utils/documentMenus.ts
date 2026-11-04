@@ -20,6 +20,7 @@ export type MenuActionId =
   | "file.new"
   | "file.open"
   | "file.upload"
+  | "file.importPicture"
   | "file.downloadTxt"
   | "file.downloadDocx"
   | "file.downloadPdf"
@@ -171,6 +172,7 @@ const QALAM_MENU_ITEMS: MenuDefinition[] = [
       { type: "action", id: "file.new", labelEn: "New document", labelUr: "نیا مسودہ" },
       { type: "action", id: "file.open", labelEn: "Open document…", labelUr: "دستاویز کھولیں…" },
       { type: "action", id: "file.upload", labelEn: "Import file", labelUr: "فائل درآمد" },
+      { type: "action", id: "file.importPicture", labelEn: "Import Picture…", labelUr: "تصویر درآمد کریں…", shortcut: "Ctrl+Y" },
       { type: "separator" },
       {
         type: "submenu",
@@ -417,14 +419,14 @@ const original = (id: MenuId) => QALAM_MENU_ITEMS.find(menu => menu.id === id)!;
 const submenu = (menu: MenuId, id: string) => original(menu).items.find(item => item.type === "submenu" && item.id === id)!;
 const separator: MenuNode = { type: "separator" };
 const qalamSection: MenuNode = { type: "section", labelEn: "Qalam Page", labelUr: "قلم پیج" };
-const ready = (id: MenuActionId, labelEn: string, shortcut?: string): MenuNode => ({ type: "action", id, labelEn, labelUr: labelEn, shortcut });
+const ready = (id: MenuActionId, labelEn: string, shortcut?: string, labelUr?: string): MenuNode => ({ type: "action", id, labelEn, labelUr: labelUr ?? labelEn, shortcut });
 const soon = (id: string, labelEn: string, shortcut?: string): MenuNode => ({ type: "unavailable", id, labelEn, labelUr: labelEn, shortcut });
 
 export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   { ...original("file"), items: [
     ready("file.new", "New…", "Ctrl+N"), ready("file.open", "Open…", "Ctrl+O"), ready("file.close", "Close", "Ctrl+F4"), separator,
     ready("file.save", "Save…", "Ctrl+S"), ready("file.saveAs", "Save As…", "Ctrl+Alt+S"), ready("file.downloadPdf", "Save as PDF…"), separator,
-    soon("file.place", "Place…"), ready("file.upload", "Import…"), ready("file.downloadTxt", "Export All Text…", "Ctrl+Alt+Y"), soon("file.exportPage", "Export Page…"), separator,
+    soon("file.place", "Place…"), ready("file.upload", "Import…"), ready("file.importPicture", "Import Picture…", "Ctrl+Y", "تصویر درآمد کریں…"), ready("file.downloadTxt", "Export All Text…", "Ctrl+Alt+Y"), soon("file.exportPage", "Export Page…"), separator,
     ready("file.print", "Print…", "Ctrl+P"), separator, ready("file.exit", "Exit", "Alt+F4"), separator,
     soon("file.recent", "Recent Files"),
     separator, qalamSection,

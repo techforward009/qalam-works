@@ -15,7 +15,15 @@ import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
 
-export type FrameKind = "rect" | "ellipse" | "round-rect" | "line" | "text";
+export type FrameKind =
+  | "rect"
+  | "ellipse"
+  | "round-rect"
+  | "line"
+  | "text"
+  | "picture-rect"
+  | "picture-ellipse"
+  | "picture-round-rect";
 
 export type StudioFrame = {
   id: string;
@@ -29,10 +37,41 @@ export type StudioFrame = {
   flip: boolean;
   text: string;
   typography?: DocumentStudioSettings["typography"];
+  imageSrc?: string;
+  imageNaturalW?: number;
+  imageNaturalH?: number;
+  imageXMm?: number;
+  imageYMm?: number;
+  imageWMm?: number;
+  imageHMm?: number;
 };
 
-const DRAW_TOOLS = new Set<StudioToolId>(["textbox", "rect", "ellipse", "round-rect", "line"]);
+export function isPictureBox(kind: string): boolean {
+  return kind === "picture-rect" || kind === "picture-ellipse" || kind === "picture-round-rect";
+}
+
+const DRAW_TOOLS = new Set<StudioToolId>([
+  "textbox",
+  "rect",
+  "ellipse",
+  "round-rect",
+  "line",
+  "cross-square",
+  "cross-circle",
+  "cross-round",
+]);
 const FRAME_KEY = "qalam-studio-frames-v1";
+
+const VALID_FRAME_KINDS = new Set<string>([
+  "rect",
+  "ellipse",
+  "round-rect",
+  "line",
+  "text",
+  "picture-rect",
+  "picture-ellipse",
+  "picture-round-rect",
+]);
 
 export function readStoredFrames(id: string): StudioFrame[] {
   if (typeof window === "undefined" || !id) return [];
@@ -57,10 +96,10 @@ export function writeStoredFrames(id: string, frames: StudioFrame[]): void {
   }
 }
 
-function isFrame(value: unknown): value is StudioFrame {
+export function isFrame(value: unknown): value is StudioFrame {
   if (!value || typeof value !== "object") return false;
   const frame = value as StudioFrame;
-  return typeof frame.id === "string" && typeof frame.kind === "string" && typeof frame.xMm === "number";
+  return typeof frame.id === "string" && typeof frame.kind === "string" && VALID_FRAME_KINDS.has(frame.kind) && typeof frame.xMm === "number";
 }
 
 function newId(): string {
@@ -79,6 +118,9 @@ export function StudioObjectLayer({
   frames,
   onFramesChange,
   onToolAction,
+  onSelectedChange,
+  onDoubleClickFrame,
+  selectedIds: selectedIdsProp,
   pageCount,
   pageWidthPx,
   pageHeightPx,
@@ -97,6 +139,9 @@ export function StudioObjectLayer({
   projection?:PageProjection;
   onFramesChange: (frames: StudioFrame[]) => void;
   onToolAction: (tool: StudioToolId) => void;
+  onSelectedChange?: (selectedIds: string[]) => void;
+  onDoubleClickFrame?: (frame: StudioFrame) => void;
+  selectedIds?: string[];
   pageCount: number;
   pageWidthPx: number;
   pageHeightPx: number;
@@ -105,7 +150,15 @@ export function StudioObjectLayer({
   marginRightPx: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selectedInternal, setSelectedInternal] = useState<string[]>([]);
+  const selected = selectedIdsProp ?? selectedInternal;
+  const setSelected = (next: string[] | ((prev: string[]) => string[])) => {
+    setSelectedInternal((prev) => {
+      const resolved = typeof next === "function" ? next(prev) : next;
+      onSelectedChange?.(resolved);
+      return resolved;
+    });
+  };
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
@@ -192,7 +245,18 @@ export function StudioObjectLayer({
   };
 
   const commitBox = (box: { x: number; y: number; w: number; h: number; flip: boolean }) => {
-    const kind = tool === "textbox" ? "text" : tool === "line" || tool === "ellipse" || tool === "round-rect" || tool === "rect" ? tool : null;
+    const kind: FrameKind | null =
+      tool === "textbox"
+        ? "text"
+        : tool === "cross-square"
+          ? "picture-rect"
+          : tool === "cross-circle"
+            ? "picture-ellipse"
+            : tool === "cross-round"
+              ? "picture-round-rect"
+              : tool === "line" || tool === "ellipse" || tool === "round-rect" || tool === "rect"
+                ? tool
+                : null;
     if (!kind) return;
     let { x, y, w, h } = box;
     const flip = (w < 0) !== (h < 0);
@@ -225,6 +289,9 @@ export function StudioObjectLayer({
     onChangeRef.current([...framesRef.current, frame]);
     setSelected([frame.id]);
     if (tool === "textbox") onToolAction("text");
+    else if (tool === "cross-square" || tool === "cross-circle" || tool === "cross-round") {
+      onToolAction("select");
+    }
   };
 
   return (
@@ -290,12 +357,21 @@ export function StudioObjectLayer({
         if (drag.edge.includes("s")) y2 = point.y;
         const x = Math.min(x1, x2);
         const y = Math.min(y1, y2);
-        updateFrame(frame.id, {
-          xMm: x / PX_PER_MM,
-          yMm: (y - origin) / PX_PER_MM,
+        const newXMm = x / PX_PER_MM;
+        const newYMm = (y - origin) / PX_PER_MM;
+        const dxMm = newXMm - frame.xMm;
+        const dyMm = newYMm - frame.yMm;
+        const patch: Partial<StudioFrame> = {
+          xMm: newXMm,
+          yMm: newYMm,
           wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
           hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
-        });
+        };
+        if (frame.imageSrc) {
+          if (dxMm !== 0) patch.imageXMm = (frame.imageXMm ?? 0) - dxMm;
+          if (dyMm !== 0) patch.imageYMm = (frame.imageYMm ?? 0) - dyMm;
+        }
+        updateFrame(frame.id, patch);
       }}
       onPointerCancel={() => { dragRef.current = null; setDraft(null); }}
       onPointerUp={(event) => {
@@ -347,6 +423,12 @@ export function StudioObjectLayer({
               height,
               pointerEvents: tool === "text" && frame.kind !== "text" ? "none" : "auto",
               cursor: tool === "text" ? "text" : tool === "select" ? "move" : drawing ? "crosshair" : "default",
+            }}
+            onDoubleClick={(event) => {
+              if (isPictureBox(frame.kind) && !frame.imageSrc) {
+                event.stopPropagation();
+                onDoubleClickFrame?.(frame);
+              }
             }}
             onPointerDown={(event) => {
               if (frame.kind === "text" && tool === "text") {
@@ -457,6 +539,82 @@ function FrameShape({
   const innerWidth = Math.max(0, width - 1);
   const innerHeight = Math.max(0, height - 1);
   const stroke = { fill: "none", stroke: "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" } as const;
+
+  if (isPictureBox(frame.kind)) {
+    const rx = frame.kind === "picture-round-rect" ? 6.35 * PX_PER_MM : undefined;
+    const clipStyle: CSSProperties =
+      frame.kind === "picture-ellipse"
+        ? { clipPath: "ellipse(50% 50% at 50% 50%)" }
+        : frame.kind === "picture-round-rect"
+          ? { clipPath: `inset(0 round ${6.35 * PX_PER_MM}px)` }
+          : { clipPath: "inset(0)" };
+
+    const imgX = (frame.imageXMm ?? 0) * PX_PER_MM;
+    const imgY = (frame.imageYMm ?? 0) * PX_PER_MM;
+    const imgW = (frame.imageWMm ?? frame.wMm) * PX_PER_MM;
+    const imgH = (frame.imageHMm ?? frame.hMm) * PX_PER_MM;
+
+    return (
+      <div style={{ position: "relative", width, height, overflow: "hidden", ...clipStyle, backgroundColor: frame.imageSrc ? "#fff" : "transparent" }}>
+        {frame.imageSrc ? (
+          <img
+            src={frame.imageSrc}
+            alt=""
+            draggable={false}
+            style={{
+              position: "absolute",
+              left: imgX,
+              top: imgY,
+              width: imgW,
+              height: imgH,
+              maxWidth: "none",
+              userSelect: "none",
+              pointerEvents: "none",
+            }}
+          />
+        ) : null}
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="none"
+          aria-hidden
+          style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        >
+          {frame.kind === "picture-ellipse" ? (
+            <>
+              {!frame.imageSrc ? (
+                <>
+                  <defs>
+                    <clipPath id={`clip-${frame.id}`}>
+                      <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} />
+                    </clipPath>
+                  </defs>
+                  <g clipPath={`url(#clip-${frame.id})`}>
+                    <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
+                    <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                  </g>
+                </>
+              ) : null}
+              <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} />
+            </>
+          ) : (
+            <>
+              {!frame.imageSrc ? (
+                <>
+                  <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
+                  <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                </>
+              ) : null}
+              <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} {...stroke} />
+            </>
+          )}
+          {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#808080" strokeWidth={1} vectorEffect="non-scaling-stroke" /> : null}
+        </svg>
+      </div>
+    );
+  }
+
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden>
       {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} /> : null}
