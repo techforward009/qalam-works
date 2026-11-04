@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
-import { describe, expect, it } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { getSchema } from "@tiptap/core";
 import { Slice, Fragment } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
@@ -10,9 +11,11 @@ import { ParagraphWithDir, HeadingWithDir, DocumentImage } from "../app/tools/do
 import { transformPastedSlice } from "../app/tools/document-studio/utils/documentCommands";
 import { serializeQpg, deserializeQpg, type QpgDocument } from "../app/tools/document-studio/utils/qpgFile";
 import { validatePrintFrames, renderPrintFrame } from "../app/tools/document-studio/utils/printableFrames";
-import type { StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
+import { isPictureBox, StudioObjectLayer, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
-import { InPageToolPalette } from "../app/tools/document-studio/components/InPageToolPalette";
+import { InPageToolPalette, type StudioToolId } from "../app/tools/document-studio/components/InPageToolPalette";
+import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
+import type { MenuActionId } from "../app/tools/document-studio/utils/documentMenus";
 
 const extensions = [
   StarterKit.configure({ paragraph: false, heading: false }),
@@ -220,5 +223,251 @@ describe("Picture frames in Qalam Page", () => {
       });
       expect(hasImageChild).toBe(false);
     });
+  });
+});
+
+const PICTURE_TOOLS = [
+  ["cross-square", "picture-rect"],
+  ["cross-circle", "picture-ellipse"],
+  ["cross-round", "picture-round-rect"],
+] as const;
+
+const LAYER_BOX = {
+  pageCount: 1,
+  pageWidthPx: 800,
+  pageHeightPx: 1100,
+  gapPx: 24,
+  marginTopPx: 40,
+  marginRightPx: 40,
+};
+
+function DrawHarness({ initialTool }: { initialTool: StudioToolId }) {
+  const [tool, setTool] = useState<StudioToolId>(initialTool);
+  const [frames, setFrames] = useState<StudioFrame[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const importEnabled = frames.some((frame) => selected.includes(frame.id) && isPictureBox(frame.kind));
+  return (
+    <div data-studio-scroller>
+      <div data-tool={tool} data-selected={selected.join(",")} data-import-enabled={importEnabled ? "true" : "false"} />
+      <StudioObjectLayer
+        editor={null}
+        tool={tool}
+        frames={frames}
+        onFramesChange={setFrames}
+        onToolAction={setTool}
+        onSelectedChange={setSelected}
+        selectedIds={selected}
+        {...LAYER_BOX}
+      />
+    </div>
+  );
+}
+
+function dragPicture(container: HTMLElement, toX: number, toY: number, shift = false) {
+  const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+  fireEvent.pointerDown(layer, { clientX: 30, clientY: 40, pointerId: 1, button: 0 });
+  fireEvent.pointerMove(layer, { clientX: toX, clientY: toY, pointerId: 1, buttons: 1, shiftKey: shift });
+  return layer;
+}
+
+function EmptyPictureHarness({
+  kind,
+  imageSrc,
+  onOpen,
+}: {
+  kind: StudioFrame["kind"];
+  imageSrc?: string;
+  onOpen: (frame: StudioFrame) => void;
+}) {
+  const frame: StudioFrame = {
+    id: `empty-${kind}`,
+    kind,
+    page: 1,
+    xMm: 10,
+    yMm: 12,
+    wMm: 50,
+    hMm: 36,
+    flip: false,
+    text: "",
+    imageSrc,
+  };
+  return (
+    <div data-studio-scroller>
+      <StudioObjectLayer
+        editor={null}
+        tool="select"
+        frames={[frame]}
+        onFramesChange={() => undefined}
+        onToolAction={() => undefined}
+        selectedIds={[frame.id]}
+        onSelectedChange={() => undefined}
+        onDoubleClickFrame={onOpen}
+        {...LAYER_BOX}
+      />
+    </div>
+  );
+}
+
+describe("picture box drawing", () => {
+  afterEach(() => cleanup());
+
+  it.each(PICTURE_TOOLS)("selects the new %s frame with 8 handles so Import Picture is enabled", (tool, kind) => {
+    const { container } = render(<DrawHarness initialTool={tool} />);
+    const layer = dragPicture(container, 190, 130);
+    fireEvent.pointerUp(layer, { clientX: 190, clientY: 130, pointerId: 1, button: 0 });
+
+    const frame = container.querySelector(`[data-studio-frame="${kind}"]`);
+    const id = frame?.getAttribute("data-studio-frame-id");
+    expect(frame).toBeTruthy();
+    expect(container.querySelector("[data-tool]")?.getAttribute("data-tool")).toBe("select");
+    expect(container.querySelector("[data-selected]")?.getAttribute("data-selected")).toBe(id);
+    expect(container.querySelector("[data-import-enabled]")?.getAttribute("data-import-enabled")).toBe("true");
+    expect(frame?.querySelectorAll("[data-studio-frame-handle]")).toHaveLength(8);
+  });
+
+  it.each(PICTURE_TOOLS)("previews the final %s shape while dragging", (tool, kind) => {
+    const { container } = render(<DrawHarness initialTool={tool} />);
+    dragPicture(container, 190, 120);
+
+    const preview = container.querySelector(`[data-studio-draw-preview="${kind}"]`) as HTMLElement | null;
+    expect(preview).toBeTruthy();
+    expect(preview?.style.borderTopWidth || preview?.style.borderWidth || "").not.toBe("1px");
+    const width = parseFloat(preview!.style.width);
+    const height = parseFloat(preview!.style.height);
+    expect(width).toBeGreaterThan(height);
+    if (kind === "picture-ellipse") {
+      const ellipse = preview!.querySelector("ellipse");
+      expect(ellipse).toBeTruthy();
+      expect(Number(ellipse!.getAttribute("rx"))).toBeCloseTo(width / 2);
+      expect(Number(ellipse!.getAttribute("ry"))).toBeCloseTo(height / 2);
+    } else {
+      const rect = preview!.querySelector("rect");
+      expect(rect?.getAttribute("data-studio-draw-shape")).toBe(kind === "picture-round-rect" ? "round-rect" : "rect");
+      const rx = Number(rect?.getAttribute("rx") || 0);
+      if (kind === "picture-round-rect") expect(rx).toBeCloseTo((6.35 * 96) / 25.4);
+      else expect(rx).toBe(0);
+    }
+  });
+
+  it.each(PICTURE_TOOLS)("Shift constrains %s to a square while dragging and on release", (tool, kind) => {
+    const { container } = render(<DrawHarness initialTool={tool} />);
+    const layer = dragPicture(container, 230, 90, true);
+    const preview = container.querySelector(`[data-studio-draw-preview="${kind}"]`) as HTMLElement;
+    expect(parseFloat(preview.style.width)).toBeCloseTo(parseFloat(preview.style.height));
+
+    fireEvent.pointerUp(layer, { clientX: 230, clientY: 90, pointerId: 1, button: 0, shiftKey: true });
+    const frame = container.querySelector(`[data-studio-frame="${kind}"]`) as HTMLElement;
+    expect(parseFloat(frame.style.width)).toBeCloseTo(parseFloat(frame.style.height));
+  });
+});
+
+describe("empty picture box double-click", () => {
+  afterEach(() => cleanup());
+
+  it.each(PICTURE_TOOLS)("double-click on the %s hit target opens the hidden picture input", (_tool, kind) => {
+    const file = document.createElement("input");
+    file.type = "file";
+    file.setAttribute("data-studio-picture-input", "true");
+    const click = vi.spyOn(file, "click");
+    const onOpen = vi.fn((frame: StudioFrame) => {
+      file.click();
+    });
+    const { container } = render(<EmptyPictureHarness kind={kind} onOpen={onOpen} />);
+    const hit = container.querySelector(`[data-studio-picture-hit="${kind}"]`) as SVGElement;
+    expect(hit).toBeTruthy();
+    const frame = hit.closest("[data-studio-frame]") as HTMLElement;
+    expect(Number(hit.getAttribute("width"))).toBeCloseTo(parseFloat(frame.style.width), 1);
+    expect(Number(hit.getAttribute("height"))).toBeCloseTo(parseFloat(frame.style.height), 1);
+    if (kind === "picture-ellipse") {
+      const ellipse = hit.querySelector("ellipse");
+      expect(Number(ellipse?.getAttribute("rx"))).toBeCloseTo(parseFloat(frame.style.width) / 2, 1);
+      expect(Number(ellipse?.getAttribute("ry"))).toBeCloseTo(parseFloat(frame.style.height) / 2, 1);
+      expect(ellipse?.getAttribute("fill")).toBe("transparent");
+    } else {
+      const rect = hit.querySelector("rect");
+      expect(Number(rect?.getAttribute("width"))).toBeCloseTo(parseFloat(frame.style.width), 1);
+      expect(Number(rect?.getAttribute("height"))).toBeCloseTo(parseFloat(frame.style.height), 1);
+      expect(rect?.getAttribute("fill")).toBe("transparent");
+      const rx = Number(rect?.getAttribute("rx") || 0);
+      if (kind === "picture-round-rect") expect(rx).toBeCloseTo((6.35 * 96) / 25.4, 2);
+      else expect(rx).toBe(0);
+    }
+
+    fireEvent.doubleClick(hit);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen.mock.calls[0][0].kind).toBe(kind);
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(PICTURE_TOOLS)("second pointerdown on an empty %s still opens the chooser", (_tool, kind) => {
+    const file = document.createElement("input");
+    file.type = "file";
+    file.setAttribute("data-studio-picture-input", "true");
+    const click = vi.spyOn(file, "click");
+    const onOpen = vi.fn(() => {
+      file.click();
+    });
+    const { container } = render(<EmptyPictureHarness kind={kind} onOpen={onOpen} />);
+    const hit = container.querySelector(`[data-studio-picture-hit="${kind}"]`) as SVGElement;
+    fireEvent.pointerDown(hit, { detail: 1, pointerId: 1, button: 0 });
+    fireEvent.pointerUp(container.querySelector("[data-studio-objects]") as HTMLElement, { pointerId: 1, button: 0 });
+    onOpen.mockClear();
+    click.mockClear();
+    fireEvent.pointerDown(hit, { detail: 2, pointerId: 1, button: 0 });
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not open the chooser for a picture box that already has an image", () => {
+    const onOpen = vi.fn();
+    const { container } = render(
+      <EmptyPictureHarness kind="picture-round-rect" imageSrc="data:image/png;base64,aaaa" onOpen={onOpen} />,
+    );
+    expect(container.querySelector('[data-studio-picture-hit="picture-round-rect"]')).toBeNull();
+    fireEvent.doubleClick(container.querySelector('[data-studio-frame="picture-round-rect"]') as HTMLElement);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+});
+
+describe("Ctrl+Y picture import and redo", () => {
+  afterEach(() => cleanup());
+
+  function pressY(disabled: MenuActionId[]) {
+    const onAction = vi.fn();
+    render(
+      <div data-studio-shell>
+        <DocumentMenuBar isUr={false} onAction={onAction} disabledIds={new Set(disabled)} />
+        <input aria-label="Inside studio" />
+      </div>,
+    );
+    const inside = screen.getByLabelText("Inside studio");
+    const handled = fireEvent.keyDown(inside, { key: "y", ctrlKey: true });
+    return { onAction, handled };
+  }
+
+  it("imports a picture when a picture box is selected", () => {
+    const { onAction, handled } = pressY([]);
+    expect(handled).toBe(false);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledWith("file.importPicture");
+  });
+
+  it("dispatches editor Redo when no picture box is selected", () => {
+    const { onAction, handled } = pressY(["file.importPicture"]);
+    expect(handled).toBe(false);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledWith("edit.redo");
+  });
+
+  it("keeps Ctrl+Alt+Y as Export All Text", () => {
+    const onAction = vi.fn();
+    render(
+      <div data-studio-shell>
+        <DocumentMenuBar isUr={false} onAction={onAction} disabledIds={new Set<MenuActionId>(["file.importPicture"])} />
+        <input aria-label="Inside studio" />
+      </div>,
+    );
+    fireEvent.keyDown(screen.getByLabelText("Inside studio"), { key: "y", ctrlKey: true, altKey: true });
+    expect(onAction).toHaveBeenCalledWith("file.downloadTxt");
   });
 });

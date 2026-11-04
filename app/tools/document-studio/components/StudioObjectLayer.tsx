@@ -107,9 +107,28 @@ function newId(): string {
 }
 
 const PX_PER_MM = 96 / 25.4;
+const PICTURE_CORNER_RX_PX = 6.35 * PX_PER_MM;
 
 export function isUndraggedShape(w: number, h: number): boolean {
   return Math.abs(w) < 4 && Math.abs(h) < 4;
+}
+
+function isPictureDrawTool(tool: StudioToolId): boolean {
+  return tool === "cross-square" || tool === "cross-circle" || tool === "cross-round";
+}
+
+function pictureKindForTool(tool: StudioToolId): "picture-rect" | "picture-ellipse" | "picture-round-rect" | null {
+  if (tool === "cross-square") return "picture-rect";
+  if (tool === "cross-circle") return "picture-ellipse";
+  if (tool === "cross-round") return "picture-round-rect";
+  return null;
+}
+
+/** Shift while drawing a picture box locks the drag to a square (circle for the ellipse tool). */
+function constrainPictureDrag(w: number, h: number, shift: boolean): { w: number; h: number } {
+  if (!shift) return { w, h };
+  const size = Math.max(Math.abs(w), Math.abs(h));
+  return { w: (w < 0 ? -1 : 1) * size, h: (h < 0 ? -1 : 1) * size };
 }
 
 export function StudioObjectLayer({
@@ -153,11 +172,10 @@ export function StudioObjectLayer({
   const [selectedInternal, setSelectedInternal] = useState<string[]>([]);
   const selected = selectedIdsProp ?? selectedInternal;
   const setSelected = (next: string[] | ((prev: string[]) => string[])) => {
-    setSelectedInternal((prev) => {
-      const resolved = typeof next === "function" ? next(prev) : next;
-      onSelectedChange?.(resolved);
-      return resolved;
-    });
+    const prev = selectedIdsProp ?? selectedInternal;
+    const resolved = typeof next === "function" ? next(prev) : next;
+    setSelectedInternal(resolved);
+    onSelectedChange?.(resolved);
   };
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
   const dragRef = useRef<
@@ -169,10 +187,21 @@ export function StudioObjectLayer({
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
   const pendingTextFocus = useRef<string | null>(null);
+  // The new picture frame must stay selected when the draw tool returns to
+  // Pointer. Every other tool change still clears selection.
+  const pictureSelectionRef = useRef<string | null>(null);
+  const pictureOpenAt = useRef(0);
 
   // Object selection belongs exclusively to the Arrow/Select tool. Switching
   // tools must not leave stale handles that reappear on the next tool switch.
-  useEffect(() => { setSelected([]); }, [tool]);
+  useEffect(() => {
+    if (tool === "select" && pictureSelectionRef.current) {
+      setSelected([pictureSelectionRef.current]);
+      return;
+    }
+    pictureSelectionRef.current = null;
+    setSelected([]);
+  }, [tool]);
 
   useLayoutEffect(() => {
     if (tool !== "text" || !pendingTextFocus.current) return;
@@ -290,8 +319,17 @@ export function StudioObjectLayer({
     setSelected([frame.id]);
     if (tool === "textbox") onToolAction("text");
     else if (tool === "cross-square" || tool === "cross-circle" || tool === "cross-round") {
+      pictureSelectionRef.current = frame.id;
       onToolAction("select");
     }
+  };
+
+  const openEmptyPicture = (frame: StudioFrame) => {
+    if (!isPictureBox(frame.kind) || frame.imageSrc) return;
+    const now = Date.now();
+    if (now - pictureOpenAt.current < 400) return;
+    pictureOpenAt.current = now;
+    onDoubleClickFrame?.(frame);
   };
 
   return (
@@ -326,7 +364,10 @@ export function StudioObjectLayer({
         if (!drag || drag.pointer !== event.pointerId) return;
         const point = localPoint(event);
         if (drag.mode === "draw" || drag.mode === "marquee") {
-          setDraft({ x: drag.x, y: drag.y, w: point.x - drag.x, h: point.y - drag.y, flip: false });
+          let w = point.x - drag.x;
+          let h = point.y - drag.y;
+          if (drag.mode === "draw" && isPictureDrawTool(tool)) ({ w, h } = constrainPictureDrag(w, h, event.shiftKey));
+          setDraft({ x: drag.x, y: drag.y, w, h, flip: false });
           return;
         }
         if (drag.mode === "move") {
@@ -379,7 +420,10 @@ export function StudioObjectLayer({
         dragRef.current = null;
         if (drag?.mode === "draw") {
           const point = localPoint(event);
-          commitBox({ x: drag.x, y: drag.y, w: point.x - drag.x, h: point.y - drag.y, flip: false });
+          let w = point.x - drag.x;
+          let h = point.y - drag.y;
+          if (isPictureDrawTool(tool)) ({ w, h } = constrainPictureDrag(w, h, event.shiftKey));
+          commitBox({ x: drag.x, y: drag.y, w, h, flip: false });
         }
         if (drag?.mode === "marquee") {
           const point = localPoint(event);
@@ -425,12 +469,18 @@ export function StudioObjectLayer({
               cursor: tool === "text" ? "text" : tool === "select" ? "move" : drawing ? "crosshair" : "default",
             }}
             onDoubleClick={(event) => {
-              if (isPictureBox(frame.kind) && !frame.imageSrc) {
-                event.stopPropagation();
-                onDoubleClickFrame?.(frame);
-              }
+              if (!isPictureBox(frame.kind) || frame.imageSrc) return;
+              event.stopPropagation();
+              event.preventDefault();
+              openEmptyPicture(frame);
             }}
             onPointerDown={(event) => {
+              if (isPictureBox(frame.kind) && !frame.imageSrc && event.detail >= 2) {
+                event.stopPropagation();
+                event.preventDefault();
+                openEmptyPicture(frame);
+                return;
+              }
               if (frame.kind === "text" && tool === "text") {
                 event.stopPropagation();
                 setSelected([]);
@@ -457,6 +507,21 @@ export function StudioObjectLayer({
             }}
           >
             <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected([])} onText={(text) => updateFrame(frame.id, { text })} />
+            {isPictureBox(frame.kind) && !frame.imageSrc ? (
+              <svg
+                data-studio-picture-hit={frame.kind}
+                width={width}
+                height={height}
+                viewBox={`0 0 ${width} ${height}`}
+                style={{ position: "absolute", left: 0, top: 0 }}
+              >
+                {frame.kind === "picture-ellipse" ? (
+                  <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="transparent" />
+                ) : (
+                  <rect x={0} y={0} width={width} height={height} rx={frame.kind === "picture-round-rect" ? PICTURE_CORNER_RX_PX : undefined} fill="transparent" />
+                )}
+              </svg>
+            ) : null}
             {active
               ? (["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
                   <div
@@ -483,7 +548,9 @@ export function StudioObjectLayer({
           </div>
         );
       })}
-      {draft ? (
+      {draft && dragRef.current?.mode === "draw" && pictureKindForTool(tool) ? (
+        <PictureDrawPreview kind={pictureKindForTool(tool)!} draft={draft} />
+      ) : draft ? (
         <div
           data-studio-marquee={dragRef.current?.mode === "marquee" ? "true" : undefined}
           style={{
@@ -504,6 +571,45 @@ export function StudioObjectLayer({
         marginTopPx={marginTopPx}
         marginRightPx={marginRightPx}
       />
+    </div>
+  );
+}
+
+function PictureDrawPreview({
+  kind,
+  draft,
+}: {
+  kind: "picture-rect" | "picture-ellipse" | "picture-round-rect";
+  draft: { x: number; y: number; w: number; h: number };
+}) {
+  const left = Math.min(draft.x, draft.x + draft.w);
+  const top = Math.min(draft.y, draft.y + draft.h);
+  const width = Math.abs(draft.w);
+  const height = Math.abs(draft.h);
+  const stroke = { fill: "none", stroke: "#000", strokeWidth: 1, strokeDasharray: "4 3" } as const;
+  const rx = kind === "picture-round-rect" ? PICTURE_CORNER_RX_PX : 0;
+  return (
+    <div data-studio-draw-preview={kind} style={{ position: "absolute", left, top, width, height, pointerEvents: "none" }}>
+      <svg width={width} height={height} viewBox={`0 0 ${Math.max(width, 0.01)} ${Math.max(height, 0.01)}`} aria-hidden>
+        {kind === "picture-ellipse" ? (
+          <ellipse data-studio-draw-shape="ellipse" cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} {...stroke} />
+        ) : (
+          <rect data-studio-draw-shape={kind === "picture-round-rect" ? "round-rect" : "rect"} x={0.5} y={0.5} width={Math.max(0, width - 1)} height={Math.max(0, height - 1)} rx={rx || undefined} {...stroke} />
+        )}
+        <defs>
+          <clipPath id="studio-picture-draft-clip">
+            {kind === "picture-ellipse" ? (
+              <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} />
+            ) : (
+              <rect x={0} y={0} width={width} height={height} rx={rx || undefined} />
+            )}
+          </clipPath>
+        </defs>
+        <g clipPath="url(#studio-picture-draft-clip)">
+          <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
+          <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+        </g>
+      </svg>
     </div>
   );
 }
@@ -541,12 +647,12 @@ function FrameShape({
   const stroke = { fill: "none", stroke: "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" } as const;
 
   if (isPictureBox(frame.kind)) {
-    const rx = frame.kind === "picture-round-rect" ? 6.35 * PX_PER_MM : undefined;
+    const rx = frame.kind === "picture-round-rect" ? PICTURE_CORNER_RX_PX : undefined;
     const clipStyle: CSSProperties =
       frame.kind === "picture-ellipse"
         ? { clipPath: "ellipse(50% 50% at 50% 50%)" }
         : frame.kind === "picture-round-rect"
-          ? { clipPath: `inset(0 round ${6.35 * PX_PER_MM}px)` }
+          ? { clipPath: `inset(0 round ${PICTURE_CORNER_RX_PX}px)` }
           : { clipPath: "inset(0)" };
 
     const imgX = (frame.imageXMm ?? 0) * PX_PER_MM;
