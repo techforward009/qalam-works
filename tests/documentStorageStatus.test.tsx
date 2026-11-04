@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, screen, act } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import DocumentTopBar from "../app/tools/document-studio/components/DocumentTopBar";
 import DocumentStatusBar from "../app/tools/document-studio/components/DocumentStatusBar";
@@ -70,5 +70,37 @@ describe("Document Studio keyboard status panel", () => {
   it("omits the panel without a keyboard name", () => {
     render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online />);
     expect(document.querySelector("[data-studio-keyboard-status]")).toBeNull();
+  });
+});
+
+describe("Document Studio status bar lock indicators and widths", () => {
+  function fire(type: string, numLock: boolean) {
+    const ev = new KeyboardEvent(type, { bubbles: true });
+    Object.defineProperty(ev, "getModifierState", { value: (k: string) => k === "NumLock" && numLock });
+    act(() => { document.body.dispatchEvent(ev); });
+  }
+  it("shows NUM by default and follows the real Num Lock state, keeping the panel", () => {
+    render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online keyboardName="Persian (Monotype)" />);
+    const panel = document.querySelector("[data-studio-num-lock]") as HTMLElement;
+    expect(panel.textContent).toBe("NUM");
+    fire("keydown", false);
+    expect(panel.textContent).toBe("");
+    expect(document.querySelector("[data-studio-num-lock]")).toBe(panel);
+    expect(panel.getAttribute("data-studio-num-lock-on")).toBe("false");
+    fire("keyup", true);
+    expect(panel.textContent).toBe("NUM");
+    const mouse = new MouseEvent("mousedown", { bubbles: true });
+    Object.defineProperty(mouse, "getModifierState", { value: () => false });
+    act(() => { document.body.dispatchEvent(mouse); });
+    expect(panel.textContent).toBe("");
+  });
+  it("uses a narrow centered Saved panel and a wider centered keyboard panel", () => {
+    render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online keyboardName="Persian (Monotype)" />);
+    const save = document.querySelector('[data-studio-status-panel="left"]') as HTMLElement;
+    const kb = document.querySelector("[data-studio-keyboard-status]") as HTMLElement;
+    expect(save.style.width).toBe("80px");
+    expect(save.style.textAlign).toBe("center");
+    expect(kb.style.width).toBe("150px");
+    expect(kb.style.textAlign).toBe("center");
   });
 });
