@@ -17,6 +17,13 @@ import { migrateDocumentLeading } from "../utils/leading";
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { InpageKeyboard } from "../utils/inpageKeyboardExtension";
+import { useInpageKeyboard } from "../utils/useInpageKeyboard";
+import { KEYBOARD_LAYOUT_LABELS, type KeyboardLayout } from "../utils/inpageKeyboard";
+import rawKeyboardLayouts from "../utils/keyboardLayouts.json";
+import { CustomKeyboardDialog } from "./CustomKeyboardDialog";
+
+const baseKeyboardLayouts = rawKeyboardLayouts as unknown as Record<"inpageMonotype" | "inpagePhonetic" | "arabic" | "persian", KeyboardLayout>;
 import { restoreEditorFocus } from "../utils/restoreEditorFocus";
 import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
@@ -509,8 +516,36 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const fullDeleteRef = useRef(false);
 
   const tableNavigationEditorRef = useRef<Editor | null>(null);
+  // Built-in keyboards (opt-in). "off" = the computer's own keyboard, like new InPage.
+  const kb = useInpageKeyboard();
+  const [customKeyboardOpen, setCustomKeyboardOpen] = useState(false);
+  const kbGetLayoutRef = useRef(kb.getLayout);
+  kbGetLayoutRef.current = kb.getLayout;
+  const kbLayoutIdRef = useRef(kb.layoutId);
+  kbLayoutIdRef.current = kb.layoutId;
+  const getKeyboardLayout = useCallback((): KeyboardLayout | null => (
+    processingLanguageRef.current === "en" ? null : kbGetLayoutRef.current()
+  ), []);
+  useEffect(() => {
+    // Old InPage: Left Ctrl + Space switches Urdu/English. Only with a built-in keyboard.
+    let leftCtrlDown = false;
+    const down = (e: KeyboardEvent) => {
+      if (e.code === "ControlLeft") leftCtrlDown = true;
+      if (e.code === "Space" && e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && leftCtrlDown && kbLayoutIdRef.current !== "off") {
+        e.preventDefault();
+        e.stopPropagation();
+        setProcessingLanguage(processingLanguageRef.current === "en" ? "ur" : "en");
+      }
+    };
+    const up = (e: KeyboardEvent) => { if (e.code === "ControlLeft") leftCtrlDown = false; };
+    const blur = () => { leftCtrlDown = false; };
+    window.addEventListener("keydown", down, true);
+    window.addEventListener("keyup", up, true);
+    window.addEventListener("blur", blur);
+    return () => { window.removeEventListener("keydown", down, true); window.removeEventListener("keyup", up, true); window.removeEventListener("blur", blur); };
+  }, []);
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableFormatAttributes, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
+    extensions: [InpageKeyboard.configure({ getLayout: getKeyboardLayout }), ...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableFormatAttributes, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -2177,6 +2212,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   return (
     <div data-studio-root="true" inert={switchingDocument || undefined} aria-busy={switchingDocument || undefined} className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+      <CustomKeyboardDialog open={customKeyboardOpen} initial={kb.customLayout} baseLayouts={baseKeyboardLayouts} onSave={(layout) => { kb.setCustomLayout(layout); kb.setLayoutId("custom"); setCustomKeyboardOpen(false); }} onClose={() => setCustomKeyboardOpen(false)} />
       {formattingNotice > 0 ? <div role="alert" data-studio-formatting-notice style={{ position:"fixed", bottom:30, left:32, right:24, zIndex:10000, padding:8, background:"#ffffe1", color:"#000", border:"1px solid #808080", fontSize:13 }} dir={uiLanguage === "ur" ? "rtl" : "ltr"}>{formattingSafetyMessage(uiLanguage === "ur")} <button type="button" aria-label="Dismiss formatting message" onClick={()=>{ formattingSafety.current?.invalidate(); setFormattingNotice(0); }}>×</button></div> : null}
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
@@ -2357,6 +2393,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
+            keyboard={{ layoutId: kb.layoutId, hasCustom: Boolean(kb.customLayout), onSelectLayout: kb.setLayoutId, onEditCustom: () => setCustomKeyboardOpen(true) }}
             endSlot={noDocumentOpen?null:
               <div className="flex h-[20px] min-w-0 items-center gap-1" data-studio-title-slot="true">
                 {storageDurability === "memory" ? (
@@ -2458,6 +2495,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             visiblePage={visiblePage}
             zoom={zoom}
             zoomPercent={zoomPercent}
+            keyboardName={KEYBOARD_LAYOUT_LABELS[kb.layoutId]}
             onPageStep={(delta) => {
               const root = document.querySelector("[data-studio-print-root]") as HTMLElement | null;
               const stride = Number(root?.getAttribute("data-page-stride-px") || 0);

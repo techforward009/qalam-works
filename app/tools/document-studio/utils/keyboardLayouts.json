@@ -1,0 +1,947 @@
+{
+ "inpageMonotype": {
+  "Backquote": {
+   "normal": "ٗ",
+   "shift": "؛",
+   "altgr": "۞",
+   "shiftAltgr": "¢"
+  },
+  "Digit1": {
+   "normal": "ض",
+   "shift": ")",
+   "altgr": "١",
+   "shiftAltgr": "÷"
+  },
+  "Digit2": {
+   "normal": "ص",
+   "shift": "(",
+   "altgr": "٢",
+   "shiftAltgr": "@"
+  },
+  "Digit3": {
+   "normal": "ظ",
+   "shift": "]",
+   "altgr": "٣",
+   "shiftAltgr": "#"
+  },
+  "Digit4": {
+   "normal": "ط",
+   "shift": "[",
+   "altgr": "٤",
+   "shiftAltgr": "$"
+  },
+  "Digit5": {
+   "normal": "ً",
+   "shift": "۔",
+   "altgr": "٥",
+   "shiftAltgr": "%"
+  },
+  "Digit6": {
+   "normal": "ٰ",
+   "shift": "ـ",
+   "altgr": "٦",
+   "shiftAltgr": "^"
+  },
+  "Digit7": {
+   "normal": "ٓ",
+   "shift": "ٔ",
+   "altgr": "٧",
+   "shiftAltgr": "&"
+  },
+  "Digit8": {
+   "normal": "ذ",
+   "shift": "“",
+   "altgr": "٨",
+   "shiftAltgr": "*"
+  },
+  "Digit9": {
+   "normal": "د",
+   "shift": "”",
+   "altgr": "٩",
+   "shiftAltgr": "٭"
+  },
+  "Digit0": {
+   "normal": "ڈ",
+   "shift": "؟",
+   "altgr": "٠",
+   "shiftAltgr": "…"
+  },
+  "Minus": {
+   "normal": "ں",
+   "shift": "ﷺ",
+   "altgr": "-",
+   "shiftAltgr": "_"
+  },
+  "Equal": {
+   "normal": "ؒ",
+   "shift": "ؓ",
+   "altgr": "=",
+   "shiftAltgr": "+"
+  },
+  "Backslash": {
+   "normal": "۔",
+   "shift": "؎",
+   "altgr": "؀",
+   "shiftAltgr": "\\"
+  },
+  "KeyQ": {
+   "normal": "پ",
+   "shift": "آ",
+   "altgr": "ۚ",
+   "shiftAltgr": "ٯ"
+  },
+  "KeyW": {
+   "normal": "ٹ",
+   "shift": "أ",
+   "altgr": "ۥ",
+   "shiftAltgr": "؞"
+  },
+  "KeyE": {
+   "normal": "ش",
+   "shift": "إ",
+   "altgr": "؏",
+   "shiftAltgr": "۟"
+  },
+  "KeyR": {
+   "normal": "س",
+   "shift": "ء",
+   "altgr": "ۨ",
+   "shiftAltgr": "®"
+  },
+  "KeyT": {
+   "normal": "ت",
+   "shift": "ؤ",
+   "altgr": "ٕ",
+   "shiftAltgr": "™"
+  },
+  "KeyY": {
+   "normal": "ن",
+   "shift": "ي",
+   "altgr": "ۦ",
+   "shiftAltgr": "¥"
+  },
+  "KeyU": {
+   "normal": "ھ",
+   "shift": "ٌ",
+   "altgr": "ى",
+   "shiftAltgr": "ۗ"
+  },
+  "KeyI": {
+   "normal": "ج",
+   "shift": "ْ",
+   "altgr": "ۧ",
+   "shiftAltgr": "ۖ"
+  },
+  "KeyO": {
+   "normal": "چ",
+   "shift": "!",
+   "altgr": "ه",
+   "shiftAltgr": "ة"
+  },
+  "KeyP": {
+   "normal": "ح",
+   "shift": "ٖ",
+   "altgr": "٪",
+   "shiftAltgr": "£"
+  },
+  "BracketLeft": {
+   "normal": "خ",
+   "shift": "؍",
+   "altgr": "﴿",
+   "shiftAltgr": "}"
+  },
+  "BracketRight": {
+   "normal": "،",
+   "shift": ":",
+   "altgr": "﴾",
+   "shiftAltgr": "{"
+  },
+  "KeyA": {
+   "normal": "ق",
+   "shift": "ّ",
+   "altgr": "ٱ",
+   "shiftAltgr": "ﷲ"
+  },
+  "KeyS": {
+   "normal": "ف",
+   "shift": "ِ",
+   "altgr": "؃",
+   "shiftAltgr": "ﷰ"
+  },
+  "KeyD": {
+   "normal": "ی",
+   "shift": "ٍ",
+   "altgr": "ۜ",
+   "shiftAltgr": "°"
+  },
+  "KeyF": {
+   "normal": "ب",
+   "shift": "ُ",
+   "altgr": "ۣ",
+   "shiftAltgr": "ڡ"
+  },
+  "KeyG": {
+   "normal": "ل",
+   "shift": "ؑ",
+   "altgr": "ك",
+   "shiftAltgr": "¼"
+  },
+  "KeyH": {
+   "normal": "ا",
+   "shift": "؁",
+   "altgr": "ه",
+   "shiftAltgr": "½"
+  },
+  "KeyJ": {
+   "normal": "م",
+   "shift": "ْ",
+   "altgr": "ﷻ",
+   "shiftAltgr": "¾"
+  },
+  "KeyK": {
+   "normal": "ک",
+   "shift": "ؐ",
+   "altgr": "ڪ",
+   "shiftAltgr": "ﷱ"
+  },
+  "KeyL": {
+   "normal": "ع",
+   "shift": "َ",
+   "altgr": "ۙ",
+   "shiftAltgr": "ﻻ"
+  },
+  "Semicolon": {
+   "normal": "غ",
+   "shift": "ؔ",
+   "altgr": ";",
+   "shiftAltgr": "ۤ"
+  },
+  "Quote": {
+   "normal": "ے",
+   "shift": ",",
+   "altgr": "'",
+   "shiftAltgr": "\""
+  },
+  "KeyZ": {
+   "normal": "ژ",
+   "shift": "۰",
+   "altgr": "ۢ"
+  },
+  "KeyX": {
+   "normal": "ڑ",
+   "shift": "۹",
+   "altgr": "ۭ",
+   "shiftAltgr": "۩"
+  },
+  "KeyC": {
+   "normal": "ث",
+   "shift": "۸",
+   "altgr": "ۘ",
+   "shiftAltgr": "©"
+  },
+  "KeyV": {
+   "normal": "ئ",
+   "shift": "۷",
+   "altgr": "ؕ",
+   "shiftAltgr": "﷼"
+  },
+  "KeyB": {
+   "normal": "گ",
+   "shift": "۶",
+   "altgr": "﷽",
+   "shiftAltgr": "ٮ"
+  },
+  "KeyN": {
+   "normal": "ز",
+   "shift": "۵",
+   "altgr": "؂",
+   "shiftAltgr": "۝"
+  },
+  "KeyM": {
+   "normal": "ر",
+   "shift": "۴",
+   "altgr": "ﷴ",
+   "shiftAltgr": "×"
+  },
+  "Comma": {
+   "normal": "و",
+   "shift": "۳",
+   "altgr": "ٟ",
+   "shiftAltgr": "<"
+  },
+  "Period": {
+   "normal": "ہ",
+   "shift": "۲",
+   "altgr": ".",
+   "shiftAltgr": ">"
+  },
+  "Slash": {
+   "normal": "ۃ",
+   "shift": "۱",
+   "altgr": "/",
+   "shiftAltgr": "?"
+  }
+ },
+ "inpagePhonetic": {
+  "Backquote": {
+   "normal": "ٍ",
+   "shift": "ً",
+   "altgr": "۞",
+   "shiftAltgr": "¢"
+  },
+  "Digit1": {
+   "normal": "۱",
+   "shift": "!",
+   "altgr": "١",
+   "shiftAltgr": "÷"
+  },
+  "Digit2": {
+   "normal": "۲",
+   "shift": ",",
+   "altgr": "٢",
+   "shiftAltgr": "@"
+  },
+  "Digit3": {
+   "normal": "۳",
+   "shift": "؍",
+   "altgr": "٣",
+   "shiftAltgr": "#"
+  },
+  "Digit4": {
+   "normal": "۴",
+   "shift": "ء",
+   "altgr": "٤",
+   "shiftAltgr": "$"
+  },
+  "Digit5": {
+   "normal": "۵",
+   "shift": "ي",
+   "altgr": "٥",
+   "shiftAltgr": "%"
+  },
+  "Digit6": {
+   "normal": "۶",
+   "shift": "ؐ",
+   "altgr": "٦",
+   "shiftAltgr": "^"
+  },
+  "Digit7": {
+   "normal": "۷",
+   "shift": "ٔ",
+   "altgr": "٧",
+   "shiftAltgr": "&"
+  },
+  "Digit8": {
+   "normal": "۸",
+   "shift": "ٌ",
+   "altgr": "٨",
+   "shiftAltgr": "*"
+  },
+  "Digit9": {
+   "normal": "۹",
+   "shift": ")",
+   "altgr": "٩",
+   "shiftAltgr": "٭"
+  },
+  "Digit0": {
+   "normal": "۰",
+   "shift": "(",
+   "altgr": "٠",
+   "shiftAltgr": "…"
+  },
+  "Minus": {
+   "normal": "أ",
+   "shift": "ّ",
+   "altgr": "-",
+   "shiftAltgr": "_"
+  },
+  "Equal": {
+   "normal": "ؤ",
+   "shift": "آ",
+   "altgr": "=",
+   "shiftAltgr": "+"
+  },
+  "Backslash": {
+   "normal": "؎",
+   "shift": "ؔ",
+   "altgr": "؀",
+   "shiftAltgr": "\\"
+  },
+  "KeyQ": {
+   "normal": "ق",
+   "shift": "ْ",
+   "altgr": "ۚ",
+   "shiftAltgr": "ٯ"
+  },
+  "KeyW": {
+   "normal": "و",
+   "shift": "ﷺ",
+   "altgr": "ۥ",
+   "shiftAltgr": "؞"
+  },
+  "KeyE": {
+   "normal": "ع",
+   "shift": "ؑ",
+   "altgr": "؏",
+   "shiftAltgr": "۟"
+  },
+  "KeyR": {
+   "normal": "ر",
+   "shift": "ڑ",
+   "altgr": "ۨ",
+   "shiftAltgr": "®"
+  },
+  "KeyT": {
+   "normal": "ت",
+   "shift": "ٹ",
+   "altgr": "ٕ",
+   "shiftAltgr": "™"
+  },
+  "KeyY": {
+   "normal": "ے",
+   "shift": "؁",
+   "altgr": "ۦ",
+   "shiftAltgr": "¥"
+  },
+  "KeyU": {
+   "normal": "ئ",
+   "shift": "ٗ",
+   "altgr": "ى",
+   "shiftAltgr": "ۗ"
+  },
+  "KeyI": {
+   "normal": "ی",
+   "shift": "ٰ",
+   "altgr": "ۧ",
+   "shiftAltgr": "ۖ"
+  },
+  "KeyO": {
+   "normal": "ہ",
+   "shift": "ۃ",
+   "altgr": "ه",
+   "shiftAltgr": "ة"
+  },
+  "KeyP": {
+   "normal": "پ",
+   "shift": "ُ",
+   "altgr": "٪",
+   "shiftAltgr": "£"
+  },
+  "BracketLeft": {
+   "normal": "]",
+   "shift": "‘",
+   "altgr": "﴿",
+   "shiftAltgr": "}"
+  },
+  "BracketRight": {
+   "normal": "[",
+   "shift": "’",
+   "altgr": "﴾",
+   "shiftAltgr": "{"
+  },
+  "KeyA": {
+   "normal": "ا",
+   "shift": "ٓ",
+   "altgr": "ٱ",
+   "shiftAltgr": "ﷲ"
+  },
+  "KeyS": {
+   "normal": "س",
+   "shift": "ص",
+   "altgr": "؃",
+   "shiftAltgr": "ﷰ"
+  },
+  "KeyD": {
+   "normal": "د",
+   "shift": "ڈ",
+   "altgr": "ۜ",
+   "shiftAltgr": "°"
+  },
+  "KeyF": {
+   "normal": "ف",
+   "shift": "ٖ",
+   "altgr": "ۣ",
+   "shiftAltgr": "ڡ"
+  },
+  "KeyG": {
+   "normal": "گ",
+   "shift": "غ",
+   "altgr": "ك",
+   "shiftAltgr": "¼"
+  },
+  "KeyH": {
+   "normal": "ھ",
+   "shift": "ح",
+   "altgr": "ه",
+   "shiftAltgr": "½"
+  },
+  "KeyJ": {
+   "normal": "ج",
+   "shift": "ض",
+   "altgr": "ﷻ",
+   "shiftAltgr": "¾"
+  },
+  "KeyK": {
+   "normal": "ک",
+   "shift": "خ",
+   "altgr": "ڪ",
+   "shiftAltgr": "ﷱ"
+  },
+  "KeyL": {
+   "normal": "ل",
+   "shift": "ؒ",
+   "altgr": "ۙ",
+   "shiftAltgr": "ﻻ"
+  },
+  "Semicolon": {
+   "normal": "؛",
+   "shift": ":",
+   "altgr": ";",
+   "shiftAltgr": "ۤ"
+  },
+  "Quote": {
+   "normal": "۔",
+   "shift": "ـ",
+   "altgr": "'",
+   "shiftAltgr": "\""
+  },
+  "KeyZ": {
+   "normal": "ز",
+   "shift": "ذ",
+   "altgr": "ۢ",
+   "shiftAltgr": "ڤ"
+  },
+  "KeyX": {
+   "normal": "ش",
+   "shift": "ژ",
+   "altgr": "ۭ",
+   "shiftAltgr": "۩"
+  },
+  "KeyC": {
+   "normal": "چ",
+   "shift": "ث",
+   "altgr": "ۘ",
+   "shiftAltgr": "©"
+  },
+  "KeyV": {
+   "normal": "ط",
+   "shift": "ظ",
+   "altgr": "ؕ",
+   "shiftAltgr": "﷼"
+  },
+  "KeyB": {
+   "normal": "ب",
+   "shift": "ؓ",
+   "altgr": "﷽",
+   "shiftAltgr": "ٮ"
+  },
+  "KeyN": {
+   "normal": "ن",
+   "shift": "ں",
+   "altgr": "؂",
+   "shiftAltgr": "۝"
+  },
+  "KeyM": {
+   "normal": "م",
+   "shift": "إ",
+   "altgr": "ﷴ",
+   "shiftAltgr": "×"
+  },
+  "Comma": {
+   "normal": "،",
+   "shift": "ِ",
+   "altgr": "ٟ",
+   "shiftAltgr": "<"
+  },
+  "Period": {
+   "normal": "۔",
+   "shift": "َ",
+   "altgr": ".",
+   "shiftAltgr": ">"
+  },
+  "Slash": {
+   "normal": "ْ",
+   "shift": "؟",
+   "altgr": "/",
+   "shiftAltgr": "?"
+  }
+ },
+ "arabic": {
+  "Backquote": {
+   "normal": "ٗ",
+   "shift": "؛"
+  },
+  "Digit1": {
+   "normal": "ض",
+   "shift": ")"
+  },
+  "Digit2": {
+   "normal": "ص",
+   "shift": "("
+  },
+  "Digit3": {
+   "normal": "ظ",
+   "shift": "]"
+  },
+  "Digit4": {
+   "normal": "ط",
+   "shift": "["
+  },
+  "Digit5": {
+   "normal": "ً",
+   "shift": "۔"
+  },
+  "Digit6": {
+   "normal": "ٰ",
+   "shift": "ـ"
+  },
+  "Digit7": {
+   "normal": "ٓ",
+   "shift": "ٔ"
+  },
+  "Digit8": {
+   "normal": "ذ",
+   "shift": "“"
+  },
+  "Digit9": {
+   "normal": "د",
+   "shift": "”"
+  },
+  "Digit0": {
+   "normal": "»",
+   "shift": "؟"
+  },
+  "Minus": {
+   "normal": "«",
+   "shift": "﫽"
+  },
+  "Equal": {
+   "normal": "ؒ",
+   "shift": "ؓ"
+  },
+  "Backslash": {
+   "normal": ".",
+   "shift": "؎"
+  },
+  "KeyQ": {
+   "normal": "پ",
+   "shift": "آ"
+  },
+  "KeyW": {
+   "shift": "أ"
+  },
+  "KeyE": {
+   "normal": "ش",
+   "shift": "إ"
+  },
+  "KeyR": {
+   "normal": "س",
+   "shift": "ئ"
+  },
+  "KeyT": {
+   "normal": "ت",
+   "shift": "ؤ"
+  },
+  "KeyY": {
+   "normal": "ن",
+   "shift": "ي"
+  },
+  "KeyU": {
+   "normal": "ه",
+   "shift": "ٌ"
+  },
+  "KeyI": {
+   "normal": "ج",
+   "shift": "ْ"
+  },
+  "KeyO": {
+   "normal": "چ",
+   "shift": "!"
+  },
+  "KeyP": {
+   "normal": "ح",
+   "shift": "ٖ"
+  },
+  "BracketLeft": {
+   "normal": "خ",
+   "shift": "\\"
+  },
+  "BracketRight": {
+   "normal": "،",
+   "shift": ":"
+  },
+  "KeyA": {
+   "normal": "ق",
+   "shift": "ّ"
+  },
+  "KeyS": {
+   "normal": "ف",
+   "shift": "ِ"
+  },
+  "KeyD": {
+   "normal": "ي",
+   "shift": "ٍ"
+  },
+  "KeyF": {
+   "normal": "ب",
+   "shift": "ُ"
+  },
+  "KeyG": {
+   "normal": "ل",
+   "shift": "ؑ"
+  },
+  "KeyH": {
+   "normal": "ا",
+   "shift": "؁"
+  },
+  "KeyJ": {
+   "normal": "م",
+   "shift": "ْ"
+  },
+  "KeyK": {
+   "normal": "ك",
+   "shift": "ؐ"
+  },
+  "KeyL": {
+   "normal": "ع",
+   "shift": "َ"
+  },
+  "Semicolon": {
+   "normal": "غ",
+   "shift": "ؔ"
+  },
+  "Quote": {
+   "normal": "ي",
+   "shift": ","
+  },
+  "KeyZ": {
+   "normal": "ژ",
+   "shift": "۰"
+  },
+  "KeyX": {
+   "normal": "ڑ",
+   "shift": "۹"
+  },
+  "KeyC": {
+   "normal": "ث",
+   "shift": "۸"
+  },
+  "KeyV": {
+   "normal": "ء",
+   "shift": "۷"
+  },
+  "KeyB": {
+   "normal": "گ",
+   "shift": "۶"
+  },
+  "KeyN": {
+   "normal": "ز",
+   "shift": "۵"
+  },
+  "KeyM": {
+   "normal": "ر",
+   "shift": "۴"
+  },
+  "Comma": {
+   "normal": "و",
+   "shift": "۳"
+  },
+  "Period": {
+   "normal": "ه",
+   "shift": "۲"
+  },
+  "Slash": {
+   "normal": "ة",
+   "shift": "۱"
+  }
+ },
+ "persian": {
+  "Backquote": {
+   "normal": "ٗ",
+   "shift": "؛"
+  },
+  "Digit1": {
+   "normal": "ض",
+   "shift": ")"
+  },
+  "Digit2": {
+   "normal": "ص",
+   "shift": "("
+  },
+  "Digit3": {
+   "normal": "ظ",
+   "shift": "]"
+  },
+  "Digit4": {
+   "normal": "ط",
+   "shift": "["
+  },
+  "Digit5": {
+   "normal": "ً",
+   "shift": "۔"
+  },
+  "Digit6": {
+   "normal": "ٰ",
+   "shift": "ـ"
+  },
+  "Digit7": {
+   "normal": "ٓ",
+   "shift": "ٔ"
+  },
+  "Digit8": {
+   "normal": "ذ",
+   "shift": "“"
+  },
+  "Digit9": {
+   "normal": "د",
+   "shift": "”"
+  },
+  "Digit0": {
+   "normal": "»",
+   "shift": "؟"
+  },
+  "Minus": {
+   "normal": "«",
+   "shift": "﫽"
+  },
+  "Equal": {
+   "normal": "ؒ",
+   "shift": "ؓ"
+  },
+  "Backslash": {
+   "normal": ".",
+   "shift": "؎"
+  },
+  "KeyQ": {
+   "normal": "پ",
+   "shift": "آ"
+  },
+  "KeyW": {
+   "shift": "أ"
+  },
+  "KeyE": {
+   "normal": "ش",
+   "shift": "إ"
+  },
+  "KeyR": {
+   "normal": "س",
+   "shift": "ئ"
+  },
+  "KeyT": {
+   "normal": "ت",
+   "shift": "ؤ"
+  },
+  "KeyY": {
+   "normal": "ن",
+   "shift": "ي"
+  },
+  "KeyU": {
+   "normal": "ه",
+   "shift": "ٌ"
+  },
+  "KeyI": {
+   "normal": "ج",
+   "shift": "ْ"
+  },
+  "KeyO": {
+   "normal": "چ",
+   "shift": "!"
+  },
+  "KeyP": {
+   "normal": "ح",
+   "shift": "ٖ"
+  },
+  "BracketLeft": {
+   "normal": "خ",
+   "shift": "\\"
+  },
+  "BracketRight": {
+   "normal": "،",
+   "shift": ":"
+  },
+  "KeyA": {
+   "normal": "ق",
+   "shift": "ّ"
+  },
+  "KeyS": {
+   "normal": "ف",
+   "shift": "ِ"
+  },
+  "KeyD": {
+   "normal": "ی",
+   "shift": "ٍ"
+  },
+  "KeyF": {
+   "normal": "ب",
+   "shift": "ُ"
+  },
+  "KeyG": {
+   "normal": "ل",
+   "shift": "ؑ"
+  },
+  "KeyH": {
+   "normal": "ا",
+   "shift": "؁"
+  },
+  "KeyJ": {
+   "normal": "م",
+   "shift": "ْ"
+  },
+  "KeyK": {
+   "normal": "ک",
+   "shift": "ؐ"
+  },
+  "KeyL": {
+   "normal": "ع",
+   "shift": "َ"
+  },
+  "Semicolon": {
+   "normal": "غ",
+   "shift": "ؔ"
+  },
+  "Quote": {
+   "normal": "ي",
+   "shift": ","
+  },
+  "KeyZ": {
+   "normal": "ژ",
+   "shift": "۰"
+  },
+  "KeyX": {
+   "normal": "ڑ",
+   "shift": "۹"
+  },
+  "KeyC": {
+   "normal": "ث",
+   "shift": "۸"
+  },
+  "KeyV": {
+   "normal": "ء",
+   "shift": "۷"
+  },
+  "KeyB": {
+   "normal": "گ",
+   "shift": "۶"
+  },
+  "KeyN": {
+   "normal": "ز",
+   "shift": "۵"
+  },
+  "KeyM": {
+   "normal": "ر",
+   "shift": "۴"
+  },
+  "Comma": {
+   "normal": "و",
+   "shift": "۳"
+  },
+  "Period": {
+   "normal": "ه",
+   "shift": "۲"
+  },
+  "Slash": {
+   "normal": "ة",
+   "shift": "۱"
+  }
+ }
+}

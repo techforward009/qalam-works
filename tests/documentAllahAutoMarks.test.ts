@@ -137,3 +137,28 @@ for(const font of ['Digital Khatt Indo-Pak','Mehr Nastaliq Web','Jameel Noori Na
   expect(editor.getText()).toBe(expected+' ');
   if(expected!==input){editor.commands.undo();expect(editor.getText()).toBe(input+' ');editor.commands.redo();expect(editor.getText()).toBe(expected+' ');}
  });
+
+describe("prefixed Allah forms (bi-llah etc.) with Urdu ہ and Arabic ه", () => {
+  it.each([
+    ["باللہ", "باللّٰہ"], ["بالله", "باللّٰه"], ["واللہ", "واللّٰہ"], ["والله", "واللّٰه"],
+    ["فاللہ", "فاللّٰہ"], ["فالله", "فاللّٰه"], ["تاللہ", "تاللّٰہ"], ["تالله", "تاللّٰه"],
+    ["للہ", "للّٰہ"], ["لله", "للّٰه"], ["لِلّٰہ", "لِلّٰہ"], ["بِاللہ", "بِاللّٰہ"],
+  ])("system typing completes %s as %s after earlier words", (input, output) => {
+    open(); type("اللہ " + input + " ");
+    expect(editor.getText()).toBe("اللّٰہ " + output + " ");
+  });
+
+  it.each([
+    ["inpageMonotype", ["KeyF", "KeyH", "KeyG", "KeyG", "Period"], "باللّٰہ"],
+    ["arabic", ["KeyF", "KeyH", "KeyG", "KeyG", "KeyU"], "باللّٰه"],
+    ["inpagePhonetic", ["KeyB", "KeyA", "KeyL", "KeyL", "KeyO"], "باللّٰہ"],
+  ] as const)("built-in %s keyboard completes bi-llah", async (layoutId, codes, output) => {
+    const { InpageKeyboard } = await import("../app/tools/document-studio/utils/inpageKeyboardExtension");
+    const layouts = (await import("../app/tools/document-studio/utils/keyboardLayouts.json")).default as unknown as Record<string, Record<string, Record<string, string>>>;
+    editor = new Editor({ extensions: [InpageKeyboard.configure({ getLayout: () => layouts[layoutId] }), ...createDocumentStudioExtensions(), AllahAutoMarks], content: "<p></p>" });
+    editor.commands.setMark("textStyle", { fontFamily: "Digital Khatt Indo-Pak" });
+    for (const code of codes) editor.view.someProp("handleKeyDown", f => f(editor.view, new KeyboardEvent("keydown", { code, key: "x", cancelable: true })));
+    type(" ");
+    expect(editor.getText()).toBe(output + " ");
+  });
+});
