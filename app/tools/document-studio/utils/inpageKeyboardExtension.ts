@@ -46,7 +46,14 @@ export const InpageKeyboard = Extension.create<InpageKeyboardOptions>({
             }
 
             event.preventDefault();
-            view.dispatch(view.state.tr.insertText(charToInsert).scrollIntoView());
+            // Route through handleTextInput so input rules and AllahAutoMarks
+            // see layout characters exactly like native typing. This plugin has
+            // no handleTextInput of its own, so there is no recursion.
+            const { from, to } = view.state.selection;
+            const handled = view.someProp("handleTextInput", (f) =>
+              f(view, from, to, charToInsert, () => view.state.tr.insertText(charToInsert, from, to)),
+            );
+            if (!handled) view.dispatch(view.state.tr.insertText(charToInsert, from, to).scrollIntoView());
             return true;
           },
         },
