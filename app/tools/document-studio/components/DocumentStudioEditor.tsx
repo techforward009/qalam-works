@@ -71,7 +71,6 @@ import { buildDocxBlob } from "../utils/buildDocxDocument";
 import { plainTextToDocNodeWithDir, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
-import { formatFileSize } from "../../../utils/formatFileSize";
 import {
   documentImagePayloadBytes,
   getImageDimensions,
@@ -434,12 +433,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [pdfRecoveryAvailable, setPdfRecoveryAvailable] = useState(false);
   const pdfExportInFlight = useRef(false);
   const browserPrintPending = useRef(false);
-  const [pdfSummary, setPdfSummary] = useState<{
-    pages: number;
-    fileSizeLabel: string;
-    fontsUsed: string[];
-    fontFallbacks: Array<{ requested: string; used: string }>;
-  } | null>(null);
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
@@ -588,7 +581,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         setIsAuditStale(true);
       }
       setAlreadyClean(false);
-      setPdfSummary(null);
 
       // Maintenance Batch (2026-08-09) — run the analysis immediately for
       // small documents (preserves today's exact instant behavior, no
@@ -1088,7 +1080,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setIsAuditStale(false);
     setUploadError(null);
     setPdfError(null);
-    setPdfSummary(null);
     setCopied(false);
   };
 
@@ -1484,7 +1475,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       saveDocumentSettings(next);
       return next;
     });
-    setPdfSummary(null);
     saveSelectedPresetId(id);
   };
 
@@ -1681,7 +1671,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     pdfExportInFlight.current = true;
     setPdfError(null);
     setPdfRecoveryAvailable(false);
-    setPdfSummary(null);
     setIsExportingPdf(true);
     try {
       const body = JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings, frames: framesRef.current });
@@ -1705,11 +1694,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         return;
       }
 
-      const pageCountHeader = response.headers.get("X-Pdf-Page-Count");
-      const fileSizeHeader = response.headers.get("X-Pdf-File-Size-Bytes");
-      const fontsUsedHeader = response.headers.get("X-Pdf-Fonts-Used");
-      const fontFallbacksHeader = response.headers.get("X-Pdf-Font-Fallbacks");
-
       let blob: Blob;
       try { blob = await response.blob(); }
       catch { setPdfRecoveryAvailable(true); return; }
@@ -1721,27 +1705,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       a.click();
       document.body.removeChild(a);
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
-
-      if (pageCountHeader && fileSizeHeader) {
-        let fontsUsed: string[] = [];
-        let fontFallbacks: Array<{ requested: string; used: string }> = [];
-        try {
-          fontsUsed = fontsUsedHeader ? JSON.parse(fontsUsedHeader) : [];
-        } catch {
-          fontsUsed = [];
-        }
-        try {
-          fontFallbacks = fontFallbacksHeader ? JSON.parse(fontFallbacksHeader) : [];
-        } catch {
-          fontFallbacks = [];
-        }
-        setPdfSummary({
-          pages: parseInt(pageCountHeader, 10),
-          fileSizeLabel: formatFileSize(parseInt(fileSizeHeader, 10)),
-          fontsUsed,
-          fontFallbacks,
-        });
-      }
     } catch (err) {
       console.error("Failed to generate PDF:", err);
       setPdfError(GENERIC_PDF_EXPORT_ERROR);
@@ -2151,7 +2114,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setDocumentSettings,
     selectedPresetId,
     onPresetChange: handlePresetChange,
-    onPageChange: () => setPdfSummary(null),
     viewMode,
     rulerUnit,
     setRulerUnit,
@@ -2343,7 +2305,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             }));
             setColumnCount(values.columns);
             setColumnGutterMm(values.gutter);
-            setPdfSummary(null);
             setPageSetupOpen(false);
             restoreEditorFocus(editor);
           }}
@@ -2642,33 +2603,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                       : "Auto performs safe mixed-language cleanup. Choose “Urdu” mode for Urdu letter normalization."}
                   </p>
                 )}
-              </div>
-            )}
-
-            {pdfSummary && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
-                <div className="font-semibold text-amber-800 mb-1.5">{isUr ? "✓ PDF برآمد مکمل" : "✓ PDF Export Complete"}</div>
-                <div className="text-stone-700 space-y-0.5">
-                  <div>{isUr ? "صفحات" : "Pages"}: {pdfSummary.pages}</div>
-                  <div>{isUr ? "فائل سائز" : "File Size"}: {pdfSummary.fileSizeLabel}</div>
-                  {pdfSummary.fontsUsed.length > 0 && (
-                    <div>{isUr ? "استعمال شدہ فونٹس" : "Fonts Used"}: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
-                  )}
-                  {pdfSummary.fontFallbacks.length > 0 && (
-                    <div className="text-amber-800 mt-1">
-                      {pdfSummary.fontFallbacks.map((f) =>
-                        /jameel/i.test(f.requested)
-                          ? (isUr
-                            ? "پی ڈی ایف میں جمیل نوری نستعلیق دستیاب نہ تھا، اس لیے نوٹو نستعلیق اردو استعمال ہوا۔"
-                            : "Jameel Noori Nastaleeq was unavailable in PDF export; Noto Nastaliq Urdu was used.")
-                          : (isUr
-                            ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
-                            : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`)
-                      ).join(" ")}
-                    </div>
-                  )}
-                  <div>{isUr ? "فارمیٹ: بصری / پرنٹ PDF" : "Format: Visual / Print PDF"}</div>
-                </div>
               </div>
             )}
           </div>

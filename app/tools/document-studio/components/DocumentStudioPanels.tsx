@@ -66,7 +66,6 @@ export default function DocumentStudioPanels({
     setDocumentSettings: React.Dispatch<React.SetStateAction<DocumentStudioSettings>>;
     selectedPresetId: PresetId;
     onPresetChange: (id: PresetId) => void;
-    onPageChange: () => void;
     viewMode: DocumentViewMode;
     rulerUnit: RulerUnit;
     setRulerUnit: (unit: RulerUnit) => void;
@@ -82,7 +81,6 @@ export default function DocumentStudioPanels({
         setDocumentSettings={settings.setDocumentSettings}
         selectedPresetId={settings.selectedPresetId}
         onPresetChange={settings.onPresetChange}
-        onPageChange={settings.onPageChange}
         viewMode={settings.viewMode}
         rulerUnit={settings.rulerUnit}
         setRulerUnit={settings.setRulerUnit}

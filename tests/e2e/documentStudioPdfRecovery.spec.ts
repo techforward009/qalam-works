@@ -25,6 +25,7 @@ test('successful server export downloads normally, without print or recovery', a
   const before = await snapshot(page);
   const download = page.waitForEvent('download'); await exportPdf(page); const result = await download;
   expect(result.suggestedFilename()).toBe('qalam-document.pdf'); await result.saveAs(info.outputPath('successful-download.pdf'));
+  await expect(page.getByText('PDF Export Complete')).toHaveCount(0);
   await expect(dialog(page)).toHaveCount(0); expect(requests).toBe(1);
   expect(await page.evaluate(() => (window as unknown as { printCalls: number }).printCalls)).toBe(0);
   expect(await snapshot(page)).toEqual(before);
