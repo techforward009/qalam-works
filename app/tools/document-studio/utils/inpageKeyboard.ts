@@ -5,7 +5,7 @@ export type KeyState = "normal" | "shift" | "altgr" | "shiftAltgr";
 export type KeyboardLayout = Record<string, Partial<Record<KeyState, string>>>;
 
 export const KEYBOARD_LAYOUT_LABELS: Record<KeyboardLayoutId, string> = {
-  off: "بند (انگریزی)",
+  off: "سسٹم کا کی بورڈ",
   inpageMonotype: "ان پیج مونوٹائپ",
   inpagePhonetic: "ان پیج فونیٹک",
   arabic: "عربی",
@@ -107,7 +107,7 @@ export function loadKeyboardChoice(storage: Pick<Storage, "getItem">): KeyboardL
   if (saved && Object.keys(KEYBOARD_LAYOUT_LABELS).includes(saved)) {
     return saved as KeyboardLayoutId;
   }
-  return "inpagePhonetic";
+  return "off";
 }
 
 export function saveKeyboardChoice(storage: Pick<Storage, "setItem">, id: KeyboardLayoutId): void {

@@ -74,10 +74,10 @@ describe("inpageKeyboard utilities", () => {
       setItem: (k: string, v: string) => { store[k] = v; }
     };
 
-    expect(loadKeyboardChoice(storageMock)).toBe("inpagePhonetic");
+    expect(loadKeyboardChoice(storageMock)).toBe("off");
 
     store["qalam.keyboard.layout"] = "invalid_layout";
-    expect(loadKeyboardChoice(storageMock)).toBe("inpagePhonetic");
+    expect(loadKeyboardChoice(storageMock)).toBe("off");
 
     store["qalam.keyboard.layout"] = "persian";
     expect(loadKeyboardChoice(storageMock)).toBe("persian");
@@ -93,6 +93,6 @@ describe("inpageKeyboard utilities", () => {
     expect(nextLayout("off", enabled)).toBe("inpagePhonetic");
     
     expect(nextLayout("arabic", enabled)).toBe("inpagePhonetic");
-    expect(nextLayout("inpagePhonetic", [])).toBe("inpagePhonetic");
+    expect(nextLayout("inpagePhonetic", [])).toBe("off");
   });
 });

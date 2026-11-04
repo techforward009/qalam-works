@@ -40,7 +40,7 @@ export function useInpageKeyboard(): {
   setCustomLayout(l: KeyboardLayout | null): void;
   getLayout: () => KeyboardLayout | null;
 } {
-  const [layoutId, setLayoutIdState] = useState<KeyboardLayoutId>("inpagePhonetic");
+  const [layoutId, setLayoutIdState] = useState<KeyboardLayoutId>("off");
   const [customLayout, setCustomLayoutState] = useState<KeyboardLayout | null>(null);
 
   const lastNonOffRef = useRef<KeyboardLayoutId>("inpagePhonetic");
