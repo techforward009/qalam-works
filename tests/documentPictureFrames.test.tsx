@@ -141,9 +141,14 @@ describe("Picture frames in Qalam Page", () => {
         const html = renderPrintFrame(validated);
         expect(html).toContain("<clipPath");
         expect(html).toContain("clip-path=");
+        expect(html).toMatch(/<g clip-path="url\(#print-clip-/);
         expect(html).toContain("<image");
         expect(html).toContain(frame.imageSrc);
         expect(html).toContain(`data-print-frame="${kind}"`);
+        const imageAt = html.indexOf("<image");
+        const clipAt = html.indexOf("<g clip-path=\"url(#print-clip-");
+        expect(clipAt).toBeGreaterThanOrEqual(0);
+        expect(clipAt).toBeLessThan(imageAt);
       }
     );
 
@@ -425,6 +430,153 @@ describe("empty picture box double-click", () => {
     );
     expect(container.querySelector('[data-studio-picture-hit="picture-round-rect"]')).toBeNull();
     fireEvent.doubleClick(container.querySelector('[data-studio-frame="picture-round-rect"]') as HTMLElement);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+});
+
+const PX_PER_MM = 96 / 25.4;
+
+function PictureFrameHarness({
+  frame,
+  onFramesChange = () => undefined,
+  onOpen = () => undefined,
+}: {
+  frame: StudioFrame;
+  onFramesChange?: (frames: StudioFrame[]) => void;
+  onOpen?: (frame: StudioFrame) => void;
+}) {
+  return (
+    <div data-studio-scroller>
+      <StudioObjectLayer
+        editor={null}
+        tool="select"
+        frames={[frame]}
+        onFramesChange={onFramesChange}
+        onToolAction={() => undefined}
+        selectedIds={[frame.id]}
+        onSelectedChange={() => undefined}
+        onDoubleClickFrame={onOpen}
+        {...LAYER_BOX}
+      />
+    </div>
+  );
+}
+
+describe("picture box move keeps the picture inside the box", () => {
+  afterEach(() => cleanup());
+
+  it("keeps imageXMm and imageYMm when the box is moved", () => {
+    const frame: StudioFrame = { ...baseFrame, imageXMm: 5, imageYMm: 3 };
+    const onFramesChange = vi.fn();
+    const { container } = render(<PictureFrameHarness frame={frame} onFramesChange={onFramesChange} />);
+    const node = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
+    fireEvent.pointerDown(node, { clientX: 120, clientY: 140, pointerId: 1, button: 0 });
+    const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+    fireEvent.pointerMove(layer, { clientX: 200, clientY: 210, pointerId: 1, buttons: 1 });
+    expect(onFramesChange).toHaveBeenCalled();
+    const moved = onFramesChange.mock.calls.at(-1)![0][0] as StudioFrame;
+    expect(moved.xMm).not.toBeCloseTo(frame.xMm);
+    expect(moved.yMm).not.toBeCloseTo(frame.yMm);
+    expect(moved.imageXMm).toBeCloseTo(5);
+    expect(moved.imageYMm).toBeCloseTo(3);
+    expect(moved.imageWMm).toBeCloseTo(frame.imageWMm!);
+    expect(moved.imageHMm).toBeCloseTo(frame.imageHMm!);
+    const img = container.querySelector("img") as HTMLElement;
+    expect(parseFloat(img.style.left)).toBeCloseTo(5 * PX_PER_MM);
+    expect(parseFloat(img.style.top)).toBeCloseTo(3 * PX_PER_MM);
+  });
+
+  it("keeps the picture's page position when resizing from the top or left, and keeps offsets from the bottom or right", () => {
+    const frame: StudioFrame = { ...baseFrame, imageXMm: 5, imageYMm: 4 };
+    const onFramesChange = vi.fn();
+    const { container } = render(<PictureFrameHarness frame={frame} onFramesChange={onFramesChange} />);
+    const left = frame.xMm * PX_PER_MM;
+    const top = frame.yMm * PX_PER_MM;
+    const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+
+    fireEvent.pointerDown(container.querySelector('[data-studio-frame-handle="nw"]') as HTMLElement, { pointerId: 1, button: 0 });
+    fireEvent.pointerMove(layer, { clientX: left - 30, clientY: top - 18, pointerId: 1, buttons: 1 });
+    const resized = onFramesChange.mock.calls.at(-1)![0][0] as StudioFrame;
+    expect(resized.imageXMm).toBeCloseTo(5 + 30 / PX_PER_MM);
+    expect(resized.imageYMm).toBeCloseTo(4 + 18 / PX_PER_MM);
+
+    onFramesChange.mockClear();
+    cleanup();
+    const again = render(<PictureFrameHarness frame={frame} onFramesChange={onFramesChange} />);
+    const east = frame.xMm * PX_PER_MM + frame.wMm * PX_PER_MM;
+    const south = frame.yMm * PX_PER_MM + frame.hMm * PX_PER_MM;
+    const layer2 = again.container.querySelector("[data-studio-objects]") as HTMLElement;
+    fireEvent.pointerDown(again.container.querySelector('[data-studio-frame-handle="se"]') as HTMLElement, { pointerId: 2, button: 0 });
+    fireEvent.pointerMove(layer2, { clientX: east + 40, clientY: south + 22, pointerId: 2, buttons: 1 });
+    const grown = onFramesChange.mock.calls.at(-1)![0][0] as StudioFrame;
+    expect(grown.imageXMm).toBeCloseTo(5);
+    expect(grown.imageYMm).toBeCloseTo(4);
+    expect(grown.wMm).toBeGreaterThan(frame.wMm);
+    expect(grown.hMm).toBeGreaterThan(frame.hMm);
+  });
+});
+
+describe("picture clip follows the box shape", () => {
+  afterEach(() => cleanup());
+
+  it.each(["picture-rect", "picture-ellipse", "picture-round-rect"] as const)(
+    "clips a %s picture to the box on screen",
+    (kind) => {
+      const frame: StudioFrame = {
+        ...baseFrame,
+        id: `clip-${kind}`,
+        kind,
+        imageXMm: -12,
+        imageYMm: -8,
+        imageWMm: 100,
+        imageHMm: 80,
+      };
+      const { container } = render(<PictureFrameHarness frame={frame} />);
+      const clip = container.querySelector(`[data-studio-picture-clip="${kind}"]`) as HTMLElement;
+      expect(clip).toBeTruthy();
+      expect(clip.style.overflow).toBe("hidden");
+      expect(clip.querySelector("img")).toBeTruthy();
+      if (kind === "picture-ellipse") {
+        expect(clip.style.clipPath).toContain("ellipse");
+        expect(clip.style.borderRadius).toBe("50%");
+      } else if (kind === "picture-round-rect") {
+        expect(clip.style.clipPath).toContain("round");
+        expect(parseFloat(clip.style.borderRadius)).toBeCloseTo((6.35 * 96) / 25.4);
+      } else {
+        expect(clip.style.clipPath).toContain("inset");
+        expect(clip.style.borderRadius === "" || parseFloat(clip.style.borderRadius) === 0).toBe(true);
+      }
+    },
+  );
+});
+
+describe("empty picture box single click", () => {
+  afterEach(() => cleanup());
+
+  it.each(PICTURE_TOOLS)("single click on an empty %s opens the chooser and shows a hand", (_tool, kind) => {
+    const file = document.createElement("input");
+    file.type = "file";
+    file.setAttribute("data-studio-picture-input", "true");
+    const click = vi.spyOn(file, "click");
+    const onOpen = vi.fn(() => {
+      file.click();
+    });
+    const { container } = render(<EmptyPictureHarness kind={kind} onOpen={onOpen} />);
+    const frame = container.querySelector(`[data-studio-frame="${kind}"]`) as HTMLElement;
+    expect(frame.style.cursor).toMatch(/pointer|grab/);
+    const hit = container.querySelector(`[data-studio-picture-hit="${kind}"]`) as SVGElement;
+    fireEvent.click(hit);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not open the chooser on a single click when the box already has a picture", () => {
+    const onOpen = vi.fn();
+    const { container } = render(
+      <EmptyPictureHarness kind="picture-ellipse" imageSrc="data:image/png;base64,aaaa" onOpen={onOpen} />,
+    );
+    const frame = container.querySelector('[data-studio-frame="picture-ellipse"]') as HTMLElement;
+    fireEvent.click(frame);
     expect(onOpen).not.toHaveBeenCalled();
   });
 });

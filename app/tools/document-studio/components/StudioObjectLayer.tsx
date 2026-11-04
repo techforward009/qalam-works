@@ -191,6 +191,7 @@ export function StudioObjectLayer({
   // Pointer. Every other tool change still clears selection.
   const pictureSelectionRef = useRef<string | null>(null);
   const pictureOpenAt = useRef(0);
+  const pictureDraggedRef = useRef(false);
 
   // Object selection belongs exclusively to the Arrow/Select tool. Switching
   // tools must not leave stale handles that reappear on the next tool switch.
@@ -371,12 +372,31 @@ export function StudioObjectLayer({
           return;
         }
         if (drag.mode === "move") {
-          const dx = (point.x - drag.x) / PX_PER_MM;
-          const dy = (point.y - drag.y) / PX_PER_MM;
+          const dxPx = point.x - drag.x;
+          const dyPx = point.y - drag.y;
+          if (Math.hypot(dxPx, dyPx) >= 4) pictureDraggedRef.current = true;
+          const dx = dxPx / PX_PER_MM;
+          const dy = dyPx / PX_PER_MM;
           const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
           onChangeRef.current(framesRef.current.map((frame) => {
             const original = moved.get(frame.id);
-            return original ? { ...frame, xMm: original.xMm + dx, yMm: original.yMm + dy } : frame;
+            // Offsets stay box-relative so the picture travels with the box.
+            // Top/left resize, below, is what keeps the picture on the page.
+            return original
+              ? {
+                  ...frame,
+                  xMm: original.xMm + dx,
+                  yMm: original.yMm + dy,
+                  ...(isPictureBox(original.kind)
+                    ? {
+                        imageXMm: original.imageXMm,
+                        imageYMm: original.imageYMm,
+                        imageWMm: original.imageWMm,
+                        imageHMm: original.imageHMm,
+                      }
+                    : {}),
+                }
+              : frame;
           }));
           return;
         }
@@ -408,7 +428,8 @@ export function StudioObjectLayer({
           wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
           hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
         };
-        if (frame.imageSrc) {
+        pictureDraggedRef.current = true;
+        if (frame.imageSrc && (drag.edge.includes("w") || drag.edge.includes("n"))) {
           if (dxMm !== 0) patch.imageXMm = (frame.imageXMm ?? 0) - dxMm;
           if (dyMm !== 0) patch.imageYMm = (frame.imageYMm ?? 0) - dyMm;
         }
@@ -466,7 +487,16 @@ export function StudioObjectLayer({
               width,
               height,
               pointerEvents: tool === "text" && frame.kind !== "text" ? "none" : "auto",
-              cursor: tool === "text" ? "text" : tool === "select" ? "move" : drawing ? "crosshair" : "default",
+              cursor: tool === "text" ? "text" : drawing ? "crosshair" : isPictureBox(frame.kind) && !frame.imageSrc ? "pointer" : tool === "select" ? "move" : "default",
+            }}
+            onClick={(event) => {
+              if (tool !== "select" || !isPictureBox(frame.kind) || frame.imageSrc) return;
+              const target = event.target as HTMLElement | null;
+              if (target?.closest?.("[data-studio-frame-handle]")) return;
+              if (pictureDraggedRef.current) return;
+              event.stopPropagation();
+              event.preventDefault();
+              openEmptyPicture(frame);
             }}
             onDoubleClick={(event) => {
               if (!isPictureBox(frame.kind) || frame.imageSrc) return;
@@ -475,6 +505,7 @@ export function StudioObjectLayer({
               openEmptyPicture(frame);
             }}
             onPointerDown={(event) => {
+              pictureDraggedRef.current = false;
               if (isPictureBox(frame.kind) && !frame.imageSrc && event.detail >= 2) {
                 event.stopPropagation();
                 event.preventDefault();
@@ -513,7 +544,7 @@ export function StudioObjectLayer({
                 width={width}
                 height={height}
                 viewBox={`0 0 ${width} ${height}`}
-                style={{ position: "absolute", left: 0, top: 0 }}
+                style={{ position: "absolute", left: 0, top: 0, cursor: "pointer" }}
               >
                 {frame.kind === "picture-ellipse" ? (
                   <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="transparent" />
@@ -650,10 +681,10 @@ function FrameShape({
     const rx = frame.kind === "picture-round-rect" ? PICTURE_CORNER_RX_PX : undefined;
     const clipStyle: CSSProperties =
       frame.kind === "picture-ellipse"
-        ? { clipPath: "ellipse(50% 50% at 50% 50%)" }
+        ? { clipPath: "ellipse(50% 50% at 50% 50%)", borderRadius: "50%" }
         : frame.kind === "picture-round-rect"
-          ? { clipPath: `inset(0 round ${PICTURE_CORNER_RX_PX}px)` }
-          : { clipPath: "inset(0)" };
+          ? { clipPath: `inset(0 round ${PICTURE_CORNER_RX_PX}px)`, borderRadius: PICTURE_CORNER_RX_PX }
+          : { clipPath: "inset(0)", borderRadius: 0 };
 
     const imgX = (frame.imageXMm ?? 0) * PX_PER_MM;
     const imgY = (frame.imageYMm ?? 0) * PX_PER_MM;
@@ -661,7 +692,7 @@ function FrameShape({
     const imgH = (frame.imageHMm ?? frame.hMm) * PX_PER_MM;
 
     return (
-      <div style={{ position: "relative", width, height, overflow: "hidden", ...clipStyle, backgroundColor: frame.imageSrc ? "#fff" : "transparent" }}>
+      <div data-studio-picture-clip={frame.kind} style={{ position: "relative", width, height, overflow: "hidden", ...clipStyle, backgroundColor: frame.imageSrc ? "#fff" : "transparent" }}>
         {frame.imageSrc ? (
           <img
             src={frame.imageSrc}

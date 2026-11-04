@@ -102,7 +102,7 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
       const iy = frame.imageYMm ?? 0;
       const iw = frame.imageWMm ?? w;
       const ih = frame.imageHMm ?? h;
-      content = `<rect x="0" y="0" width="${w}" height="${h}" fill="#ffffff" clip-path="url(#${clipId})"/><image href="${escape(frame.imageSrc)}" xlink:href="${escape(frame.imageSrc)}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none" clip-path="url(#${clipId})"/>`;
+      content = `<g clip-path="url(#${clipId})"><rect x="0" y="0" width="${w}" height="${h}" fill="#ffffff"/><image href="${escape(frame.imageSrc)}" xlink:href="${escape(frame.imageSrc)}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none"/></g>`;
     } else {
       const diags = `<line x1="0" y1="0" x2="${w}" y2="${h}" ${stroke}/><line x1="${w}" y1="0" x2="0" y2="${h}" ${stroke}/>`;
       content = frame.kind === 'picture-ellipse' ? `<g clip-path="url(#${clipId})">${diags}</g>` : diags;
