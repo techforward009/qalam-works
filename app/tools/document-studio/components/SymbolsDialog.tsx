@@ -1,3 +1,4 @@
+import { readFormattingTarget, SYMBOL_INSERT } from "../utils/formattingSafety";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
@@ -44,9 +45,19 @@ export function insertSymbolIntoEditor(editor: Editor | null | undefined, item: 
   if (!editor || editor.isDestroyed) return false;
   const text = symbolInsertText(item);
   if (!text) return false;
+  // A text box (textarea) that owns the formatting target gets the symbol at its own caret.
+  const target = readFormattingTarget(editor.view.dom as HTMLElement);
+  const box = target?.owner === "frame" ? target.input : null;
+  if (box && box.isConnected && !box.readOnly) {
+    const start = box.selectionStart ?? box.value.length;
+    const end = box.selectionEnd ?? start;
+    box.setRangeText(text, start, end, "end");
+    box.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  }
   const { state } = editor;
   const { from, to } = state.selection;
-  const tr = state.tr.insertText(text, from, to);
+  const tr = state.tr.insertText(text, from, to).setMeta(SYMBOL_INSERT, true);
   editor.view.dispatch(tr.scrollIntoView());
   return true;
 }
