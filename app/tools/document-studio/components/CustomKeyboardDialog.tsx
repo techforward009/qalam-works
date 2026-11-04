@@ -1232,8 +1232,8 @@ export function CustomKeyboardDialog(props: CustomKeyboardDialogProps): React.JS
                 onChange={(e) => setStartFrom(e.target.value)}
                 style={{ height: "26px", fontSize: "13px", padding: "0 4px" }}
               >
-                <option value="inpageMonotype">Monotype</option>
-                <option value="inpagePhonetic">Phonetic</option>
+                <option value="inpageMonotype">Monotype Keyboard</option>
+                <option value="inpagePhonetic">Phonetic Keyboard</option>
                 <option value="arabic">Arabic (Monotype)</option>
                 <option value="persian">Persian (Monotype)</option>
                 <option value="empty">Empty</option>
