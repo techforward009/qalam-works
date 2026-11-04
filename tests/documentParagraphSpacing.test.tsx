@@ -276,6 +276,7 @@ describe("PDF and DOCX spacing export", () => {
     expect(html.html).toContain("margin-inline-end:5mm");
     expect(html.html).toContain('dir="rtl"');
     expect(html.html).toContain("line-height:14pt");
+    expect(html.html).toContain("table.qalam-document-table :is(th,td) p span { line-height:max(1em,1lh); }");
   });
 
   it("emits DOCX spacing and indentation", async () => {

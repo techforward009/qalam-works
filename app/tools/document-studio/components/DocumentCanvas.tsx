@@ -889,10 +889,11 @@ export default function DocumentCanvas({
              Explicit paragraph indentation is still respected inline. */
           text-indent: 0;
         }
-        /* Within cells, a marked 48pt word must expand its own line box
-           and row, instead of spilling outside a 0-height inline span. */
+        /* Cell text runs must honour the paragraph's chosen leading, while
+           never collapsing below their own font size. The old normal
+           value overrode paragraph line spacing on every marked run. */
         .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span {
-          line-height: normal;
+          line-height: max(1em, 1lh);
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] :is(td,th,p) {
           cursor: col-resize !important;

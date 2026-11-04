@@ -140,6 +140,44 @@ test("48pt Urdu word enlarges only its own row; Enter and explicit paragraph spa
   const spaced=await rows.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
   expect(spaced[1]).toBeGreaterThan(multiline[1]+10);
   expect(Math.abs(spaced[2]-before[2])).toBeLessThanOrEqual(3);
+
+  // Reducing paragraph spacing and line leading must compact the same row.
+  // Marked text runs use the parent's leading unless their own font needs
+  // more room, so the cell can shrink without clipping larger characters.
+  await second.locator("p").evaluateAll((paragraphs) => {
+    const editor=(paragraphs[0].closest(".ProseMirror") as HTMLElement & {editor:import("@tiptap/core").Editor}).editor;
+    let tr=editor.state.tr;
+    for(const p of paragraphs){
+      const pos=editor.view.posAtDOM(p,0)-1;
+      const node=tr.doc.nodeAt(pos);
+      if(!node||node.type.name!=="paragraph")throw Error("paragraph position not found");
+      const from=pos+1,to=from+node.content.size;
+      tr=tr.addMark(from,to,editor.schema.marks.textStyle.create({fontSize:"12pt"}));
+      tr=tr.setNodeMarkup(pos,undefined,{...node.attrs,spaceBeforePt:0,spaceAfterPt:0,lineGapPt:0});
+    }
+    editor.view.dispatch(tr);
+  });
+  const compact=await rows.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
+  const normalSpanLine=await second.locator("p").first().evaluate(p=>parseFloat(getComputedStyle(p.querySelector("span")!).lineHeight));
+
+  // The paragraph leading must reach marked spans instead of being replaced by normal.
+  await second.locator("p").evaluateAll((paragraphs) => {
+    const editor=(paragraphs[0].closest(".ProseMirror") as HTMLElement & {editor:import("@tiptap/core").Editor}).editor;
+    let tr=editor.state.tr;
+    for(const p of paragraphs){
+      const pos=editor.view.posAtDOM(p,0)-1;
+      const node=tr.doc.nodeAt(pos);
+      if(!node||node.type.name!=="paragraph")throw Error("paragraph position not found");
+      tr=tr.setNodeMarkup(pos,undefined,{...node.attrs,leading:{mode:"points",value:8},lineHeight:null});
+    }
+    editor.view.dispatch(tr);
+  });
+  const tight=await rows.evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().height));
+  expect(tight[1]).toBeLessThan(compact[1]-3);
+  expect(Math.abs(tight[2]-before[2])).toBeLessThanOrEqual(3);
+  const tightLine=await second.locator("p").first().evaluate(p=>parseFloat(getComputedStyle(p.querySelector("span")!).lineHeight));
+  expect(tightLine).toBeCloseTo(16,0);
+  expect(tightLine).toBeLessThan(normalSpanLine-1);
   await page.screenshot({path:test.info().outputPath("urdu-48pt-paragraph-space.png")});
 });
 
