@@ -135,7 +135,7 @@ describe("Keyboard menu", () => {
     expect(roots.indexOf("keyboard")).toBe(roots.indexOf("window") - 1);
     fireEvent.click(screen.getByRole("menuitem", { name: /^Keyboard$/ }));
     expect(document.querySelector('[data-menu-dropdown="keyboard"] [aria-checked="true"]')?.textContent).toContain("System Keyboard");
-    fireEvent.click(screen.getByRole("menuitem", { name: /^InPage Phonetic/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Phonetic/ }));
     expect(onSelectLayout).toHaveBeenCalledWith("inpagePhonetic");
     fireEvent.click(screen.getByRole("menuitem", { name: /^Keyboard$/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: /^Custom Keyboard/ }));

@@ -61,10 +61,10 @@ describe("Document Studio storage status", () => {
 
 describe("Document Studio keyboard status panel", () => {
   it("shows the selected keyboard name in its own panel next to the save status", () => {
-    render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online keyboardName="InPage Phonetic" />);
+    render(<DocumentStatusBar isUr={false} dir="rtl" stats={null} saveStatus="saved" storageDurability="persistent" online keyboardName="Phonetic" />);
     const panel = document.querySelector<HTMLElement>("[data-studio-keyboard-status]");
-    expect(panel?.textContent).toBe("InPage Phonetic");
-    expect(panel?.title).toBe("Keyboard: InPage Phonetic");
+    expect(panel?.textContent).toBe("Phonetic");
+    expect(panel?.title).toBe("Keyboard: Phonetic");
     expect(panel?.previousElementSibling?.getAttribute("data-studio-status-panel")).toBe("left");
   });
   it("omits the panel without a keyboard name", () => {

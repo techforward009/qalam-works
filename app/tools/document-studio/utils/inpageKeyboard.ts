@@ -6,8 +6,8 @@ export type KeyboardLayout = Record<string, Partial<Record<KeyState, string>>>;
 
 export const KEYBOARD_LAYOUT_LABELS: Record<KeyboardLayoutId, string> = {
   off: "System Keyboard",
-  inpageMonotype: "InPage Monotype",
-  inpagePhonetic: "InPage Phonetic",
+  inpageMonotype: "Monotype",
+  inpagePhonetic: "Phonetic",
   arabic: "Arabic (Monotype)",
   persian: "Persian (Monotype)",
   custom: "Custom Keyboard"
