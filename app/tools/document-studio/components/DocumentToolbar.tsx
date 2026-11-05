@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
-import { NodeSelection } from "@tiptap/pm/state";
+import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
 import { LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
@@ -422,9 +422,11 @@ function ImageActionButton({
 type StudioSwatch = { id: string; label: string; hex: string };
 
 function applyKeepingSelection(editor: Editor, apply: () => void) {
-  const { from, to } = editor.state.selection;
+  const { selection } = editor.state;
   apply();
-  editor.commands.setTextSelection({ from, to });
+  if (selection instanceof TextSelection) {
+    editor.commands.setTextSelection({ from: selection.from, to: selection.to });
+  }
 }
 
 function ColorPaletteControl({
@@ -636,35 +638,38 @@ function isLightHex(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
-function LineGapField({ editor, value }: { editor: Editor; value: number }) {
+function LineGapField({ editor, value, mixed = false }: { editor: Editor; value: number; mixed?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dirtyRef = useRef(false);
   const tabbing = useRef(false);
   const cancelling = useRef(false);
-  const label = `${value}pt`;
+  const label = mixed ? "" : `${value}pt`;
   const [text, setText] = useState(label);
   useEffect(() => {
-    if (document.activeElement === inputRef.current) return;
+    if (dirtyRef.current || document.activeElement === inputRef.current) return;
     setText(label);
   }, [label]);
-  const commit = (raw: string, focus = true) => {
+  const commit = (raw: string, focus = true, fromBlur = false) => {
+    if (fromBlur && !dirtyRef.current) { setText(label); return; }
+    dirtyRef.current = false;
     const next = parseLineGap(raw);
     if (next === null) { setText(label); return; }
     setText(`${next}pt`);
     applyLineGap(editor, next, focus);
   };
   return <SunkenBox geom="gap" x={122} w={60} h={19}>
-    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => {
-      if (cancelling.current) { cancelling.current = false; tabbing.current = false; setText(label); return; }
+    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onBlur={(event) => {
+      if (cancelling.current) { cancelling.current = false; tabbing.current = false; dirtyRef.current = false; setText(label); return; }
       const next = event.relatedTarget;
       const toolbar = event.currentTarget.closest("[data-studio-toolbar]");
       const inToolbar = next instanceof HTMLElement && !!toolbar?.contains(next);
-      commit(event.currentTarget.value, !(inToolbar || tabbing.current));
+      commit(event.currentTarget.value, !(inToolbar || tabbing.current), true);
       tabbing.current = false;
       if (inToolbar) next.focus();
     }} onKeyDown={(event) => {
       if (event.key === "Tab") tabbing.current = true;
       if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
-      if (event.key === "Escape") { event.preventDefault(); cancelling.current = true; setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+      if (event.key === "Escape") { event.preventDefault(); dirtyRef.current = false; cancelling.current = true; setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
     }} style={EDIT_TEXT} />
   </SunkenBox>;
 }
@@ -1236,7 +1241,7 @@ export default function DocumentToolbar({
           </SunkenBox>
           <FlatTile geom="leading-icon" x={103} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} glyph={LEADING_GLYPH} light={LEADING_LIGHT} onClick={() => leadingRef.current?.focus()} />
           <SunkenBox geom="leading" x={122} w={60} h={19}>
-            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} onChange={(value, meta) => applyLineHeight(editor, value.mode === "points" ? value.value : null, meta?.focus !== false)} style={EDIT_TEXT} />
+            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} mixed={ui.mixed.lineHeight} onChange={(value, meta) => applyLineHeight(editor, value.mode === "points" ? value.value : null, meta?.focus !== false)} style={EDIT_TEXT} />
           </SunkenBox>
           <SunkenBox geom="english-font" x={184} w={202} h={20}>
             <span aria-hidden="true" style={{ position: "absolute", left: 7, top: 5, zIndex: 2, width: 13, height: 12, pointerEvents: "none" }}>
@@ -1276,7 +1281,7 @@ export default function DocumentToolbar({
           <RaisedButton geom="align-justify" align="justify" x={62} label={isUr ? "برابر کریں" : "Justify"} pressed={ui.textAlign === "justify"} glyph={alignGlyph("justify")} onClick={() => setAlign(editor, "justify")} />
           <RaisedButton geom="align-full" align="justify-all" x={82} label={isUr ? "مکمل برابر" : "Full justify"} pressed={ui.textAlign === "justify-all"} glyph={alignGlyph("full")} onClick={() => setAlign(editor, "justify-all")} />
           <ParagraphSpacingMenu openRequest={paragraphRequest} editor={editor} ui={ui} settings={settings} isUr={isUr} />
-          <LineGapField editor={editor} value={ui.lineGapPt ?? 0} />
+          <LineGapField editor={editor} value={ui.lineGapPt ?? 0} mixed={ui.mixed.lineGap} />
           <SunkenBox geom="urdu-font" x={184} w={202} h={20}>
             <select id="studio-font-family" data-studio-font-family="true" aria-label={isUr ? "اردو فونٹ" : "Urdu font"} title={isUr ? "اردو فونٹ" : "Urdu font"} value={currentFont} onChange={(event) => { if (event.target.value !== MIXED_TOOLBAR_VALUE) applyFontFamily(editor, event.target.value); }} style={COMBO_TEXT}>
               {ui.mixed.fontFamily ? <option value={MIXED_TOOLBAR_VALUE}>{isUr ? "مخلوط" : "Mixed"}</option> : null}
@@ -1290,8 +1295,8 @@ export default function DocumentToolbar({
             </select>
             <ComboArrow />
           </SunkenBox>
-          <RaisedButton geom="ltr" x={388} label={isUr ? "بائیں سے دائیں" : "Left to right"} pressed={editor.state.selection.$from.parent.attrs.dir === "ltr"} glyph={LTR_GLYPH} onClick={() => applyParagraphDirection(editor, "ltr")} />
-          <RaisedButton geom="rtl" x={408} label={isUr ? "دائیں سے بائیں" : "Right to left"} pressed={editor.state.selection.$from.parent.attrs.dir !== "ltr"} glyph={RTL_GLYPH} onClick={() => applyParagraphDirection(editor, "rtl")} />
+          <RaisedButton geom="ltr" x={388} label={isUr ? "بائیں سے دائیں" : "Left to right"} pressed={ui.blockDir === "ltr"} glyph={LTR_GLYPH} onClick={() => applyParagraphDirection(editor, "ltr")} />
+          <RaisedButton geom="rtl" x={408} label={isUr ? "دائیں سے بائیں" : "Right to left"} pressed={ui.blockDir === "rtl"} glyph={RTL_GLYPH} onClick={() => applyParagraphDirection(editor, "rtl")} />
           <ColourField editor={editor} value={colourValue} />
           <FlatTile geom="scale-icon" x={512} label={isUr ? "افقی پیمانہ" : "Horizontal scale"} glyph={SCALE_GLYPH} />
           <PercentField editor={editor} kind="scale" geom="scale" attr="scale" label={isUr ? "افقی پیمانہ" : "Horizontal scale"} value={ui.mixed.scale || ui.scalePercent == null ? "" : `${ui.scalePercent}%`} />

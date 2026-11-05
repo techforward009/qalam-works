@@ -21,7 +21,6 @@ export default function DocumentSettingsPanel({
   setDocumentSettings,
   selectedPresetId,
   onPresetChange,
-  onPageChange,
   viewMode = "pages",
   rulerUnit = "cm",
   setRulerUnit,
@@ -33,7 +32,6 @@ export default function DocumentSettingsPanel({
   setDocumentSettings: React.Dispatch<React.SetStateAction<DocumentStudioSettings>>;
   selectedPresetId: PresetId;
   onPresetChange: (id: PresetId) => void;
-  onPageChange: () => void;
   viewMode?: DocumentViewMode;
   rulerUnit?: RulerUnit;
   setRulerUnit?: (unit: RulerUnit) => void;
@@ -52,7 +50,6 @@ export default function DocumentSettingsPanel({
               margins: commitPhysicalMarginDrag(s.page.margins, dir, edge, mm),
             },
           }));
-          onPageChange();
         }}
       />
       <div>
@@ -75,7 +72,6 @@ export default function DocumentSettingsPanel({
             onChange={(e) => {
               const size = e.target.value as "a4" | "a5" | "letter";
               setDocumentSettings((s) => ({ ...s, page: { ...s.page, size, customSizeMm: undefined } }));
-              onPageChange();
             }}
           >
             <option value="a4">A4</option>
@@ -91,7 +87,6 @@ export default function DocumentSettingsPanel({
             onChange={(e) => {
               const orientation = e.target.value as "portrait" | "landscape";
               setDocumentSettings((s) => ({ ...s, page: { ...s.page, orientation } }));
-              onPageChange();
             }}
           >
             <option value="portrait">{isUr ? "عمودی" : "Portrait"}</option>
@@ -121,7 +116,6 @@ export default function DocumentSettingsPanel({
                 ...s,
                 page: { ...s.page, margins: { ...s.page.margins, preset } },
               }));
-              onPageChange();
             }}
           >
             <option value="normal">{isUr ? "عام" : "Normal"}</option>
@@ -146,7 +140,6 @@ export default function DocumentSettingsPanel({
                       ...s,
                       page: { ...s.page, margins: { ...s.page.margins, preset: "custom", [key]: mm } },
                     }));
-                    onPageChange();
                   }}
                 />
               </label>
@@ -187,7 +180,6 @@ export default function DocumentSettingsPanel({
               checked={documentSettings.headerFooter.headerEnabled}
               onChange={(e) => {
                 setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerEnabled: e.target.checked } }));
-                onPageChange();
               }}
             />
             {isUr ? "ہیڈر" : "Header"}
@@ -199,7 +191,6 @@ export default function DocumentSettingsPanel({
                 value={documentSettings.headerFooter.headerMode}
                 onChange={(e) => {
                   setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerMode: e.target.value as "auto-title" | "custom" } }));
-                  onPageChange();
                 }}
               >
                 <option value="auto-title">{isUr ? "خودکار عنوان" : "Auto title"}</option>
@@ -214,7 +205,6 @@ export default function DocumentSettingsPanel({
                   value={documentSettings.headerFooter.headerText}
                   onChange={(e) => {
                     setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerText: e.target.value } }));
-                    onPageChange();
                   }}
                 />
               )}
@@ -228,7 +218,6 @@ export default function DocumentSettingsPanel({
               checked={documentSettings.headerFooter.footerEnabled}
               onChange={(e) => {
                 setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, footerEnabled: e.target.checked } }));
-                onPageChange();
               }}
             />
             {isUr ? "فوٹر" : "Footer"}
@@ -243,7 +232,6 @@ export default function DocumentSettingsPanel({
                 value={documentSettings.headerFooter.footerText}
                 onChange={(e) => {
                   setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, footerText: e.target.value } }));
-                  onPageChange();
                 }}
               />
               <select
@@ -252,7 +240,6 @@ export default function DocumentSettingsPanel({
                 onChange={(e) => {
                   const pageNumbers = e.target.value as "none" | "current" | "current-total";
                   setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, pageNumbers } }));
-                  onPageChange();
                 }}
               >
                 <option value="none">{isUr ? "صفحہ نمبر نہیں" : "No page numbers"}</option>

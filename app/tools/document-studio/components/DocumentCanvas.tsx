@@ -884,22 +884,30 @@ export default function DocumentCanvas({
           font-weight: 700;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table p {
-          /* Use additive point padding: adjacent paragraph margins collapse
-             in CSS, unlike InPage paragraph-before/after spacing. */
-          margin: 0 !important;
-          padding-block-start: var(--qalam-space-before, 0);
-          padding-block-end: var(--qalam-space-after, 0);
+          margin: 0;
           /* Story-level first-line indentation must not reach a cell.
              Explicit paragraph indentation is still respected inline. */
           text-indent: 0;
         }
-        /* Cell text runs must honour the paragraph's chosen leading, while
-           never collapsing below their own font size. The old normal
-           value overrode paragraph line spacing on every marked run. */
+        /* Cell text runs honour the paragraph's selected leading; a larger
+           inline font is handled by the more specific rule immediately below. */
         .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span {
           line-height: max(1em, 1lh);
         }
-        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] :is(td,th,p) {
+        /* Within cells, a marked 48pt word must expand its own line box
+           and row, instead of spilling outside a 0-height inline span.
+           Preserved-space and script-run helper spans must stay 0-height so
+           typing Space never inflates Nastaliq row height by font ascender/descender. */
+        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span[style*="font-size"]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) {
+          line-height: normal;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span[data-studio-preserved-space] {
+          line-height: 0;
+        }
+        .qalam-editor-content .ProseMirror[data-table-resize-hover],
+        .qalam-editor-content .ProseMirror[data-table-resize-hover] *,
+        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover],
+        .qalam-editor-content .ProseMirror table.qalam-document-table[data-table-resize-hover] * {
           cursor: col-resize !important;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table .selectedCell {
@@ -912,8 +920,7 @@ export default function DocumentCanvas({
           pointer-events: none;
           z-index: 3;
           background: rgba(30, 99, 185, 0.29) !important;
-          outline: 2px solid rgba(30, 99, 185, 0.65);
-          outline-offset: -2px;
+          outline: 0;
         }
         .qalam-editor-content .ProseMirror img.qalam-document-image {
           display: block;

@@ -24,6 +24,7 @@ import type { MenuActionId } from "./documentMenus";
 import type { BlockStyleId } from "./documentStyles";
 import type { DocumentViewMode, DocumentZoom, RulerUnit } from "./documentView";
 import { zoomFromMenuAction } from "./documentView";
+import { tableLayoutCommand } from "./tableOperations";
 
 export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
 
@@ -235,22 +236,22 @@ export function dispatchDocumentMenuAction(
       handlers.insertSectionBreak?.("continuous");
       return;
     case "table.addRowBefore":
-      editor?.chain().focus().addRowBefore().run();
+      if (editor) tableLayoutCommand(editor, "row", "before", "insert");
       return;
     case "table.addRowAfter":
-      editor?.chain().focus().addRowAfter().run();
+      if (editor) tableLayoutCommand(editor, "row", "after", "insert");
       return;
     case "table.deleteRow":
-      editor?.chain().focus().deleteRow().run();
+      if (editor) tableLayoutCommand(editor, "row", "before", "delete");
       return;
     case "table.addColumnBefore":
-      editor?.chain().focus().addColumnBefore().run();
+      if (editor) tableLayoutCommand(editor, "column", "before", "insert");
       return;
     case "table.addColumnAfter":
-      editor?.chain().focus().addColumnAfter().run();
+      if (editor) tableLayoutCommand(editor, "column", "after", "insert");
       return;
     case "table.deleteColumn":
-      editor?.chain().focus().deleteColumn().run();
+      if (editor) tableLayoutCommand(editor, "column", "before", "delete");
       return;
     case "table.toggleHeaderRow":
       editor?.chain().focus().toggleHeaderRow().run();

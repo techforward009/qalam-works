@@ -421,7 +421,7 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           // A formatted cell owns each shared edge against a default cell.
           // Width and line style break ties; document order resolves exact ties.
           const explicit=color.toLowerCase()!=="#000000"||Math.abs(pt-.5)>.0001||storedStyle!=="none";
-          return {color,style,pt,explicit,order:rowIndex*10000+columnIndex};
+          return {color,style,storedStyle,pt,explicit,order:rowIndex*10000+columnIndex};
         }));
       const chooseBorder=(a:typeof borderRows[number][number],b:typeof borderRows[number][number])=>{
         if(a.explicit!==b.explicit)return a.explicit?a:b;
@@ -429,8 +429,8 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
         if(styleRank[a.style]!==styleRank[b.style])return styleRank[a.style]>styleRank[b.style]?a:b;
         return a.order<b.order?a:b;
       };
-      const sideCss=(owner:typeof borderRows[number][number],neighbor?:typeof borderRows[number][number])=>
-        !neighbor||chooseBorder(owner,neighbor)===owner?`${owner.pt}pt ${owner.style} ${owner.color}`:"0 none transparent";
+      const sideCss=(hasSide:boolean,edgeOwner:typeof borderRows[number][number])=>
+        hasSide&&edgeOwner.storedStyle!=="none"?`${edgeOwner.pt}pt ${edgeOwner.style} transparent`:"0 none transparent";
       const rows=tableRows.map((row,rowIndex)=>{
         const cells=(row.content??[]).filter(cell=>cell.type==="tableCell"||cell.type==="tableHeader").map((cell,columnIndex)=>{
           const tag=cell.type==="tableHeader"?"th":"td";
@@ -439,14 +439,45 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           const own=borderRows[rowIndex][columnIndex];
           const above=borderRows[rowIndex-1]?.[columnIndex];
           const below=borderRows[rowIndex+1]?.[columnIndex];
-          const left=borderRows[rowIndex]?.[columnIndex-1];
-          const right=borderRows[rowIndex]?.[columnIndex+1];
+          // In RTL, column 0 is the rightmost column; columnIndex + 1 is to its left, and columnIndex - 1 is to its right.
+          // In LTR, column 0 is the leftmost column; columnIndex - 1 is to its left, and columnIndex + 1 is to its right.
+          const left=tableDir==="rtl"?borderRows[rowIndex]?.[columnIndex+1]:borderRows[rowIndex]?.[columnIndex-1];
+          const right=tableDir==="rtl"?borderRows[rowIndex]?.[columnIndex-1]:borderRows[rowIndex]?.[columnIndex+1];
+          const hasTop=!above||chooseBorder(own,above)===own;
+          const hasBottom=!below||chooseBorder(own,below)===own;
+          const hasRight=!right||chooseBorder(own,right)===own;
+          const hasLeft=!left||chooseBorder(own,left)===own;
           const gap=Math.max(0,Math.min(20,Number(a.tableGapMm??1.41)||1.41));
-          const css=`position:relative;background-color:${fill};border-top:${sideCss(own,above)};border-right:${sideCss(own,right)};border-bottom:${sideCss(own,below)};border-left:${sideCss(own,left)};padding-inline-end:${gap}mm;vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}`;
+          const css=`position:relative;background-color:${fill};border:0 none transparent;padding-inline-end:${gap}mm;vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}`;
+
+          const pt=own.pt,halfPt=pt/2,color=own.color,style=own.style;
+          const rects:string[]=[];
+          if(hasTop){
+            if(style==="dashed")rects.push(`<line data-edge="top" x1="0" y1="${above?0:halfPt}pt" x2="100%" y2="${above?0:halfPt}pt" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
+            else if(style==="dotted")rects.push(`<line data-edge="top" x1="0" y1="${above?0:halfPt}pt" x2="100%" y2="${above?0:halfPt}pt" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
+            else rects.push(`<rect data-edge="top" x="0" y="${above?`-${halfPt}`:0}pt" width="100%" height="${pt}pt" fill="${color}"/>`);
+          }
+          if(hasBottom){
+            if(style==="dashed")rects.push(`<line data-edge="bottom" x1="0" y1="${below?"100%":`calc(100% - ${halfPt}pt)`}" x2="100%" y2="${below?"100%":`calc(100% - ${halfPt}pt)`}" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
+            else if(style==="dotted")rects.push(`<line data-edge="bottom" x1="0" y1="${below?"100%":`calc(100% - ${halfPt}pt)`}" x2="100%" y2="${below?"100%":`calc(100% - ${halfPt}pt)`}" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
+            else rects.push(`<rect data-edge="bottom" x="0" y="${below?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt}pt)`}" width="100%" height="${pt}pt" fill="${color}"/>`);
+          }
+          if(hasRight){
+            if(style==="dashed")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
+            else if(style==="dotted")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
+            else rects.push(`<rect data-edge="right" x="${right?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt}pt)`}" y="0" width="${pt}pt" height="100%" fill="${color}"/>`);
+          }
+          if(hasLeft){
+            if(style==="dashed")rects.push(`<line data-edge="left" x1="${left?0:halfPt}pt" y1="0" x2="${left?0:halfPt}pt" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
+            else if(style==="dotted")rects.push(`<line data-edge="left" x1="${left?0:halfPt}pt" y1="0" x2="${left?0:halfPt}pt" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
+            else rects.push(`<rect data-edge="left" x="${left?`-${halfPt}`:0}pt" y="0" width="${pt}pt" height="100%" fill="${color}"/>`);
+          }
+          const svg=rects.length>0?`<svg class="qalam-pdf-cell-borders" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;">${rects.join("")}</svg>`:"";
+
           const inner=(cell.content??[]).map(child=>child.type==="paragraph"&&!(child.content?.length)
             ?`<p${openAttrs(child,directionForNode(child,tableDir),ctx)}><br></p>`
             :convertNode(child,ctx)).join("");
-          return `<${tag} data-table-border-style="${own.style}" style="${escapeAttr(css)}">${inner}</${tag}>`;
+          return `<${tag} data-table-border-style="${own.style}" style="${escapeAttr(css)}">${svg}${inner}</${tag}>`;
         }).join("");
         return `<tr>${cells}</tr>`;
       }).join("");
@@ -608,6 +639,8 @@ ${classRulesCss()}
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
   table.qalam-document-table p { margin:0 !important; padding-block-start:var(--qalam-space-before,0); padding-block-end:var(--qalam-space-after,0); }
   table.qalam-document-table :is(th,td) p span { line-height:max(1em,1lh); }
+  table.qalam-document-table :is(th,td) p span[style*=font-size]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) { line-height:normal; }
+  table.qalam-document-table :is(th,td) p span[data-studio-preserved-space] { line-height:0; }
   figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
   figure.qalam-document-image.image-left { margin-left:0; margin-right:auto; }
   figure.qalam-document-image.image-right { margin-left:auto; margin-right:0; }

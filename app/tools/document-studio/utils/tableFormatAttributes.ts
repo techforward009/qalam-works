@@ -1,6 +1,10 @@
 import {Extension} from "@tiptap/core";
-import {Plugin,TextSelection} from "@tiptap/pm/state";
+import type {Node as ProseMirrorNode} from "@tiptap/pm/model";
+import {Plugin,TextSelection,type EditorState} from "@tiptap/pm/state";
+import {TableMap,CellSelection} from "@tiptap/pm/tables";
+import {Decoration,DecorationSet} from "@tiptap/pm/view";
 import {tableFormatAlignedMargins} from "./tableFormatUnits";
+import {TABLE_RESIZE_HIT_PX} from "./tableColumnResizing";
 
 const safeColor=(value:unknown):string|null=>
  typeof value==="string"&&/^#[0-9a-f]{6}$/i.test(value)?value.toLowerCase():null;
@@ -9,6 +13,99 @@ const safeBorder=(value:unknown)=>borderTypes.includes(value as typeof borderTyp
 const numeric=(value:unknown,fallback:number,min:number,max:number)=>{
  const n=Number(value);return Number.isFinite(n)&&n>=min&&n<=max?n:fallback;
 };
+const styleRank:Record<string,number>={dotted:0,dashed:1,solid:2,double:3};
+type ModelCellEdge={
+ pos:number;
+ nodeSize:number;
+ color:string;
+ style:string;
+ storedStyle:string;
+ pt:number;
+ explicit:boolean;
+ order:number;
+ top:number;
+ bottom:number;
+ left:number;
+ right:number;
+};
+function chooseBorder(a:ModelCellEdge,b:ModelCellEdge):ModelCellEdge{
+ if(a.explicit!==b.explicit)return a.explicit?a:b;
+ if(Math.abs(a.pt-b.pt)>.0001)return a.pt>b.pt?a:b;
+ if((styleRank[a.style]??2)!==(styleRank[b.style]??2))
+  return (styleRank[a.style]??2)>(styleRank[b.style]??2)?a:b;
+ return a.order<b.order?a:b;
+}
+function sameVisual(a:ModelCellEdge,b:ModelCellEdge):boolean{
+ return a.color===b.color&&a.style===b.style&&Math.abs(a.pt-b.pt)<=.0001;
+}
+function buildTableBorderDecorations(state:EditorState):DecorationSet{
+ const decorations:Decoration[]=[];
+ state.doc.descendants((tableNode:ProseMirrorNode,tablePos:number)=>{
+  if(tableNode.type.name!=="table")return;
+  const rtl=!(tableNode.attrs.tableFlow==="ltr"||tableNode.attrs.dir==="ltr");
+  const isSeparate=tableNode.childCount>=18;
+  const map=TableMap.get(tableNode);
+  if(map.width===0||map.height===0)return false;
+  const byRel=new Map<number,ModelCellEdge>();
+  for(let r=0;r<map.height;r++){
+   for(let c=0;c<map.width;c++){
+    const rel=map.map[r*map.width+c];
+    if(byRel.has(rel))continue;
+    const cellNode=tableNode.nodeAt(rel);
+    if(!cellNode)continue;
+    const rect=map.findCell(rel);
+    const a=cellNode.attrs??{};
+    const color=safeColor(a.tableBorderColor)??"#000000";
+    const storedStyle=String(safeBorder(a.tableBorderStyle));
+    const style=storedStyle==="none"?"solid":storedStyle;
+    const pt=numeric(a.tableBorderWidthPt,.5,.25,8);
+    const explicit=color!=="#000000"||Math.abs(pt-.5)>.0001||storedStyle!=="none";
+    byRel.set(rel,{
+     pos:tablePos+1+rel,
+     nodeSize:cellNode.nodeSize,
+     color,style,storedStyle,pt,explicit,
+     order:rect.top*10000+rect.left,
+     top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right,
+    });
+   }
+  }
+  const at=(r:number,c:number):ModelCellEdge|undefined=>{
+   if(r<0||r>=map.height||c<0||c>=map.width)return undefined;
+   return byRel.get(map.map[r*map.width+c]);
+  };
+  const losesTo=(own:ModelCellEdge,nb:ModelCellEdge|undefined):boolean=>{
+   if(!nb||nb===own)return false;
+   if(chooseBorder(own,nb)!==nb)return false;
+   return isSeparate||!sameVisual(own,nb);
+  };
+  for(const entry of byRel.values()){
+   const overrides:string[]=[];
+   for(let c=entry.left;c<entry.right;c++){
+    if(losesTo(entry,at(entry.top-1,c))){overrides.push("border-top:0px none transparent");break;}
+   }
+   for(let c=entry.left;c<entry.right;c++){
+    if(losesTo(entry,at(entry.bottom,c))){overrides.push("border-bottom:0px none transparent");break;}
+   }
+   for(let r=entry.top;r<entry.bottom;r++){
+    if(losesTo(entry,at(r,entry.left-1))){
+     overrides.push(rtl?"border-right:0px none transparent":"border-left:0px none transparent");
+     break;
+    }
+   }
+   for(let r=entry.top;r<entry.bottom;r++){
+    if(losesTo(entry,at(r,entry.right))){
+     overrides.push(rtl?"border-left:0px none transparent":"border-right:0px none transparent");
+     break;
+    }
+   }
+   if(overrides.length>0){
+    decorations.push(Decoration.node(entry.pos,entry.pos+entry.nodeSize,{style:overrides.join(";")}));
+   }
+  }
+  return false;
+ });
+ return decorations.length?DecorationSet.create(state.doc,decorations):DecorationSet.empty;
+}
 const tableStyles=(attrs:Record<string,unknown>)=>{
  const alignment=attrs.tableAlignment;
  const indent=numeric(attrs.tableIndentMm,0,0,120);
@@ -25,6 +122,11 @@ export const QalamTableFormatAttributes=Extension.create({
  name:"qalamTableFormatAttributes",
  addProseMirrorPlugins(){
   return [new Plugin({
+   props:{
+    decorations(state){
+     return buildTableBorderDecorations(state);
+    },
+   },
    view(view){
     const sync=()=>{
      const tables:Record<string,unknown>[]=[];
@@ -49,7 +151,8 @@ export const QalamTableFormatAttributes=Extension.create({
       const width=Number(attrs.tableFormatWidthPx)||0;
       table.style.width=width>0?`${width}px`:indent>0?`calc(100% - ${indent}mm)`:"";
       table.style.maxWidth="100%";
-      table.style.borderCollapse="separate";
+      const isFlexPaginated=table.rows.length>=18&&Boolean(table.closest(".qalam-pagination"));
+      table.style.borderCollapse=isFlexPaginated?"separate":"collapse";
       table.style.borderSpacing="0";
 
      });
@@ -59,14 +162,13 @@ export const QalamTableFormatAttributes=Extension.create({
     // finishes, using the actual clicked cell's model position.
     let down:{x:number;y:number;cellFrom:number;cellTo:number;nearGrip:boolean}|null=null;
     const onDown=(event:PointerEvent)=>{
-     if(event.button!==0)return;
+     if(event.button!==0||event.shiftKey||event.ctrlKey||event.metaKey||event.altKey)return;
      const cell=(event.target instanceof Element?event.target:null)?.closest<HTMLTableCellElement>("td,th");
      const table=cell?.closest("table.qalam-document-table");
      if(!cell||!table)return;
-     const rtl=getComputedStyle(table).direction==="rtl";
      const nearGrip=Array.from(cell.parentElement?.querySelectorAll<HTMLTableCellElement>("td,th")??[]).some(sibling=>{
       const rect=sibling.getBoundingClientRect();
-      return Math.abs(event.clientX-(rtl?rect.left:rect.right))<=8;
+      return Math.abs(event.clientX-rect.left)<=TABLE_RESIZE_HIT_PX || Math.abs(event.clientX-rect.right)<=TABLE_RESIZE_HIT_PX;
      });
      const pos=view.posAtDOM(cell,0);
      const $cell=view.state.doc.resolve(Math.min(pos,view.state.doc.content.size));
@@ -76,10 +178,10 @@ export const QalamTableFormatAttributes=Extension.create({
     };
     const onUp=(event:PointerEvent)=>{
      const start=down;down=null;
-     if(!start||event.button!==0||Math.hypot(event.clientX-start.x,event.clientY-start.y)>3)return;
+     if(!start||event.button!==0||event.shiftKey||event.ctrlKey||event.metaKey||event.altKey||Math.hypot(event.clientX-start.x,event.clientY-start.y)>3)return;
      // A plain click can leave ProseMirror in the previous RTL column even
      // though the DOM received the click. Never interfere with a real drag.
-     if(!start.nearGrip && view.state.selection.from>=start.cellFrom && view.state.selection.from<=start.cellTo)return;
+     if(!start.nearGrip && !(view.state.selection instanceof CellSelection) && view.state.selection.from>=start.cellFrom && view.state.selection.from<=start.cellTo)return;
      // The column-resize plugin may replace TD nodes during pointerup. Use
      // the original ProseMirror cell range, not the now-detached DOM node.
      const hit=view.posAtCoords({left:event.clientX,top:event.clientY});

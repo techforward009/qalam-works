@@ -3,7 +3,7 @@ import {useEffect,useImperativeHandle,useLayoutEffect,useRef,useState,type Ref} 
 import {createPortal} from 'react-dom';
 import {studioOverlayRoot} from '../utils/inpageToolbar';
 import type {Editor} from '@tiptap/react';
-import type {SelectionBookmark} from '@tiptap/pm/state';
+import {AllSelection,type SelectionBookmark} from '@tiptap/pm/state';
 import {CellSelection} from '@tiptap/pm/tables';
 import type {DocumentZoom} from '../utils/documentView';
 import {plainTextToDocNodeWithDir} from '../utils/plainTextToDocNode';
@@ -46,7 +46,7 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
    const selection=editor.state.selection,from=selection.$from,to=selection.$to;
    const tableAt=(pos:typeof from)=>{for(let depth=pos.depth;depth>0;depth--)if(pos.node(depth).type.name==="table")return pos.before(depth);return -1;};
    const selectedTable=tableAt(from),endTable=tableAt(to);
-   const inTable=tableContextMode(Boolean(cell||selectedTable>=0),!selection.empty&&(selectedTable<0||selectedTable!==endTable))==="table";
+   const inTable=tableContextMode(Boolean(cell||selectedTable>=0),!selection.empty&&!(selection instanceof AllSelection&&cell)&&(selectedTable<0||selectedTable!==endTable))==="table";
    setMenu({x:event.clientX,y:event.clientY,hasSelection:!selection.empty,inTable});setZoom(false);
   };
   const capture=(event:PointerEvent)=>{

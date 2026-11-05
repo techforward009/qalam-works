@@ -37,12 +37,17 @@ export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): 
 export function applyParagraphDirection(editor: Editor, mode: ParagraphDirectionMode): void {
   const { state } = editor;
   const tr = state.tr;
-  state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
-    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
-    const dir = mode === "auto" ? detectParagraphDirection(node.textContent, node.attrs.dir) : mode;
-    tr.setNodeMarkup(pos, undefined, { ...node.attrs, directionMode: mode, dir });
-    return false;
-  });
+  const seen = new Set<number>();
+  for (const { $from, $to } of state.selection.ranges) {
+    state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+      if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+      if (seen.has(pos)) return false;
+      seen.add(pos);
+      const dir = mode === "auto" ? detectParagraphDirection(node.textContent, node.attrs.dir) : mode;
+      tr.setNodeMarkup(pos, undefined, { ...node.attrs, directionMode: mode, dir });
+      return false;
+    });
+  }
   editor.view.dispatch(tr);
   editor.commands.focus();
 }
@@ -70,9 +75,16 @@ export function applyBlockStyle(editor: Editor, id: BlockStyleId): void {
   if (!style) return;
   const chain = editor.chain().focus().command(({ tr }) => {
     const positions: number[] = [];
-    tr.doc.nodesBetween(tr.selection.from, tr.selection.to, (node, pos) => {
-      if (node.type.name === "paragraph" || node.type.name === "heading") positions.push(pos);
-    });
+    const seen = new Set<number>();
+    for (const { $from, $to } of tr.selection.ranges) {
+      tr.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+        if ((node.type.name === "paragraph" || node.type.name === "heading") && !seen.has(pos)) {
+          seen.add(pos);
+          positions.push(pos);
+        }
+      });
+    }
+    positions.sort((a, b) => a - b);
     const mapStart = tr.mapping.maps.length;
     for (const originalPos of positions) {
       let pos = tr.mapping.slice(mapStart).map(originalPos);
@@ -103,6 +115,35 @@ export function applyBlockStyle(editor: Editor, id: BlockStyleId): void {
 }
 
 export function activeBlockStyleId(editor: Editor): BlockStyleId {
+  if (!editor.state.selection.empty) {
+    const styles = new Set<BlockStyleId>();
+    const seen = new Set<number>();
+    for (const { $from, $to } of editor.state.selection.ranges) {
+      editor.state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+        if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+        if (seen.has(pos)) return false;
+        seen.add(pos);
+        const $pos = editor.state.doc.resolve(Math.min(pos + 1, editor.state.doc.content.size));
+        let found: BlockStyleId = "normal";
+        for (let depth = $pos.depth; depth > 0; depth -= 1) {
+          const cur = $pos.node(depth);
+          if (cur.type.name === "heading") {
+            const level = cur.attrs.level as number;
+            if (level >= 1 && level <= 4) { found = `heading-${level}` as BlockStyleId; break; }
+          }
+          if (cur.type.name === "blockquote") { found = "quote"; break; }
+          if (cur.type.name === "paragraph") {
+            const attr = cur.attrs.blockStyle as string | undefined;
+            if (attr && isBlockStyleId(attr)) { found = attr; break; }
+          }
+        }
+        styles.add(found);
+        return false;
+      });
+    }
+    if (styles.size === 1) return [...styles][0];
+    if (styles.size > 1) return "normal";
+  }
   if (editor.isActive("heading", { level: 1 })) return "heading-1";
   if (editor.isActive("heading", { level: 2 })) return "heading-2";
   if (editor.isActive("heading", { level: 3 })) return "heading-3";
@@ -227,64 +268,71 @@ function patchTextRanges(
   const { state } = editor;
   const type = state.schema.marks.textStyle;
   if (!type) return;
-  const { from, to } = state.selection;
   const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
-  // Carry the Urdu face across separators between Arabic words, including when
-  // the separators and words have different existing marks.
-  const separators = new Set<number>();
-  if (script === "arabic") {
-    const chars: { pos: number; value: string }[] = [];
+  const seenJobs = new Set<string>();
+  const arabic = (value: string) => /\p{Script_Extensions=Arabic}/u.test(value);
+  const neutral = (value: string) => /[\s\p{P}\p{M}]/u.test(value) && !arabic(value);
+  for (const { $from, $to } of state.selection.ranges) {
+    const from = $from.pos;
+    const to = $to.pos;
+    // Carry the Urdu face across separators between Arabic words, including when
+    // the separators and words have different existing marks.
+    const separators = new Set<number>();
+    if (script === "arabic") {
+      const chars: { pos: number; value: string }[] = [];
+      state.doc.nodesBetween(from, to, (node, pos) => {
+        if (!node.isText || !node.text) return;
+        for (let index = Math.max(0, from - pos); index < Math.min(node.text.length, to - pos); index += 1) {
+          chars.push({ pos: pos + index, value: node.text[index] });
+        }
+      });
+      for (let start = 0; start < chars.length;) {
+        if (!neutral(chars[start].value)) { start += 1; continue; }
+        let end = start + 1;
+        while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1 && neutral(chars[end].value)) end += 1;
+        if (start > 0 && end < chars.length && chars[start - 1].pos + 1 === chars[start].pos &&
+            chars[end - 1].pos + 1 === chars[end].pos && arabic(chars[start - 1].value) && arabic(chars[end].value)) {
+          for (let index = start; index < end; index += 1) separators.add(chars[index].pos);
+        }
+        start = end;
+      }
+      for (let start = 0; start < chars.length;) {
+        let end = start + 1;
+        while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1) end++;
+        const text = chars.slice(start, end).map(ch => ch.value).join("");
+        for (const range of scriptRanges(text, "arabic")) for (let i = range.start; i < range.end; i++) separators.add(chars[start + i].pos);
+        start = end;
+      }
+    }
     state.doc.nodesBetween(from, to, (node, pos) => {
       if (!node.isText || !node.text) return;
-      for (let index = Math.max(0, from - pos); index < Math.min(node.text.length, to - pos); index += 1) {
-        chars.push({ pos: pos + index, value: node.text[index] });
+      const localFrom = Math.max(0, from - pos);
+      const localTo = Math.min(node.text.length, to - pos);
+      if (localTo <= localFrom) return;
+      const slice = node.text.slice(localFrom, localTo);
+      const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
+      const selected = new Set<number>();
+      for (const range of scriptRanges(slice, script)) for (let i = range.start; i < range.end; i += 1) selected.add(i);
+      for (let i = 0; i < slice.length; i += 1) if (separators.has(pos + localFrom + i)) selected.add(i);
+      const ranges: { start: number; end: number }[] = [];
+      for (let i = 0; i < slice.length; i += 1) {
+        if (!selected.has(i)) continue;
+        const start = i;
+        while (i + 1 < slice.length && selected.has(i + 1)) i += 1;
+        ranges.push({ start, end: i + 1 });
+      }
+      for (const range of ranges) {
+        const start = pos + localFrom + range.start;
+        const end = pos + localFrom + range.end;
+        const key = `${start}:${end}`;
+        if (end <= start || seenJobs.has(key)) continue;
+        seenJobs.add(key);
+        const attrs = { ...base };
+        update(attrs);
+        jobs.push({ from: start, to: end, attrs });
       }
     });
-    const arabic = (value: string) => /\p{Script_Extensions=Arabic}/u.test(value);
-    const neutral = (value: string) => /[\s\p{P}\p{M}]/u.test(value) && !arabic(value);
-    for (let start = 0; start < chars.length;) {
-      if (!neutral(chars[start].value)) { start += 1; continue; }
-      let end = start + 1;
-      while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1 && neutral(chars[end].value)) end += 1;
-      if (start > 0 && end < chars.length && chars[start - 1].pos + 1 === chars[start].pos &&
-          chars[end - 1].pos + 1 === chars[end].pos && arabic(chars[start - 1].value) && arabic(chars[end].value)) {
-        for (let index = start; index < end; index += 1) separators.add(chars[index].pos);
-      }
-      start = end;
-    }
-    for (let start = 0; start < chars.length;) {
-      let end = start + 1;
-      while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1) end++;
-      const text = chars.slice(start, end).map(ch => ch.value).join("");
-      for (const range of scriptRanges(text, "arabic")) for (let i = range.start; i < range.end; i++) separators.add(chars[start + i].pos);
-      start = end;
-    }
   }
-  state.doc.nodesBetween(from, to, (node, pos) => {
-    if (!node.isText || !node.text) return;
-    const localFrom = Math.max(0, from - pos);
-    const localTo = Math.min(node.text.length, to - pos);
-    const slice = node.text.slice(localFrom, localTo);
-    const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
-    const selected = new Set<number>();
-    for (const range of scriptRanges(slice, script)) for (let i = range.start; i < range.end; i += 1) selected.add(i);
-    for (let i = 0; i < slice.length; i += 1) if (separators.has(pos + localFrom + i)) selected.add(i);
-    const ranges: { start: number; end: number }[] = [];
-    for (let i = 0; i < slice.length; i += 1) {
-      if (!selected.has(i)) continue;
-      const start = i;
-      while (i + 1 < slice.length && selected.has(i + 1)) i += 1;
-      ranges.push({ start, end: i + 1 });
-    }
-    for (const range of ranges) {
-      const start = pos + localFrom + range.start;
-      const end = pos + localFrom + range.end;
-      if (end <= start) continue;
-      const attrs = { ...base };
-      update(attrs);
-      jobs.push({ from: start, to: end, attrs });
-    }
-  });
   if (jobs.length === 0) {
     editor.chain().focus().run();
     return;
@@ -332,16 +380,22 @@ function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", va
   const { state } = editor;
   const type = state.schema.marks.textStyle;
   if (!type) return;
-  const { from, to } = state.selection;
   const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
-  state.doc.nodesBetween(from, to, (node, pos) => {
-    if (!node.isText || !node.text) return;
-    const start = Math.max(pos, from);
-    const end = Math.min(pos + node.text.length, to);
-    if (end <= start) return;
-    const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value };
-    jobs.push({ from: start, to: end, attrs });
-  });
+  const seenJobs = new Set<string>();
+  for (const { $from, $to } of state.selection.ranges) {
+    const from = $from.pos;
+    const to = $to.pos;
+    state.doc.nodesBetween(from, to, (node, pos) => {
+      if (!node.isText || !node.text) return;
+      const start = Math.max(pos, from);
+      const end = Math.min(pos + node.text.length, to);
+      const jobKey = `${start}:${end}`;
+      if (end <= start || seenJobs.has(jobKey)) return;
+      seenJobs.add(jobKey);
+      const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value };
+      jobs.push({ from: start, to: end, attrs });
+    });
+  }
   if (jobs.length === 0) {
     patchStoredMark(editor, (attrs) => { attrs[key] = value; });
     return;
@@ -571,13 +625,39 @@ export function applyTextColor(editor: Editor, hex: string): void {
 }
 
 export function applyTextEffect(editor: Editor, effect: TextEffect): void {
-  editor.chain().focus().setMark("textStyle", { textEffect: effect === "none" ? null : effect }).run();
+  const chain = editor.chain().focus().setMark("textStyle", { textEffect: effect === "none" ? null : effect });
+  if (effect === "none") chain.removeEmptyTextStyle();
+  chain.run();
+}
+
+export function isTextOutlineActive(editor: Editor): boolean {
+  const { state } = editor;
+  if (!state.selection.empty) {
+    const type = state.schema.marks.textStyle;
+    let sawText = false;
+    let allOutlined = true;
+    for (const { $from, $to } of state.selection.ranges) {
+      state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+        if (!node.isText || !node.text) return;
+        const start = Math.max(pos, $from.pos);
+        const end = Math.min(pos + node.text.length, $to.pos);
+        if (end <= start) return;
+        sawText = true;
+        const val = node.marks.find((m) => m.type === type)?.attrs?.textOutline;
+        if (val !== true && val !== "true") allOutlined = false;
+      });
+    }
+    if (sawText) return allOutlined;
+  }
+  const current = editor.getAttributes("textStyle").textOutline;
+  return current === true || current === "true";
 }
 
 export function toggleTextOutline(editor: Editor): void {
-  const current = editor.getAttributes("textStyle").textOutline;
-  const on = current === true || current === "true";
-  editor.chain().focus().setMark("textStyle", { textOutline: on ? null : true }).run();
+  const on = isTextOutlineActive(editor);
+  const chain = editor.chain().focus().setMark("textStyle", { textOutline: on ? null : true });
+  if (on) chain.removeEmptyTextStyle();
+  chain.run();
 }
 
 export function applyHighlight(editor: Editor, hex: string): void {

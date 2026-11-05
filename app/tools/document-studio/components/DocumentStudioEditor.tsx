@@ -8,6 +8,7 @@ import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigatio
 import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
 import {inheritPreviousTableRow,inheritPreviousCellStoredMarks} from "../utils/tableRowFormatInheritance";
 import {splitTableAbove} from "../utils/splitTableAbove";
+import {hasTableForFormat} from "../utils/tableFormat";
 import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
@@ -16,6 +17,13 @@ import { migrateDocumentLeading } from "../utils/leading";
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { InpageKeyboard } from "../utils/inpageKeyboardExtension";
+import { useInpageKeyboard } from "../utils/useInpageKeyboard";
+import { KEYBOARD_LAYOUT_LABELS, type KeyboardLayout } from "../utils/inpageKeyboard";
+import rawKeyboardLayouts from "../utils/keyboardLayouts.json";
+import { CustomKeyboardDialog } from "./CustomKeyboardDialog";
+
+const baseKeyboardLayouts = rawKeyboardLayouts as unknown as Record<"inpageMonotype" | "inpagePhonetic" | "arabic" | "persian", KeyboardLayout>;
 import { restoreEditorFocus } from "../utils/restoreEditorFocus";
 import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
@@ -70,7 +78,6 @@ import { buildDocxBlob } from "../utils/buildDocxDocument";
 import { plainTextToDocNodeWithDir, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
-import { formatFileSize } from "../../../utils/formatFileSize";
 import {
   documentImagePayloadBytes,
   getImageDimensions,
@@ -433,12 +440,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [pdfRecoveryAvailable, setPdfRecoveryAvailable] = useState(false);
   const pdfExportInFlight = useRef(false);
   const browserPrintPending = useRef(false);
-  const [pdfSummary, setPdfSummary] = useState<{
-    pages: number;
-    fileSizeLabel: string;
-    fontsUsed: string[];
-    fontFallbacks: Array<{ requested: string; used: string }>;
-  } | null>(null);
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
@@ -515,8 +516,36 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const fullDeleteRef = useRef(false);
 
   const tableNavigationEditorRef = useRef<Editor | null>(null);
+  // Built-in keyboards (opt-in). "off" = the computer's own keyboard, like new InPage.
+  const kb = useInpageKeyboard();
+  const [customKeyboardOpen, setCustomKeyboardOpen] = useState(false);
+  const kbGetLayoutRef = useRef(kb.getLayout);
+  kbGetLayoutRef.current = kb.getLayout;
+  const kbLayoutIdRef = useRef(kb.layoutId);
+  kbLayoutIdRef.current = kb.layoutId;
+  const getKeyboardLayout = useCallback((): KeyboardLayout | null => (
+    processingLanguageRef.current === "en" ? null : kbGetLayoutRef.current()
+  ), []);
+  useEffect(() => {
+    // Old InPage: Left Ctrl + Space switches Urdu/English. Only with a built-in keyboard.
+    let leftCtrlDown = false;
+    const down = (e: KeyboardEvent) => {
+      if (e.code === "ControlLeft") leftCtrlDown = true;
+      if (e.code === "Space" && e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && leftCtrlDown && kbLayoutIdRef.current !== "off") {
+        e.preventDefault();
+        e.stopPropagation();
+        setProcessingLanguage(processingLanguageRef.current === "en" ? "ur" : "en");
+      }
+    };
+    const up = (e: KeyboardEvent) => { if (e.code === "ControlLeft") leftCtrlDown = false; };
+    const blur = () => { leftCtrlDown = false; };
+    window.addEventListener("keydown", down, true);
+    window.addEventListener("keyup", up, true);
+    window.addEventListener("blur", blur);
+    return () => { window.removeEventListener("keydown", down, true); window.removeEventListener("keyup", up, true); window.removeEventListener("blur", blur); };
+  }, []);
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableFormatAttributes, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
+    extensions: [InpageKeyboard.configure({ getLayout: getKeyboardLayout }), ...createDocumentStudioExtensions(), QalamTableStableDirection, QalamTableFormatAttributes, QalamTableColumnResizing, QalamPagination, LatinScriptRuns, AllahAutoMarks],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -587,7 +616,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         setIsAuditStale(true);
       }
       setAlreadyClean(false);
-      setPdfSummary(null);
 
       // Maintenance Batch (2026-08-09) — run the analysis immediately for
       // small documents (preserves today's exact instant behavior, no
@@ -663,7 +691,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const shortcut=(event:KeyboardEvent)=>{
       if(!(event.ctrlKey||event.metaKey)||!event.altKey||event.shiftKey||event.key.toLowerCase()!=="f")return;
       const target=event.target instanceof Element?event.target:null;
-      if(!target||!editor.view.dom.contains(target)||!editor.isActive("table")||tableFormatOpen)return;
+      if(!target||!editor.view.dom.contains(target)||!hasTableForFormat(editor)||tableFormatOpen)return;
       event.preventDefault();event.stopPropagation();setTableFormatOpen(true);
     };
     // Capture before TipTap or browser text commands consume Ctrl+Alt+F.
@@ -1087,7 +1115,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setIsAuditStale(false);
     setUploadError(null);
     setPdfError(null);
-    setPdfSummary(null);
     setCopied(false);
   };
 
@@ -1260,6 +1287,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setLastResolved(null);
   }, [processingLanguage]);
 
+  const [canFormatTable, setCanFormatTable] = useState(false);
+  const [inTableSelection, setInTableSelection] = useState(false);
   useEffect(() => {
     if (!editor) return;
     const sync = () => {
@@ -1270,6 +1299,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         nodes.push({ typeName: node.type.name, directionMode: node.attrs.directionMode, dir: node.attrs.dir });
       }
       setDir(rulerDirectionAtSelection(nodes));
+      setCanFormatTable(hasTableForFormat(editor));
+      setInTableSelection(editor.isActive("table"));
     };
     sync();
     editor.on("selectionUpdate", sync);
@@ -1479,7 +1510,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       saveDocumentSettings(next);
       return next;
     });
-    setPdfSummary(null);
     saveSelectedPresetId(id);
   };
 
@@ -1676,7 +1706,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     pdfExportInFlight.current = true;
     setPdfError(null);
     setPdfRecoveryAvailable(false);
-    setPdfSummary(null);
     setIsExportingPdf(true);
     try {
       const body = JSON.stringify({ doc: normalizePdfDocument(editor.getJSON()), dir, settings: documentSettings, frames: framesRef.current });
@@ -1700,11 +1729,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         return;
       }
 
-      const pageCountHeader = response.headers.get("X-Pdf-Page-Count");
-      const fileSizeHeader = response.headers.get("X-Pdf-File-Size-Bytes");
-      const fontsUsedHeader = response.headers.get("X-Pdf-Fonts-Used");
-      const fontFallbacksHeader = response.headers.get("X-Pdf-Font-Fallbacks");
-
       let blob: Blob;
       try { blob = await response.blob(); }
       catch { setPdfRecoveryAvailable(true); return; }
@@ -1716,27 +1740,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       a.click();
       document.body.removeChild(a);
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
-
-      if (pageCountHeader && fileSizeHeader) {
-        let fontsUsed: string[] = [];
-        let fontFallbacks: Array<{ requested: string; used: string }> = [];
-        try {
-          fontsUsed = fontsUsedHeader ? JSON.parse(fontsUsedHeader) : [];
-        } catch {
-          fontsUsed = [];
-        }
-        try {
-          fontFallbacks = fontFallbacksHeader ? JSON.parse(fontFallbacksHeader) : [];
-        } catch {
-          fontFallbacks = [];
-        }
-        setPdfSummary({
-          pages: parseInt(pageCountHeader, 10),
-          fileSizeLabel: formatFileSize(parseInt(fileSizeHeader, 10)),
-          fontsUsed,
-          fontFallbacks,
-        });
-      }
     } catch (err) {
       console.error("Failed to generate PDF:", err);
       setPdfError(GENERIC_PDF_EXPORT_ERROR);
@@ -2072,9 +2075,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }
   if (insertTableMode !== "selection") disabledIds.add("insert.textToTable");
   if (!editor?.isActive("table")) disabledIds.add("insert.splitTable");
-  if (!editor?.isActive("table")) {
-    disabledIds.add("text.tableLayout");
+  if (!canFormatTable && !hasTableForFormat(editor)) {
     disabledIds.add("text.tableFormat");
+  }
+  if (!inTableSelection && !editor?.isActive("table")) {
+    disabledIds.add("text.tableLayout");
     disabledIds.add("insert.tableToText");
     ([
       "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
@@ -2144,7 +2149,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setDocumentSettings,
     selectedPresetId,
     onPresetChange: handlePresetChange,
-    onPageChange: () => setPdfSummary(null),
     viewMode,
     rulerUnit,
     setRulerUnit,
@@ -2208,6 +2212,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
 
   return (
     <div data-studio-root="true" inert={switchingDocument || undefined} aria-busy={switchingDocument || undefined} className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
+      <CustomKeyboardDialog open={customKeyboardOpen} initial={kb.customLayout} baseLayouts={baseKeyboardLayouts} onSave={(layout) => { kb.setCustomLayout(layout); kb.setLayoutId("custom"); setCustomKeyboardOpen(false); }} onClose={() => setCustomKeyboardOpen(false)} />
       {formattingNotice > 0 ? <div role="alert" data-studio-formatting-notice style={{ position:"fixed", bottom:30, left:32, right:24, zIndex:10000, padding:8, background:"#ffffe1", color:"#000", border:"1px solid #808080", fontSize:13 }} dir={uiLanguage === "ur" ? "rtl" : "ltr"}>{formattingSafetyMessage(uiLanguage === "ur")} <button type="button" aria-label="Dismiss formatting message" onClick={()=>{ formattingSafety.current?.invalidate(); setFormattingNotice(0); }}>×</button></div> : null}
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
@@ -2336,7 +2341,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             }));
             setColumnCount(values.columns);
             setColumnGutterMm(values.gutter);
-            setPdfSummary(null);
             setPageSetupOpen(false);
             restoreEditorFocus(editor);
           }}
@@ -2369,7 +2373,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {textToTableOpen && editor ? <StudioTextToTableDialog editor={editor} onClose={()=>{setTextToTableOpen(false);setFormattingNotice(0);}} /> : null}
       {tableToTextOpen && editor ? <StudioTableToTextDialog editor={editor} onClose={()=>{setTableToTextOpen(false);setFormattingNotice(0);}} /> : null}
       {tableLayoutOpen && editor ? <StudioTableLayoutDialog editor={editor} onClose={()=>{setTableLayoutOpen(false);setFormattingNotice(0);}} /> : null}
-      {tableFormatOpen && editor ? <StudioTableFormatDialog editor={editor} onClose={()=>{setTableFormatOpen(false);setFormattingNotice(0);}} /> : null}
+      {tableFormatOpen && editor && hasTableForFormat(editor) ? <StudioTableFormatDialog editor={editor} onClose={()=>{setTableFormatOpen(false);setFormattingNotice(0);}} /> : null}
 
       {exitConfirmOpen?<StudioLeaveDialog cancelLabel="Cancel" onCancel={()=>setExitConfirmOpen(false)} onLeave={()=>{void exitToHome();}}/>:null}
       {switchError ? <p role="alert" className="bg-red-50 p-2 text-sm text-red-800">{switchError}</p> : null}
@@ -2389,6 +2393,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
+            keyboard={{ layoutId: kb.layoutId, hasCustom: Boolean(kb.customLayout), onSelectLayout: kb.setLayoutId, onEditCustom: () => setCustomKeyboardOpen(true) }}
             endSlot={noDocumentOpen?null:
               <div className="flex h-[20px] min-w-0 items-center gap-1" data-studio-title-slot="true">
                 {storageDurability === "memory" ? (
@@ -2490,6 +2495,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             visiblePage={visiblePage}
             zoom={zoom}
             zoomPercent={zoomPercent}
+            keyboardName={KEYBOARD_LAYOUT_LABELS[kb.layoutId]}
             onPageStep={(delta) => {
               const root = document.querySelector("[data-studio-print-root]") as HTMLElement | null;
               const stride = Number(root?.getAttribute("data-page-stride-px") || 0);
@@ -2635,33 +2641,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                       : "Auto performs safe mixed-language cleanup. Choose “Urdu” mode for Urdu letter normalization."}
                   </p>
                 )}
-              </div>
-            )}
-
-            {pdfSummary && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
-                <div className="font-semibold text-amber-800 mb-1.5">{isUr ? "✓ PDF برآمد مکمل" : "✓ PDF Export Complete"}</div>
-                <div className="text-stone-700 space-y-0.5">
-                  <div>{isUr ? "صفحات" : "Pages"}: {pdfSummary.pages}</div>
-                  <div>{isUr ? "فائل سائز" : "File Size"}: {pdfSummary.fileSizeLabel}</div>
-                  {pdfSummary.fontsUsed.length > 0 && (
-                    <div>{isUr ? "استعمال شدہ فونٹس" : "Fonts Used"}: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
-                  )}
-                  {pdfSummary.fontFallbacks.length > 0 && (
-                    <div className="text-amber-800 mt-1">
-                      {pdfSummary.fontFallbacks.map((f) =>
-                        /jameel/i.test(f.requested)
-                          ? (isUr
-                            ? "پی ڈی ایف میں جمیل نوری نستعلیق دستیاب نہ تھا، اس لیے نوٹو نستعلیق اردو استعمال ہوا۔"
-                            : "Jameel Noori Nastaleeq was unavailable in PDF export; Noto Nastaliq Urdu was used.")
-                          : (isUr
-                            ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
-                            : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`)
-                      ).join(" ")}
-                    </div>
-                  )}
-                  <div>{isUr ? "فارمیٹ: بصری / پرنٹ PDF" : "Format: Visual / Print PDF"}</div>
-                </div>
               </div>
             )}
           </div>
