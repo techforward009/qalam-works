@@ -231,11 +231,17 @@ test("decreasing leading on a selected RTL row shrinks all its cells and leaves 
   await page.mouse.move(last!.x + last!.width / 2, last!.y + last!.height / 2, { steps: 10 });
   await page.mouse.up();
 
-  await expect(cells.locator(".selectedCell")).toHaveCount(3);
-  const selectionName = () => editor.evaluate(el =>
-    (el as HTMLElement & { editor: any }).editor.state.selection.constructor.name
-  );
-  await expect.poll(selectionName).toBe("CellSelection");
+  await expect.poll(() => cells.evaluateAll(nodes =>
+    nodes.filter(cell => cell.classList.contains("selectedCell")).length
+  )).toBe(3);
+  const selectionSummary = () => editor.evaluate(el => {
+    const selection = (el as HTMLElement & { editor: any }).editor.state.selection;
+    return {
+      isRowSelection: typeof selection.isRowSelection === "function" && selection.isRowSelection(),
+      ranges: selection.ranges.length,
+    };
+  });
+  await expect.poll(selectionSummary).toEqual({ isRowSelection: true, ranges: 3 });
 
   const leading = page.locator("[data-studio-leading]");
   await expect(leading).toBeVisible();
@@ -245,7 +251,7 @@ test("decreasing leading on a selected RTL row shrinks all its cells and leaves 
   await expect.poll(() => cells.locator("p[style*='36pt']").count()).toBe(3);
   const tall = await rows.first().evaluate(row => row.getBoundingClientRect().height);
   const otherBefore = await rows.nth(1).evaluate(row => row.getBoundingClientRect().height);
-  await expect.poll(selectionName).toBe("CellSelection");
+  await expect.poll(selectionSummary).toEqual({ isRowSelection: true, ranges: 3 });
 
   await leading.fill("8pt");
   await leading.press("Enter");
@@ -255,6 +261,6 @@ test("decreasing leading on a selected RTL row shrinks all its cells and leaves 
 
   expect(compact).toBeLessThan(tall - 18);
   expect(Math.abs(otherAfter - otherBefore)).toBeLessThanOrEqual(3);
-  await expect.poll(selectionName).toBe("CellSelection");
+  await expect.poll(selectionSummary).toEqual({ isRowSelection: true, ranges: 3 });
   await page.screenshot({ path: test.info().outputPath("selected-row-leading-compacted.png") });
 });

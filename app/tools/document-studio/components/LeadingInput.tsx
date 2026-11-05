@@ -33,7 +33,7 @@ export function LeadingInput({ value, onChange, ref: forwarded, ...props }: Omit
     if (inToolbar) next.focus();
   }} onKeyDown={event => {
     if (event.key === "Tab") tabbing.current = true;
-    if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); focusEditor(event.currentTarget); }
+    if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); }
     if (event.key === "Escape") { event.preventDefault(); cancelling.current = true; setText(label); focusEditor(event.currentTarget); }
   }} />;
 }
