@@ -884,22 +884,21 @@ export default function DocumentCanvas({
           font-weight: 700;
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table p {
-          margin: 0;
+          margin-block-start: 0 !important;
+          margin-block-end: 0 !important;
+          padding-block-start: var(--qalam-space-before, 0);
+          padding-block-end: var(--qalam-space-after, 0);
           /* Story-level first-line indentation must not reach a cell.
              Explicit paragraph indentation is still respected inline. */
           text-indent: 0;
         }
-        /* Cell text runs honour the paragraph's selected leading; a larger
-           inline font is handled by the more specific rule immediately below. */
+        /* Cell text runs honour the paragraph's selected leading, but a
+           larger inline font still grows the line via 1em. */
         .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span {
           line-height: max(1em, 1lh);
         }
-        /* Within cells, a marked 48pt word must expand its own line box
-           and row, instead of spilling outside a 0-height inline span.
-           Preserved-space and script-run helper spans must stay 0-height so
-           typing Space never inflates Nastaliq row height by font ascender/descender. */
         .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span[style*="font-size"]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) {
-          line-height: normal;
+          line-height: max(1em, 1lh);
         }
         .qalam-editor-content .ProseMirror table.qalam-document-table :is(td,th) p span[data-studio-preserved-space] {
           line-height: 0;

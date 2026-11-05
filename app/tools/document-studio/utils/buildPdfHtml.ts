@@ -639,7 +639,7 @@ ${classRulesCss()}
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
   table.qalam-document-table p { margin:0 !important; padding-block-start:var(--qalam-space-before,0); padding-block-end:var(--qalam-space-after,0); }
   table.qalam-document-table :is(th,td) p span { line-height:max(1em,1lh); }
-  table.qalam-document-table :is(th,td) p span[style*=font-size]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) { line-height:normal; }
+  table.qalam-document-table :is(th,td) p span[style*=font-size]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) { line-height:max(1em,1lh); }
   table.qalam-document-table :is(th,td) p span[data-studio-preserved-space] { line-height:0; }
   figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
   figure.qalam-document-image.image-left { margin-left:0; margin-right:auto; }
