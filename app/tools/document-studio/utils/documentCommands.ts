@@ -38,4 +38,557 @@ export function applyParagraphDirection(editor: Editor, mode: ParagraphDirection
   const { state } = editor;
   const tr = state.tr;
   state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
-    if (node.type.name !== "paragraph" && node.type....[truncated]
+    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+    const dir = mode === "auto" ? detectParagraphDirection(node.textContent, node.attrs.dir) : mode;
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, directionMode: mode, dir });
+    return false;
+  });
+  editor.view.dispatch(tr);
+  editor.commands.focus();
+}
+
+/** Replace editor JSON. `load` is not a user edit and must not join the next undo group. */
+export function setEditorContent(
+  editor: Editor,
+  content: Parameters<Editor["commands"]["setContent"]>[0],
+  origin: "load" | "user",
+): void {
+  editor
+    .chain()
+    .command(({ tr }) => {
+      tr.setMeta("addToHistory", origin === "user");
+      tr.setMeta(CONTENT_REPLACEMENT, true);
+      return true;
+    })
+    .setContent(content)
+    .run();
+  editor.view.dispatch(closeHistory(editor.view.state.tr).setMeta("addToHistory", false));
+}
+
+export function applyBlockStyle(editor: Editor, id: BlockStyleId): void {
+  const style = BLOCK_STYLES[id];
+  if (!style) return;
+  const chain = editor.chain().focus().command(({ tr }) => {
+    const positions: number[] = [];
+    tr.doc.nodesBetween(tr.selection.from, tr.selection.to, (node, pos) => {
+      if (node.type.name === "paragraph" || node.type.name === "heading") positions.push(pos);
+    });
+    const mapStart = tr.mapping.maps.length;
+    for (const originalPos of positions) {
+      let pos = tr.mapping.slice(mapStart).map(originalPos);
+      // Lift only the selected textblock, retaining unselected quote siblings.
+      for (;;) {
+        const $inside = tr.doc.resolve(pos + 1);
+        if ($inside.depth < 2 || $inside.node($inside.depth - 1).type.name !== "blockquote") break;
+        const range = $inside.blockRange($inside);
+        const target = range && liftTarget(range);
+        if (!range || target == null) break;
+        const stepStart = tr.mapping.maps.length;
+        tr.lift(range, target);
+        pos = tr.mapping.slice(stepStart).map(pos);
+      }
+      const node = tr.doc.nodeAt(pos)!;
+      tr.setNodeMarkup(pos, style.kind === "heading" ? editor.schema.nodes.heading : editor.schema.nodes.paragraph, {
+        ...node.attrs,
+        level: style.headingLevel,
+        blockStyle: style.blockStyleAttr ?? null,
+        leading: null, lineHeight: null, spaceBeforePt: null, spaceAfterPt: null,
+        firstLineIndentMm: null, indentStartMm: null, indentEndMm: null,
+      });
+    }
+    return true;
+  });
+  if (style.kind === "blockquote") chain.setBlockquote();
+  chain.run();
+}
+
+export function activeBlockStyleId(editor: Editor): BlockStyleId {
+  if (editor.isActive("heading", { level: 1 })) return "heading-1";
+  if (editor.isActive("heading", { level: 2 })) return "heading-2";
+  if (editor.isActive("heading", { level: 3 })) return "heading-3";
+  if (editor.isActive("heading", { level: 4 })) return "heading-4";
+  if (editor.isActive("blockquote")) return "quote";
+  const attr = editor.getAttributes("paragraph").blockStyle as string | undefined;
+  return attr && isBlockStyleId(attr) ? attr : "normal";
+}
+
+export function applyLineHeight(editor: Editor, value: number | null, focus = true): void {
+  applyParagraphAttrs(editor, { lineHeight: null, leading: value === null ? { mode: "auto" } : { mode: "points", value } }, focus);
+}
+
+export function applyLineGap(editor: Editor, value: number, focus = true): void {
+  applyParagraphAttrs(editor, { lineGapPt: value }, focus);
+}
+
+const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
+
+export type ParagraphSpacingAttrs = {
+  leading?: Leading | null;
+  lineHeight?: number | null;
+  lineGapPt?: number | null;
+  spaceBeforePt?: number | null;
+  spaceAfterPt?: number | null;
+  firstLineIndentMm?: number | null;
+  indentStartMm?: number | null;
+  indentEndMm?: number | null;
+};
+
+export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs, focus = true): void {
+  if (typeof attrs.lineHeight === "number" && attrs.leading == null) attrs = { ...attrs, leading: { mode: "points", value: attrs.lineHeight }, lineHeight: null };
+  const { state } = editor;
+  if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
+    const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
+    const chain = editor.chain();
+    if (focus) chain.focus();
+    chain.updateAttributes(nodeType, attrs).run();
+    return;
+  }
+  let tr = state.tr;
+  let changed = false;
+  const seen = new Set<number>();
+  for (const { $from, $to } of state.selection.ranges) {
+    state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+      if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+      if (seen.has(pos)) return false;
+      seen.add(pos);
+      const next = { ...node.attrs };
+      let nodeChanged = false;
+      (Object.keys(attrs) as (keyof ParagraphSpacingAttrs)[]).forEach((key) => {
+        if (!(key in attrs)) return;
+        if (node.type.name === "heading" && HEADING_INDENT_KEYS.has(key)) return;
+        const value = attrs[key] ?? null;
+        const current = next[key];
+        const equal = typeof value === "object" && value !== null ? JSON.stringify(current) === JSON.stringify(value) : current === value;
+        if (!equal) {
+          next[key] = value;
+          nodeChanged = true;
+        }
+      });
+      if (nodeChanged) {
+        tr = tr.setNodeMarkup(pos, undefined, next);
+        changed = true;
+      }
+      return false;
+    });
+  }
+  if (changed) editor.view.dispatch(tr);
+  if (!focus) return;
+  editor.chain().focus().run();
+}
+
+export function addSpaceBeforeParagraph(editor: Editor, settings: DocumentStudioSettings = defaultDocumentSettings()): void {
+  applyParagraphAttrs(editor, { spaceBeforePt: resolveAddSpaceBeforePt(settings) });
+}
+
+export function removeSpaceBeforeParagraph(editor: Editor): void {
+  applyParagraphAttrs(editor, { spaceBeforePt: 0 });
+}
+
+export function addSpaceAfterParagraph(editor: Editor, settings: DocumentStudioSettings = defaultDocumentSettings()): void {
+  applyParagraphAttrs(editor, { spaceAfterPt: resolveAddSpaceAfterPt(settings) });
+}
+
+export function removeSpaceAfterParagraph(editor: Editor): void {
+  applyParagraphAttrs(editor, { spaceAfterPt: 0 });
+}
+
+export function applyCustomParagraphSpacing(editor: Editor, attrs: ParagraphSpacingAttrs): void {
+  applyParagraphAttrs(editor, attrs);
+}
+
+function isLatinFace(value: unknown): boolean {
+  return isLatinFamilyName(value);
+}
+
+function runStyleLive(attrs: Record<string, unknown>): boolean {
+  return Object.values(attrs).some((value) => value != null && value !== false && value !== "");
+}
+
+/** Empty selection: change stored textStyle without dropping the other script's face. */
+function patchStoredMark(editor: Editor, update: (attrs: Record<string, unknown>) => void): void {
+  editor.chain().focus().command(({ tr, state }) => {
+    const type = state.schema.marks.textStyle;
+    if (!type) return false;
+    const marks = state.storedMarks ?? state.selection.$from.marks();
+    const current = marks.find((mark) => mark.type === type);
+    const attrs: Record<string, unknown> = { ...(current?.attrs ?? {}) };
+    update(attrs);
+    tr.removeStoredMark(type);
+    if (runStyleLive(attrs)) tr.addStoredMark(type.create(attrs));
+    return true;
+  }).run();
+}
+
+function patchTextRanges(
+  editor: Editor,
+  script: "arabic" | "latin",
+  update: (attrs: Record<string, unknown>) => void,
+): void {
+  const { state } = editor;
+  const type = state.schema.marks.textStyle;
+  if (!type) return;
+  const { from, to } = state.selection;
+  const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
+  // Carry the Urdu face across separators between Arabic words, including when
+  // the separators and words have different existing marks.
+  const separators = new Set<number>();
+  if (script === "arabic") {
+    const chars: { pos: number; value: string }[] = [];
+    state.doc.nodesBetween(from, to, (node, pos) => {
+      if (!node.isText || !node.text) return;
+      for (let index = Math.max(0, from - pos); index < Math.min(node.text.length, to - pos); index += 1) {
+        chars.push({ pos: pos + index, value: node.text[index] });
+      }
+    });
+    const arabic = (value: string) => /\p{Script_Extensions=Arabic}/u.test(value);
+    const neutral = (value: string) => /[\s\p{P}\p{M}]/u.test(value) && !arabic(value);
+    for (let start = 0; start < chars.length;) {
+      if (!neutral(chars[start].value)) { start += 1; continue; }
+      let end = start + 1;
+      while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1 && neutral(chars[end].value)) end += 1;
+      if (start > 0 && end < chars.length && chars[start - 1].pos + 1 === chars[start].pos &&
+          chars[end - 1].pos + 1 === chars[end].pos && arabic(chars[start - 1].value) && arabic(chars[end].value)) {
+        for (let index = start; index < end; index += 1) separators.add(chars[index].pos);
+      }
+      start = end;
+    }
+    for (let start = 0; start < chars.length;) {
+      let end = start + 1;
+      while (end < chars.length && chars[end].pos === chars[end - 1].pos + 1) end++;
+      const text = chars.slice(start, end).map(ch => ch.value).join("");
+      for (const range of scriptRanges(text, "arabic")) for (let i = range.start; i < range.end; i++) separators.add(chars[start + i].pos);
+      start = end;
+    }
+  }
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText || !node.text) return;
+    const localFrom = Math.max(0, from - pos);
+    const localTo = Math.min(node.text.length, to - pos);
+    const slice = node.text.slice(localFrom, localTo);
+    const base = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}) };
+    const selected = new Set<number>();
+    for (const range of scriptRanges(slice, script)) for (let i = range.start; i < range.end; i += 1) selected.add(i);
+    for (let i = 0; i < slice.length; i += 1) if (separators.has(pos + localFrom + i)) selected.add(i);
+    const ranges: { start: number; end: number }[] = [];
+    for (let i = 0; i < slice.length; i += 1) {
+      if (!selected.has(i)) continue;
+      const start = i;
+      while (i + 1 < slice.length && selected.has(i + 1)) i += 1;
+      ranges.push({ start, end: i + 1 });
+    }
+    for (const range of ranges) {
+      const start = pos + localFrom + range.start;
+      const end = pos + localFrom + range.end;
+      if (end <= start) continue;
+      const attrs = { ...base };
+      update(attrs);
+      jobs.push({ from: start, to: end, attrs });
+    }
+  });
+  if (jobs.length === 0) {
+    editor.chain().focus().run();
+    return;
+  }
+  jobs.sort((a, b) => b.from - a.from);
+  let tr = state.tr;
+  for (const job of jobs) {
+    tr = tr.removeMark(job.from, job.to, type);
+    if (runStyleLive(job.attrs)) tr = tr.addMark(job.from, job.to, type.create(job.attrs));
+  }
+  editor.view.dispatch(tr);
+  editor.chain().focus().run();
+}
+
+/** Urdu face only. Latin runs keep latinFontFamily (and a legacy Latin fontFamily). */
+export function applyFontFamily(editor: Editor, family: string): void {
+  const quoted = family ? quoteEditorFontFamily(family) : null;
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, (attrs) => { attrs.fontFamily = quoted; });
+    return;
+  }
+  patchTextRanges(editor, "arabic", (attrs) => { attrs.fontFamily = quoted; });
+}
+
+/** Latin face only. Never written onto Urdu, and never clears the Urdu face. */
+export function applyEnglishFont(editor: Editor, family: string): void {
+  const clear = !family || family === "Arial Unicode MS";
+  const quoted = clear ? null : quoteEditorFontFamily(family);
+  const apply = (attrs: Record<string, unknown>) => {
+    attrs.latinFontFamily = quoted;
+    if (clear && isLatinFace(attrs.fontFamily)) attrs.fontFamily = null;
+  };
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, apply);
+    return;
+  }
+  patchTextRanges(editor, "latin", apply);
+}
+
+function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", value: number): void {
+  if (editor.state.selection.empty) {
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    return;
+  }
+  const { state } = editor;
+  const type = state.schema.marks.textStyle;
+  if (!type) return;
+  const { from, to } = state.selection;
+  const jobs: { from: number; to: number; attrs: Record<string, unknown> }[] = [];
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText || !node.text) return;
+    const start = Math.max(pos, from);
+    const end = Math.min(pos + node.text.length, to);
+    if (end <= start) return;
+    const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value };
+    jobs.push({ from: start, to: end, attrs });
+  });
+  if (jobs.length === 0) {
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    return;
+  }
+  jobs.sort((a, b) => b.from - a.from);
+  let tr = state.tr;
+  for (const job of jobs) {
+    tr = tr.removeMark(job.from, job.to, type);
+    if (runStyleLive(job.attrs)) tr = tr.addMark(job.from, job.to, type.create(job.attrs));
+  }
+  editor.view.dispatch(tr);
+  editor.chain().focus().run();
+}
+
+/** Letter spacing in percent of an em. Stored on the selection; painted on Latin only. */
+export function applyTracking(editor: Editor, percent: number): void {
+  applyMetric(editor, "trackingPercent", percent);
+}
+
+/** Horizontal scale in percent. Stored on the selection; painted on Latin only. */
+export function applyScale(editor: Editor, percent: number): void {
+  applyMetric(editor, "scalePercent", percent);
+}
+
+export function activeToolbarFontFamily(editor: Editor): string {
+  return normalizeEditorFontFamily(editor.getAttributes("textStyle").fontFamily);
+}
+
+export function applyFontSize(editor: Editor, pt: string): void {
+  if (!pt) {
+    editor.chain().focus().unsetFontSize().run();
+  } else {
+    editor.chain().focus().setFontSize(`${pt}pt`).run();
+  }
+}
+
+export function toggleBold(editor: Editor): void {
+  editor.chain().focus().toggleBold().run();
+}
+export function toggleItalic(editor: Editor): void {
+  editor.chain().focus().toggleItalic().run();
+}
+export function toggleUnderline(editor: Editor): void {
+  editor.chain().focus().toggleUnderline().run();
+}
+export function toggleHeading(editor: Editor, level: 1 | 2 | 3 | 4): void {
+  editor.chain().focus().toggleHeading({ level }).run();
+}
+export function toggleBulletList(editor: Editor): void {
+  editor.chain().focus().toggleBulletList().run();
+}
+export function toggleOrderedList(editor: Editor): void {
+  editor.chain().focus().toggleOrderedList().run();
+}
+export function toggleBlockquote(editor: Editor): void {
+  editor.chain().focus().toggleBlockquote().run();
+}
+export function setLinkHref(editor: Editor, url: string | null): void {
+  if (url) editor.chain().focus().setLink({ href: url }).run();
+  else editor.chain().focus().unsetLink().run();
+}
+export type StudioTextAlign = "left" | "center" | "right" | "justify" | "justify-all";
+export function setAlign(editor: Editor, align: StudioTextAlign): void {
+  editor.chain().focus().setTextAlign(align).run();
+}
+export function undo(editor: Editor): void {
+  editor.chain().focus().undo().run();
+}
+export function redo(editor: Editor): void {
+  editor.chain().focus().redo().run();
+}
+export function selectAll(editor: Editor): void {
+  editor.chain().focus().selectAll().run();
+}
+
+export function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
+  return extractPlainText(editor.getJSON() as DocNode, dir);
+}
+
+export function findSuggestionRange(editor: Editor, searchText: string): { from: number; to: number } | null {
+  let result: { from: number; to: number } | null = null;
+  editor.state.doc.descendants((node, pos) => {
+    if (result) return false;
+    if (node.isText && node.text) {
+      const idx = node.text.indexOf(searchText);
+      if (idx !== -1) {
+        result = { from: pos + idx, to: pos + idx + searchText.length };
+        return false;
+      }
+    }
+    return true;
+  });
+  return result;
+}
+
+export function findAllRangesInEditor(editor: Editor, searchText: string): { from: number; to: number }[] {
+  if (!searchText) return [];
+  const ranges: { from: number; to: number }[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      for (const match of findAllTextMatches(node.text, searchText)) {
+        ranges.push({ from: pos + match.index, to: pos + match.index + match.length });
+      }
+    }
+    return true;
+  });
+  return ranges;
+}
+
+export function buildReplaceAllTransaction(
+  state: EditorState,
+  searchText: string,
+  replaceText: string,
+): Transaction | null {
+  if (!searchText) return null;
+  const results: { from: number; to: number; marks: Mark[] }[] = [];
+  state.doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      for (const match of findAllTextMatches(node.text, searchText)) {
+        results.push({ from: pos + match.index, to: pos + match.index + match.length, marks: [...node.marks] });
+      }
+    }
+    return true;
+  });
+  if (results.length === 0) return null;
+  results.sort((a, b) => b.from - a.from);
+  const tr = state.tr;
+  for (const m of results) {
+    const textNode = replaceText ? state.schema.text(replaceText, m.marks) : null;
+    tr.replaceWith(m.from, m.to, textNode ? [textNode] : []);
+  }
+  return tr;
+}
+
+export function replaceAll(editor: Editor, searchText: string, replaceText: string): boolean {
+  const tr = buildReplaceAllTransaction(editor.state, searchText, replaceText);
+  if (!tr) return false;
+  editor.view.dispatch(tr);
+  return true;
+}
+
+export function findBlockStartPosition(editor: Editor, blockIndex: number): number | null {
+  let currentIndex = 0;
+  let foundPos: number | null = null;
+  editor.state.doc.forEach((_node, offset) => {
+    if (currentIndex === blockIndex) {
+      foundPos = offset + 1;
+    }
+    currentIndex++;
+  });
+  return foundPos;
+}
+
+function cleanTextStyle(mark: Mark): Mark | null {
+  if (mark.type.name !== "textStyle") return mark;
+  const attrs: Record<string, unknown> = { ...mark.attrs };
+  let live = false;
+  for (const key of Object.keys(attrs)) {
+    const value = attrs[key];
+    if (value == null || value === "" || value === false) delete attrs[key];
+    else live = true;
+  }
+  return live ? mark.type.create(attrs) : null;
+}
+
+function pastedDirection(text: string, fallbackDir: "rtl" | "ltr"): "rtl" | "ltr" {
+  if (hasScript(text, "arabic") && !hasScript(text, "latin")) return "rtl";
+  return detectParagraphDirection(text, fallbackDir);
+}
+
+export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
+  if (!slice.content.size) return slice;
+  function assignDir(node: PMNode): PMNode {
+    if (node.isText) {
+      const marks = node.marks.flatMap((mark) => {
+        const cleaned = cleanTextStyle(mark);
+        return cleaned ? [cleaned] : [];
+      });
+      const same = marks.length === node.marks.length && marks.every((mark, index) => mark.eq(node.marks[index]));
+      return same ? node : node.mark(marks);
+    }
+    const children: PMNode[] = [];
+    let changed = false;
+    node.forEach((child) => {
+      const next = assignDir(child);
+      if (next !== child) changed = true;
+      children.push(next);
+    });
+    const content = changed ? pmFragment.from(children) : node.content;
+    if (!node.isTextblock) return changed ? node.copy(content) : node;
+    const text = node.textContent;
+    if (!text.trim()) return changed ? node.copy(content) : node;
+    if (node.attrs.directionMode === "rtl" || node.attrs.directionMode === "ltr") {
+      return changed ? node.type.create(node.attrs, content, node.marks) : node;
+    }
+    const detectedDir = pastedDirection(text, fallbackDir);
+    if (!changed && detectedDir === node.attrs.dir) return node;
+    return node.type.create({ ...node.attrs, dir: detectedDir }, content, node.marks);
+  }
+  const nodes = slice.content.content.map(assignDir);
+  return new Slice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
+}
+
+export function buildDocumentStudioExample(fallbackDir: "rtl" | "ltr" = "rtl"): DocNode {
+  const paragraphs = [
+    "مسودہ: یہ  ایک  نمونہ دستاویز ہے ,جس میں غیر ضروری spaces ہیں۔",
+    "Draft notes: Review spacing and punctuation, then standardize and run Quality Audit before export.",
+    "آخری مرحلہ: تصدیق کے بعد TXT، DOCX یا PDF ایکسپورٹ کریں۔",
+  ];
+  return {
+    type: "doc",
+    content: paragraphs.map((text) => ({
+      type: "paragraph",
+      attrs: { dir: detectBlockDirection(text, fallbackDir) },
+      content: [{ type: "text", text }],
+    })),
+  };
+}
+
+export function applyTextColor(editor: Editor, hex: string): void {
+  const safe = normalizeSafeHex(hex);
+  if (!safe) {
+    editor.chain().focus().unsetColor().run();
+    return;
+  }
+  editor.chain().focus().setColor(safe).run();
+}
+
+export function applyTextEffect(editor: Editor, effect: TextEffect): void {
+  editor.chain().focus().setMark("textStyle", { textEffect: effect === "none" ? null : effect }).run();
+}
+
+export function toggleTextOutline(editor: Editor): void {
+  const current = editor.getAttributes("textStyle").textOutline;
+  const on = current === true || current === "true";
+  editor.chain().focus().setMark("textStyle", { textOutline: on ? null : true }).run();
+}
+
+export function applyHighlight(editor: Editor, hex: string): void {
+  const safe = normalizeSafeHex(hex);
+  if (!safe) {
+    editor.chain().focus().unsetHighlight().run();
+    return;
+  }
+  editor.chain().focus().setHighlight({ color: safe }).run();
+}
+
+export function clearHighlight(editor: Editor): void {
+  editor.chain().focus().unsetHighlight().run();
+}

@@ -65,4 +65,40 @@ describe("line spacing on selected table rows and cells", () => {
       editor.state.tr.setSelection(CellSelection.create(editor.state.doc, cells[0], cells[2])),
     );
 
-    expect(editor.state.selection).toBeInstanceO...[truncated]
+    expect(editor.state.selection).toBeInstanceOf(CellSelection);
+    expect(editor.state.selection.ranges).toHaveLength(3);
+
+    applyLineHeight(editor, 12);
+
+    const leading = leadingValues(editor);
+    expect(leading.slice(0, 3)).toEqual(
+      Array.from({ length: 3 }, () => ({ mode: "points", value: 12 })),
+    );
+    expect(leading.slice(3).every((value) => value === null)).toBe(true);
+    expect(editor.state.selection).toBeInstanceOf(CellSelection);
+    expect(editor.state.selection.ranges).toHaveLength(3);
+  });
+
+  it("does not change cells outside a rectangular CellSelection", () => {
+    const editor = createTableEditor();
+    const cells = cellPositions(editor);
+    editor.view.dispatch(
+      editor.state.tr.setSelection(CellSelection.create(editor.state.doc, cells[0], cells[4])),
+    );
+
+    expect(editor.state.selection).toBeInstanceOf(CellSelection);
+    expect(editor.state.selection.ranges).toHaveLength(4);
+
+    applyLineHeight(editor, 10);
+
+    const leading = leadingValues(editor);
+    const formatted = new Set([0, 1, 3, 4]);
+    leading.forEach((value, index) => {
+      expect(value).toEqual(
+        formatted.has(index) ? { mode: "points", value: 10 } : null,
+      );
+    });
+    expect(editor.state.selection).toBeInstanceOf(CellSelection);
+    expect(editor.state.selection.ranges).toHaveLength(4);
+  });
+});
