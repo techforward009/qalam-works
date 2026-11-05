@@ -209,30 +209,33 @@ export function resolveActiveToolbarFormatting(
     highlights.add(storedHi ?? "");
   } else {
     let sawText = false;
-    editor.state.doc.nodesBetween(from, to, (node, pos) => {
-      if (!node.isText) return;
-      sawText = true;
-      const mark = node.marks.find((item) => item.type.name === "textStyle");
-      const attrs = (mark?.attrs ?? {}) as Record<string, unknown>;
-      const sliceFrom = Math.max(0, from - pos);
-      const sliceTo = Math.min(node.text?.length ?? 0, to - pos);
-      const slice = node.text?.slice(sliceFrom, sliceTo) ?? "";
-      const hasArabic = hasScript(slice, "arabic");
-      const hasLatin = hasScript(slice, "latin");
-      const dir = blockDirAt(editor, pos, globalDir);
-      const localStyle = blockStyleAt(editor, pos);
-      if (hasArabic) {
-        families.add(effectiveFamily(normalizeEditorFontFamily(attrs.fontFamily), dir, settings));
-      }
-      if (hasLatin) latinFamilies.add(latinFaceFromAttrs(attrs));
-      sizes.add(effectiveSize(resolveFontSizePt(attrs.fontSize), localStyle, settings));
-      lineHeights.add(lineHeightAt(editor, pos, settings));
-      trackings.add(metricOf(attrs.trackingPercent, 0));
-      scales.add(metricOf(attrs.scalePercent, 100));
-      colors.add(normalizeSafeHex(attrs.color) ?? "");
-      const hi = node.marks.find((item) => item.type.name === "highlight");
-      highlights.add(normalizeSafeHex(hi?.attrs?.color) ?? "");
-    });
+    const ranges = editor.state.selection.ranges;
+    for (const { $from, $to } of ranges) {
+      editor.state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+        if (!node.isText) return;
+        sawText = true;
+        const mark = node.marks.find((item) => item.type.name === "textStyle");
+        const attrs = (mark?.attrs ?? {}) as Record<string, unknown>;
+        const sliceFrom = Math.max(0, $from.pos - pos);
+        const sliceTo = Math.min(node.text?.length ?? 0, $to.pos - pos);
+        const slice = node.text?.slice(sliceFrom, sliceTo) ?? "";
+        const hasArabic = hasScript(slice, "arabic");
+        const hasLatin = hasScript(slice, "latin");
+        const dir = blockDirAt(editor, pos, globalDir);
+        const localStyle = blockStyleAt(editor, pos);
+        if (hasArabic) {
+          families.add(effectiveFamily(normalizeEditorFontFamily(attrs.fontFamily), dir, settings));
+        }
+        if (hasLatin) latinFamilies.add(latinFaceFromAttrs(attrs));
+        sizes.add(effectiveSize(resolveFontSizePt(attrs.fontSize), localStyle, settings));
+        lineHeights.add(lineHeightAt(editor, pos, settings));
+        trackings.add(metricOf(attrs.trackingPercent, 0));
+        scales.add(metricOf(attrs.scalePercent, 100));
+        colors.add(normalizeSafeHex(attrs.color) ?? "");
+        const hi = node.marks.find((item) => item.type.name === "highlight");
+        highlights.add(normalizeSafeHex(hi?.attrs?.color) ?? "");
+      });
+    }
     if (!sawText) {
       const stored = editor.getAttributes("textStyle") as Record<string, unknown>;
       addFromText(
@@ -242,12 +245,14 @@ export function resolveActiveToolbarFormatting(
         stored,
       );
     } else {
-      editor.state.doc.nodesBetween(from, to, (node, pos) => {
-        if (node.type.name === "paragraph" || node.type.name === "heading") {
-          addSpacingFromPos(pos + 1);
-          return false;
-        }
-      });
+      for (const { $from, $to } of ranges) {
+        editor.state.doc.nodesBetween($from.pos, $to.pos, (node, pos) => {
+          if (node.type.name === "paragraph" || node.type.name === "heading") {
+            addSpacingFromPos(pos + 1);
+            return false;
+          }
+        });
+      }
     }
   }
 

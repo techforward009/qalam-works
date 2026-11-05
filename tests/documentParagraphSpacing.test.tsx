@@ -1,8 +1,9 @@
 /** @vitest-environment happy-dom */
 
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
+import { CellSelection } from "@tiptap/pm/tables";
 import { Packer } from "docx";
 import JSZip from "jszip";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
@@ -145,6 +146,119 @@ describe("paragraph spacing presets and commands", () => {
     fireEvent.change(line, { target: { value: "999" } });
     fireEvent.click(document.querySelector("[data-studio-spacing-apply]")!);
     expect((ed.getJSON() as DocNode).content?.[0]?.attrs?.lineHeight ?? null).toBeNull();
+  });
+
+  it("applies line gap, line spacing, and before/after spacing through the toolbar to selected table cells", () => {
+    const rows = [
+      ["ایک", "دو", "تین"],
+      ["چار", "پانچ", "چھ"],
+      ["سات", "آٹھ", "نو"],
+    ];
+    const ed = make({
+      type: "doc",
+      content: [{
+        type: "table",
+        content: rows.map((row) => ({
+          type: "tableRow",
+          content: row.map((text) => ({
+            type: "tableCell",
+            content: [para(text)],
+          })),
+        })),
+      }],
+    });
+    const cells: number[] = [];
+    ed.state.doc.descendants((node, pos) => {
+      if (node.type.name === "tableCell") cells.push(pos);
+    });
+
+    act(() => {
+      ed.view.dispatch(ed.state.tr.setSelection(CellSelection.create(ed.state.doc, cells[0], cells[2])));
+    });
+    mount(ed);
+
+    const lineGap = document.querySelector('[data-studio-line-gap="true"]') as HTMLInputElement;
+    act(() => {
+      fireEvent.change(lineGap, { target: { value: "3pt" } });
+      fireEvent.keyDown(lineGap, { key: "Enter" });
+    });
+    const spacingButton = document.querySelector("[data-studio-spacing-button]");
+    if (!spacingButton) throw new Error("Spacing toolbar button disappeared after line-gap input");
+    act(() => fireEvent.click(spacingButton));
+    const customSpacingButton = document.querySelector("[data-studio-custom-spacing]");
+    if (!customSpacingButton) throw new Error("Custom spacing menu item did not open");
+    act(() => fireEvent.click(customSpacingButton));
+    const dialog = document.querySelector('[data-studio-custom-spacing-dialog="true"]') as HTMLFormElement;
+    act(() => {
+      fireEvent.change(dialog.querySelector('[data-studio-spacing-field="lineHeight"]')!, { target: { value: "10pt" } });
+      fireEvent.change(dialog.querySelector('[data-studio-spacing-field="spaceBeforePt"]')!, { target: { value: "6" } });
+      fireEvent.change(dialog.querySelector('[data-studio-spacing-field="spaceAfterPt"]')!, { target: { value: "8" } });
+      fireEvent.submit(dialog);
+    });
+
+    const paragraphAttrs = () => {
+      const attrs: Record<string, unknown>[] = [];
+      ed.state.doc.descendants((node) => {
+        if (node.type.name === "paragraph") attrs.push(node.attrs as Record<string, unknown>);
+      });
+      return attrs;
+    };
+    let attrs = paragraphAttrs();
+    for (const item of attrs.slice(0, 3)) {
+      expect(item.leading).toEqual({ mode: "points", value: 10 });
+      expect(item.lineGapPt).toBe(3);
+      expect(item.spaceBeforePt).toBe(6);
+      expect(item.spaceAfterPt).toBe(8);
+    }
+    for (const item of attrs.slice(3)) {
+      expect(item.leading ?? null).toBeNull();
+      expect(item.lineGapPt ?? null).toBeNull();
+      expect(item.spaceBeforePt ?? null).toBeNull();
+      expect(item.spaceAfterPt ?? null).toBeNull();
+    }
+    expect(ed.state.selection).toBeInstanceOf(CellSelection);
+    expect(ed.state.selection.ranges).toHaveLength(3);
+
+    act(() => ed.view.dispatch(ed.state.tr.setSelection(CellSelection.create(ed.state.doc, cells[4], cells[4]))));
+    act(() => {
+      fireEvent.change(lineGap, { target: { value: "2pt" } });
+      fireEvent.keyDown(lineGap, { key: "Enter" });
+    });
+    const singleSpacingButton = document.querySelector("[data-studio-spacing-button]");
+    if (!singleSpacingButton) throw new Error("Spacing toolbar button disappeared for single-cell selection");
+    act(() => fireEvent.click(singleSpacingButton));
+    const singleCustomButton = document.querySelector("[data-studio-custom-spacing]");
+    if (!singleCustomButton) throw new Error("Custom spacing menu item did not open for single-cell selection");
+    act(() => fireEvent.click(singleCustomButton));
+    const singleDialog = document.querySelector('[data-studio-custom-spacing-dialog="true"]') as HTMLFormElement;
+    act(() => {
+      fireEvent.change(singleDialog.querySelector('[data-studio-spacing-field="lineHeight"]')!, { target: { value: "8pt" } });
+      fireEvent.change(singleDialog.querySelector('[data-studio-spacing-field="spaceBeforePt"]')!, { target: { value: "5" } });
+      fireEvent.change(singleDialog.querySelector('[data-studio-spacing-field="spaceAfterPt"]')!, { target: { value: "7" } });
+      fireEvent.submit(singleDialog);
+    });
+
+    attrs = paragraphAttrs();
+    attrs.forEach((item, index) => {
+      if (index === 4) {
+        expect(item.leading).toEqual({ mode: "points", value: 8 });
+        expect(item.lineGapPt).toBe(2);
+        expect(item.spaceBeforePt).toBe(5);
+        expect(item.spaceAfterPt).toBe(7);
+      } else if (index < 3) {
+        expect(item.leading).toEqual({ mode: "points", value: 10 });
+        expect(item.lineGapPt).toBe(3);
+        expect(item.spaceBeforePt).toBe(6);
+        expect(item.spaceAfterPt).toBe(8);
+      } else {
+        expect(item.leading ?? null).toBeNull();
+        expect(item.lineGapPt ?? null).toBeNull();
+        expect(item.spaceBeforePt ?? null).toBeNull();
+        expect(item.spaceAfterPt ?? null).toBeNull();
+      }
+    });
+    expect(ed.state.selection).toBeInstanceOf(CellSelection);
+    expect(ed.state.selection.ranges).toHaveLength(1);
   });
 
   it("applies across multiple paragraphs", () => {
