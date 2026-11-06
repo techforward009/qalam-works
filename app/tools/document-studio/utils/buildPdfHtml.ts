@@ -9,7 +9,7 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 // Effective CSS classes are chosen only from faces that fully loaded.
 
 import { blockLeadingPt } from "./autoLeading";
-import { TABLE_CELL_VERTICAL_ALIGNMENT } from "./tableCellVerticalAlignment";
+import { TABLE_CELL_PDF_INK_START_INSET, TABLE_CELL_VERTICAL_ALIGNMENT } from "./tableCellVerticalAlignment";
 import type { DocNode, Direction } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
@@ -333,8 +333,8 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
     indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
     indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",
-    spaceBeforePt !== null ? `margin-block-start:${spaceBeforePt}pt` : "",
-    spaceAfterPt !== null ? `margin-block-end:${spaceAfterPt}pt` : "",
+    spaceBeforePt !== null ? `margin-block-start:${spaceBeforePt}pt;--qalam-space-before:${spaceBeforePt}pt` : "",
+    spaceAfterPt !== null ? `margin-block-end:${spaceAfterPt}pt;--qalam-space-after:${spaceAfterPt}pt` : "",
     node.attrs?.breakBefore === "column" ? "break-before:column" : node.attrs?.breakBefore === "page" || node.attrs?.breakBefore === "odd-page" || node.attrs?.breakBefore === "even-page" ? "break-before:page" : "",
     node.attrs?.keepTogether === true ? "break-inside:avoid;page-break-inside:avoid" : "",
     node.attrs?.keepWithNext === true ? "break-after:avoid;page-break-after:avoid" : "",
@@ -345,6 +345,17 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     .join(";");
   return ` dir="${blockDir}" class="${blockFont.cssClass}" style="${styles}"`;
 }
+
+// Chromium's print margins clip ink that sits flush with the content box's
+// right edge (native margin clip plus body overflow:hidden). A default 0.5pt
+// outer-right stroke ending at 100% lands about 0.4pt into the margin and
+// disappears in the rasterized PDF even though the vector rect is present.
+// Regression from a3bb78ce, which replaced CSS borders with SVG overlays and
+// kept the outer-left stroke at x=0 (so the left margin cannot clip it) while
+// leaving the matching outer-right stroke flush at 100%. Inset only that
+// outer-right stroke so its full thickness stays printable. This HTML is
+// PDF-only, so the on-screen table width is unchanged.
+const PDF_OUTER_RIGHT_CLIP_INSET_PT = 1;
 
 function convertNode(node: DocNode, ctx: WalkCtx): string {
   const blockDir = directionForNode(node, ctx.globalDir);
@@ -463,9 +474,10 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
             else rects.push(`<rect data-edge="bottom" x="0" y="${below?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt}pt)`}" width="100%" height="${pt}pt" fill="${color}"/>`);
           }
           if(hasRight){
-            if(style==="dashed")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
-            else if(style==="dotted")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
-            else rects.push(`<rect data-edge="right" x="${right?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt}pt)`}" y="0" width="${pt}pt" height="100%" fill="${color}"/>`);
+            const outerRightInset=right?0:PDF_OUTER_RIGHT_CLIP_INSET_PT;
+            if(style==="dashed")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
+            else if(style==="dotted")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
+            else rects.push(`<rect data-edge="right" x="${right?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt+outerRightInset}pt)`}" y="0" width="${pt}pt" height="100%" fill="${color}"/>`);
           }
           if(hasLeft){
             if(style==="dashed")rects.push(`<line data-edge="left" x1="${left?0:halfPt}pt" y1="0" x2="${left?0:halfPt}pt" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
@@ -637,8 +649,10 @@ ${classRulesCss()}
   table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
   table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:2px 4px; vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}; text-align:start; overflow-wrap:anywhere; }
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
-  table.qalam-document-table p { margin:0; }
-  table.qalam-document-table :is(th,td) p span { line-height:normal; }
+  table.qalam-document-table p { margin:0 !important; padding-block-start:calc(var(--qalam-space-before,0px) + ${TABLE_CELL_PDF_INK_START_INSET}); padding-block-end:var(--qalam-space-after,0); }
+  table.qalam-document-table :is(th,td) p span { line-height:max(1em,1lh); }
+  table.qalam-document-table :is(th,td) p span[style*=font-size]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) { line-height:max(1em,1lh); }
+  table.qalam-document-table :is(th,td) p span[data-studio-preserved-space] { line-height:0; }
   figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
   figure.qalam-document-image.image-left { margin-left:0; margin-right:auto; }
   figure.qalam-document-image.image-right { margin-left:auto; margin-right:0; }

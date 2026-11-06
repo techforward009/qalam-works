@@ -364,6 +364,22 @@ describe("Qalam Page multi-cell table formatting (CellSelection & AllSelection)"
     runInAct(() => undo(editor));
     expect(editor.getJSON()).toEqual(snapshotBeforeBold);
 
+    // Toolbar scaling must write both attributes required by Urdu rendering
+    // across every selected cell, as one undoable formatting transaction.
+    selectCellRect(editor, 0, 4);
+    const scaleInput = document.querySelector("[data-studio-scale]") as HTMLInputElement;
+    fireEvent.change(scaleInput, { target: { value: "85" } });
+    fireEvent.keyDown(scaleInput, { key: "Enter" });
+    cells = readTableCells(editor);
+    for (const idx of SELECTED_4_INDICES) {
+      expect(cells[idx].runs[0].textStyle?.scalePercent).toBe(85);
+      expect(cells[idx].runs[0].textStyle?.charScale).toBe(85);
+    }
+    assertUnselectedUntouched(cells);
+    expect(editor.state.selection).toBeInstanceOf(CellSelection);
+    runInAct(() => undo(editor));
+    expect(editor.getJSON()).toEqual(snapshotBeforeBold);
+
     // (f) Outline & Text style
     selectCellRect(editor, 0, 4);
     fireEvent.click(document.querySelector("[aria-label='Outline']")!);
@@ -580,10 +596,12 @@ describe("Qalam Page multi-cell table formatting (CellSelection & AllSelection)"
       const latinRun = cells[idx].runs.find((r) => /[A-Za-z]/.test(r.text));
       expect(normalizeEditorFontFamily(arabicRun?.textStyle?.fontFamily)).toBe("Gulzar");
       expect(String(arabicRun?.textStyle?.latinFontFamily ?? "")).not.toContain("Inter");
-      expect(arabicRun?.textStyle?.scalePercent ?? null).toBeNull();
+      expect(arabicRun?.textStyle?.scalePercent).toBe(85);
+      expect(arabicRun?.textStyle?.charScale).toBe(85);
       expect(normalizeEditorFontFamily(latinRun?.textStyle?.latinFontFamily)).toBe("Inter");
       expect(String(latinRun?.textStyle?.fontFamily ?? "")).not.toContain("Gulzar");
       expect(latinRun?.textStyle?.scalePercent).toBe(85);
+      expect(latinRun?.textStyle?.charScale).toBe(85);
     }
     for (const idx of UNSELECTED_5_INDICES) {
       expect(cells[idx].runs.every((r) => r.textStyle === null)).toBe(true);

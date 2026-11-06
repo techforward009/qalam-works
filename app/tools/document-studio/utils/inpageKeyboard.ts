@@ -23,15 +23,15 @@ export interface KeyEventModifiers {
 
 export function getKeyState(e: KeyEventModifiers): KeyState | null {
   const isAltGr = e.getModifierState?.("AltGraph") || (e.ctrlKey && e.altKey);
-  
+
   if (!isAltGr && (e.ctrlKey || e.altKey || e.metaKey)) {
     return null;
   }
-  
+
   if (isAltGr && e.shiftKey) return "shiftAltgr";
   if (isAltGr) return "altgr";
   if (e.shiftKey) return "shift";
-  
+
   return "normal";
 }
 
@@ -43,7 +43,7 @@ export interface ResolveKeyEvent extends KeyEventModifiers {
 
 export function resolveKey(layout: KeyboardLayout, e: ResolveKeyEvent): string | null {
   if (e.isComposing) return null;
-  
+
   const state = getKeyState(e);
   if (!state) return null;
 
@@ -75,7 +75,7 @@ export function parseCustomLayout(json: string): { ok: true; layout: KeyboardLay
       if (!VALID_CODES.has(code)) {
         return { ok: false, error: `Unknown key code: ${code}` };
       }
-      
+
       const states = (parsed as Record<string, unknown>)[code];
       if (!states || typeof states !== "object" || Array.isArray(states)) {
         return { ok: false, error: `Invalid states for key ${code}.` };
@@ -95,7 +95,7 @@ export function parseCustomLayout(json: string): { ok: true; layout: KeyboardLay
         }
       }
     }
-    
+
     return { ok: true, layout };
   } catch {
     return { ok: false, error: "The file is not valid JSON." };

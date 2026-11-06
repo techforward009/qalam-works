@@ -28,7 +28,7 @@ describe("PDF table borders and Urdu cell line placement",()=>{
   const output=html(words);
   const table=tableHtml(output);
   expect(table).toContain("qalam-pdf-cell-borders");
-  
+
   const rects=allTableSvgRects(table);
   // In a 3x3 table, exactly 24 shared edges exist (12 horizontal, 12 vertical)
   expect(rects).toHaveLength(24);
@@ -115,7 +115,8 @@ with pdfplumber.open('${pdfPath}') as pdf:
  },30000);
 
  it("سیل کا اردو متن (ایک، دو، تین) عمودی اور افقی طور پر درمیان میں رہتا ہے",()=>{
-  const table=tableHtml(html(["ایک","دو","تین"]));
+  const output=html(["ایک","دو","تین"]);
+  const table=tableHtml(output);
   const cells=cellElements(table).slice(0,3);
   const expectedLeading=blockLeadingPt({type:"paragraph",attrs:{dir:"rtl"}},"Noto Nastaliq Urdu",{bodyFontSizePt:12,lineHeight:1.5},"rtl");
   expect(expectedLeading).toBeCloseTo(19.8,8);
@@ -125,11 +126,41 @@ with pdfplumber.open('${pdfPath}') as pdf:
    expect(cellHtml).toContain(`line-height:${expectedLeading}pt`);
    expect(cellHtml).toContain("qalam-pdf-cell-borders");
   }
+  // Optical start inset keeps Nastaliq ink off the top rule without dropping space-before.
+  expect(output).toContain("padding-block-start:calc(var(--qalam-space-before,0px) + 0.25em)");
  });
 
  it("پانچ کا لفظ اپنے سیل کے فونٹ باکس کے اندر رہتا ہے",()=>{
   const table=tableHtml(html(["پانچ"]));
   expect(table).toContain("پانچ");
   expect(table).toContain("line-height:");
+ });
+
+ it("keeps a dashed outer right border stroke fully inside the cell bounds",()=>{
+  const table=tableHtml(html([],()=>({tableBorderStyle:"dashed",tableBorderWidthPt:1})));
+  const outerRightCell=cellElements(table)[0]; // RTL column 0 is the rightmost cell.
+  const rightLine=outerRightCell.match(/<line data-edge="right"[^>]*\/>/)?.[0]??"";
+  // Stroke is centered on the path, so 1pt clip inset + half the 1pt width = 1.5pt.
+  expect(rightLine).toContain('x1="calc(100% - 1.5pt)"');
+  expect(rightLine).toContain('x2="calc(100% - 1.5pt)"');
+  expect(rightLine).toContain('stroke-width="1pt"');
+ });
+
+ it("insets a solid outer right border so Chromium print clip cannot hide it",()=>{
+  const table=tableHtml(html());
+  const outerRightCell=cellElements(table)[0];
+  const rightRect=outerRightCell.match(/<rect data-edge="right"[^>]*\/>/)?.[0]??"";
+  expect(rightRect).toContain('x="calc(100% - 1.5pt)"');
+  expect(rightRect).toContain('width="0.5pt"');
+  // The pre-fix flush value must not appear: that is the stroke Chromium clips.
+  expect(table).not.toContain('data-edge="right" x="calc(100% - 0.5pt)"');
+ });
+
+ it("insets a custom-colored thick outer right border by the same clip-safe amount",()=>{
+  const table=tableHtml(html([],()=>({tableBorderStyle:"solid",tableBorderWidthPt:2,tableBorderColor:"#cc0000"})));
+  const rightRect=cellElements(table)[0].match(/<rect data-edge="right"[^>]*\/>/)?.[0]??"";
+  expect(rightRect).toContain('x="calc(100% - 3pt)"');
+  expect(rightRect).toContain('width="2pt"');
+  expect(rightRect).toContain('fill="#cc0000"');
  });
 });

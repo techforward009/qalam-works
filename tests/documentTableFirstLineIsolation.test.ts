@@ -5,7 +5,7 @@ import {createDocumentStudioExtensions} from "../app/tools/document-studio/utils
 import {createFirstLinePlugin} from "../app/tools/document-studio/extensions/FirstLineLayout";
 import {createTableContent} from "../app/tools/document-studio/utils/tableConversions";
 describe("first-line paragraph positioning never moves text inside table cells",()=>{
- it("tracks story text blocks, but excludes every nested table-cell paragraph",()=>{
+ it("tracks story text before a table, but excludes cell paragraphs and the paragraph immediately after it",()=>{
   const table=createTableContent(3,3,null,"rtl");
   const e=new Editor({extensions:createDocumentStudioExtensions(),content:{type:"doc",content:[
    {type:"paragraph",content:[{type:"text",text:"باہر"}]},table,
@@ -17,7 +17,7 @@ describe("first-line paragraph positioning never moves text inside table cells",
    const $pos=e.state.doc.resolve(pos);
    return [...Array($pos.depth)].map((_,d)=>$pos.node(d+1).type.name);
   });
-  expect(types).toHaveLength(2);
+  expect(types).toHaveLength(1);
   expect(types.every(nodes=>!nodes.includes("tableCell")&&!nodes.includes("tableHeader"))).toBe(true);
   e.destroy();
  });
