@@ -168,7 +168,6 @@ describe("Page Setup unit display", () => {
         setDocumentSettings={onChange}
         selectedPresetId="default"
         onPresetChange={vi.fn()}
-        onPageChange={vi.fn()}
         rulerUnit="cm"
         setRulerUnit={vi.fn()}
       />,
@@ -184,7 +183,6 @@ describe("Page Setup unit display", () => {
         setDocumentSettings={onChange}
         selectedPresetId="default"
         onPresetChange={vi.fn()}
-        onPageChange={vi.fn()}
         rulerUnit="in"
         setRulerUnit={vi.fn()}
       />,
