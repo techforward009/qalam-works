@@ -13,6 +13,7 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import { QalamTableCellSelectionGuard } from "./tableCellSelectionGuard";
+import { QalamTableRowSelection } from "./tableRowSelection";
 import Image from "@tiptap/extension-image";
 import { Node, Extension, getStyleProperty, type Editor } from "@tiptap/core";
 import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
@@ -822,6 +823,7 @@ export function createDocumentStudioExtensions() {
     // pointerdown, keydown (Backspace/Delete/Space) and beforeinput hooks
     // run before prosemirror-tables default handlers.
     QalamTableCellSelectionGuard,
+    QalamTableRowSelection,
     // Official TipTap 3 table nodes: table → tableRow → tableHeader/tableCell
     // → normal block content. This stays in the document JSON and therefore
     // uses the existing persistence path without a parallel table model.
