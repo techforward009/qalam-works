@@ -34,10 +34,16 @@ export default defineConfig({
       },
     },
   ],
+  // `npm run build` also runs the prebuild hook, which downloads 604 Quran
+  // page JSON files sequentially. That regularly exceeds this startup window
+  // on GitHub Actions ("Timed out waiting 120000ms from config.webServer").
+  // Document Studio e2e does not need those pages; `next build` skips prebuild.
   webServer: {
-    command: "npm run build && npm start",
+    command: "npx next build && npm start",
     url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 360_000,
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });
