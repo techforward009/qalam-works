@@ -557,8 +557,8 @@ test.describe("Document Studio v1 browser smoke", () => {
   test("inserts, edits, persists, and exports a local raster image", async ({ page }, testInfo) => {
     await openStudio(page);
     const editor = await replaceEditorContent(page, "Text before the image.");
-    await page.locator('[data-menu-root="insert"]').click();
-    await page.locator('[data-menu-action="insert.image"]').click();
+    // Insert > Picture now fills a picture box (InPage); inline images still
+    // load through the hidden inline-image input used for imported documents.
     await page.locator('[data-studio-image-input="true"]').setInputFiles({
       name: "tiny.png", mimeType: "image/png", buffer: Buffer.from(TINY_PNG_BASE64, "base64"),
     });
@@ -614,8 +614,8 @@ test.describe("Document Studio v1 browser smoke", () => {
   test("wraps paragraph text beside left and right images and persists wrap mode", async ({ page }) => {
     await openStudio(page);
     await page.locator('[data-studio-tool-button="text"]').click();
-    await page.locator('[data-menu-root="insert"]').click();
-    await page.locator('[data-menu-action="insert.image"]').click();
+    // Insert > Picture now fills a picture box (InPage); inline images still
+    // load through the hidden inline-image input used for imported documents.
     await page.locator('[data-studio-image-input="true"]').setInputFiles({
       name: "tiny.png", mimeType: "image/png", buffer: Buffer.from(TINY_PNG_BASE64, "base64"),
     });

@@ -149,7 +149,7 @@ import DocumentToolbar from "./DocumentToolbar";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
-import { readStoredFrames, writeStoredFrames, isPictureBox, type StudioFrame } from "./StudioObjectLayer";
+import { readStoredFrames, writeStoredFrames, isPictureBox, pictureMenuDisabledIds, type StudioFrame } from "./StudioObjectLayer";
 import { fitPictureInBox, PICTURE_SOURCE_HARD_CAP_BYTES } from "../utils/pictureFit";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
@@ -2056,7 +2056,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (transitionRef.current) return;
     // Picture import is not a text-box formatting command. Open the chooser
     // before the formatting guard so a selected picture box cannot toast.
-    if (id === "file.importPicture") { openPictureChooser(); return; }
+    // Insert > Picture fills the targeted picture box, as in InPage; it no
+    // longer drops a loose inline image into the text.
+    if (id === "file.importPicture" || id === "insert.image") { openPictureChooser(); return; }
     if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
     if (id === "preferences.typographic") { setTypographicOpen(true); return; }
     if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
@@ -2109,7 +2111,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       loadExample: handleLoadExample,
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
-      openImageInsert: () => imageInputRef.current?.click(),
+      openImageInsert: () => openPictureChooser(),
       importPicture: () => openPictureChooser(),
       insertPageBreak,
       insertSectionBreak,
@@ -2130,7 +2132,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const insertTableMode = editor?.isActive("table") ? "table" : editor && !editor.state.selection.empty ? "selection" : "plain";
   const disabledIds = new Set<MenuActionId>();
   if(noDocumentOpen)allMenuActionIds().filter(id=>!availableWithoutDocument(id)).forEach(id=>disabledIds.add(id));
-  if (!selectedPictureBox) disabledIds.add("file.importPicture");
+  pictureMenuDisabledIds(frames, selectedFrameIds).forEach((id) => disabledIds.add(id));
   if (!editor?.can().undo()) disabledIds.add("edit.undo");
   if (!editor?.can().redo()) disabledIds.add("edit.redo");
   if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));

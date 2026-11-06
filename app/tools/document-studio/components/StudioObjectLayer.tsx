@@ -14,6 +14,7 @@ import { StudioTextFrame } from "./StudioTextFrame";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
+import type { MenuActionId } from "../utils/documentMenus";
 
 export type FrameKind =
   | "rect"
@@ -48,6 +49,18 @@ export type StudioFrame = {
 
 export function isPictureBox(kind: string): boolean {
   return kind === "picture-rect" || kind === "picture-ellipse" || kind === "picture-round-rect";
+}
+
+/** The selected (targeted) picture box that Insert > Picture and Import Picture fill. */
+export function selectedPictureBoxId(frames: StudioFrame[], selectedIds: readonly string[]): string | null {
+  return frames.find((frame) => selectedIds.includes(frame.id) && isPictureBox(frame.kind))?.id ?? null;
+}
+
+/** InPage keeps Insert > Picture disabled until a picture box is targeted. */
+export function pictureMenuDisabledIds(frames: StudioFrame[], selectedIds: readonly string[]): Set<MenuActionId> {
+  return selectedPictureBoxId(frames, selectedIds)
+    ? new Set<MenuActionId>()
+    : new Set<MenuActionId>(["file.importPicture", "insert.image"]);
 }
 
 const DRAW_TOOLS = new Set<StudioToolId>([
@@ -181,27 +194,41 @@ export function StudioObjectLayer({
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
     | { mode: "marquee"; x: number; y: number; pointer: number }
-    | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number }
+    | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string }
     | { mode: "resize"; id: string; edge: string; pointer: number }
     | null
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
   const pendingTextFocus = useRef<string | null>(null);
-  // The new picture frame must stay selected when the draw tool returns to
-  // Pointer. Every other tool change still clears selection.
+  // A new picture frame stays targeted when the draw tool hands over to the
+  // Hand (content) tool, as in InPage.
   const pictureSelectionRef = useRef<string | null>(null);
   const pictureOpenAt = useRef(0);
   const pictureDraggedRef = useRef(false);
+  // Frame pressed by the last Arrow pointerdown, and whether it was dragged.
+  // Under pointer capture the browser targets click/dblclick at the layer, so
+  // the layer opens the chooser from this record instead of frame handlers.
+  const lastPressRef = useRef<{ id: string; moved: boolean } | null>(null);
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
 
-  // Object selection belongs exclusively to the Arrow/Select tool. Switching
-  // tools must not leave stale handles that reappear on the next tool switch.
+  // Switching to a drawing tool clears the object selection. Switching between
+  // the Arrow and Hand tools keeps a targeted picture box, so Insert > Picture
+  // and Import Picture still fill it.
   useEffect(() => {
-    if (tool === "select" && pictureSelectionRef.current) {
-      setSelected([pictureSelectionRef.current]);
+    const pictureIds = new Set(framesRef.current.filter((frame) => isPictureBox(frame.kind)).map((frame) => frame.id));
+    const fresh = pictureSelectionRef.current;
+    pictureSelectionRef.current = null;
+    if (tool === "select" || tool === "text") {
+      const keep = selectedRef.current.filter((id) => pictureIds.has(id));
+      if (fresh && !keep.includes(fresh)) keep.push(fresh);
+      setSelected(keep);
       return;
     }
-    pictureSelectionRef.current = null;
     setSelected([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool]);
 
   useLayoutEffect(() => {
@@ -265,8 +292,6 @@ export function StudioObjectLayer({
     return Math.min(pageCount, Math.max(1, Math.floor(y / stride) + 1));
   };
 
-  const framesRef = useRef(frames);
-  framesRef.current = frames;
   const onChangeRef = useRef(onFramesChange);
   onChangeRef.current = onFramesChange;
 
@@ -319,9 +344,12 @@ export function StudioObjectLayer({
     onChangeRef.current([...framesRef.current, frame]);
     setSelected([frame.id]);
     if (tool === "textbox") onToolAction("text");
-    else if (tool === "cross-square" || tool === "cross-circle" || tool === "cross-round") {
+    else if (isPictureDrawTool(tool)) {
+      // InPage: after drawing a picture box the Hand (content) tool is active
+      // and the new box stays targeted, so one click opens the chooser.
       pictureSelectionRef.current = frame.id;
-      onToolAction("select");
+      framesRef.current = [...framesRef.current, frame];
+      onToolAction("text");
     }
   };
 
@@ -340,6 +368,20 @@ export function StudioObjectLayer({
       data-studio-objects="true"
       style={{ width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => {
+        if (tool !== "select" && tool !== "text") return;
+        const target = event.target as HTMLElement | null;
+        if (target?.closest?.("[data-studio-frame-handle]")) return;
+        const hitId = target?.closest?.("[data-studio-frame-id]")?.getAttribute("data-studio-frame-id");
+        const press = lastPressRef.current;
+        const id = hitId ?? (press && !press.moved ? press.id : null);
+        if (!id || (press?.id === id && press.moved)) return;
+        const frame = framesRef.current.find((item) => item.id === id);
+        if (!frame || !isPictureBox(frame.kind) || frame.imageSrc) return;
+        event.stopPropagation();
+        event.preventDefault();
+        openEmptyPicture(frame);
+      }}
       onPointerDown={(event) => {
         if (tool === "select") {
           event.preventDefault();
@@ -374,7 +416,10 @@ export function StudioObjectLayer({
         if (drag.mode === "move") {
           const dxPx = point.x - drag.x;
           const dyPx = point.y - drag.y;
-          if (Math.hypot(dxPx, dyPx) >= 4) pictureDraggedRef.current = true;
+          if (Math.hypot(dxPx, dyPx) >= 4) {
+            pictureDraggedRef.current = true;
+            if (lastPressRef.current?.id === drag.pressedId) lastPressRef.current.moved = true;
+          }
           const dx = dxPx / PX_PER_MM;
           const dy = dyPx / PX_PER_MM;
           const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
@@ -429,6 +474,7 @@ export function StudioObjectLayer({
           hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
         };
         pictureDraggedRef.current = true;
+        lastPressRef.current = null;
         if (frame.imageSrc && (drag.edge.includes("w") || drag.edge.includes("n"))) {
           if (dxMm !== 0) patch.imageXMm = (frame.imageXMm ?? 0) - dxMm;
           if (dyMm !== 0) patch.imageYMm = (frame.imageYMm ?? 0) - dyMm;
@@ -474,7 +520,9 @@ export function StudioObjectLayer({
         const top = snap(slot.y+frame.yMm * PX_PER_MM, rootBox?.top);
         const width = Math.max(1, snap(frame.wMm * PX_PER_MM));
         const height = Math.max(1, snap(frame.hMm * PX_PER_MM));
-        const active = tool === "select" && selected.includes(frame.id);
+        // The Hand tool targets picture boxes; show their selection too.
+        const active = selected.includes(frame.id) && (tool === "select" || (tool === "text" && isPictureBox(frame.kind)));
+        const handTarget = tool === "text" && isPictureBox(frame.kind);
         return (
           <div
             key={frame.id}
@@ -486,30 +534,28 @@ export function StudioObjectLayer({
               top,
               width,
               height,
-              pointerEvents: tool === "text" && frame.kind !== "text" ? "none" : "auto",
-              cursor: tool === "text" ? "text" : drawing ? "crosshair" : isPictureBox(frame.kind) && !frame.imageSrc ? "pointer" : tool === "select" ? "move" : "default",
+              pointerEvents: tool === "text" && frame.kind !== "text" && !isPictureBox(frame.kind) ? "none" : "auto",
+              cursor: handTarget ? "pointer" : tool === "text" ? "text" : drawing ? "crosshair" : tool === "select" ? "move" : "default",
             }}
             onClick={(event) => {
-              if (tool !== "select" || !isPictureBox(frame.kind) || frame.imageSrc) return;
+              // Hand tool: one click on an empty picture box opens the chooser
+              // from the real pointer gesture. No capture is taken here, so the
+              // click reaches the frame.
+              if (!handTarget || frame.imageSrc) return;
               const target = event.target as HTMLElement | null;
               if (target?.closest?.("[data-studio-frame-handle]")) return;
-              if (pictureDraggedRef.current) return;
-              event.stopPropagation();
-              event.preventDefault();
-              openEmptyPicture(frame);
-            }}
-            onDoubleClick={(event) => {
-              if (!isPictureBox(frame.kind) || frame.imageSrc) return;
               event.stopPropagation();
               event.preventDefault();
               openEmptyPicture(frame);
             }}
             onPointerDown={(event) => {
               pictureDraggedRef.current = false;
-              if (isPictureBox(frame.kind) && !frame.imageSrc && event.detail >= 2) {
+              lastPressRef.current = null;
+              if (handTarget) {
                 event.stopPropagation();
                 event.preventDefault();
-                openEmptyPicture(frame);
+                setSelected([frame.id]);
+                if (editor?.isFocused) editor.commands.blur();
                 return;
               }
               if (frame.kind === "text" && tool === "text") {
@@ -527,12 +573,14 @@ export function StudioObjectLayer({
               setSelected(next);
               if (tool !== "select" || !next.includes(frame.id)) return;
               const point = localPoint(event);
+              lastPressRef.current = { id: frame.id, moved: false };
               dragRef.current = {
                 mode: "move",
                 frames: framesRef.current.filter((item) => next.includes(item.id)),
                 x: point.x,
                 y: point.y,
                 pointer: event.pointerId,
+                pressedId: frame.id,
               };
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
@@ -544,7 +592,7 @@ export function StudioObjectLayer({
                 width={width}
                 height={height}
                 viewBox={`0 0 ${width} ${height}`}
-                style={{ position: "absolute", left: 0, top: 0, cursor: "pointer" }}
+                style={{ position: "absolute", left: 0, top: 0 }}
               >
                 {frame.kind === "picture-ellipse" ? (
                   <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="transparent" />
@@ -565,8 +613,8 @@ export function StudioObjectLayer({
                       background: "#000",
                       border: "1px solid #000",
                       ...handlePos(edge),
-                      pointerEvents: drawing ? "none" : "auto",
-                      cursor: drawing ? "crosshair" : edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
+                      pointerEvents: tool === "select" ? "auto" : "none",
+                      cursor: tool !== "select" ? "inherit" : edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
                     }}
                     onPointerDown={(event) => {
                       event.stopPropagation();
