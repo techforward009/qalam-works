@@ -35,6 +35,20 @@ describe("empty-paragraph caret follows alignment changes", () => {
     expect(shouldRefreshCaretForAlign(prev, ed.state)).toBe(true);
   });
 
+  it("refreshes caret on an empty paragraph inside a table cell", () => {
+    const ed = make('<table><tbody><tr><td><p></p></td></tr></tbody></table>');
+    let paragraphPos = -1;
+    ed.state.doc.descendants((node, pos) => {
+      if (node.type.name === "paragraph") paragraphPos = pos;
+    });
+    expect(paragraphPos).toBeGreaterThanOrEqual(0);
+    ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, paragraphPos + 1)));
+    const prev = ed.state;
+    ed.commands.setTextAlign("center");
+    expect(ed.state.selection.$from.parent.attrs.textAlign).toBe("center");
+    expect(shouldRefreshCaretForAlign(prev, ed.state)).toBe(true);
+  });
+
   it("does not refresh for ordinary typing", () => {
     const ed = make("<p></p>");
     ed.commands.setTextSelection(1);
