@@ -9,7 +9,7 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 // Effective CSS classes are chosen only from faces that fully loaded.
 
 import { blockLeadingPt } from "./autoLeading";
-import { TABLE_CELL_VERTICAL_ALIGNMENT } from "./tableCellVerticalAlignment";
+import { TABLE_CELL_PDF_INK_START_INSET, TABLE_CELL_VERTICAL_ALIGNMENT } from "./tableCellVerticalAlignment";
 import type { DocNode, Direction } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
@@ -649,7 +649,7 @@ ${classRulesCss()}
   table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
   table.qalam-document-table th, table.qalam-document-table td { border:0 none transparent; padding:2px 4px; vertical-align:${TABLE_CELL_VERTICAL_ALIGNMENT}; text-align:start; overflow-wrap:anywhere; }
   table.qalam-document-table th { background:transparent; color:#1a3a2a; font-weight:700; }
-  table.qalam-document-table p { margin:0 !important; padding-block-start:var(--qalam-space-before,0); padding-block-end:var(--qalam-space-after,0); }
+  table.qalam-document-table p { margin:0 !important; padding-block-start:calc(var(--qalam-space-before,0px) + ${TABLE_CELL_PDF_INK_START_INSET}); padding-block-end:var(--qalam-space-after,0); }
   table.qalam-document-table :is(th,td) p span { line-height:max(1em,1lh); }
   table.qalam-document-table :is(th,td) p span[style*=font-size]:not([data-studio-latin-run]):not([data-studio-typographic-latin]) { line-height:max(1em,1lh); }
   table.qalam-document-table :is(th,td) p span[data-studio-preserved-space] { line-height:0; }

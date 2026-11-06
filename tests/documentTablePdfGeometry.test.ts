@@ -115,7 +115,8 @@ with pdfplumber.open('${pdfPath}') as pdf:
  },30000);
 
  it("سیل کا اردو متن (ایک، دو، تین) عمودی اور افقی طور پر درمیان میں رہتا ہے",()=>{
-  const table=tableHtml(html(["ایک","دو","تین"]));
+  const output=html(["ایک","دو","تین"]);
+  const table=tableHtml(output);
   const cells=cellElements(table).slice(0,3);
   const expectedLeading=blockLeadingPt({type:"paragraph",attrs:{dir:"rtl"}},"Noto Nastaliq Urdu",{bodyFontSizePt:12,lineHeight:1.5},"rtl");
   expect(expectedLeading).toBeCloseTo(19.8,8);
@@ -125,6 +126,8 @@ with pdfplumber.open('${pdfPath}') as pdf:
    expect(cellHtml).toContain(`line-height:${expectedLeading}pt`);
    expect(cellHtml).toContain("qalam-pdf-cell-borders");
   }
+  // Optical start inset keeps Nastaliq ink off the top rule without dropping space-before.
+  expect(output).toContain("padding-block-start:calc(var(--qalam-space-before,0px) + 0.25em)");
  });
 
  it("پانچ کا لفظ اپنے سیل کے فونٹ باکس کے اندر رہتا ہے",()=>{

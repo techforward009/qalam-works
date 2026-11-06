@@ -385,7 +385,7 @@ describe("PDF and DOCX spacing export", () => {
     expect(html.html).toContain("line-height:24pt");
     expect(html.html).toContain("margin-block-start:10pt;--qalam-space-before:10pt");
     expect(html.html).toContain("margin-block-end:14pt;--qalam-space-after:14pt");
-    expect(html.html).toContain("table.qalam-document-table p { margin:0 !important; padding-block-start:var(--qalam-space-before,0); padding-block-end:var(--qalam-space-after,0); }");
+    expect(html.html).toContain("table.qalam-document-table p { margin:0 !important; padding-block-start:calc(var(--qalam-space-before,0px) + 0.25em); padding-block-end:var(--qalam-space-after,0); }");
     expect(html.html).toContain("text-indent:8mm");
     expect(html.html).toContain("margin-inline-start:20mm");
     expect(html.html).toContain("margin-inline-end:5mm");
