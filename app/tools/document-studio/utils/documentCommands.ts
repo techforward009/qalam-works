@@ -372,9 +372,9 @@ export function applyEnglishFont(editor: Editor, family: string): void {
   patchTextRanges(editor, "latin", apply);
 }
 
-function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", value: number): void {
+function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", value: number, extraAttrs: Record<string, unknown> = {}): void {
   if (editor.state.selection.empty) {
-    patchStoredMark(editor, (attrs) => { attrs[key] = value; });
+    patchStoredMark(editor, (attrs) => { attrs[key] = value; Object.assign(attrs, extraAttrs); });
     return;
   }
   const { state } = editor;
@@ -392,7 +392,7 @@ function applyMetric(editor: Editor, key: "trackingPercent" | "scalePercent", va
       const jobKey = `${start}:${end}`;
       if (end <= start || seenJobs.has(jobKey)) return;
       seenJobs.add(jobKey);
-      const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value };
+      const attrs = { ...(node.marks.find((mark) => mark.type === type)?.attrs ?? {}), [key]: value, ...extraAttrs };
       jobs.push({ from: start, to: end, attrs });
     });
   }
@@ -415,9 +415,9 @@ export function applyTracking(editor: Editor, percent: number): void {
   applyMetric(editor, "trackingPercent", percent);
 }
 
-/** Horizontal scale in percent. Stored on the selection; painted on Latin only. */
+/** Horizontal scale in percent. charScale keeps the Urdu renderer from stripping the mark. */
 export function applyScale(editor: Editor, percent: number): void {
-  applyMetric(editor, "scalePercent", percent);
+  applyMetric(editor, "scalePercent", percent, { charScale: percent === 100 ? null : percent });
 }
 
 export function activeToolbarFontFamily(editor: Editor): string {

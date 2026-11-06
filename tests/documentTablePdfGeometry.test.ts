@@ -132,4 +132,32 @@ with pdfplumber.open('${pdfPath}') as pdf:
   expect(table).toContain("پانچ");
   expect(table).toContain("line-height:");
  });
+
+ it("keeps a dashed outer right border stroke fully inside the cell bounds",()=>{
+  const table=tableHtml(html([],()=>({tableBorderStyle:"dashed",tableBorderWidthPt:1})));
+  const outerRightCell=cellElements(table)[0]; // RTL column 0 is the rightmost cell.
+  const rightLine=outerRightCell.match(/<line data-edge="right"[^>]*\/>/)?.[0]??"";
+  // Stroke is centered on the path, so 1pt clip inset + half the 1pt width = 1.5pt.
+  expect(rightLine).toContain('x1="calc(100% - 1.5pt)"');
+  expect(rightLine).toContain('x2="calc(100% - 1.5pt)"');
+  expect(rightLine).toContain('stroke-width="1pt"');
+ });
+
+ it("insets a solid outer right border so Chromium print clip cannot hide it",()=>{
+  const table=tableHtml(html());
+  const outerRightCell=cellElements(table)[0];
+  const rightRect=outerRightCell.match(/<rect data-edge="right"[^>]*\/>/)?.[0]??"";
+  expect(rightRect).toContain('x="calc(100% - 1.5pt)"');
+  expect(rightRect).toContain('width="0.5pt"');
+  // The pre-fix flush value must not appear: that is the stroke Chromium clips.
+  expect(table).not.toContain('data-edge="right" x="calc(100% - 0.5pt)"');
+ });
+
+ it("insets a custom-colored thick outer right border by the same clip-safe amount",()=>{
+  const table=tableHtml(html([],()=>({tableBorderStyle:"solid",tableBorderWidthPt:2,tableBorderColor:"#cc0000"})));
+  const rightRect=cellElements(table)[0].match(/<rect data-edge="right"[^>]*\/>/)?.[0]??"";
+  expect(rightRect).toContain('x="calc(100% - 3pt)"');
+  expect(rightRect).toContain('width="2pt"');
+  expect(rightRect).toContain('fill="#cc0000"');
+ });
 });

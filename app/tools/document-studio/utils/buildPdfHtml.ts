@@ -346,6 +346,17 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
   return ` dir="${blockDir}" class="${blockFont.cssClass}" style="${styles}"`;
 }
 
+// Chromium's print margins clip ink that sits flush with the content box's
+// right edge (native margin clip plus body overflow:hidden). A default 0.5pt
+// outer-right stroke ending at 100% lands about 0.4pt into the margin and
+// disappears in the rasterized PDF even though the vector rect is present.
+// Regression from a3bb78ce, which replaced CSS borders with SVG overlays and
+// kept the outer-left stroke at x=0 (so the left margin cannot clip it) while
+// leaving the matching outer-right stroke flush at 100%. Inset only that
+// outer-right stroke so its full thickness stays printable. This HTML is
+// PDF-only, so the on-screen table width is unchanged.
+const PDF_OUTER_RIGHT_CLIP_INSET_PT = 1;
+
 function convertNode(node: DocNode, ctx: WalkCtx): string {
   const blockDir = directionForNode(node, ctx.globalDir);
 
@@ -463,9 +474,10 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
             else rects.push(`<rect data-edge="bottom" x="0" y="${below?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt}pt)`}" width="100%" height="${pt}pt" fill="${color}"/>`);
           }
           if(hasRight){
-            if(style==="dashed")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
-            else if(style==="dotted")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
-            else rects.push(`<rect data-edge="right" x="${right?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt}pt)`}" y="0" width="${pt}pt" height="100%" fill="${color}"/>`);
+            const outerRightInset=right?0:PDF_OUTER_RIGHT_CLIP_INSET_PT;
+            if(style==="dashed")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
+            else if(style==="dotted")rects.push(`<line data-edge="right" x1="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y1="0" x2="${right?"100%":`calc(100% - ${halfPt+outerRightInset}pt)`}" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt},${pt}" stroke-linecap="round"/>`);
+            else rects.push(`<rect data-edge="right" x="${right?`calc(100% - ${halfPt}pt)`:`calc(100% - ${pt+outerRightInset}pt)`}" y="0" width="${pt}pt" height="100%" fill="${color}"/>`);
           }
           if(hasLeft){
             if(style==="dashed")rects.push(`<line data-edge="left" x1="${left?0:halfPt}pt" y1="0" x2="${left?0:halfPt}pt" y2="100%" stroke="${color}" stroke-width="${pt}pt" stroke-dasharray="${pt*3},${pt*3}"/>`);
