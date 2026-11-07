@@ -5,6 +5,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { Mappable } from "@tiptap/pm/transform";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorView } from "@tiptap/pm/view";
+import { handleHorizontalTableArrow } from "./tableCellNavigation";
 
 export const tableRowSelectionKey = new PluginKey("qalamTableRowSelection");
 
@@ -306,6 +307,8 @@ export const QalamTableRowSelection = Extension.create({
   name: "qalamTableRowSelection",
   priority: 1000,
   addProseMirrorPlugins() {
+    let gestureStartCell: Element | null = null;
+    let gestureStartPoint: { x: number; y: number } | null = null;
     return [new Plugin({
       key: tableRowSelectionKey,
       appendTransaction(_transactions, _oldState, state) {
@@ -329,6 +332,7 @@ export const QalamTableRowSelection = Extension.create({
           return decorations.length ? DecorationSet.create(state.doc, decorations) : null;
         },
         handleKeyDown(view, event) {
+          if (handleHorizontalTableArrow(view, event)) return true;
           if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return false;
           if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return false;
           const { selection, doc } = view.state;
@@ -344,15 +348,35 @@ export const QalamTableRowSelection = Extension.create({
           return handled;
         },
         handleDOMEvents: {
+          mousedown(view, event) {
+            const target = event.target;
+            const cell = target instanceof Element ? target.closest("td,th") : target instanceof Node ? target.parentElement?.closest("td,th") : null;
+            gestureStartCell = cell && view.dom.contains(cell) ? cell : null;
+            gestureStartPoint = gestureStartCell ? { x: event.clientX, y: event.clientY } : null;
+            return false;
+          },
           mouseup(view, event) {
-            const selection = view.state.selection;
-            if (!(selection instanceof CellSelection)) return false;
-            const native = view.dom.ownerDocument.getSelection();
-            if (!native || native.isCollapsed || !native.anchorNode || !native.focusNode) return false;
-            const cellFor = (node: Node) => (node instanceof Element ? node : node.parentElement)?.closest("td,th");
-            const anchorCell = cellFor(native.anchorNode);
-            if (!anchorCell || anchorCell !== cellFor(native.focusNode) || !view.dom.contains(anchorCell)) return false;
             try {
+              if (!gestureStartCell || !gestureStartPoint) return false;
+              const endCell = view.dom.ownerDocument.elementFromPoint(event.clientX, event.clientY)?.closest("td,th") ?? null;
+              if (endCell !== gestureStartCell || !view.dom.contains(endCell)) return false;
+              const distance = Math.hypot(event.clientX - gestureStartPoint.x, event.clientY - gestureStartPoint.y);
+              if (!endCell.textContent && distance >= 6) {
+                const cellPos = view.posAtDOM(endCell, 0);
+                const from = cellAt(view.state.doc, cellPos)?.from;
+                if (from !== undefined && from !== null) {
+                  view.dispatch(view.state.tr.setSelection(CellSelection.create(view.state.doc, from)));
+                  event.preventDefault();
+                  return true;
+                }
+                return false;
+              }
+              if (!(view.state.selection instanceof CellSelection) || !endCell.textContent) return false;
+              const native = view.dom.ownerDocument.getSelection();
+              if (!native || native.isCollapsed || !native.anchorNode || !native.focusNode) return false;
+              const cellFor = (node: Node) => (node instanceof Element ? node : node.parentElement)?.closest("td,th");
+              const anchorCell = cellFor(native.anchorNode);
+              if (!anchorCell || anchorCell !== cellFor(native.focusNode) || anchorCell !== gestureStartCell) return false;
               const anchor = view.posAtDOM(native.anchorNode, native.anchorOffset);
               const head = view.posAtDOM(native.focusNode, native.focusOffset);
               const textSelection = TextSelection.between(view.state.doc.resolve(anchor), view.state.doc.resolve(head));
@@ -361,6 +385,9 @@ export const QalamTableRowSelection = Extension.create({
               return true;
             } catch {
               return false;
+            } finally {
+              gestureStartCell = null;
+              gestureStartPoint = null;
             }
           },
         },

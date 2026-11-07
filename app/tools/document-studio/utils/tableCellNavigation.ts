@@ -1,5 +1,94 @@
 import type {EditorView} from "@tiptap/pm/view";
 import {TextSelection} from "@tiptap/pm/state";
+import {CellSelection} from "@tiptap/pm/tables";
+
+export type HorizontalArrow = "ArrowLeft" | "ArrowRight";
+
+/** Return the adjacent cell in the requested visual direction, within this row. */
+export function visualNeighbour(cell: Element, key: HorizontalArrow, direction: "ltr" | "rtl"): Element | null {
+  const row = cell.closest("tr");
+  if (!row) return null;
+  const cells = Array.from(row.querySelectorAll("td,th"));
+  const index = cells.indexOf(cell);
+  if (index < 0) return null;
+  const visuallyRight = (key === "ArrowRight") !== (direction === "rtl");
+  const next = index + (visuallyRight ? 1 : -1);
+  return cells[next] ?? null;
+}
+
+function cellPositionAt(doc: import("@tiptap/pm/model").Node, pos: number): number | null {
+  const $pos = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const name = $pos.node(depth).type.name;
+    if (name === "tableCell" || name === "tableHeader") return $pos.before(depth);
+  }
+  return null;
+}
+
+/** Handle visual horizontal cell navigation before TableKit's logical-order keymap. */
+export function handleHorizontalTableArrow(view: EditorView, event: KeyboardEvent): boolean {
+  if (event.isComposing || view.composing || (event.key !== "ArrowLeft" && event.key !== "ArrowRight") || event.altKey || event.ctrlKey || event.metaKey) return false;
+  const { state } = view;
+  const { selection, doc } = state;
+  if (selection instanceof CellSelection) {
+    const headPos = selection.$headCell.pos;
+    const headDom = view.nodeDOM(headPos);
+    if (!(headDom instanceof Element)) return true;
+    const table = headDom.closest("table");
+    if (!table) return true;
+    if (!event.shiftKey) {
+      const cell = doc.nodeAt(headPos);
+      let firstText = headPos + 1;
+      cell?.forEach((block, offset) => {
+        if (block.isTextblock && firstText === headPos + 1) firstText = headPos + 1 + offset + 1;
+      });
+      view.dispatch(state.tr.setSelection(TextSelection.near(doc.resolve(firstText), 1)));
+      event.preventDefault();
+      return true;
+    }
+    const direction = view.dom.ownerDocument.defaultView?.getComputedStyle(table).direction === "rtl" ? "rtl" : "ltr";
+    const neighbour = visualNeighbour(headDom, event.key, direction);
+    if (!neighbour) { event.preventDefault(); return true; }
+    const neighbourDomPos = view.posAtDOM(neighbour, 0);
+    const targetPos = cellPositionAt(doc, neighbourDomPos);
+    if (targetPos === null) { event.preventDefault(); return true; }
+    view.dispatch(state.tr.setSelection(CellSelection.create(doc, selection.$anchorCell.pos, targetPos)));
+    event.preventDefault();
+    return true;
+  }
+
+  const currentPos = cellPositionAt(doc, selection.head);
+  const anchorCellPos = cellPositionAt(doc, selection.anchor);
+  if (currentPos === null || anchorCellPos !== currentPos) return false;
+  const cell = doc.nodeAt(currentPos);
+  const cellDom = view.nodeDOM(currentPos);
+  const table = cellDom instanceof Element ? cellDom.closest("table") : null;
+  if (!cell || !cellDom || !(cellDom instanceof Element) || !table) return false;
+  if (!event.shiftKey && !selection.empty) return false;
+  const direction = view.dom.ownerDocument.defaultView?.getComputedStyle(table).direction === "rtl" ? "rtl" : "ltr";
+  const visualEdge = view.endOfTextblock(event.key === "ArrowLeft" ? "left" : "right");
+  if (!cell.textContent && selection.empty || visualEdge) {
+    if (event.shiftKey) {
+      view.dispatch(state.tr.setSelection(CellSelection.create(doc, currentPos)));
+      event.preventDefault();
+      return true;
+    }
+    const neighbour = visualNeighbour(cellDom, event.key, direction);
+    if (neighbour) {
+      const targetPos = cellPositionAt(doc, view.posAtDOM(neighbour, 0));
+      const target = targetPos === null ? null : doc.nodeAt(targetPos);
+      let firstText = targetPos === null ? null : targetPos + 1;
+      target?.forEach((block, offset) => {
+        if (block.isTextblock && firstText === targetPos! + 1) firstText = targetPos! + 1 + offset + 1;
+      });
+      if (firstText !== null) view.dispatch(state.tr.setSelection(TextSelection.near(doc.resolve(firstText), 1)));
+    }
+    event.preventDefault();
+    return true;
+  }
+  if (event.shiftKey && !selection.empty && cell.textContent) return false;
+  return false;
+}
 
 /** Navigate in stored cell order. CSS table direction places cell 0 on the
  * right in RTL documents and on the left in LTR documents. */
