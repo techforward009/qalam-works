@@ -1,4 +1,4 @@
-import { CONTENT_REPLACEMENT } from "./formattingSafety";
+import { CONTENT_REPLACEMENT, readFormattingTarget, updateFormattingFrame } from "./formattingSafety";
 import type { Leading } from "./leading";
 /**
  * Shared Document Studio editor commands.
@@ -16,7 +16,7 @@ import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyle
 import { findAllTextMatches } from "./findReplace";
 import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
-import { normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
+import { normalizeEditorFontFamily, quoteEditorFontFamily, resolveEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
 import type { TextEffect } from "./inpageToolbar";
 import { isLatinFamilyName, hasScript, scriptRanges } from "../extensions/LatinScriptRuns";
@@ -26,6 +26,23 @@ import {
   resolveAddSpaceBeforePt,
   type DocumentStudioSettings,
 } from "./documentSettings";
+
+function focusedTextFrame(editor: Editor): HTMLTextAreaElement | HTMLInputElement | null {
+  const target = readFormattingTarget(editor.view.dom);
+  return target?.owner === "frame" ? target.input : null;
+}
+// Text frames are plain textareas: selection and caret both style the entire box.
+function patchFrameTypography(editor: Editor, patch: Record<string, unknown>): boolean {
+  const input = focusedTextFrame(editor);
+  if (!input) return false;
+  const typography = JSON.parse(input.dataset.studioFrameTypography || "null") as Record<string, unknown> | null;
+  updateFormattingFrame(input, { typography: { ...(typography ?? defaultDocumentSettings().typography), ...patch } as DocumentStudioSettings["typography"] });
+  return true;
+}
+function patchFrame(editor: Editor, patch: { textColor?: string | undefined; textAlign?: StudioTextAlign }): boolean {
+  const input = focusedTextFrame(editor);
+  return input ? updateFormattingFrame(input, patch) : false;
+}
 
 export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): void {
   const dom = editor.view.dom as HTMLElement;
@@ -349,6 +366,11 @@ function patchTextRanges(
 
 /** Urdu face only. Latin runs keep latinFontFamily (and a legacy Latin fontFamily). */
 export function applyFontFamily(editor: Editor, family: string): void {
+  if (focusedTextFrame(editor)) {
+    const resolved = resolveEditorFontFamily(family, "rtl");
+    patchFrameTypography(editor, { defaultRtlFontId: resolved.fontId });
+    return;
+  }
   const quoted = family ? quoteEditorFontFamily(family) : null;
   if (editor.state.selection.empty) {
     patchStoredMark(editor, (attrs) => { attrs.fontFamily = quoted; });
@@ -425,6 +447,12 @@ export function activeToolbarFontFamily(editor: Editor): string {
 }
 
 export function applyFontSize(editor: Editor, pt: string): void {
+  if (focusedTextFrame(editor)) {
+    const parsed = Number(pt);
+    if (!pt) return;
+    if (Number.isFinite(parsed) && parsed > 0 && parsed <= 2000) patchFrameTypography(editor, { bodyFontSizePt: parsed });
+    return;
+  }
   if (!pt) {
     editor.chain().focus().unsetFontSize().run();
   } else {
@@ -459,6 +487,7 @@ export function setLinkHref(editor: Editor, url: string | null): void {
 }
 export type StudioTextAlign = "left" | "center" | "right" | "justify" | "justify-all";
 export function setAlign(editor: Editor, align: StudioTextAlign): void {
+  if (focusedTextFrame(editor)) { patchFrame(editor, { textAlign: align }); return; }
   editor.chain().focus().setTextAlign(align).run();
 }
 export function undo(editor: Editor): void {
@@ -568,7 +597,8 @@ function pastedDirection(text: string, fallbackDir: "rtl" | "ltr"): "rtl" | "ltr
 
 export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
   if (!slice.content.size) return slice;
-  function assignDir(node: PMNode): PMNode {
+  function processNode(node: PMNode): PMNode | null {
+    if (node.type.name === "image") return null;
     if (node.isText) {
       const marks = node.marks.flatMap((mark) => {
         const cleaned = cleanTextStyle(mark);
@@ -580,9 +610,13 @@ export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): 
     const children: PMNode[] = [];
     let changed = false;
     node.forEach((child) => {
-      const next = assignDir(child);
-      if (next !== child) changed = true;
-      children.push(next);
+      const next = processNode(child);
+      if (next === null) {
+        changed = true;
+      } else {
+        if (next !== child) changed = true;
+        children.push(next);
+      }
     });
     const content = changed ? pmFragment.from(children) : node.content;
     if (!node.isTextblock) return changed ? node.copy(content) : node;
@@ -595,7 +629,10 @@ export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): 
     if (!changed && detectedDir === node.attrs.dir) return node;
     return node.type.create({ ...node.attrs, dir: detectedDir }, content, node.marks);
   }
-  const nodes = slice.content.content.map(assignDir);
+  const nodes = slice.content.content.flatMap((child) => {
+    const res = processNode(child);
+    return res ? [res] : [];
+  });
   return new Slice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
 }
 
@@ -616,6 +653,7 @@ export function buildDocumentStudioExample(fallbackDir: "rtl" | "ltr" = "rtl"): 
 }
 
 export function applyTextColor(editor: Editor, hex: string): void {
+  if (focusedTextFrame(editor)) { patchFrame(editor, { textColor: normalizeSafeHex(hex) ?? undefined }); return; }
   const safe = normalizeSafeHex(hex);
   if (!safe) {
     editor.chain().focus().unsetColor().run();

@@ -2,6 +2,7 @@ import type { DocNode } from "./extractPlainText";
 import type { DocumentStudioSettings } from "./documentSettings";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 import type { DocumentViewMode } from "./documentView";
+import { normalizeSafeHex } from "./studioColors";
 
 export const QPG_FILE_ACCEPT = ".qpg,.inp,.txt,.docx";
 export const QPG_MIME_TYPE = "application/octet-stream";
@@ -36,7 +37,12 @@ function validateEmbeddedImages(node: DocNode): void {
 export function serializeQpg(document: QpgDocument): string {
   validateQpgDocument(document);
   validateEmbeddedImages(document.content);
-  return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document });
+  return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document, frames: document.frames.map(copyQpgFrame) });
+}
+
+const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
+function copyQpgFrame(frame: StudioFrame): StudioFrame {
+  return Object.fromEntries(QPG_FRAME_KEYS.flatMap(key => frame[key] === undefined ? [] : [[key, frame[key]]])) as unknown as StudioFrame;
 }
 
 function validateQpgDocument(value: unknown): asserts value is QpgDocument {
@@ -49,7 +55,29 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       typeof frame.kind === "string" && typeof frame.page === "number" &&
       typeof frame.xMm === "number" && typeof frame.yMm === "number" &&
       typeof frame.wMm === "number" && typeof frame.hMm === "number" &&
-      typeof frame.text === "string") ||
+      typeof frame.text === "string" &&
+      (frame.imageSrc === undefined || typeof frame.imageSrc === "string") &&
+      (frame.imageNaturalW === undefined || typeof frame.imageNaturalW === "number") &&
+      (frame.imageNaturalH === undefined || typeof frame.imageNaturalH === "number") &&
+      (frame.imageXMm === undefined || typeof frame.imageXMm === "number") &&
+      (frame.imageYMm === undefined || typeof frame.imageYMm === "number") &&
+      (frame.imageWMm === undefined || typeof frame.imageWMm === "number") &&
+      (frame.imageHMm === undefined || typeof frame.imageHMm === "number") &&
+      (frame.locked === undefined || typeof frame.locked === "boolean") &&
+      (frame.dontPrint === undefined || typeof frame.dontPrint === "boolean") &&
+      (frame.template === undefined || typeof frame.template === "boolean") &&
+      (frame.roundnessMm === undefined || typeof frame.roundnessMm === "number" && Number.isFinite(frame.roundnessMm) && frame.roundnessMm >= 0 && frame.roundnessMm <= 2000) &&
+      (frame.angle1Deg === undefined || typeof frame.angle1Deg === "number" && Number.isFinite(frame.angle1Deg) && Math.abs(frame.angle1Deg) <= 3600) &&
+      (frame.angle2Deg === undefined || typeof frame.angle2Deg === "number" && Number.isFinite(frame.angle2Deg) && Math.abs(frame.angle2Deg) <= 3600) &&
+      (frame.borderPosition === undefined || frame.borderPosition === "inside" || frame.borderPosition === "outside") &&
+      (frame.borderColor === undefined || normalizeSafeHex(frame.borderColor) !== null) &&
+      (frame.borderWidthMm === undefined || typeof frame.borderWidthMm === "number" && Number.isFinite(frame.borderWidthMm) && frame.borderWidthMm > 0 && frame.borderWidthMm <= 2000) &&
+      (frame.borderPattern === undefined || frame.borderPattern === "none") &&
+      (frame.backgroundColor === undefined || normalizeSafeHex(frame.backgroundColor) !== null) &&
+      (frame.textColor === undefined || normalizeSafeHex(frame.textColor) !== null) &&
+      (frame.textAlign === undefined || ["left", "center", "right", "justify", "justify-all"].includes(String(frame.textAlign))) &&
+      (frame.singleLine === undefined || typeof frame.singleLine === "boolean") &&
+      (frame.backgroundHatch === undefined || frame.backgroundHatch === "none")) ||
     !Number.isInteger(value.minimumPages) || (value.minimumPages as number) < 1 ||
     !isObject(value.columns) || !Number.isInteger(value.columns.count) ||
     (value.columns.count as number) < 1 || (value.columns.count as number) > 32 ||
@@ -73,7 +101,7 @@ export function deserializeQpg(json: string): QpgDocument {
   validateQpgDocument(parsed);
   validateEmbeddedImages(parsed.content);
   const { format: _format, version: _version, ...document } = parsed;
-  return document as unknown as QpgDocument;
+  return { ...(document as unknown as QpgDocument), frames: (document.frames as unknown as StudioFrame[]).map(copyQpgFrame) };
 }
 
 export function qpgFilename(title: string): string {

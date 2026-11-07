@@ -10,6 +10,7 @@ export type StudioToolId =
   | "link"
   | "unlink"
   | "textbox"
+  | "title-text"
   | "image-frame"
   | "cross-square"
   | "cross-circle"
@@ -33,7 +34,7 @@ function OutlineIcon({ children }: { children: ReactNode }) {
   return <svg width="27" height="22" viewBox="0 0 27 22" aria-hidden="true" fill="none" stroke="#000" strokeWidth="1" strokeLinecap="butt" strokeLinejoin="miter" shapeRendering="crispEdges">{children}</svg>;
 }
 
-const PIXEL_ICONS = {
+export const PIXEL_ICONS = {
   select: [
     "...........................",
     "........ooo................",
@@ -168,7 +169,11 @@ function PixelIcon({ name }: { name: keyof typeof PIXEL_ICONS }) {
 
 const URDU_TOOL_LABELS: Partial<Record<StudioToolId, string>> = {
   select: "انتخاب", text: "متن", textbox: "متن کا خانہ", rect: "مستطیل",
+  "title-text": "عنوان کا خانہ",
   ellipse: "بیضوی", "round-rect": "گول کونوں والا مستطیل", line: "لکیر",
+  "cross-square": "مستطیل تصویری خانہ",
+  "cross-circle": "بیضوی تصویری خانہ",
+  "cross-round": "گول کونوں والا تصویری خانہ",
 };
 
 const TOOLS: ToolSpec[] = [
@@ -190,16 +195,19 @@ const TOOLS: ToolSpec[] = [
   { id: "textbox", label: "Textbox Tool", enabled: true, icon: (
     <OutlineIcon><rect x="7.5" y="4.5" width="12" height="13" /><path d="M14.5 7.5C12.5 6.5 10.5 8.5 12.5 9.5L14.5 10.5C11.5 10.5 10.5 12.5 11.5 14.5C12.5 16.5 15.5 15.5 16.5 14.5" /></OutlineIcon>
   ) },
+  { id: "title-text", label: "Title Text Box", enabled: true, icon: (
+    <OutlineIcon><rect x="5.5" y="7.5" width="16" height="7" /><path d="M8.5 11H11.5M13.5 11H16.5M18.5 11H19.5" /></OutlineIcon>
+  ) },
   { id: "image-frame", label: "Picture box", enabled: false, icon: (
     <OutlineIcon><path d="M7.5 10.5V4.5H19.5V10.5" /><path d="M7.5 11.5V12.5M7.5 13.5V14.5M7.5 16.5V17.5M19.5 11.5V12.5M19.5 13.5V14.5M19.5 16.5V17.5M8.5 17.5H9.5M10.5 17.5H11.5M13.5 17.5H14.5M15.5 17.5H16.5M18.5 17.5H19.5" /><path d="M14.5 7.5C12.5 6.5 10.5 8.5 12.5 9.5L14.5 10.5C11.5 10.5 10.5 12.5 11.5 14.5C12.5 16.5 15.5 15.5 16.5 14.5" /></OutlineIcon>
   ) },
-  { id: "cross-square", label: "Crossed square", enabled: false, icon: (
+  { id: "cross-square", label: "Rectangular Picture Box", enabled: true, icon: (
     <OutlineIcon><rect x="7.5" y="4.5" width="12" height="12" /><path d="M8.5 5.5L18.5 15.5M18.5 5.5L8.5 15.5" /></OutlineIcon>
   ) },
-  { id: "cross-circle", label: "Crossed circle", enabled: false, icon: (
+  { id: "cross-circle", label: "Elliptical Picture Box", enabled: true, icon: (
     <OutlineIcon><path d="M11.5 4.5H15.5L19.5 8.5V12.5L15.5 16.5H11.5L7.5 12.5V8.5ZM9.5 6.5L17.5 14.5M17.5 6.5L9.5 14.5" /></OutlineIcon>
   ) },
-  { id: "cross-round", label: "Crossed rounded square", enabled: false, icon: (
+  { id: "cross-round", label: "Round Rectangular Picture Box", enabled: true, icon: (
     <OutlineIcon><path d="M9.5 4.5H17.5L19.5 6.5V14.5L17.5 16.5H9.5L7.5 14.5V6.5ZM9.5 6.5L17.5 14.5M17.5 6.5L9.5 14.5" /></OutlineIcon>
   ) },
   { id: "rect", label: "Rectangle", enabled: true, icon: (

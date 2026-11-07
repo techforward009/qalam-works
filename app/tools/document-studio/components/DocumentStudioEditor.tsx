@@ -9,7 +9,7 @@ import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
 import {inheritPreviousTableRow,inheritPreviousCellStoredMarks} from "../utils/tableRowFormatInheritance";
 import {splitTableAbove} from "../utils/splitTableAbove";
 import {hasTableForFormat} from "../utils/tableFormat";
-import { installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
+import { hasEditableFormattingFrame, installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
 import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
@@ -79,12 +79,10 @@ import { plainTextToDocNodeWithDir, normalizeDocxParagraphBreaks } from "../util
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import {
+  compressDocumentImage,
   documentImagePayloadBytes,
-  getImageDimensions,
   imageDataUrlByteLength,
-  MAX_DOCUMENT_IMAGE_BYTES,
   MAX_DOCUMENT_IMAGE_TOTAL_BYTES,
-  readImageAsDataUrl,
   sanitizeImageMetadata,
   validateDocumentImage,
 } from "../utils/documentImages";
@@ -154,10 +152,13 @@ import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { AllahAutoMarks } from "../extensions/AllahAutoMarks";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
+import { StudioObjectRibbon } from "./StudioObjectRibbon";
+import { applyObjectGeometry } from "../utils/objectAttributes";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
-import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioObjectLayer";
+import { readStoredFrames, writeStoredFrames, isPictureBox, pictureMenuDisabledIds, type StudioFrame } from "./StudioObjectLayer";
+import { fitPictureInBox, PICTURE_SOURCE_HARD_CAP_BYTES } from "../utils/pictureFit";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
@@ -424,6 +425,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [inpageError, setInpageError] = useState<string | null>(null);
   const [inpageImportNotice, setInpageImportNotice] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const pictureInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
+  const [pictureTargetFrameId, setPictureTargetFrameId] = useState<string | null>(null);
 
   const [preview, setPreview] = useState<{
     document: DocNode;
@@ -555,6 +559,25 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         spellcheck: EDITOR_SPELLCHECK_ATTR,
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
+      transformPastedHTML: (html) => html.replace(/<img\b[^>]*>/gi, ""),
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []);
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const hasImage = files.some((f) => f.type.startsWith("image/")) || items.some((item) => item.type.startsWith("image/"));
+        const types = event.clipboardData?.types ?? [];
+        const hasText = types.includes("text/plain") || types.includes("text/html");
+        if (hasImage && !hasText) {
+          return true;
+        }
+        return false;
+      },
+      handleDrop: (_view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []);
+        if (files.some((f) => f.type.startsWith("image/"))) {
+          return true;
+        }
+        return false;
+      },
       handleKeyDown: (_view, event) => {
         if (handleStudioDocumentNavigation(_view, event)) return true;
         const $from = _view.state.selection.$from;
@@ -1921,22 +1944,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const error = await validateDocumentImage(file);
     if (error) {
       setImageError(isUr
-        ? (error === "oversized" ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "درست PNG، JPEG یا WebP تصویر منتخب کریں۔")
-        : (error === "oversized" ? "Images must be smaller than 2 MB." : "Choose a valid PNG, JPEG, or WebP image."));
+        ? (error === "oversized" ? "تصویر 25 ایم بی سے چھوٹی ہونی چاہیے۔" : "درست PNG، JPEG یا WebP تصویر منتخب کریں۔")
+        : (error === "oversized" ? "Images must be smaller than 25 MB." : "Choose a valid PNG, JPEG, or WebP image."));
       return;
     }
     try {
-      const src = await readImageAsDataUrl(file);
+      const compressed = await compressDocumentImage(file);
+      const src = compressed.src;
       const imageBytes = imageDataUrlByteLength(src);
-      if (imageBytes > MAX_DOCUMENT_IMAGE_BYTES) {
-        setImageError(isUr ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 2 MB.");
-        return;
-      }
       if ((editor ? documentImagePayloadBytes(editor.getJSON()) : 0) + imageBytes > MAX_DOCUMENT_IMAGE_TOTAL_BYTES) {
         setImageError(isUr ? "اس دستاویز میں تصاویر کی 8 ایم بی حد پوری ہو چکی ہے۔" : "This document has reached its 8 MB image limit.");
         return;
       }
-      const dimensions = await getImageDimensions(src);
+      const dimensions = { width: compressed.width, height: compressed.height };
       const width = Math.max(80, Math.min(480, dimensions.width));
       const height = Math.max(1, Math.round((dimensions.height / dimensions.width) * width));
       editor?.chain().focus().insertContent({
@@ -1974,6 +1994,48 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (id) writeStoredFrames(id, next);
   };
 
+  const selectedPictureBox = frames.find((f) => selectedFrameIds.includes(f.id) && isPictureBox(f.kind));
+
+  const openPictureChooser = (frameId?: string) => {
+    const targetId = frameId ?? selectedPictureBox?.id;
+    if (!targetId) return;
+    setPictureTargetFrameId(targetId);
+    pictureInputRef.current?.click();
+  };
+
+  const handlePictureFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const targetId = pictureTargetFrameId ?? selectedPictureBox?.id;
+    if (!targetId) return;
+    const targetFrame = frames.find((f) => f.id === targetId);
+    if (!targetFrame) return;
+
+    if (file.size <= 0 || file.size > PICTURE_SOURCE_HARD_CAP_BYTES) {
+      setImageError(isUr ? "تصویر 25 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 25 MB.");
+      return;
+    }
+
+    try {
+      const compressed = await compressDocumentImage(file);
+      const fit = fitPictureInBox(targetFrame.wMm, targetFrame.hMm, compressed.width, compressed.height);
+      changeFrames(frames.map((f) => f.id === targetId ? {
+        ...f,
+        imageSrc: compressed.src,
+        imageNaturalW: compressed.width,
+        imageNaturalH: compressed.height,
+        imageXMm: fit.x,
+        imageYMm: fit.y,
+        imageWMm: fit.w,
+        imageHMm: fit.h,
+      } : f));
+      setImageError(null);
+    } catch {
+      setImageError(isUr ? "تصویر لوڈ کرنے میں خرابی ہوئی۔" : "Failed to load picture.");
+    }
+  };
+
   const insertPageBreak = () => {
     if (!editor) return;
     insertDocumentBreak(editor, { type: "pageBreak" });
@@ -1992,7 +2054,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const handleMenuAction = (id: MenuActionId) => {
     if(noDocumentOpen && !availableWithoutDocument(id)) return;
     if (transitionRef.current) return;
-    if (id.startsWith("format.") && formattingSafety.current && !formattingSafety.current.canFormat()) return;
+    // Picture import is not a text-box formatting command. Open the chooser
+    // before the formatting guard so a selected picture box cannot toast.
+    // Insert > Picture fills a selected picture box, as in InPage; at a
+    // text caret it keeps the inline image insertion.
+    if (id === "file.importPicture") { openPictureChooser(); return; }
+    if (id === "insert.image") { selectedPictureBox ? openPictureChooser() : imageInputRef.current?.click(); return; }
+    const frameAlignAction = ["format.alignLeft", "format.alignCenter", "format.alignRight", "format.alignJustify"].includes(id) && editor && hasEditableFormattingFrame(editor.view.dom);
+    if (id.startsWith("format.") && !frameAlignAction && formattingSafety.current && !formattingSafety.current.canFormat()) return;
     if (id === "preferences.typographic") { setTypographicOpen(true); return; }
     if (id.startsWith("window.document:")) { void openLibraryDocument(id.slice("window.document:".length)); return; }
     if (id === "window.page") {
@@ -2044,7 +2113,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       loadExample: handleLoadExample,
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
-      openImageInsert: () => imageInputRef.current?.click(),
+      openImageInsert: () => selectedPictureBox ? openPictureChooser() : imageInputRef.current?.click(),
+      importPicture: () => openPictureChooser(),
       insertPageBreak,
       insertSectionBreak,
       setDir: (direction) => {
@@ -2064,6 +2134,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const insertTableMode = editor?.isActive("table") ? "table" : editor && !editor.state.selection.empty ? "selection" : "plain";
   const disabledIds = new Set<MenuActionId>();
   if(noDocumentOpen)allMenuActionIds().filter(id=>!availableWithoutDocument(id)).forEach(id=>disabledIds.add(id));
+  pictureMenuDisabledIds(frames, selectedFrameIds).forEach((id) => disabledIds.add(id));
   if (!editor?.can().undo()) disabledIds.add("edit.undo");
   if (!editor?.can().redo()) disabledIds.add("edit.redo");
   if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
@@ -2253,6 +2324,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           event.target.value = "";
         }}
       />
+      <input
+        ref={pictureInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/bmp,image/webp"
+        className="hidden"
+        data-studio-picture-input="true"
+        onChange={(event) => void handlePictureFileChange(event)}
+      />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
@@ -2421,7 +2500,11 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}><DocumentToolbar
+          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedFrameIds.length === 1 && selectedPictureBox ? <StudioObjectRibbon frame={selectedPictureBox} onChange={(frameId, patch) => {
+            const target = frames.find(frame => frame.id === frameId);
+            const updated = target && applyObjectGeometry(target, patch);
+            if (updated) changeFrames(frames.map(frame => frame.id === frameId ? updated : frame));
+          }} /> : <DocumentToolbar
             editor={editor}
             dir={dir}
             setDir={setDir}
@@ -2433,7 +2516,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             documentSettings={documentSettings}
             englishFont={englishFont}
             onEnglishFontChange={setEnglishFont}
-          /></div>
+          />}</div>
         }
         findBar={
           findOpen ? (
@@ -2568,6 +2651,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             minimumPages={minimumPages}
             frames={frames}
             onFramesChange={changeFrames}
+            selectedFrameIds={selectedFrameIds}
+            onSelectedFramesChange={setSelectedFrameIds}
+            onDoubleClickFrame={(frame) => openPictureChooser(frame.id)}
             englishFont={englishFont}
             tool={canvasTool}
             onToolAction={onCanvasTool}

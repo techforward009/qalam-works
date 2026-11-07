@@ -16,6 +16,7 @@ import {
   sanitizeImageMetadata,
   validateDocumentImage,
 } from "../app/tools/document-studio/utils/documentImages";
+import { PICTURE_SOURCE_HARD_CAP_BYTES } from "../app/tools/document-studio/utils/pictureFit";
 
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WAAAAABJRU5ErkJggg==";
 
@@ -201,7 +202,13 @@ describe("Document Studio v2.2 images", () => {
     await expect(validateDocumentImage(file("image/webp", [82, 73, 70, 70, 0, 0, 0, 0, 87, 69, 66, 80]))).resolves.toBeNull();
     await expect(validateDocumentImage(file("image/png", [1, 2, 3]))).resolves.toBe("malformed");
     await expect(validateDocumentImage(file("image/gif", [71, 73, 70]))).resolves.toBe("unsupported");
-    await expect(validateDocumentImage({ type: "image/png", size: MAX_DOCUMENT_IMAGE_BYTES + 1 } as File)).resolves.toBe("oversized");
+    const header = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+    const medium = new File([header, new Uint8Array(MAX_DOCUMENT_IMAGE_BYTES)], "medium.png", { type: "image/png" });
+    expect(medium.size).toBeGreaterThan(MAX_DOCUMENT_IMAGE_BYTES);
+    expect(medium.size).toBeLessThan(PICTURE_SOURCE_HARD_CAP_BYTES);
+    await expect(validateDocumentImage(medium)).resolves.toBeNull();
+    await expect(validateDocumentImage({ type: "image/png", size: PICTURE_SOURCE_HARD_CAP_BYTES + 1 } as File)).resolves.toBe("oversized");
+    await expect(validateDocumentImage({ type: "image/png", size: 0 } as File)).resolves.toBe("oversized");
   });
 
   test("counts embedded data payloads for the bounded per-document image budget", () => {

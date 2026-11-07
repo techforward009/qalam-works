@@ -1,3 +1,5 @@
+import { PICTURE_JPEG_QUALITY, PICTURE_SOURCE_HARD_CAP_BYTES, pictureEncoding, pictureOutputSize } from "./pictureFit";
+
 export const MAX_DOCUMENT_IMAGE_BYTES = 2 * 1024 * 1024;
 export const MAX_DOCUMENT_IMAGE_TOTAL_BYTES = 8 * 1024 * 1024;
 export const DOCUMENT_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
@@ -55,7 +57,8 @@ export function applyImageFloatDataset(element: HTMLElement, attrs: Record<strin
 
 export async function validateDocumentImage(file: File): Promise<DocumentImageValidationError | null> {
   if (!DOCUMENT_IMAGE_TYPES.includes(file.type as typeof DOCUMENT_IMAGE_TYPES[number])) return "unsupported";
-  if (file.size <= 0 || file.size > MAX_DOCUMENT_IMAGE_BYTES) return "oversized";
+  // Files between the old 2 MB preference and the hard cap are downscaled, not rejected.
+  if (file.size <= 0 || file.size > PICTURE_SOURCE_HARD_CAP_BYTES) return "oversized";
   const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   const isPng = header.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => header[index] === value);
   const isJpeg = header.length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
@@ -122,4 +125,69 @@ export function getImageDimensions(src: string): Promise<{ width: number; height
     image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
     image.src = src;
   });
+}
+
+function readBlobAsDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Image could not be read."));
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Image could not be read."));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onerror = () => reject(new Error("Image could not be read."));
+    image.onload = () => resolve(image);
+    image.src = src;
+  });
+}
+
+function canvasHasTransparency(context: CanvasRenderingContext2D, width: number, height: number): boolean {
+  const pixels = context.getImageData(0, 0, width, height).data;
+  for (let i = 3; i < pixels.length; i += 4) {
+    if (pixels[i] < 255) return true;
+  }
+  return false;
+}
+
+/**
+ * Downscale a picture so the stored asset stays small. PNG and JPEG that
+ * already fit are kept as-is. Everything else is redrawn to at most
+ * ~2000px on the long side: PNG when the result is transparent and still
+ * small, otherwise JPEG. The source hard cap is enforced by the caller.
+ */
+export async function compressDocumentImage(file: File): Promise<{ src: string; width: number; height: number }> {
+  if (file.size <= 0) throw new Error("Image could not be read.");
+  if (file.size > PICTURE_SOURCE_HARD_CAP_BYTES) throw new Error("Image exceeds the source size cap.");
+  const original = await readBlobAsDataUrl(file);
+  const image = await loadImage(original);
+  const fitted = pictureOutputSize(image.naturalWidth, image.naturalHeight);
+  if (fitted.width <= 0 || fitted.height <= 0) throw new Error("Image could not be read.");
+  const unchanged = fitted.width === image.naturalWidth && fitted.height === image.naturalHeight;
+  if (unchanged && (file.type === "image/png" || file.type === "image/jpeg") && file.size <= MAX_DOCUMENT_IMAGE_BYTES) {
+    return { src: original, width: image.naturalWidth, height: image.naturalHeight };
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = fitted.width;
+  canvas.height = fitted.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Image could not be read.");
+  context.drawImage(image, 0, 0, fitted.width, fitted.height);
+  const hasTransparency = canvasHasTransparency(context, fitted.width, fitted.height);
+  const png = hasTransparency ? canvas.toDataURL("image/png") : "";
+  if (pictureEncoding({ hasTransparency, pngBytes: imageDataUrlByteLength(png), maxBytes: MAX_DOCUMENT_IMAGE_BYTES }) === "png") {
+    return { src: png, width: fitted.width, height: fitted.height };
+  }
+  if (hasTransparency) {
+    context.globalCompositeOperation = "destination-over";
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, fitted.width, fitted.height);
+  }
+  return { src: canvas.toDataURL("image/jpeg", PICTURE_JPEG_QUALITY), width: fitted.width, height: fitted.height };
 }

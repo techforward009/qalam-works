@@ -44,6 +44,7 @@ export type DocumentMenuHandlers = {
   newDocument: () => void;
   openLibrary: () => void;
   upload: () => void;
+  importPicture?: () => void;
   downloadTxt: () => void;
   downloadDocx: () => void;
   downloadPdf: () => void;
@@ -143,6 +144,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "file.upload":
       handlers.upload();
+      return;
+    case "file.importPicture":
+      handlers.importPicture?.();
       return;
     case "file.downloadTxt":
       handlers.downloadTxt();

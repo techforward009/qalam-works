@@ -100,14 +100,16 @@ test('Arrow alone shows handles; clicking an empty page area or switching to Tex
   await expect(object(page, 'multi').locator('[data-studio-frame-handle]')).toHaveCount(8);
   if (info.project.name === 'desktop-chrome') await page.screenshot({ path: info.outputPath('arrow-selection-only.png'), scale: 'css' });
 });
-test('box selection stays painted at the formatting controls, rejects formatting, and clears on dismissal', async ({ page }, info) => {
+test('box selection stays painted at the formatting controls, applies whole-box font, and clears on dismissal', async ({ page }, info) => {
   const before = await snapshot(page), input = box(page, 'single'); await input.click(); await input.press('Control+a');
   const selected = await input.evaluate(el => { const i = el as HTMLTextAreaElement; return [i.selectionStart, i.selectionEnd]; });
   const font = page.getByRole('combobox', { name: 'Urdu font', exact: true }); await font.focus();
   await expect(object(page, 'single').locator('[data-studio-text-frame-selection]')).toBeVisible();
   expect(await input.evaluate(el => { const i = el as HTMLTextAreaElement; return [i.selectionStart, i.selectionEnd]; })).toEqual(selected);
   await font.selectOption({ label: 'Digital Khatt Indo-Pak' });
-  await expect(page.locator('[data-studio-formatting-notice]')).toBeVisible(); expect(await snapshot(page)).toEqual(before);
+  await expect(page.locator('[data-studio-formatting-notice]')).toHaveCount(0);
+  expect(await snapshot(page)).toEqual(before);
+  await expect(input).toHaveAttribute('data-studio-frame-font-family', 'Digital Khatt Indo-Pak');
   await expect(object(page, 'single').locator('[data-studio-text-frame-selection]')).toBeVisible();
   if (info.project.name === 'desktop-chrome') await page.screenshot({ path: info.outputPath('selection-at-toolbar.png'), scale: 'css' });
   await input.focus(); await input.press('ArrowLeft'); await expect(object(page, 'single').locator('[data-studio-text-frame-selection]')).toHaveCount(0);

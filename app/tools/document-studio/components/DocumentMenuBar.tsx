@@ -204,17 +204,26 @@ export default function DocumentMenuBar({
       if (event.defaultPrevented || !target?.closest("[data-studio-shell]") || target.closest('[role="dialog"], [role="alertdialog"]')) return;
       const key = event.key.toLowerCase();
       let id: MenuActionId | undefined;
-      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && key === "y") {
+        // A selected picture box takes Ctrl+Y for import. Otherwise dispatch
+        // editor Redo explicitly — the same command as Edit > Redo on main.
+        id = disabledIds?.has("file.importPicture") ? "edit.redo" : "file.importPicture";
+      } else if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+        id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
+      }
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "y") id = "file.downloadTxt";
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey && key === "f") id = "text.tableFormat";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "insert") id = "insert.pageBreak";
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "f12") id = "window.page";
       if (!id) return;
-      event.preventDefault(); closeAndAct(id);
+      event.preventDefault();
+      // Capture-phase stop keeps the editor keymap from also redoing.
+      if (key === "y" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) event.stopPropagation();
+      closeAndAct(id);
     };
-    window.addEventListener("keydown", shortcut);
-    return () => window.removeEventListener("keydown", shortcut);
-  }, [onAction]);
+    window.addEventListener("keydown", shortcut, true);
+    return () => window.removeEventListener("keydown", shortcut, true);
+  }, [onAction, disabledIds]);
 
   useEffect(() => {
     const sync = () => setPortalRoot(studioOverlayRoot());

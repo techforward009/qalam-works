@@ -16,6 +16,7 @@ import {
 import { getFontById, normalizeEditorFontFamily } from "./fontRegistry";
 import { isLatinFamilyName, hasScript } from "../extensions/LatinScriptRuns";
 import { normalizeSafeHex } from "./studioColors";
+import { readFormattingTarget } from "./formattingSafety";
 
 export const MIXED_TOOLBAR_VALUE = "__mixed__";
 
@@ -306,6 +307,20 @@ export function resolveActiveToolbarFormatting(
     scale: scales.size > 1,
   };
 
+  const frameTarget = readFormattingTarget(editor.view.dom);
+  const frameInput = frameTarget?.owner === "frame" ? frameTarget.input : null;
+  if (frameInput?.isConnected) {
+    const frameFamily = frameInput.dataset.studioFrameFontFamily;
+    const frameSize = Number(frameInput.dataset.studioFrameFontSizePt);
+    const frameAlign = frameInput.dataset.studioFrameTextAlign;
+    const frameColor = normalizeSafeHex(frameInput.dataset.studioFrameTextColor);
+    families.clear(); families.add(frameFamily || effectiveFamily("", "rtl", settings));
+    sizes.clear(); sizes.add(Number.isFinite(frameSize) && frameSize > 0 ? frameSize : settings.typography.bodyFontSizePt);
+    colors.clear(); colors.add(frameColor ?? "");
+    aligns.clear(); if (frameAlign && ["left", "center", "right", "justify", "justify-all"].includes(frameAlign)) aligns.add(frameAlign as "left" | "center" | "right" | "justify" | "justify-all");
+    mixed.fontFamily = false; mixed.fontSize = false; mixed.color = false;
+  }
+
   return {
     fontFamily: mixed.fontFamily ? MIXED_TOOLBAR_VALUE : [...families][0] ?? effectiveFamily("", globalDir, settings),
     latinFontFamily: mixed.latinFontFamily ? MIXED_TOOLBAR_VALUE : [...latinFamilies][0] ?? "Arial Unicode MS",
@@ -317,10 +332,10 @@ export function resolveActiveToolbarFormatting(
     underline: editor.isActive("underline"),
     textEffect: effects.size === 1 ? [...effects][0] : "none",
     textOutline: isTextOutlineActive(editor),
-    textAlign: aligns.size === 1 ? [...aligns][0] : aligns.size > 1 ? null : (style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left")),
+    textAlign: frameInput ? (aligns.size === 1 ? [...aligns][0] : "start") : aligns.size === 1 ? [...aligns][0] : aligns.size > 1 ? null : (style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left")),
     directionMode: directionModes.size === 1 ? [...directionModes][0] : "auto",
     blockDir: blockDirs.size === 1 ? [...blockDirs][0] : null,
-    color: mixed.color ? null : ([...colors][0] || null),
+    color: frameInput ? ([...colors][0] || null) : mixed.color ? null : ([...colors][0] || null),
     highlight: mixed.highlight ? null : ([...highlights][0] || null),
     spaceBeforePt: mixed.spaceBefore ? null : [...spaceBefores][0] ?? settings.typography.paragraphBeforePt,
     spaceAfterPt: mixed.spaceAfter ? null : [...spaceAfters][0] ?? settings.typography.paragraphAfterPt,

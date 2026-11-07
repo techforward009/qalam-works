@@ -24,6 +24,7 @@ export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onPara
   if(!editor)return;
   const open=(event:MouseEvent)=>{
    const target=event.target instanceof Element?event.target:null;
+   if(target?.closest('[data-studio-frame^="picture-"]')){close();return;}
    if(!target||!editor.view.dom.contains(target)||target.closest('img,[data-resize-container],[data-studio-frame]')){close();return;}
    event.preventDefault();
    const cell=target.closest("td,th");

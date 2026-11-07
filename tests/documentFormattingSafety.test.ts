@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle, FontFamily } from '@tiptap/extension-text-style';
-import { CONTENT_REPLACEMENT, TABLE_DIALOG_CHANGE, formattingSafetyMessage, installFormattingSafety } from '../app/tools/document-studio/utils/formattingSafety';
+import { CONTENT_REPLACEMENT, TABLE_DIALOG_CHANGE, formattingSafetyMessage, installFormattingSafety, registerFrameStyleUpdater } from '../app/tools/document-studio/utils/formattingSafety';
+import { applyFontFamily, applyFontSize, applyTextColor, setAlign } from '../app/tools/document-studio/utils/documentCommands';
 let dispose: (() => void) | undefined, editor: Editor;
 afterEach(() => { dispose?.(); editor?.destroy(); document.body.replaceChildren(); });
 function setup() {
@@ -37,6 +38,33 @@ describe('formatting target safety', () => {
     editor.chain().setFontFamily('Digital Khatt Indo-Pak').toggleBold().run();
     expect(editor.getJSON()).toEqual(before); expect(box.value).toBe('محفوظ عبارت'); expect(reject).toHaveBeenCalled();
   });
+  it('routes supported styles to the whole frame without changing or focusing the story', () => {
+    const { claim, before, box } = setup(); claim();
+    box.dataset.studioFrameTypography = JSON.stringify({ bodyFontSizePt: 12, defaultRtlFontId: 'mehr-nastaliq-web', paragraphBeforePt: 0, paragraphAfterPt: 0, firstLineIndentMm: 0 });
+    let frame: Record<string, unknown> = {};
+    const unregister = registerFrameStyleUpdater(box, patch => { frame = { ...frame, ...patch, typography: { ...((frame.typography as object) ?? {}), ...(patch.typography ?? {}) } }; });
+    applyFontFamily(editor, 'Amiri'); applyFontSize(editor, '24'); applyTextColor(editor, '#B91C1C'); setAlign(editor, 'center');
+    unregister();
+    expect(frame).toMatchObject({ textColor: '#B91C1C', textAlign: 'center', typography: { bodyFontSizePt: 24, defaultRtlFontId: expect.any(String) } });
+    expect(editor.getJSON()).toEqual(before);
+  });
+  it('routes the same whole-box styles to an input frame and keeps the story protected', () => {
+    const { guard, before, reject } = setup();
+    const textarea = document.querySelector('textarea[data-studio-text-frame]')!;
+    const input = document.createElement('input'); input.type = 'text'; input.dataset.studioTextFrame = 'true';
+    input.dataset.studioFrameTypography = JSON.stringify({ bodyFontSizePt: 12, defaultRtlFontId: 'mehr-nastaliq-web', paragraphBeforePt: 0, paragraphAfterPt: 0, firstLineIndentMm: 0 });
+    textarea.replaceWith(input);
+    input.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(guard.canFormat()).toBe(false); // ownership claim rejects range formatting
+    let frame: Record<string, unknown> = {};
+    const unregister = registerFrameStyleUpdater(input, patch => { frame = { ...frame, ...patch, typography: { ...((frame.typography as object) ?? {}), ...(patch.typography ?? {}) } }; });
+    applyFontFamily(editor, 'Amiri'); applyFontSize(editor, '24'); applyTextColor(editor, '#FF0000'); setAlign(editor, 'center');
+    unregister();
+    expect(frame).toMatchObject({ textColor: '#FF0000', textAlign: 'center', typography: { bodyFontSizePt: 24, defaultRtlFontId: expect.any(String) } });
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).toEqual(before);
+    expect(reject).toHaveBeenCalled();
+  });
   it('guards a collapsed story selection and stored marks too', () => {
     const { claim, reject } = setup(); editor.commands.setTextSelection(1); claim();
     editor.commands.setFontFamily('Inter'); expect(editor.state.storedMarks).toBeNull(); expect(reject).toHaveBeenCalled();
@@ -54,6 +82,7 @@ describe('formatting target safety', () => {
   it('blocks formatting keyboard shortcuts but leaves native textarea undo alone', () => {
     const { claim, box, reject } = setup(); claim();
     const bold = new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true, cancelable: true }); box.dispatchEvent(bold); expect(bold.defaultPrevented).toBe(true);
+    const align = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, altKey: true, bubbles: true, cancelable: true }); box.dispatchEvent(align); expect(align.defaultPrevented).toBe(false);
     const undo = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }); box.dispatchEvent(undo); expect(undo.defaultPrevented).toBe(false); expect(reject).toHaveBeenCalledTimes(1);
   });
   it('removed boxes become ambiguous, never a stale story target', () => {
@@ -107,6 +136,72 @@ describe('formatting target safety', () => {
   it('provides the exact English and Urdu explanations', () => {
     expect(formattingSafetyMessage(false)).toBe('Formatting selected text inside a text box is not yet available.');
     expect(formattingSafetyMessage(true)).toBe('ٹیکسٹ باکس میں منتخب عبارت کی فارمیٹنگ ابھی دستیاب نہیں۔');
+  });
+
+  function selectFrame(kind: string) {
+    const frame = document.createElement('div');
+    frame.setAttribute('data-studio-frame', kind);
+    const handle = document.createElement('div');
+    handle.setAttribute('data-studio-frame-handle', 'se');
+    frame.append(handle);
+    document.querySelector('[data-studio-scroller]')!.append(frame);
+    return frame;
+  }
+
+  it('does not treat a selected picture box as a text box after the picture tool', () => {
+    const { guard, reject, before } = setup();
+    const tool = document.createElement('button');
+    tool.setAttribute('data-studio-tool-button', 'cross-square');
+    document.querySelector('[data-studio-root]')!.append(tool);
+    tool.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(reject).not.toHaveBeenCalled();
+    for (const kind of ['picture-rect', 'picture-ellipse', 'picture-round-rect']) {
+      document.querySelectorAll('[data-studio-frame]').forEach((node) => node.remove());
+      selectFrame(kind);
+      reject.mockClear();
+      const snapshot = editor.getJSON();
+      expect(guard.canFormat()).toBe(true);
+      expect(reject).not.toHaveBeenCalled();
+      editor.commands.toggleBold();
+      expect(reject).not.toHaveBeenCalled();
+      expect(editor.getJSON()).not.toEqual(snapshot);
+      editor.commands.toggleBold();
+    }
+    expect(editor.getJSON()).toEqual(before);
+  });
+
+  it('keeps story formatting when the pointer target is a picture box', () => {
+    const { guard, reject, before } = setup();
+    const frame = selectFrame('picture-round-rect');
+    frame.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(guard.canFormat()).toBe(true);
+    editor.commands.toggleBold();
+    expect(reject).not.toHaveBeenCalled();
+    expect(editor.getJSON()).not.toEqual(before);
+  });
+
+  it('still rejects formatting for a selected shape that is not a picture box', () => {
+    const { guard, reject, before } = setup();
+    const tool = document.createElement('button');
+    tool.setAttribute('data-studio-tool-button', 'rect');
+    document.querySelector('[data-studio-root]')!.append(tool);
+    tool.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    selectFrame('rect');
+    expect(guard.canFormat()).toBe(false);
+    expect(reject).toHaveBeenCalled();
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).toEqual(before);
+  });
+
+  it('still rejects a claimed text box when a picture box is also on the page', () => {
+    const { claim, guard, reject, before, box } = setup();
+    selectFrame('picture-rect');
+    claim();
+    expect(guard.canFormat()).toBe(false);
+    expect(reject).toHaveBeenCalled();
+    editor.commands.toggleBold();
+    expect(editor.getJSON()).toEqual(before);
+    expect(box.value).toBe('محفوظ عبارت');
   });
 });
 

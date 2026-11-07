@@ -17,6 +17,7 @@ import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
 import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS, normalizeSafeHex, parseCustomColorInput } from "../utils/studioColors";
 import { sanitizeImageMetadata } from "../utils/documentImages";
+import { FORMATTING_TARGET_CHANGE } from "../utils/formattingSafety";
 import {
   addSpaceAfterParagraph,
   addSpaceBeforeParagraph,
@@ -1188,7 +1189,15 @@ export default function DocumentToolbar({
   paragraphRequest?: number;
 }) {
   const leadingRef = useRef<HTMLInputElement>(null);
+  const [, setFormattingTargetVersion] = useState(0);
   const settings = documentSettings ?? defaultDocumentSettings();
+  useEffect(() => {
+    const root = editor?.view.dom.closest<HTMLElement>("[data-studio-root]");
+    if (!root) return;
+    const update = () => setFormattingTargetVersion(value => value + 1);
+    root.addEventListener(FORMATTING_TARGET_CHANGE, update);
+    return () => root.removeEventListener(FORMATTING_TARGET_CHANGE, update);
+  }, [editor]);
   void zoom;
   void onZoomChange;
   void onEnglishFontChange;

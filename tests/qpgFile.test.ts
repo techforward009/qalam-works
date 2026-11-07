@@ -20,8 +20,8 @@ const example = (): QpgDocument => {
       { type: "paragraph", content: [{ type: "image", attrs: { src: "data:image/png;base64,iVBORw0KGgo=", width: 60, height: 60, alt: "Embedded" } }] },
     ] },
     frames: [
-      { id: "frame-a", kind: "text", page: 1, xMm: 4, yMm: 5, wMm: 40, hMm: 15, flip: false, text: "متن A", nextFrameId: "frame-b" },
-      { id: "frame-b", kind: "text", page: 1, xMm: 44, yMm: 5, wMm: 40, hMm: 15, flip: false, text: "متن B", previousFrameId: "frame-a" },
+      { id: "frame-a", kind: "text", page: 1, xMm: 4, yMm: 5, wMm: 40, hMm: 15, flip: false, text: "متن A", textColor: "#B91C1C", textAlign: "center", singleLine: true, typography: { ...documentSettings.typography, bodyFontSizePt: 24 }, borderColor: "#123456", borderWidthMm: 25.4 / 72, borderPattern: "none", backgroundColor: "#FFFFFF", backgroundHatch: "none", locked: true, dontPrint: true, roundnessMm: 3, angle1Deg: 15, angle2Deg: -10, borderPosition: "outside" },
+      { id: "frame-b", kind: "text", page: 1, xMm: 44, yMm: 5, wMm: 40, hMm: 15, flip: false, text: "متن B" },
     ],
     documentSettings,
     minimumPages: 2,
@@ -35,6 +35,13 @@ describe("Qalam Page portable files", () => {
     const restored = deserializeQpg(serializeQpg(original));
     expect(restored).toEqual(original);
     expect(serializeQpg(original)).toContain('"version":1');
+  });
+  it("keeps the single-line flag and strips unknown frame fields", () => {
+    const document = example();
+    (document.frames[0] as unknown as Record<string, unknown>).unrecognized = "drop";
+    const restored = deserializeQpg(serializeQpg(document));
+    expect(restored.frames[0]).toMatchObject({ singleLine: true, textColor: "#B91C1C", textAlign: "center", typography: { bodyFontSizePt: 24 } });
+    expect(restored.frames[0]).not.toHaveProperty("unrecognized");
   });
   it.each(['{', '{"format":"wrong","version":1}', '{"format":"qalam-page","version":2}'])("rejects damaged, foreign and future documents without changing the current document", value => {
     const current = example();
