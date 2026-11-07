@@ -45,6 +45,7 @@ import {
   toggleUnderline,
   undo,
 } from "../utils/documentCommands";
+import { forgetCellSelection, rememberCellSelection } from "../utils/tableCellSelectionGuard";
 import { INPAGE_TEXT_COLOURS, TEXT_EFFECTS, TEXT_EFFECT_LABELS, TOOLBAR_FONT_SIZE_PRESETS, mapToolbarLanguage, parseLineGap, parseToolbarFontSize, parseToolbarPercent, studioOverlayRoot, type PercentKind, type TextEffect } from "../utils/inpageToolbar";
 
 function ToolbarButton({
@@ -658,7 +659,7 @@ function LineGapField({ editor, value, mixed = false }: { editor: Editor; value:
     applyLineGap(editor, next, focus);
   };
   return <SunkenBox geom="gap" x={122} w={60} h={19}>
-    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onBlur={(event) => {
+    <input ref={inputRef} aria-label="Interline gap" data-studio-line-gap="true" value={text} onMouseDown={() => rememberCellSelection(editor.view)} onPointerDown={() => rememberCellSelection(editor.view)} onChange={(event) => { dirtyRef.current = true; setText(event.target.value); }} onBlur={(event) => {
       if (cancelling.current) { cancelling.current = false; tabbing.current = false; dirtyRef.current = false; setText(label); return; }
       const next = event.relatedTarget;
       const toolbar = event.currentTarget.closest("[data-studio-toolbar]");
@@ -669,7 +670,7 @@ function LineGapField({ editor, value, mixed = false }: { editor: Editor; value:
     }} onKeyDown={(event) => {
       if (event.key === "Tab") tabbing.current = true;
       if (event.key === "Enter") { event.preventDefault(); commit(event.currentTarget.value, true); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
-      if (event.key === "Escape") { event.preventDefault(); dirtyRef.current = false; cancelling.current = true; setText(label); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
+      if (event.key === "Escape") { event.preventDefault(); dirtyRef.current = false; cancelling.current = true; setText(label); forgetCellSelection(editor.view); event.currentTarget.closest("[data-studio-shell]")?.querySelector<HTMLElement>(".ProseMirror")?.focus(); }
     }} style={EDIT_TEXT} />
   </SunkenBox>;
 }
@@ -869,6 +870,7 @@ function ParagraphSpacingMenu({
     if (!open && !customOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        forgetCellSelection(editor.view);
         setOpen(false);
         setCustomOpen(false);
       }
@@ -927,7 +929,7 @@ function ParagraphSpacingMenu({
 
   return (
     <div ref={rootRef} data-studio-geom="interline-icon" style={{ position: "absolute", left: 103, top: 0, width: 19, height: 19 }}>
-      <button type="button" data-studio-spacing-button="true" aria-label={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} title={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} onMouseDown={(event) => event.preventDefault()} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} style={{ ...BUTTON_BOX, left: 0, top: 0, width: 19, height: 19, minHeight: 19, maxHeight: 19 }}>
+      <button type="button" data-studio-spacing-button="true" aria-label={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} title={isUr ? "سطروں کے درمیان فاصلہ" : "Interline gap"} onMouseDown={(event) => { event.preventDefault(); rememberCellSelection(editor.view); }} onClick={() => { setCustomOpen(false); setOpen((next) => !next); }} style={{ ...BUTTON_BOX, left: 0, top: 0, width: 19, height: 19, minHeight: 19, maxHeight: 19 }}>
         <PixelFace w={19} h={19} colorAt={tileColor} glyph={INTERLINE_GLYPH} light={INTERLINE_LIGHT} />
       </button>
       {open ? (
@@ -1035,6 +1037,8 @@ function ParagraphSpacingMenu({
                 defaultValue={field.name === "lineHeight" ? field.value == null || field.value === "" ? "Auto" : `${field.value}pt` : field.value ?? ""}
                 placeholder={field.value == null || field.value === "" ? (isUr ? "مخلوط" : "Mixed") : undefined}
                 data-studio-spacing-field={field.name}
+                onMouseDown={() => rememberCellSelection(editor.view)}
+                onPointerDown={() => rememberCellSelection(editor.view)}
                 className="h-7 w-20 rounded border border-gray-200 px-1.5 text-[11px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1A3A2A]/30"
               />
             </label>
@@ -1044,7 +1048,7 @@ function ParagraphSpacingMenu({
               type="button"
               data-studio-spacing-cancel="true"
               onMouseDown={keepFocus}
-              onClick={() => setCustomOpen(false)}
+              onClick={() => { forgetCellSelection(editor.view); setCustomOpen(false); }}
               className="h-7 rounded border border-gray-200 px-2 text-[11px] text-gray-600"
             >
               {isUr ? "منسوخ" : "Cancel"}
@@ -1239,9 +1243,9 @@ export default function DocumentToolbar({
             </select>
             <ComboArrow />
           </SunkenBox>
-          <FlatTile geom="leading-icon" x={103} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} glyph={LEADING_GLYPH} light={LEADING_LIGHT} onClick={() => leadingRef.current?.focus()} />
+          <FlatTile geom="leading-icon" x={103} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} glyph={LEADING_GLYPH} light={LEADING_LIGHT} onClick={() => { rememberCellSelection(editor.view); leadingRef.current?.focus(); }} />
           <SunkenBox geom="leading" x={122} w={60} h={19}>
-            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} mixed={ui.mixed.lineHeight} onChange={(value, meta) => applyLineHeight(editor, value.mode === "points" ? value.value : null, meta?.focus !== false)} style={EDIT_TEXT} />
+            <LeadingInput ref={leadingRef} aria-label="Line spacing" data-studio-leading="true" value={spacingValue} mixed={ui.mixed.lineHeight} onMouseDown={() => rememberCellSelection(editor.view)} onPointerDown={() => rememberCellSelection(editor.view)} onKeyDown={(event) => { if (event.key === "Escape") forgetCellSelection(editor.view); }} onChange={(value, meta) => applyLineHeight(editor, value.mode === "points" ? value.value : null, meta?.focus !== false)} style={EDIT_TEXT} />
           </SunkenBox>
           <SunkenBox geom="english-font" x={184} w={202} h={20}>
             <span aria-hidden="true" style={{ position: "absolute", left: 7, top: 5, zIndex: 2, width: 13, height: 12, pointerEvents: "none" }}>

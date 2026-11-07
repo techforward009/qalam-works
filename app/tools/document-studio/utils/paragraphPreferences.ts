@@ -3,6 +3,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { resolveActiveToolbarFormatting } from "./activeToolbarFormatting";
 import { validateIndentMm, validateSpacingPt, type DocumentStudioSettings } from "./documentSettings";
 import { formatLeading, parseLeading } from "./leading";
+import { restoreRememberedCellSelection } from "./tableCellSelectionGuard";
 
 /** Same millimetre used by the ruler and InPage setup import. */
 const PT_PER_MM = 72 / 25.4;
@@ -218,6 +219,7 @@ const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "inde
 
 /** One transaction, so one Undo restores every selected paragraph. */
 export function applyParagraphPreferences(editor: Editor, attrs: Record<string, unknown>): boolean {
+  restoreRememberedCellSelection(editor.view);
   const { state } = editor;
   let tr = state.tr;
   let changed = false;

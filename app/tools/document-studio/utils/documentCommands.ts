@@ -26,6 +26,7 @@ import {
   resolveAddSpaceBeforePt,
   type DocumentStudioSettings,
 } from "./documentSettings";
+import { restoreRememberedCellSelection } from "./tableCellSelectionGuard";
 
 export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): void {
   const dom = editor.view.dom as HTMLElement;
@@ -175,6 +176,7 @@ export type ParagraphSpacingAttrs = {
 };
 
 export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs, focus = true): void {
+  restoreRememberedCellSelection(editor.view);
   if (typeof attrs.lineHeight === "number" && attrs.leading == null) attrs = { ...attrs, leading: { mode: "points", value: attrs.lineHeight }, lineHeight: null };
   const { state } = editor;
   if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
