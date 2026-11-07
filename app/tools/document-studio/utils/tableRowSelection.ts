@@ -84,6 +84,58 @@ function nearestTextPosition(view: EditorView, pos: number, bias: number): numbe
   return TextSelection.near(view.state.doc.resolve(Math.max(0, Math.min(pos, view.state.doc.content.size))), bias).head;
 }
 
+function cellAt(doc: PMNode, pos: number): { from: number; to: number } | null {
+  const $pos = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const name = $pos.node(depth).type.name;
+    if (name === "tableCell" || name === "tableHeader") return { from: $pos.before(depth), to: $pos.after(depth) };
+  }
+  return null;
+}
+
+function rangeIsInsideOneCell(doc: PMNode, from: number, to: number): boolean {
+  let inside = false;
+  doc.descendants((node, pos) => {
+    if (node.type.name !== "tableCell" && node.type.name !== "tableHeader") return true;
+    if (from >= pos + 1 && to <= pos + node.nodeSize - 1) inside = true;
+    return false;
+  });
+  return inside;
+}
+
+function cellTextBounds(doc: PMNode, cell: { from: number; to: number }) {
+  const node = doc.nodeAt(cell.from);
+  if (!node) return null;
+  let start: number | null = null;
+  let end: number | null = null;
+  node.forEach((block, offset) => {
+    if (!block.isTextblock) return;
+    const blockPos = cell.from + 1 + offset;
+    if (start === null) start = blockPos + 1;
+    end = blockPos + block.nodeSize - 1;
+  });
+  return start === null || end === null ? null : { start, end };
+}
+
+function ensureTableParagraph(state: import("@tiptap/pm/state").EditorState) {
+  const { doc, schema } = state;
+  const paragraph = schema.nodes.paragraph;
+  if (!paragraph) return null;
+  let position = 0;
+  let previous: PMNode | null = null;
+  const insertions: number[] = [];
+  doc.forEach((node, offset) => {
+    if (previous?.type.name === "table" && node.type.name === "table") insertions.push(position);
+    position = offset + node.nodeSize;
+    previous = node;
+  });
+  if (doc.lastChild?.type.name === "table") insertions.push(doc.content.size);
+  if (!insertions.length) return null;
+  const tr = state.tr;
+  for (const at of insertions.reverse()) tr.insert(at, paragraph.create());
+  return tr.setMeta("addToHistory", false);
+}
+
 function selectByRow(view: EditorView, down: boolean): boolean {
   const { state } = view;
   const { selection, doc } = state;
@@ -135,7 +187,18 @@ function selectByRow(view: EditorView, down: boolean): boolean {
     }
     const anchorRow = rowIndex;
     const targetRow = rowIndex + (down ? 1 : -1);
-    if (targetRow < 0 || targetRow >= table.rows.length) return false;
+    if (targetRow < 0 || targetRow >= table.rows.length) {
+      if (down && rowIndex === table.rows.length - 1) {
+        const tableEnd = table.pos + table.node.nodeSize;
+        const next = doc.childAfter(tableEnd).node;
+        if (next?.type.name === "paragraph") {
+          const target = nearestTextPosition(view, tableEnd + 1, 1);
+          view.dispatch(state.tr.setSelection(mixedTextSelection(doc, selection.anchor, target)));
+          return true;
+        }
+      }
+      return false;
+    }
     view.dispatch(state.tr.setSelection(CellSelection.rowSelection(
       doc.resolve(firstCellPosition(table.rows[anchorRow].node, table.rows[anchorRow].pos)),
       doc.resolve(firstCellPosition(table.rows[targetRow].node, table.rows[targetRow].pos)),
@@ -182,6 +245,7 @@ function expandMixedRowSelection(state: import("@tiptap/pm/state").EditorState) 
   const to = selection.to;
   const anchor = selection.anchor;
   const head = selection.head;
+  if (rangeIsInsideOneCell(doc, from, to)) return null;
   const forward = head >= anchor;
 
   let changed = false;
@@ -245,12 +309,13 @@ export const QalamTableRowSelection = Extension.create({
     return [new Plugin({
       key: tableRowSelectionKey,
       appendTransaction(_transactions, _oldState, state) {
-        return expandMixedRowSelection(state);
+        return ensureTableParagraph(state) ?? expandMixedRowSelection(state);
       },
       props: {
         decorations(state) {
           const selection = state.selection;
           if (selection.empty || selection instanceof CellSelection) return null;
+          if (!(selection instanceof MixedTableTextSelection) && rangeIsInsideOneCell(state.doc, selection.from, selection.to)) return null;
           const decorations: Decoration[] = [];
           state.doc.descendants((node, pos) => {
             if (node.type.name !== "tableRow") return;
@@ -266,9 +331,38 @@ export const QalamTableRowSelection = Extension.create({
         handleKeyDown(view, event) {
           if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return false;
           if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return false;
+          const { selection, doc } = view.state;
+          const anchorCell = cellAt(doc, selection.anchor);
+          const headCell = cellAt(doc, selection.head);
+          if (anchorCell && headCell && anchorCell.from === headCell.from && !selection.empty) {
+            const bounds = cellTextBounds(doc, anchorCell);
+            const fullCellSelected = Boolean(bounds && selection.from <= bounds.start && selection.to >= bounds.end);
+            if (!fullCellSelected) return false;
+          }
           const handled = selectByRow(view, event.key === "ArrowDown");
           if (handled) event.preventDefault();
           return handled;
+        },
+        handleDOMEvents: {
+          mouseup(view, event) {
+            const selection = view.state.selection;
+            if (!(selection instanceof CellSelection)) return false;
+            const native = view.dom.ownerDocument.getSelection();
+            if (!native || native.isCollapsed || !native.anchorNode || !native.focusNode) return false;
+            const cellFor = (node: Node) => (node instanceof Element ? node : node.parentElement)?.closest("td,th");
+            const anchorCell = cellFor(native.anchorNode);
+            if (!anchorCell || anchorCell !== cellFor(native.focusNode) || !view.dom.contains(anchorCell)) return false;
+            try {
+              const anchor = view.posAtDOM(native.anchorNode, native.anchorOffset);
+              const head = view.posAtDOM(native.focusNode, native.focusOffset);
+              const textSelection = TextSelection.between(view.state.doc.resolve(anchor), view.state.doc.resolve(head));
+              view.dispatch(view.state.tr.setSelection(textSelection));
+              event.preventDefault();
+              return true;
+            } catch {
+              return false;
+            }
+          },
         },
       },
     })];

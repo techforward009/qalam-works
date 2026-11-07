@@ -42,7 +42,17 @@ export function moveTableCell(view: EditorView, step: -1 | 1): boolean {
   const nativeIndex=domCells.length===cells.length ? domCells.indexOf(nativeCell!) : -1;
   const i=nativeIndex>=0 ? nativeIndex : cells.indexOf(currentPos),next=cells[i+step];
   if(i<0||next===undefined)return false;
-  const selection=TextSelection.near(state.doc.resolve(next+2),1);
+  const cell=state.doc.nodeAt(next);
+  if(!cell)return false;
+  let from:number|null=null,to:number|null=null;
+  cell.forEach((block,offset)=>{
+    if(!block.isTextblock)return;
+    const start=next+1+offset+1,end=next+1+offset+block.nodeSize-1;
+    if(from===null)from=start;
+    to=end;
+  });
+  if(from===null||to===null)return false;
+  const selection=from<to?TextSelection.create(state.doc,from,to):TextSelection.near(state.doc.resolve(from),1);
   view.dispatch(state.tr.setSelection(selection).scrollIntoView());
   view.focus();
   return true;
