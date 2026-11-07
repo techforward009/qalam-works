@@ -921,6 +921,9 @@ export default function DocumentCanvas({
           background: rgba(30, 99, 185, 0.29) !important;
           outline: 0;
         }
+        .qalam-editor-content .ProseMirror table.qalam-document-table .qalam-row-selected {
+          background: rgba(30, 99, 185, 0.29) !important;
+        }
         .qalam-editor-content .ProseMirror img.qalam-document-image {
           display: block;
           max-width: 100%;

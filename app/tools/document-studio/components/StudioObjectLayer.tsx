@@ -536,8 +536,13 @@ function StudioCaret({
       const emptyLine = (!nodeBefore || nodeBefore.type.name === "hardBreak") && (!nodeAfter || nodeAfter.type.name === "hardBreak");
       const rtl = getComputedStyle(owner ?? editor.view.dom).direction === "rtl";
       // Layout-only struts consume one page pixel, but an empty line's caret
-      // belongs at its real paragraph edge, independently of that width.
-      const point = emptyLine ? (rtl ? bounds.right : bounds.left) : coords.left;
+      // belongs at its paragraph's alignment point, independently of that width.
+      const alignment = getComputedStyle(block).textAlign;
+      const point = emptyLine
+        ? alignment === "center" ? (bounds.left + bounds.right) / 2
+          : alignment === "left" || (alignment === "start" && !rtl) || (alignment === "end" && rtl) ? bounds.left
+            : bounds.right
+        : coords.left;
       setBox({...caretGeometry({
         x: (point-rect.left)/scale, top: (top-rect.top)/scale,
         height: Number.isFinite(leading) ? leading/scale : (coords.bottom-coords.top)/scale, scale,
