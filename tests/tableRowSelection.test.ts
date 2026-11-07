@@ -1,10 +1,11 @@
 /** @vitest-environment happy-dom */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "@tiptap/core";
 import { CellSelection } from "@tiptap/pm/tables";
 import { TextSelection } from "@tiptap/pm/state";
 import { tableRowSelectionKey } from "../app/tools/document-studio/utils/tableRowSelection";
-import { moveTableCell } from "../app/tools/document-studio/utils/tableCellNavigation";
+import { moveTableCell, visualNeighbour } from "../app/tools/document-studio/utils/tableCellNavigation";
+import { handleHorizontalTableArrow } from "../app/tools/document-studio/utils/tableCellNavigation";
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 
 let editor: Editor | null = null;
@@ -35,6 +36,48 @@ function paragraphPos(ed: Editor, text: string) {
 }
 
 describe("table row selection", () => {
+  it("finds horizontal visual neighbours in RTL and LTR without wrapping rows", () => {
+    document.body.innerHTML = "<table><tbody><tr><td id='a'></td><td id='b'></td><td id='c'></td></tr><tr><td id='d'></td></tr></tbody></table>";
+    const a = document.querySelector("#a")!;
+    const b = document.querySelector("#b")!;
+    const c = document.querySelector("#c")!;
+    expect(visualNeighbour(a, "ArrowLeft", "rtl")).toBe(b);
+    expect(visualNeighbour(b, "ArrowRight", "rtl")).toBe(a);
+    expect(visualNeighbour(a, "ArrowRight", "rtl")).toBeNull();
+    expect(visualNeighbour(c, "ArrowLeft", "ltr")).toBe(b);
+    expect(visualNeighbour(b, "ArrowRight", "ltr")).toBe(c);
+    expect(visualNeighbour(a, "ArrowLeft", "ltr")).toBeNull();
+  });
+
+  it.each(["ArrowLeft", "ArrowRight"] as const)("ignores %s when a text selection crosses from above into an empty table cell", (keyName) => {
+    const ed = new Editor({
+      extensions: createDocumentStudioExtensions(),
+      content: "<p>ABOVE</p><table><tbody><tr><td><p></p></td></tr></tbody></table>",
+    });
+    try {
+      const above = paragraphPos(ed, "ABOVE") + 2;
+      const emptyParagraph = paragraphPos(ed, "");
+      const head = emptyParagraph + 1;
+      ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, above, head)));
+      expect(ed.state.selection).toBeInstanceOf(TextSelection);
+      expect(ed.state.doc.resolve(ed.state.selection.anchor).parent.textContent).toBe("ABOVE");
+      vi.spyOn(ed.view, "endOfTextblock").mockReturnValue(true);
+      const anchor = ed.state.selection.anchor;
+      const event = new KeyboardEvent("keydown", { key: keyName, shiftKey: true });
+      expect(handleHorizontalTableArrow(ed.view, event)).toBe(false);
+      expect(ed.state.selection.anchor).toBe(anchor);
+    } finally { ed.destroy(); }
+  });
+
+  it("ignores composing horizontal arrow events", () => {
+    const ed = make();
+    ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, paragraphPos(ed, "21") + 1)));
+    vi.spyOn(ed.view, "endOfTextblock").mockReturnValue(true);
+    const event = new KeyboardEvent("keydown", { key: "ArrowLeft", shiftKey: true });
+    Object.defineProperty(event, "isComposing", { value: true });
+    expect(handleHorizontalTableArrow(ed.view, event)).toBe(false);
+  });
+
   it("does not decorate a non-empty text selection inside one table cell", () => {
     const ed = make();
     const start = paragraphPos(ed, "21") + 1;
