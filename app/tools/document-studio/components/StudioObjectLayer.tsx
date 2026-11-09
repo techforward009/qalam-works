@@ -11,9 +11,13 @@ import {hardBreakLineTop} from "../utils/hardBreakLineGrid";
 import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { StudioTextFrame } from "./StudioTextFrame";
+import { StudioFrameEditor } from "./StudioFrameEditor";
+import { frameContentPatch, type FrameDocNode } from "../utils/frameEditorDoc";
+import { isFormattingSurface } from "../utils/formattingSafety";
+import type { KeyboardLayout } from "../utils/inpageKeyboard";
+import { textboxPmEnabled } from "../utils/textboxPmFlag";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
 import { singleLineLeadingPt, singleLineOuterHeightMm, singleLineOuterHeightPx } from "../utils/singleLineFrame";
-import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import type { Editor } from "@tiptap/react";
 import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
@@ -210,6 +214,7 @@ export function StudioObjectLayer({
   zoom = 1,
   projection: projectionProp,
   keyboardLayout,
+  getKeyboardLayout,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
@@ -229,6 +234,8 @@ export function StudioObjectLayer({
   gapPx: number;
   marginTopPx: number;
   marginRightPx: number;
+  /** Same layout source as the story editor, including Left Ctrl+Space. */
+  getKeyboardLayout?: () => KeyboardLayout | null;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [selectedInternal, setSelectedInternal] = useState<string[]>([]);
@@ -249,6 +256,30 @@ export function StudioObjectLayer({
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
   const pendingTextFocus = useRef<string | null>(null);
+  const pmFrameIdRef = useRef<string | null>(null);
+  const pmClickRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingPmCommitRef = useRef(false);
+  const [pmFrameId, setPmFrameIdState] = useState<string | null>(null);
+  const setPmFrameId = (id: string | null) => {
+    pmFrameIdRef.current = id;
+    pendingPmCommitRef.current = false;
+    setPmFrameIdState(id);
+  };
+  const requestPmCommit = () => {
+    if (!pmFrameIdRef.current) return;
+    if (document.querySelector("[data-studio-frame-composing]")) {
+      pendingPmCommitRef.current = true;
+      return;
+    }
+    setPmFrameId(null);
+  };
+  const beginPmEdit = (id: string, point: { x: number; y: number } | null) => {
+    if (pmFrameIdRef.current === id) return;
+    pmClickRef.current = point;
+    setSelected([]);
+    editor?.commands.blur();
+    setPmFrameId(id);
+  };
   // A new picture frame stays targeted when the draw tool hands over to the
   // Hand (content) tool, as in InPage.
   const pictureSelectionRef = useRef<string | null>(null);
@@ -281,12 +312,23 @@ export function StudioObjectLayer({
 
   useLayoutEffect(() => {
     if (tool !== "text" || !pendingTextFocus.current) return;
-    const frame = rootRef.current?.querySelector<HTMLElement>(`[data-studio-frame-id="${pendingTextFocus.current}"]`);
-    const textarea = frame?.querySelector<HTMLInputElement | HTMLTextAreaElement>("textarea, input[data-studio-text-frame]");
+    const id = pendingTextFocus.current;
+    const frameNode = rootRef.current?.querySelector<HTMLElement>(`[data-studio-frame-id="${id}"]`);
+    const frameRecord = framesRef.current.find((item) => item.id === id);
+    if (frameRecord && !frameRecord.singleLine && textboxPmEnabled()) {
+      pendingTextFocus.current = null;
+      beginPmEdit(id, null);
+      return;
+    }
+    const textarea = frameNode?.querySelector<HTMLInputElement | HTMLTextAreaElement>("textarea, input[data-studio-text-frame]");
     if (!textarea) return;
     pendingTextFocus.current = null;
     textarea.focus({ preventScroll: true });
   }, [frames, tool]);
+
+  useEffect(() => {
+    if (tool !== "text") requestPmCommit();
+  }, [tool]);
 
   useEffect(() => {
     const clearOnEmpty = (event: PointerEvent) => {
@@ -296,17 +338,37 @@ export function StudioObjectLayer({
       if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-frame]")) setSelected([]);
     };
     const clearOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelected([]);
-        setDraft(null);
-        dragRef.current = null;
+      if (event.key !== "Escape") return;
+      if (pmFrameIdRef.current && (event.isComposing || document.querySelector("[data-studio-frame-composing]"))) {
+        pendingPmCommitRef.current = true;
+        return;
       }
+      setSelected([]);
+      setDraft(null);
+      dragRef.current = null;
+      if (pmFrameIdRef.current) setPmFrameId(null);
+    };
+    const commitPmOnPointerDown = (event: PointerEvent) => {
+      const id = pmFrameIdRef.current;
+      if (!id) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (isFormattingSurface(target)) return;
+      const host = target?.closest<HTMLElement>("[data-studio-frame-id]");
+      if (host?.getAttribute("data-studio-frame-id") === id) return;
+      requestPmCommit();
+    };
+    const commitPmAfterComposition = () => {
+      if (pendingPmCommitRef.current) requestPmCommit();
     };
     document.addEventListener("pointerdown", clearOnEmpty, true);
+    document.addEventListener("pointerdown", commitPmOnPointerDown, true);
     document.addEventListener("keydown", clearOnEscape, true);
+    document.addEventListener("compositionend", commitPmAfterComposition);
     return () => {
       document.removeEventListener("pointerdown", clearOnEmpty, true);
+      document.removeEventListener("pointerdown", commitPmOnPointerDown, true);
       document.removeEventListener("keydown", clearOnEscape, true);
+      document.removeEventListener("compositionend", commitPmAfterComposition);
     };
   }, []);
 
@@ -683,6 +745,10 @@ export function StudioObjectLayer({
               if (frame.kind === "text" && tool === "text") {
                 event.stopPropagation();
                 setSelected([]);
+                if (!frame.singleLine && textboxPmEnabled()) {
+                  if (pmFrameIdRef.current !== frame.id) beginPmEdit(frame.id, { x: event.clientX, y: event.clientY });
+                  return;
+                }
                 event.currentTarget.querySelector<HTMLInputElement | HTMLTextAreaElement>("textarea, input[data-studio-text-frame]")?.focus({ preventScroll: true });
                 return;
               }
@@ -707,7 +773,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} pmEditing={pmFrameId === frame.id} pageWidthPx={pageWidthPx} zoom={zoom} getKeyboardLayout={getKeyboardLayout ?? (() => null)} clickPoint={pmFrameId === frame.id ? pmClickRef.current : null} onPmEdit={(point) => beginPmEdit(frame.id, point)} onPmCommit={() => requestPmCommit()} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onDoc={(doc) => { const current = framesRef.current.find((item) => item.id === frame.id); if (!current) return; const patch = frameContentPatch(current, doc); if (patch) updateFrame(frame.id, patch); }} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -828,9 +894,17 @@ function FrameShape({
   editable,
   width,
   height,
+  pmEditing = false,
+  pageWidthPx = 0,
+  zoom = 1,
+  getKeyboardLayout = () => null,
+  clickPoint = null,
+  onPmEdit,
+  onPmCommit,
   onTextFocus,
   onText,
   onRestore,
+  onDoc,
   onStyle,
   keyboardLayout,
 }: {
@@ -839,14 +913,41 @@ function FrameShape({
   editable: boolean;
   width: number;
   height: number;
+  pmEditing?: boolean;
+  pageWidthPx?: number;
+  zoom?: number;
+  getKeyboardLayout?: () => KeyboardLayout | null;
+  clickPoint?: { x: number; y: number } | null;
+  onPmEdit?: (point: { x: number; y: number } | null) => void;
+  onPmCommit?: () => void;
   onTextFocus: () => void;
   onText: (text: string, edit?: TextEditRange) => void;
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
+  onDoc?: (doc: FrameDocNode) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   keyboardLayout?: KeyboardLayout | null;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
+    if (pmEditing && !frame.singleLine && onDoc && onPmCommit) {
+      return (
+        <StudioFrameEditor
+          key={frame.id}
+          text={frame.text}
+          textAlign={frame.textAlign}
+          paragraphAligns={frame.paragraphAligns}
+          typography={frame.typography}
+          textColor={frame.textColor}
+          pageWidthPx={pageWidthPx}
+          zoom={zoom}
+          getKeyboardLayout={getKeyboardLayout}
+          clickPoint={clickPoint}
+          onDoc={(_frame, doc) => onDoc(doc)}
+          onStyle={onStyle}
+          onCommit={onPmCommit}
+        />
+      );
+    }
+    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} onPmEdit={onPmEdit} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;

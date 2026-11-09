@@ -2673,6 +2673,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             keyboardLayout={getKeyboardLayout()}
             tool={canvasTool}
             onToolAction={onCanvasTool}
+            getKeyboardLayout={getKeyboardLayout}
           />}
             </div>
           </div>

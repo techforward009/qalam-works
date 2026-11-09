@@ -87,6 +87,7 @@ export default function DocumentCanvas({
   tool: toolProp,
   englishFont = "Arial Unicode MS",
   keyboardLayout = null,
+  getKeyboardLayout,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -118,6 +119,8 @@ export default function DocumentCanvas({
   tool?: StudioToolId;
   englishFont?: string;
   keyboardLayout?: KeyboardLayout | null;
+  /** Same layout source as the story editor, including Left Ctrl+Space. */
+  getKeyboardLayout?: () => KeyboardLayout | null;
 }) {
   const isPages = viewMode !== "pageless";
   const facing=viewMode === "facing";
@@ -647,6 +650,7 @@ export default function DocumentCanvas({
                             gapPx={PAGE_STACK_GAP_PX}
                             marginTopPx={geometry.marginTopPx}
                             marginRightPx={geometry.marginRightPx}
+                            getKeyboardLayout={getKeyboardLayout}
                           />
                         ) : null}
                       </div>

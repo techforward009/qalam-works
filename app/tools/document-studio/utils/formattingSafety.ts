@@ -6,8 +6,15 @@ import type { StudioTextAlign } from './documentCommands';
 
 /** Read-only visual subscribers must follow the same ownership as the guard. */
 export const FORMATTING_TARGET_CHANGE = 'studio-formatting-target-change';
-type FormattingInput = HTMLTextAreaElement | HTMLInputElement;
+/** Textarea and single-line input, or the flagged multi-line ProseMirror root. */
+const FRAME_FIELD_SELECTOR = 'textarea[data-studio-text-frame], input[data-studio-text-frame], [data-studio-frame-editor]';
+type FormattingInput = HTMLElement;
 type FormattingTarget = Readonly<{ owner: 'story' | 'frame' | 'none'; input: FormattingInput | null }>;
+function frameFieldReadOnly(input: HTMLElement | null | undefined): boolean {
+  if (!input) return true;
+  if (input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement) return input.readOnly;
+  return false;
+}
 const targets = new WeakMap<HTMLElement, FormattingTarget>();
 type FrameStylePatch = { typography?: DocumentStudioSettings['typography']; textColor?: string | undefined; textAlign?: StudioTextAlign };
 const frameStyleUpdaters = new WeakMap<FormattingInput, (patch: FrameStylePatch) => void>();
@@ -17,7 +24,7 @@ export function registerFrameStyleUpdater(input: FormattingInput, updater: (patc
 }
 export function updateFormattingFrame(input: FormattingInput, patch: FrameStylePatch): boolean {
   const updater = frameStyleUpdaters.get(input);
-  if (!updater || !input.isConnected || input.readOnly) return false;
+  if (!updater || !input.isConnected || frameFieldReadOnly(input)) return false;
   updater(patch);
   return true;
 }
@@ -39,7 +46,7 @@ export function readFormattingTarget(element: HTMLElement): FormattingTarget | u
 }
 export function hasEditableFormattingFrame(element: HTMLElement): boolean {
   const target = readFormattingTarget(element);
-  return target?.owner === 'frame' && Boolean(target.input?.isConnected && !target.input.readOnly);
+  return target?.owner === 'frame' && Boolean(target.input?.isConnected && !frameFieldReadOnly(target.input));
 }
 
 /** Internal document replacement, never a formatting-command escape hatch. */
@@ -81,13 +88,13 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     let picture = false;
     for (const frame of frames) {
       const kind = frame.getAttribute('data-studio-frame') ?? '';
-      if (kind === 'text' || frame.querySelector('textarea[data-studio-text-frame], input[data-studio-text-frame]')) return false;
+      if (kind === 'text' || frame.querySelector(FRAME_FIELD_SELECTOR)) return false;
       if (isPictureBox(kind)) picture = true;
     }
     return picture;
   };
   const canFormat = () => {
-    if (owner === 'frame' && (!input?.isConnected || input.readOnly)) invalidate();
+    if (owner === 'frame' && (!input?.isConnected || frameFieldReadOnly(input))) invalidate();
     if (owner === 'story') return true;
     if (owner === 'frame') { reject(); return false; }
     if (selectedPictureBox()) return true;
@@ -107,10 +114,10 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   editor.registerPlugin(plugin);
   const element = (event: Event) => event.target instanceof Element ? event.target : null;
   const claimFrame = (target: Element | null) => {
-    const box = target?.closest<FormattingInput>('textarea[data-studio-text-frame], input[data-studio-text-frame]');
+    const box = target?.closest<FormattingInput>(FRAME_FIELD_SELECTOR);
     if (!box || !root.contains(box)) return false;
     storyClipboardFocus = false;
-    if (box.readOnly) invalidate(); else { owner = 'frame'; input = box; publish(); }
+    if (frameFieldReadOnly(box)) invalidate(); else { owner = 'frame'; input = box; publish(); }
     return true;
   };
   const releaseClaimedTextBox = () => {
@@ -140,7 +147,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   };
   const clipboard = (event: Event) => {
     const target = element(event);
-    if (target && dom.contains(target) && !target.closest('textarea[data-studio-text-frame], input[data-studio-text-frame]')) claimStoryEdit();
+    if (target && dom.contains(target) && !target.closest(FRAME_FIELD_SELECTOR)) claimStoryEdit();
   };
   const clipboardMenu = (event: Event) => {
     const target = element(event), button = target?.closest<HTMLButtonElement>('button');
@@ -158,14 +165,18 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     // configuration, not text formatting. Menus/dialogs have their own checks.
     if (!target.closest('[data-studio-toolbar]') || target.closest('[data-studio-document-language]')) return;
     const supportedFrameControl = target.closest('[data-studio-font-family], [data-studio-font-size], [data-studio-size-list], [data-studio-colour], [data-studio-colour-list], [data-studio-colour-option], [data-studio-color-swatch], [data-studio-text-color], [data-studio-text-color-button], [data-studio-text-color-palette], [data-studio-geom="align-left"], [data-studio-geom="align-right"], [data-studio-geom="align-center"], [data-studio-geom="align-justify"], [data-studio-geom="align-full"]');
-    if (owner === 'frame' && supportedFrameControl && input?.isConnected && !input.readOnly) return;
+    if (owner === 'frame' && supportedFrameControl && input?.isConnected && !frameFieldReadOnly(input)) return;
     if (event.type === 'click' && !target.closest('button')) return;
     if (!canFormat()) cancel(event);
   };
   const key = (event: KeyboardEvent) => {
     const target = element(event);
     if (!target || !root.contains(target)) return;
-    if (event.key === 'Escape' && !target.closest('[role="dialog"]')) { invalidate(); return; }
+    if (event.key === 'Escape' && !target.closest('[role="dialog"]')) {
+      if (event.isComposing && target.closest('[data-studio-frame-editor]')) return;
+      invalidate();
+      return;
+    }
     if (dom.contains(target) && ((['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key) && !event.ctrlKey && !event.metaKey) || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a')) && !event.altKey) {
       owner = 'story'; input = null; publish(); clearNotice();
     }

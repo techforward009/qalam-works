@@ -27,7 +27,7 @@ import {
   type DocumentStudioSettings,
 } from "./documentSettings";
 
-function focusedTextFrame(editor: Editor): HTMLTextAreaElement | HTMLInputElement | null {
+function focusedTextFrame(editor: Editor): HTMLElement | null {
   const target = readFormattingTarget(editor.view.dom);
   return target?.owner === "frame" ? target.input : null;
 }

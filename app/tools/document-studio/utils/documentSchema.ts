@@ -598,7 +598,7 @@ export function refreshDomCaret(view: EditorView): void {
 
 const alignCaretRefreshKey = new PluginKey("studioAlignCaretRefresh");
 
-const StudioTextAlign = TextAlign.extend({
+export const StudioTextAlign = TextAlign.extend({
   addGlobalAttributes() {
     return [{
       types: this.options.types,
