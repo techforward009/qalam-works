@@ -8,6 +8,7 @@ import type { StudioFrame } from "./StudioObjectLayer";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { emptyFrameCaretLeft } from "../utils/frameCaret";
 import { centerSingleLinePadding } from "../utils/singleLineFrame";
+import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
 import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLineBoxes";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { applyParagraphAlignment, createFrameHistory, paragraphIndexAt, toolbarParagraphAlign, type FrameAlignSnapshot, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
@@ -276,6 +277,15 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (singleLine && (event.key === "Enter" || event.key === "NumpadEnter")) event.preventDefault();
     if (singleLine || event.altKey || !(event.ctrlKey || event.metaKey)) return;
+    if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.currentTarget instanceof HTMLTextAreaElement) {
+      const input = event.currentTarget;
+      const next = frameParagraphNavigationSelection(input.value, input.selectionStart ?? 0, input.selectionEnd ?? 0, input.selectionDirection, event.key, event.shiftKey);
+      event.preventDefault();
+      event.stopPropagation();
+      input.setSelectionRange(next.start, next.end, next.direction);
+      measure();
+      return;
+    }
     const key = event.key.toLowerCase();
     if (key === "z" || (key === "y" && !event.shiftKey)) {
       event.preventDefault();
