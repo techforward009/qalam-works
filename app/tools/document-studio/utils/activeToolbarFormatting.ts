@@ -317,7 +317,7 @@ export function resolveActiveToolbarFormatting(
     families.clear(); families.add(frameFamily || effectiveFamily("", "rtl", settings));
     sizes.clear(); sizes.add(Number.isFinite(frameSize) && frameSize > 0 ? frameSize : settings.typography.bodyFontSizePt);
     colors.clear(); colors.add(frameColor ?? "");
-    aligns.clear(); if (frameAlign && ["left", "center", "right", "justify", "justify-all"].includes(frameAlign)) aligns.add(frameAlign as "left" | "center" | "right" | "justify" | "justify-all");
+    aligns.clear(); if (frameAlign && frameAlign !== "mixed" && ["left", "center", "right", "justify", "justify-all"].includes(frameAlign)) aligns.add(frameAlign as "left" | "center" | "right" | "justify" | "justify-all");
     mixed.fontFamily = false; mixed.fontSize = false; mixed.color = false;
   }
 
@@ -332,7 +332,7 @@ export function resolveActiveToolbarFormatting(
     underline: editor.isActive("underline"),
     textEffect: effects.size === 1 ? [...effects][0] : "none",
     textOutline: isTextOutlineActive(editor),
-    textAlign: frameInput ? (aligns.size === 1 ? [...aligns][0] : "start") : aligns.size === 1 ? [...aligns][0] : aligns.size > 1 ? null : (style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left")),
+    textAlign: frameInput ? (frameInput.dataset.studioFrameTextAlign === "mixed" ? null : aligns.size === 1 ? [...aligns][0] : "start") : aligns.size === 1 ? [...aligns][0] : aligns.size > 1 ? null : (style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left")),
     directionMode: directionModes.size === 1 ? [...directionModes][0] : "auto",
     blockDir: blockDirs.size === 1 ? [...blockDirs][0] : null,
     color: frameInput ? ([...colors][0] || null) : mixed.color ? null : ([...colors][0] || null),

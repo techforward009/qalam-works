@@ -17,7 +17,8 @@ import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
 import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS, normalizeSafeHex, parseCustomColorInput } from "../utils/studioColors";
 import { sanitizeImageMetadata } from "../utils/documentImages";
-import { FORMATTING_TARGET_CHANGE } from "../utils/formattingSafety";
+import { FORMATTING_TARGET_CHANGE, readFormattingTarget } from "../utils/formattingSafety";
+import { isFrameAlign } from "../utils/paragraphAlign";
 import {
   addSpaceAfterParagraph,
   addSpaceBeforeParagraph,
@@ -1202,11 +1203,16 @@ export default function DocumentToolbar({
   void onZoomChange;
   void onEnglishFontChange;
   void englishFont;
-  const ui = useEditorState({
+  const storedUi = useEditorState({
     editor,
     selector: ({ editor: current }) =>
       current ? resolveActiveToolbarFormatting(current, settings, dir) : null,
   });
+  const frameTarget = editor ? readFormattingTarget(editor.view.dom) : undefined;
+  const frameAlign = frameTarget?.owner === "frame" ? frameTarget.input?.dataset.studioFrameTextAlign : undefined;
+  const ui = storedUi && frameTarget?.owner === "frame"
+    ? { ...storedUi, textAlign: frameAlign === "mixed" ? null : frameAlign && isFrameAlign(frameAlign) ? frameAlign : "start" as const }
+    : storedUi;
   if (!editor || !ui) return null;
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;

@@ -21,6 +21,15 @@ export function updateFormattingFrame(input: FormattingInput, patch: FrameStyleP
   updater(patch);
   return true;
 }
+type FrameHistoryHandler = { undo: () => boolean; redo: () => boolean };
+const frameHistories = new WeakMap<FormattingInput, FrameHistoryHandler>();
+export function registerFrameHistory(input: FormattingInput, handler: FrameHistoryHandler): () => void {
+  frameHistories.set(input, handler);
+  return () => { if (frameHistories.get(input) === handler) frameHistories.delete(input); };
+}
+export function runFrameHistory(input: FormattingInput, action: "undo" | "redo"): boolean {
+  return frameHistories.get(input)?.[action]() ?? false;
+}
 export function isFormattingSurface(target: Element | null): boolean {
   return Boolean(target?.closest('[data-studio-toolbar], [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [data-menu-root], [data-menu-dropdown], [data-studio-formatting-notice]'));
 }
