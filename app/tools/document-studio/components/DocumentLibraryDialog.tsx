@@ -10,7 +10,7 @@ function Icon({kind,size=24}:{kind:'document'|'folder'|'computer'|'clock';size?:
   </svg>;
 }
 
-const btn = { font:"11px Tahoma,Arial,sans-serif", background:"#f0f0f0", color:"#000", border:"1px solid #8d8d8d", boxShadow:"inset 1px 1px white, inset -1px -1px #aaa", height:23, minWidth:75, cursor:"pointer" } as const;
+const btn = { font:"11px QalamUITahoma,Tahoma,Arial,sans-serif", background:"#f0f0f0", color:"#000", border:"1px solid #8d8d8d", boxShadow:"inset 1px 1px white, inset -1px -1px #aaa", height:23, minWidth:75, cursor:"pointer" } as const;
 export default function DocumentLibraryDialog({ isUr, documents, activeId, onOpen, onNew, onOpenInPage, onRename, onDelete, onClose }: {
   isUr: boolean; documents: DocumentListItem[]; activeId: string | null;
   onOpen: (id:string)=>void; onNew:()=>void; onOpenInPage:()=>void;
@@ -35,7 +35,7 @@ export default function DocumentLibraryDialog({ isUr, documents, activeId, onOpe
       }
     }}>
     <style>{`@media(max-width:600px){[data-studio-open-dialog] [data-open-path]{padding-left:7px!important;}[data-studio-open-dialog] [data-open-footer]{padding-left:7px!important;}[data-studio-open-dialog] [data-open-footer] label span{width:65px!important;}}`}</style>
-    <div ref={root} data-studio-open-dialog="true" dir="ltr" style={{...drag.style,width:570,maxWidth:"calc(100vw - 16px)",height:423,maxHeight:"calc(100vh - 16px)",boxSizing:"border-box",display:"flex",flexDirection:"column",overflow:"hidden",background:"#f0f0f0",border:"7px solid rgb(164,181,199)",outline:"1px solid #191e23",borderRadius:6,boxShadow:"0 3px 14px #0006",font:"11px Tahoma,Arial,sans-serif",color:"#000"}}>
+    <div ref={root} data-studio-open-dialog="true" dir="ltr" style={{...drag.style,width:570,maxWidth:"calc(100vw - 16px)",height:423,maxHeight:"calc(100vh - 16px)",boxSizing:"border-box",display:"flex",flexDirection:"column",overflow:"hidden",background:"#f0f0f0",border:"7px solid rgb(164,181,199)",outline:"1px solid #191e23",borderRadius:6,boxShadow:"0 3px 14px #0006",font:"11px QalamUITahoma,Tahoma,Arial,sans-serif",color:"#000"}}>
       <div {...drag.handleProps} style={{...drag.handleProps.style,height:22,display:"flex",alignItems:"center",background:"linear-gradient(#f2faff,#bfdef6)",padding:"0 7px",flexShrink:0}}>
         <span aria-hidden="true" style={{marginRight:5}}><Icon kind="document" size={16}/></span><span id="document-library-title" style={{flex:1}}>Open</span>
         <button type="button" aria-label="Close" onClick={close} style={{width:44,height:18,background:"linear-gradient(#f5c6bd,#cc5143)",color:"white",border:"1px solid #943d36",cursor:"pointer"}}>×</button>

@@ -20,7 +20,7 @@ export function StudioHomeButton({dirty}:{dirty:boolean}){
 export function StudioLeaveDialog({onLeave,onCancel,cancelLabel="Stay"}:{onLeave:()=>void;onCancel:()=>void;cancelLabel?:string}){
  const stay=useRef<HTMLButtonElement>(null);useEffect(()=>{stay.current?.focus();},[]);
  return createPortal(<div data-studio-dialog="en" data-studio-zoom-scope className="fixed inset-0 z-[150] grid place-items-center bg-black/30 p-4" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();onCancel();}if(event.key==='Tab'){event.preventDefault();const buttons=[...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')];buttons[document.activeElement===buttons[0]?1:0]?.focus();}}}>
-   <div role="dialog" aria-modal="true" aria-labelledby="studio-leave-title" dir="ltr" className="w-full max-w-sm border border-gray-500 bg-white p-4 text-black shadow-xl" style={{fontFamily:'Tahoma, Arial, sans-serif',fontSize:13}}>
+   <div role="dialog" aria-modal="true" aria-labelledby="studio-leave-title" dir="ltr" className="w-full max-w-sm border border-gray-500 bg-white p-4 text-black shadow-xl" style={{fontFamily:'QalamUITahoma, Tahoma, Arial, sans-serif',fontSize:13}}>
     <p id="studio-leave-title">You have unsaved changes. Leave Qalam Page?</p>
     <div className="mt-4 flex justify-end gap-2"><button type="button" className="border px-3 py-1" onClick={onLeave}>Leave</button><button ref={stay} type="button" className="border px-3 py-1" onClick={onCancel}>{cancelLabel}</button></div>
    </div>

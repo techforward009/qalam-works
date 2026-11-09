@@ -54,7 +54,7 @@ import {
   PASTEBOARD_TOP_PX,
 } from "../utils/windowRuler";
 
-const navButton = { width: 16, height: 16, padding: 0, border: "none", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", background: "#f0f0f0", boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0" } as const;
+const navButton = { width: 16, height: 16, padding: 0, border: "none", fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", background: "#f0f0f0", boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0" } as const;
 const navField = { display: "inline-block", height: 16, textAlign: "center", background: "#fff", boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff", fontSize: 11, lineHeight: "16px" } as const;
 
 export default function DocumentCanvas({
@@ -661,12 +661,12 @@ export default function DocumentCanvas({
             className="studio-no-print flex shrink-0 items-center"
             style={{ height: INPAGE_HSCROLL_PX, background: "#f0f0f0", boxShadow: "inset 0 1px 0 #fff, inset 0 -1px 0 #696969" }}
           >
-            <div className="flex h-full shrink-0 items-center gap-px px-px" data-studio-page-nav="true" data-latin-control="true" style={{ color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}>
+            <div className="flex h-full shrink-0 items-center gap-px px-px" data-studio-page-nav="true" data-latin-control="true" style={{ color: "#000", fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif", fontSize: 11 }}>
               <button type="button" disabled aria-label={isUr ? "ماسٹر صفحات" : "Master pages"} title={isUr ? "جلد آ رہا ہے" : "Coming soon"} style={{ ...navButton, width: 11, color: "#808080" }}>M</button>
               <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} style={navButton} onClick={() => stepPage(-1)}>{"<"}</button>
               <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{(documentSettings.page.firstPageNumber ?? 1) - 1 + (facing?activePage:Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1)))}/{(documentSettings.page.firstPageNumber ?? 1) - 1 + pageCount}</span>
               <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} style={navButton} onClick={() => stepPage(1)}>{">"}</button>
-              <select aria-label="Zoom" data-studio-zoom-control data-studio-zoom-label="true" value={zoom} onChange={event=>onZoomChange?.(parseStoredZoom(event.target.value))} style={{...navField,width:46,border:0,padding:0,appearance:"none",fontFamily:"Tahoma, Arial, sans-serif",color:"#000"}}>
+              <select aria-label="Zoom" data-studio-zoom-control data-studio-zoom-label="true" value={zoom} onChange={event=>onZoomChange?.(parseStoredZoom(event.target.value))} style={{...navField,width:46,border:0,padding:0,appearance:"none",fontFamily:"QalamUITahoma, Tahoma, Arial, sans-serif",color:"#000"}}>
                 {DOCUMENT_ZOOM_PRESETS.map(level=><option key={level} value={level}>{level}%</option>)}
                 <option value="fit-width">Width</option><option value="fit-page">Page</option>
               </select>

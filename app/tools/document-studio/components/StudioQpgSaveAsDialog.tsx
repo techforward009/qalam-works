@@ -29,7 +29,7 @@ export default function StudioQpgSaveAsDialog({ title, snapshot, onClose }: {
     className="fixed inset-0 z-[120] grid place-items-center bg-black/40 p-4">
     <form onSubmit={event => { event.preventDefault(); void run(false); }}
       className="w-full max-w-md rounded border-2 border-slate-400 bg-[#f0f0f0] p-4 text-sm text-black shadow-lg"
-      style={{ fontFamily: "Tahoma, Arial, sans-serif" }}>
+      style={{ fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif" }}>
       <h2 className="mb-3 text-base font-bold">Save As — Qalam Page</h2>
       <label className="block mb-3">File name
         <input autoFocus className="mt-1 w-full border border-slate-500 bg-white p-2" value={name}

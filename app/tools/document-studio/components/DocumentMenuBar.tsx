@@ -77,7 +77,7 @@ function topMenuPosition(anchor: HTMLElement | null, isUr: boolean, menuId: Menu
 }
 
 const menuFrame = { borderStyle: "solid", borderWidth: 1, borderColor: "#fff #808080 #808080 #fff", boxShadow: "1px 1px 0 #c0c0c0, 2px 2px 0 #808080", background: "#f0f0f0" } as const;
-const dropdownItemStyle = { position: "relative", height: 22, minHeight: 22, maxHeight: 22, padding: "0 20px 0 32px", gap: 12, border: 0, fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 12, lineHeight: "22px", color: "#000", direction: "ltr" } as const;
+const dropdownItemStyle = { position: "relative", height: 22, minHeight: 22, maxHeight: 22, padding: "0 20px 0 32px", gap: 12, border: 0, fontFamily: "QalamUISegoe, Segoe UI, Tahoma, sans-serif", fontSize: 12, lineHeight: "22px", color: "#000", direction: "ltr" } as const;
 const labelStyle = { flex: "1 1 auto", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
 
 function MenuItems({
@@ -95,7 +95,7 @@ function MenuItems({
   onAction: (id: MenuActionId) => void;
 }) {
   return <>{items.map((item, index) => {
-    if (item.type === "section") return <div key={`section-${index}`} role="presentation" data-menu-section style={{ height: 20, padding: "0 20px 0 32px", fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 11, lineHeight: "20px", color: "#606060" }}>{menuLabel(item, isUr)}</div>;
+    if (item.type === "section") return <div key={`section-${index}`} role="presentation" data-menu-section style={{ height: 20, padding: "0 20px 0 32px", fontFamily: "QalamUISegoe, Segoe UI, Tahoma, sans-serif", fontSize: 11, lineHeight: "20px", color: "#606060" }}>{menuLabel(item, isUr)}</div>;
     if (item.type === "separator") {
       return <div key={`sep-${index}`} role="separator" className="mx-[3px] my-1 border-t border-[#a0a0a0] shadow-[0_1px_0_#fff]" />;
     }
@@ -454,7 +454,7 @@ export default function DocumentMenuBar({
   const menuLeft = keyboard ? [31, 63, 96, 136, 187, 231, 283, 346, 405] : [31, 63, 96, 136, 187, 231, 283, 342];
 
   return (
-    <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "Segoe UI, Tahoma, sans-serif", color: "#000" }}>
+    <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "QalamUISegoe, Segoe UI, Tahoma, sans-serif", color: "#000" }}>
       <style>{`
         [data-menu-portaled] [data-menu-row]:not(:disabled):hover,
         [data-menu-portaled] [data-menu-row]:not(:disabled):focus-visible,
@@ -464,13 +464,13 @@ export default function DocumentMenuBar({
           outline: none;
         }
         [data-studio-language-switch] button {
-          font-family: Tahoma, Arial, sans-serif !important;
+          font-family: QalamUITahoma, Tahoma, Arial, sans-serif !important;
           font-size: 11px !important;
           line-height: 16px !important;
         }
         [data-menu-portaled="true"][data-studio-menu-language] [role="menuitem"],
         [data-menu-portaled="true"][data-studio-menu-language] [role="menuitem"] * {
-          font-family: "Segoe UI", Tahoma, sans-serif !important;
+          font-family: QalamUISegoe, "Segoe UI", Tahoma, sans-serif !important;
           font-size: 12px !important;
           line-height: 22px !important;
           color: #000 !important;
@@ -509,7 +509,7 @@ export default function DocumentMenuBar({
           whiteSpace: pinMenus ? "nowrap" : "normal",
           background: "linear-gradient(to bottom, #fefeff 0, #e5eaf5 7px, #d4dbed 7px, #e1e6f6 100%)",
           borderBottom: "1px solid #b6bccc",
-          fontFamily: "Segoe UI, Tahoma, sans-serif",
+          fontFamily: "QalamUISegoe, Segoe UI, Tahoma, sans-serif",
           fontSize: 12,
           color: "#000",
         }}

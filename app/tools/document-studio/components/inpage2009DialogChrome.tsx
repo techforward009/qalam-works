@@ -5,7 +5,7 @@ import {studioOverlayRoot} from '../utils/inpageToolbar';
 import {useMovableStudioDialog} from './useMovableStudioDialog';
 
 // Geometry measured from the owner's original 388x179 / 349x283 PNGs.
-export const classicFont='11px Arial, sans-serif';
+export const classicFont='11px QalamUIArial, Arial, sans-serif';
 export const at=(left:number,top:number,width?:number,height?:number):CSSProperties=>({position:'absolute',left,top,...(width===undefined?{}:{width}),...(height===undefined?{}:{height}),boxSizing:'border-box'});
 export const classicField:CSSProperties={font:classicFont,lineHeight:'14px',color:'#000',background:'#fff',border:'1px solid #a6a6a6',borderBottomColor:'#fff',borderRightColor:'#fff',boxShadow:'inset 1px 1px #6a6a6a,inset -1px -1px #e3e3e3',padding:'1px 3px',margin:0,minWidth:0,outline:0,borderRadius:0};
 export const classicButton:CSSProperties={font:classicFont,lineHeight:'15px',color:'#000',background:'#f5f5f5',border:'1px solid #9e9e9e',borderBottomColor:'#6a6a6a',borderRightColor:'#6a6a6a',boxShadow:'inset 1px 1px #fff,inset -1px -1px #a6a6a6',padding:0,margin:0,borderRadius:0};
@@ -31,9 +31,9 @@ export function ClassicTitle({title,onClose,onHelp,handleProps,closeTabIndex=-1,
  `}</style>
  <div aria-hidden style={{...at(0,0),right:0,bottom:0,pointerEvents:'none',border:'1px solid #7a7a79',borderRadius:'5px 5px 0 0',boxShadow:'inset 3px 0 #f6f5f4,inset -3px -2px #f6f5f4'}}/>
  <div {...handleProps} style={{...handleProps.style,...at(1,1),right:1,height:28,background:'linear-gradient(#d9d6d3,#d8d5d2)',borderRadius:'4px 4px 0 0'}}>
-  <span style={{position:'absolute',left:24,right:46,top:7,textAlign:'center',font:'bold 12px Arial,sans-serif',lineHeight:'16px',color:'#2e3436',pointerEvents:'none'}}>{title}</span>
+  <span style={{position:'absolute',left:24,right:46,top:7,textAlign:'center',font:'bold 12px QalamUIArial,Arial,sans-serif',lineHeight:'16px',color:'#2e3436',pointerEvents:'none'}}>{title}</span>
  </div>
- {!hideHelp?<button type="button" aria-label="Title bar help" title="Help" onClick={onHelp} style={{position:'absolute',right:29,top:6,width:16,height:18,border:0,background:'transparent',padding:0,font:'bold 12px Arial,sans-serif',color:'#2e3436'}}>?</button>:null}
+ {!hideHelp?<button type="button" aria-label="Title bar help" title="Help" onClick={onHelp} style={{position:'absolute',right:29,top:6,width:16,height:18,border:0,background:'transparent',padding:0,font:'bold 12px QalamUIArial,Arial,sans-serif',color:'#2e3436'}}>?</button>:null}
  <button type="button" aria-label="Close" tabIndex={closeTabIndex} onClick={onClose} style={{position:'absolute',right:6,top:6,width:16,height:18,border:0,background:'transparent',padding:0}}><svg aria-hidden width="12" height="12" viewBox="0 0 12 12"><path d="m3 3 6 6m0-6-6 6" stroke="#2e3436" strokeWidth="2"/></svg></button>
  </>;
 }
@@ -53,7 +53,7 @@ export function ClassicSpinner({label,box,value,onChange,min,max,step=1,unit='',
  </>;
 }
 
-export const win7Font='11px Tahoma, "Segoe UI", Arial, sans-serif';
+export const win7Font='11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif';
 export const win7Field:CSSProperties={font:win7Font,lineHeight:'14px',color:'#000',background:'#fff',border:'1px solid #a0a0a0',borderBottomColor:'#fff',borderRightColor:'#fff',boxShadow:'inset 1px 1px 0 #696969,inset -1px -1px 0 #e3e3e3',padding:'0 3px',margin:0,minWidth:0,height:18,outline:0,borderRadius:0,boxSizing:'border-box'};
 export const win7Button:CSSProperties={font:win7Font,lineHeight:'14px',color:'#000',background:'#f0f0f0',borderStyle:'solid',borderWidth:1,borderColor:'#fff #696969 #696969 #fff',boxShadow:'inset 1px 1px 0 #e3e3e3,inset -1px -1px 0 #a0a0a0',padding:0,margin:0,borderRadius:0,boxSizing:'border-box',cursor:'default'};
 export const win7DefaultButton:CSSProperties={...win7Button,border:'1px solid #000',boxShadow:'inset 1px 1px 0 #fff,inset 2px 2px 0 #e3e3e3,inset -1px -1px 0 #696969,inset -2px -2px 0 #a0a0a0'};
@@ -61,7 +61,7 @@ export const win7DefaultButton:CSSProperties={...win7Button,border:'1px solid #0
 export function Win7Title({title,onClose,handleProps,closeTabIndex=-1}:{title:string;onClose:()=>void;closeTabIndex?:number;handleProps:ReturnType<typeof useMovableStudioDialog>['handleProps']}){
  return <>
   <div {...handleProps} data-win7-titlebar="true" style={{...handleProps.style,...at(0,0),right:0,height:23}}>
-   <span data-win7-title="true" style={{position:'absolute',left:8,right:44,top:5,textAlign:'left',font:'11px "Segoe UI", Tahoma, Arial, sans-serif',fontWeight:400,lineHeight:'13px',color:'#000',textShadow:'0 0 5px rgba(255,255,255,0.95)',whiteSpace:'nowrap',overflow:'hidden',pointerEvents:'none'}}>{title}</span>
+   <span data-win7-title="true" style={{position:'absolute',left:8,right:44,top:5,textAlign:'left',font:'11px QalamUISegoe, "Segoe UI", Tahoma, Arial, sans-serif',fontWeight:400,lineHeight:'13px',color:'#000',textShadow:'0 0 5px rgba(255,255,255,0.95)',whiteSpace:'nowrap',overflow:'hidden',pointerEvents:'none'}}>{title}</span>
   </div>
   <button type="button" aria-label="Close" data-win7-close="true" tabIndex={closeTabIndex} onClick={onClose} style={{position:'absolute',right:6,top:0,width:34,height:17,boxSizing:'border-box',border:'1px solid #6b221a',borderTop:0,borderRadius:'0 0 3px 3px',background:'linear-gradient(180deg,#f2aba3 0%,#e57164 48%,#c93727 52%,#db5b4c 100%)',boxShadow:'inset 0 1px 0 rgba(255,255,255,0.45)',padding:0,display:'grid',placeItems:'center',cursor:'default'}}>
    <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8"><path d="M1 1L7 7M7 1L1 7" stroke="#fff" strokeWidth="1.6" strokeLinecap="square"/></svg>
