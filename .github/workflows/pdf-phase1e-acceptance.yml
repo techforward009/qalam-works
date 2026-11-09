@@ -37,6 +37,10 @@ jobs:
           assert 0x002e not in actual and 0x06d7 not in actual
           print("Exact font cmap:", len(actual), "Unicode codepoints")
           PY
+      - name: Install poppler-utils before PDF acceptance tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
       - name: Resolve runner Chromium for real tests
         run: |
           echo "QALAM_PDF_CHROMIUM=$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')" >> "$GITHUB_ENV"
