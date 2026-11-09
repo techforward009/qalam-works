@@ -30,7 +30,7 @@ jobs:
           python3 - <<'PY'
           import json
           from fontTools.ttLib import TTFont
-          f=TTFont("public/fonts/DigitalKhattIndoPak.woff2")
+          f=TTFont("public/fonts/DigitalKhattIndoPakQalamPdf-v2.woff2")
           actual=sorted(set().union(*(set(t.cmap) for t in f["cmap"].tables if t.isUnicode())))
           pinned=json.load(open("app/tools/document-studio/utils/digitalKhattCmap.json"))
           assert actual == pinned, "Bundled font cmap changed or fixture incorrect"
