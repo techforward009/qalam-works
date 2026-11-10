@@ -96,6 +96,21 @@ it("keeps whole-box typography, text color and alignment through print validatio
   expect(renderPrintFrame(frame)).toContain("font-size:24pt");
   expect(renderPrintFrame(frame)).toContain("color:#B91C1C");
   expect(renderPrintFrame(frame)).toContain("text-align:justify;text-align-last:justify;");
+  expect(renderPrintFrame(frame)).not.toContain("data-print-frame-paragraph");
+});
+
+it("prints each multiline paragraph with its own alignment and keeps a legacy frame intact", () => {
+  const frame = { ...base, kind: "text" as const, text: "پہلا\n<دوسرا>\nتیسرا", textAlign: "justify" as const, paragraphAligns: ["justify" as const, "center" as const, null] };
+  const [validated] = validatePrintFrames([frame]);
+  expect(validated.paragraphAligns).toEqual(["justify", "center", null]);
+  const html = renderPrintFrame(validated);
+  expect(html).toContain('data-print-frame-paragraph="0" style="margin:0;padding:0;text-align:justify;');
+  expect(html).toContain('data-print-frame-paragraph="1" style="margin:0;padding:0;text-align:center;');
+  expect(html).toContain('data-print-frame-paragraph="2" style="margin:0;padding:0;white-space:pre-wrap;');
+  expect(html).toContain("&lt;دوسرا&gt;");
+  expect(html).not.toContain("<دوسرا>");
+  expect(renderPrintFrame({ ...base, kind: "text", singleLine: true, text: "ایک\nلکیر", paragraphAligns: ["left", "right"] })).not.toContain("data-print-frame-paragraph");
+  expect(() => validatePrintFrames([{ ...frame, paragraphAligns: ["sideways"] }])).toThrow(/paragraph alignment/);
 });
 
 it("persists and prints single-line text without wrapping while retaining unknown-key stripping", () => {

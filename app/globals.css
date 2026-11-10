@@ -2198,8 +2198,12 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
   50% { opacity: 0; }
 }
 
-/* Only painted textarea selections surrender their native highlight. */
+/* Painted textarea selections surrender their native highlight. The single-line input does too, including its text color, so it cannot paint a second line. */
 textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: #000; }
+textarea[data-studio-text-frame][data-studio-paragraph-paint="true"]::selection { background: transparent; color: transparent; }
+input[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: transparent; }
+textarea[data-studio-text-frame] { scrollbar-width: none; }
+textarea[data-studio-text-frame]::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* Facing Pages paints one editable, canonical document into view-only slots. */
 .ProseMirror[data-studio-facing-editor] { background: transparent !important; }

@@ -7,7 +7,7 @@ const box = (page: Page) => frame(page).locator('textarea[data-studio-text-frame
 const story = (page: Page) => page.locator('.ProseMirror');
 const storyJson = (page: Page) => story(page).evaluate(el => (el as HTMLElement & { editor: Editor }).editor.getJSON());
 
-test('formats multiline text boxes as whole boxes and leaves story formatting independent', async ({ page }) => {
+test('formats multiline text boxes by paragraph and leaves story formatting independent', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('qalam-site-language', 'en'));
   await page.goto('/tools/document-studio');
   await expect(story(page)).toBeEditable({ timeout: 15000 });
@@ -61,10 +61,13 @@ test('formats multiline text boxes as whole boxes and leaves story formatting in
   await expect(box(page)).toHaveAttribute('data-studio-frame-font-size-pt', '24');
   await expect(box(page)).toHaveAttribute('data-studio-frame-text-color', '#FF0000');
   await expect(box(page)).toHaveAttribute('data-studio-frame-text-align', 'center');
-  await expect(box(page)).toHaveCSS('color', 'rgb(255, 0, 0)');
-  await expect(box(page)).toHaveCSS('text-align', 'center');
+  const paragraphs = frame(page).locator('[data-studio-frame-paragraphs] [data-studio-frame-paragraph]');
+  await expect(paragraphs).toHaveCount(3);
+  await expect(paragraphs.last()).toHaveCSS('text-align', 'center');
+  await expect(paragraphs.last()).toHaveCSS('color', 'rgb(255, 0, 0)');
+  expect(await paragraphs.first().evaluate(el => getComputedStyle(el).textAlign)).not.toBe('center');
   expect(await storyJson(page)).toEqual(original);
-  await page.screenshot({ path: '/workspace/inpage-reference/qalam-multiline-textbox-format.png', scale: 'css' });
+  await page.screenshot({ path: info.outputPath('multiline-format.png'), scale: 'css' });
 
   await story(page).click();
   await expect(page.locator('#studio-font-family')).toBeEnabled();

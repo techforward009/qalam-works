@@ -36,6 +36,19 @@ describe("Qalam Page portable files", () => {
     expect(restored).toEqual(original);
     expect(serializeQpg(original)).toContain('"version":1');
   });
+  it("round-trips paragraph alignment and still opens a legacy frame that has only textAlign", () => {
+    const document = example();
+    document.frames[1] = { ...document.frames[1], text: "پہلا\nدوسرا\nتیسرا", textAlign: "justify", paragraphAligns: ["justify", "center", "right"] };
+    const restored = deserializeQpg(serializeQpg(document));
+    expect(restored.frames[1]).toMatchObject({ textAlign: "justify", paragraphAligns: ["justify", "center", "right"] });
+    expect(restored.frames[0]).not.toHaveProperty("paragraphAligns");
+    const legacy = deserializeQpg(serializeQpg(example()));
+    expect(legacy.frames[0]).not.toHaveProperty("paragraphAligns");
+    expect(legacy.frames[1]).not.toHaveProperty("paragraphAligns");
+    const broken = example();
+    (broken.frames[1] as unknown as { paragraphAligns: string[] }).paragraphAligns = ["middle"];
+    expect(() => deserializeQpg(serializeQpg(broken))).toThrow();
+  });
   it("keeps the single-line flag and strips unknown frame fields", () => {
     const document = example();
     (document.frames[0] as unknown as Record<string, unknown>).unrecognized = "drop";

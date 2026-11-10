@@ -1,4 +1,4 @@
-import { CONTENT_REPLACEMENT, readFormattingTarget, updateFormattingFrame } from "./formattingSafety";
+import { CONTENT_REPLACEMENT, readFormattingTarget, runFrameHistory, updateFormattingFrame } from "./formattingSafety";
 import type { Leading } from "./leading";
 /**
  * Shared Document Studio editor commands.
@@ -31,7 +31,7 @@ function focusedTextFrame(editor: Editor): HTMLTextAreaElement | HTMLInputElemen
   const target = readFormattingTarget(editor.view.dom);
   return target?.owner === "frame" ? target.input : null;
 }
-// Text frames are plain textareas: selection and caret both style the entire box.
+// Text-frame alignment follows the caret's paragraphs. Other frame styles still apply to the whole box.
 function patchFrameTypography(editor: Editor, patch: Record<string, unknown>): boolean {
   const input = focusedTextFrame(editor);
   if (!input) return false;
@@ -491,9 +491,13 @@ export function setAlign(editor: Editor, align: StudioTextAlign): void {
   editor.chain().focus().setTextAlign(align).run();
 }
 export function undo(editor: Editor): void {
+  const input = focusedTextFrame(editor);
+  if (input && runFrameHistory(input, "undo")) return;
   editor.chain().focus().undo().run();
 }
 export function redo(editor: Editor): void {
+  const input = focusedTextFrame(editor);
+  if (input && runFrameHistory(input, "redo")) return;
   editor.chain().focus().redo().run();
 }
 export function selectAll(editor: Editor): void {
