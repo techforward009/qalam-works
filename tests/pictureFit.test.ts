@@ -5,6 +5,7 @@ import {
   PICTURE_PNG_KEEP_BYTES,
   PICTURE_SOURCE_HARD_CAP_BYTES,
   fitPictureInBox,
+  pictureContentDeltaMm,
   pictureEncoding,
   pictureOutputSize,
 } from "../app/tools/document-studio/utils/pictureFit";
@@ -55,6 +56,24 @@ describe("pictureFit helper", () => {
     expect(result.h).toBe(0);
     expect(Number.isFinite(result.x)).toBe(true);
     expect(Number.isFinite(result.y)).toBe(true);
+  });
+});
+
+describe("picture content pan delta", () => {
+  const pxPerMm = 96 / 25.4;
+
+  it("converts an unrotated screen delta straight to millimetres and a 90 degree frame into local axes", () => {
+    const straight = pictureContentDeltaMm(96, -48, 0, pxPerMm);
+    expect(straight.xMm).toBeCloseTo(25.4);
+    expect(straight.yMm).toBeCloseTo(-12.7);
+
+    // CSS rotate(-90deg): local +x points up, local +y points right.
+    const right = pictureContentDeltaMm(96, 0, 90, pxPerMm);
+    expect(right.xMm).toBeCloseTo(0);
+    expect(right.yMm).toBeCloseTo(25.4);
+    const down = pictureContentDeltaMm(0, 96, 90, pxPerMm);
+    expect(down.xMm).toBeCloseTo(-25.4);
+    expect(down.yMm).toBeCloseTo(0);
   });
 });
 

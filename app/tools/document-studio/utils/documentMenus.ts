@@ -28,6 +28,8 @@ export type MenuActionId =
   | "file.pageSetup"
   | "edit.undo"
   | "edit.redo"
+  | "edit.sendBack"
+  | "edit.bringFront"
   | "edit.selectAll"
   | "edit.find"
   | "view.outline"
@@ -439,7 +441,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     ready("edit.cut", "Cut", "Ctrl+X"), ready("edit.copy", "Copy", "Ctrl+C"), soon("edit.pasteSpecial", "Paste Special…"), ready("edit.paste", "Paste", "Ctrl+V"),
     soon("edit.duplicate", "Duplicate…"), ready("edit.clear", "Clear", "Del"), ready("edit.selectAll", "Select All", "Ctrl+A"), separator,
     ready("edit.find", "Find and Replace…", "Ctrl+F"), separator,
-    soon("edit.topMost", "Top Most"), soon("edit.sendBack", "Send To Back"), soon("edit.bringFront", "Bring To Front"), soon("edit.lockGuides", "Lock Guides"), soon("edit.lockObjects", "Lock/Unlock Objects", "Ctrl+U"), separator,
+    soon("edit.topMost", "Top Most"), ready("edit.sendBack", "Send To Back"), ready("edit.bringFront", "Bring To Front"), soon("edit.lockGuides", "Lock Guides"), soon("edit.lockObjects", "Lock/Unlock Objects", "Ctrl+U"), separator,
     soon("edit.story", "Story Editor", "F2"), soon("edit.deletePage", "Delete Page…", "Alt+Del"),
     { type: "submenu", id: "edit.preferences", labelEn: "Preferences", labelUr: "ترجیحات", items: [
       soon("preferences.application", "Application…", "Alt+F11"), ready("window.settings", "Document…"), ready("preferences.typographic", "Typographic…", "F11"), soon("preferences.story", "Story Editor…"), soon("preferences.spelling", "Spelling Preferences…"),

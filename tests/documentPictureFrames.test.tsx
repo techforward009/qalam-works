@@ -544,16 +544,18 @@ function PictureFrameHarness({
   frame,
   onFramesChange = () => undefined,
   onOpen = () => undefined,
+  tool = "select",
 }: {
   frame: StudioFrame;
   onFramesChange?: (frames: StudioFrame[]) => void;
   onOpen?: (frame: StudioFrame) => void;
+  tool?: StudioToolId;
 }) {
   return (
     <div data-studio-scroller>
       <StudioObjectLayer
         editor={null}
-        tool="select"
+        tool={tool}
         frames={[frame]}
         onFramesChange={onFramesChange}
         onToolAction={() => undefined}
@@ -624,6 +626,43 @@ describe("picture box move keeps the picture inside the box", () => {
     expect(grown.imageYMm).toBeCloseTo(4);
     expect(grown.wMm).toBeGreaterThan(frame.wMm);
     expect(grown.hMm).toBeGreaterThan(frame.hMm);
+  });
+
+  it("hand tool drag pans picture content inside a filled box and leaves a locked box fixed", () => {
+    const frame: StudioFrame = { ...baseFrame, imageXMm: 5, imageYMm: 3 };
+    const onFramesChange = vi.fn();
+    const onOpen = vi.fn();
+    const { container } = render(
+      <PictureFrameHarness frame={frame} tool="text" onFramesChange={onFramesChange} onOpen={onOpen} />,
+    );
+    const node = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
+    const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+    fireEvent.pointerDown(node, { clientX: 120, clientY: 140, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(layer, { clientX: 200, clientY: 210, pointerId: 1, buttons: 1 });
+    expect(onFramesChange).toHaveBeenCalled();
+    const panned = onFramesChange.mock.calls.at(-1)![0][0] as StudioFrame;
+    expect(panned.imageXMm).toBeCloseTo(5 + 80 / PX_PER_MM);
+    expect(panned.imageYMm).toBeCloseTo(3 + 70 / PX_PER_MM);
+    expect(panned.xMm).toBeCloseTo(frame.xMm);
+    expect(panned.yMm).toBeCloseTo(frame.yMm);
+    expect(panned.wMm).toBeCloseTo(frame.wMm);
+    expect(panned.hMm).toBeCloseTo(frame.hMm);
+    expect(panned.imageWMm).toBeCloseTo(frame.imageWMm!);
+    expect(panned.imageHMm).toBeCloseTo(frame.imageHMm!);
+    fireEvent.pointerUp(layer, { clientX: 200, clientY: 210, pointerId: 1, button: 0 });
+    fireEvent.doubleClick(layer);
+    expect(onOpen).not.toHaveBeenCalled();
+
+    cleanup();
+    onFramesChange.mockClear();
+    const locked = render(
+      <PictureFrameHarness frame={{ ...frame, locked: true }} tool="text" onFramesChange={onFramesChange} onOpen={onOpen} />,
+    );
+    const lockedNode = locked.container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
+    const lockedLayer = locked.container.querySelector("[data-studio-objects]") as HTMLElement;
+    fireEvent.pointerDown(lockedNode, { clientX: 120, clientY: 140, pointerId: 2, button: 0 });
+    fireEvent.pointerMove(lockedLayer, { clientX: 200, clientY: 210, pointerId: 2, buttons: 1 });
+    expect(onFramesChange).not.toHaveBeenCalled();
   });
 });
 
