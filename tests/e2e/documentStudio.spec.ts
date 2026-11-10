@@ -64,9 +64,17 @@ async function replaceEditorContent(page: Page, text: string) {
   return editor;
 }
 
+/** Wide menus open flyouts on mouse hover; below 640px the menu bar renders
+ * submenus as tap accordions (DocumentMenuBar `inlineSubmenus`), so phones tap. */
+async function openSubmenu(page: Page, id: string) {
+  const trigger = page.locator(`[data-menu-submenu="${id}"]`);
+  if ((page.viewportSize()?.width ?? Infinity) < 640) await trigger.tap();
+  else await trigger.hover();
+}
+
 async function downloadAction(page: Page, action: "file.downloadDocx" | "file.downloadPdf") {
   await page.locator('[data-menu-root="file"]').click();
-  await page.locator('[data-menu-submenu="file.download"]').hover();
+  await openSubmenu(page, "file.download");
   await expect(page.locator(`[data-menu-action="${action}"]`)).toBeVisible();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
@@ -549,10 +557,10 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(table).toContainText("اردو خانہ");
 
     await page.locator('[data-menu-root="format"]').click();
-    await page.locator('[data-menu-submenu="insert.tableActions"]').hover();
+    await openSubmenu(page, "insert.tableActions");
     await page.locator('[data-menu-action="table.addRowAfter"]').click();
     await page.locator('[data-menu-root="format"]').click();
-    await page.locator('[data-menu-submenu="insert.tableActions"]').hover();
+    await openSubmenu(page, "insert.tableActions");
     await page.locator('[data-menu-action="table.addColumnAfter"]').click();
     await expect(table.locator("tr")).toHaveCount(3);
     await expect(table.locator("tr").first().locator("td, th")).toHaveCount(3);
@@ -566,7 +574,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
     const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
     await page.locator('[data-menu-root="file"]').click();
-    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await openSubmenu(page, "file.download");
     await page.locator('[data-menu-action="file.downloadPdf"]').click();
     expect((await responsePromise).status()).toBe(200);
     const pdf = await page.waitForEvent("download");
@@ -625,7 +633,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
     const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
     await page.locator('[data-menu-root="file"]').click();
-    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await openSubmenu(page, "file.download");
     await page.locator('[data-menu-action="file.downloadPdf"]').click();
     expect((await responsePromise).status()).toBe(200);
     expect(await page.waitForEvent("download")).toBeTruthy();
@@ -693,7 +701,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(editor).toContainText("Page two text.");
 
     await page.locator('[data-menu-root="insert"]').click();
-    await page.locator('[data-menu-submenu="insert.sectionBreak"]').hover();
+    await openSubmenu(page, "insert.sectionBreak");
     await page.locator('[data-menu-action="insert.sectionBreakNextPage"]').click();
     await expect(editor.locator('[data-document-section-break="true"]')).toHaveAttribute("data-section-break-type", "nextPage");
     await page.keyboard.type("Section two text.");
@@ -736,7 +744,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
     const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
     await page.locator('[data-menu-root="file"]').click();
-    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await openSubmenu(page, "file.download");
     await page.locator('[data-menu-action="file.downloadPdf"]').click();
     expect((await responsePromise).status()).toBe(200);
     expect(await page.waitForEvent("download")).toBeTruthy();
@@ -751,7 +759,7 @@ test.describe("Document Studio v1 browser smoke", () => {
       response.url().includes("/api/export-pdf") && response.request().method() === "POST",
     );
     await page.locator('[data-menu-root="file"]').click();
-    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await openSubmenu(page, "file.download");
     await expect(page.locator('[data-menu-action="file.downloadPdf"]')).toBeVisible();
     await page.locator('[data-menu-action="file.downloadPdf"]').click();
     const response = await responsePromise;
