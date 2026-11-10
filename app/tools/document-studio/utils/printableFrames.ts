@@ -162,6 +162,22 @@ function formatDeclarations(format: ParagraphFormat | undefined, fallbackLeading
     styles.push(`margin-block-end:${after}pt;--qalam-space-after:${after}pt`);
   }
 
+  // Schema renderHTML emits only data-line-gap-pt. Story print and the editor
+  // decoration add that gap to the paragraph line-height, in points.
+  const lineGap = typeof format.lineGapPt === 'number' ? validateSpacingPt(format.lineGapPt) : null;
+  if (lineGap !== null) {
+    attrs.push(`data-line-gap-pt="${lineGap}"`);
+    if (lineGap > 0) {
+      const lineIdx = styles.findIndex((entry) => entry.startsWith('line-height:') && entry.endsWith('pt'));
+      const base = lineIdx >= 0 ? parseFloat(styles[lineIdx].slice('line-height:'.length)) : resolvedLeading;
+      const withGap = base + lineGap;
+      const declaration = `line-height:${withGap}pt`;
+      if (lineIdx >= 0) styles[lineIdx] = declaration;
+      else styles.push(declaration);
+      resolvedLeading = withGap;
+    }
+  }
+
   return {
     style: styles.length ? styles.join(';') + ';' : '',
     attrs: attrs.length ? ' ' + attrs.join(' ') : '',

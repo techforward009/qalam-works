@@ -55,21 +55,27 @@ describe("Qalam Page portable files", () => {
       ...document.frames[1],
       text: "پہلا\nدوسرا",
       paragraphFormats: [
-        { spaceBeforePt: 12, firstLineIndentMm: 5 },
+        { spaceBeforePt: 12, firstLineIndentMm: 5, lineGapPt: 6 },
         null,
       ],
     };
     const restored = deserializeQpg(serializeQpg(document));
     expect(restored.frames[1]).toMatchObject({
       paragraphFormats: [
-        { spaceBeforePt: 12, firstLineIndentMm: 5 },
+        { spaceBeforePt: 12, firstLineIndentMm: 5, lineGapPt: 6 },
         null,
       ],
     });
     expect(restored.frames[0]).not.toHaveProperty("paragraphFormats");
-    const legacy = deserializeQpg(serializeQpg(example()));
+    const legacySource = example();
+    const legacyFile = serializeQpg(legacySource);
+    expect(legacyFile).not.toContain("paragraphFormats");
+    expect(legacyFile).not.toContain("lineGapPt");
+    const legacy = deserializeQpg(legacyFile);
     expect(legacy.frames[0]).not.toHaveProperty("paragraphFormats");
     expect(legacy.frames[1]).not.toHaveProperty("paragraphFormats");
+    expect(legacy.frames[0]).not.toHaveProperty("lineGapPt");
+    expect(legacy.frames[1]).not.toHaveProperty("lineGapPt");
     const broken = example();
     (broken.frames[1] as unknown as { paragraphFormats: unknown[] }).paragraphFormats = [{ unknownField: 123 }];
     expect(() => deserializeQpg(serializeQpg(broken))).toThrow();

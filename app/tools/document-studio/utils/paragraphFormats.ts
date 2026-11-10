@@ -7,6 +7,7 @@ export const PARAGRAPH_FORMAT_KEYS = [
   "leading",
   "spaceBeforePt",
   "spaceAfterPt",
+  "lineGapPt",
   "firstLineIndentMm",
   "indentStartMm",
   "indentEndMm",
@@ -19,6 +20,7 @@ export type ParagraphFormat = {
   leading?: Leading | null;
   spaceBeforePt?: number | null;
   spaceAfterPt?: number | null;
+  lineGapPt?: number | null;
   firstLineIndentMm?: number | null;
   indentStartMm?: number | null;
   indentEndMm?: number | null;
@@ -51,6 +53,10 @@ export function normalizeParagraphFormat(value: unknown): ParagraphFormat {
     const v = raw.spaceAfterPt === null ? null : validateSpacingPt(raw.spaceAfterPt);
     if (v !== null) { out.spaceAfterPt = v; hasKey = true; }
   }
+  if (raw.lineGapPt !== undefined) {
+    const v = raw.lineGapPt === null ? null : validateSpacingPt(raw.lineGapPt);
+    if (v !== null) { out.lineGapPt = v; hasKey = true; }
+  }
   if (raw.firstLineIndentMm !== undefined) {
     const v = raw.firstLineIndentMm === null ? null : validateIndentMm(raw.firstLineIndentMm);
     if (v !== null) { out.firstLineIndentMm = v; hasKey = true; }
@@ -78,7 +84,7 @@ export function isParagraphFormat(value: unknown): value is ParagraphFormat {
     if (v === null || v === undefined) continue;
     if (key === "lineHeight" && validateLineHeight(v) === null) return false;
     if (key === "leading" && parseLeading(v) === null) return false;
-    if ((key === "spaceBeforePt" || key === "spaceAfterPt") && validateSpacingPt(v) === null) return false;
+    if ((key === "spaceBeforePt" || key === "spaceAfterPt" || key === "lineGapPt") && validateSpacingPt(v) === null) return false;
     if ((key === "firstLineIndentMm" || key === "indentStartMm" || key === "indentEndMm") && validateIndentMm(v) === null) return false;
   }
   return true;

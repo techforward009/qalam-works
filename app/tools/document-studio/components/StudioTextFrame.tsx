@@ -20,7 +20,7 @@ export function normalizeSingleLineText(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
 }
 
-function paragraphStyle(align: ParagraphAlign | undefined, format?: ParagraphFormat): CSSProperties {
+function paragraphStyle(align: ParagraphAlign | undefined, format?: ParagraphFormat, fallbackLeadingPt?: number): CSSProperties {
   const style: CSSProperties = {};
   if (align === "justify-all") {
     style.textAlign = "justify";
@@ -44,21 +44,24 @@ function paragraphStyle(align: ParagraphAlign | undefined, format?: ParagraphFor
     if (typeof format.indentEndMm === "number") {
       style.marginInlineEnd = `${format.indentEndMm}mm`;
     }
+    const gap = typeof format.lineGapPt === "number" && format.lineGapPt > 0 ? format.lineGapPt : 0;
     if (format.leading?.mode === "points") {
-      style.lineHeight = `${format.leading.value}pt`;
+      style.lineHeight = `${format.leading.value + gap}pt`;
     } else if (typeof format.lineHeight === "number") {
       style.lineHeight = format.lineHeight;
+    } else if (gap > 0 && typeof fallbackLeadingPt === "number") {
+      style.lineHeight = `${fallbackLeadingPt + gap}pt`;
     }
   }
   return style;
 }
 
-function ParagraphColumn({ parts, aligns, formats, textAlign }: { parts: string[]; aligns?: readonly ParagraphAlign[]; formats?: readonly ParagraphFormat[]; textAlign?: StudioTextAlign }) {
+function ParagraphColumn({ parts, aligns, formats, textAlign, fallbackLeadingPt }: { parts: string[]; aligns?: readonly ParagraphAlign[]; formats?: readonly ParagraphFormat[]; textAlign?: StudioTextAlign; fallbackLeadingPt?: number }) {
   return <>{parts.map((part, index) => {
     const stored = aligns?.[index];
     const align = stored === undefined ? textAlign ?? null : stored;
     const format = formats?.[index];
-    return <p key={index} data-studio-frame-paragraph={index} style={{ margin: 0, padding: 0, unicodeBidi: "plaintext", whiteSpace: "pre-wrap", overflowWrap: "break-word", ...paragraphStyle(align, format) }}>{part.length ? part : "\u200b"}</p>;
+    return <p key={index} data-studio-frame-paragraph={index} style={{ margin: 0, padding: 0, unicodeBidi: "plaintext", whiteSpace: "pre-wrap", overflowWrap: "break-word", ...paragraphStyle(align, format, fallbackLeadingPt) }}>{part.length ? part : "\u200b"}</p>;
   })}</>;
 }
 
@@ -403,7 +406,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     pendingEdit.current = { start, end };
     if (!remembered.current) { remembered.current = true; rememberAt(input.value, start, end); }
   };
-  const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} formats={paragraphFormats} textAlign={textAlign} /></div>;
+  const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} formats={paragraphFormats} textAlign={textAlign} fallbackLeadingPt={leading} /></div>;
   const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(!editable)return; if(!singleLine && onPmEdit && textboxPmEnabled()){event.preventDefault();event.stopPropagation();onPmEdit({x:event.clientX,y:event.clientY});return;} event.stopPropagation();onFocus();}, onFocus:()=>{if(!singleLine && editable && onPmEdit && textboxPmEnabled()){onPmEdit(null);return;} dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!singleLine && !remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBeforeInput:handleBeforeInput, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
   const displayText = singleLine ? normalizeSingleLineText(text) : text;
   const fieldStyle = paragraphPaint ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;

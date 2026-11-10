@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { validatePrintFrames, renderPrintFrame, framePrintTopMm, printFramePageMarkup } from '../app/tools/document-studio/utils/printableFrames';
+import { validatePrintFrames, renderPrintFrame, framePrintTopMm, frameTypography, printFramePageMarkup } from '../app/tools/document-studio/utils/printableFrames';
+import { blockLeadingPt } from '../app/tools/document-studio/utils/autoLeading';
 import { defaultDocumentSettings } from '../app/tools/document-studio/utils/documentSettings';
+import { getFontById } from '../app/tools/document-studio/utils/fontRegistry';
 const base = { id: 'frame', page: 2, xMm: 20, yMm: 30, wMm: 40, hMm: 25, flip: false, text: '' };
 describe('validated printable drawing objects', () => {
   it.each(['rect', 'ellipse', 'round-rect', 'line', 'text'])('renders %s at physical millimetre coordinates without editor controls', kind => {
@@ -128,23 +130,28 @@ it("prints each multiline paragraph with its own formats and keeps a legacy fram
     kind: "text" as const,
     text: "پہلا\nدوسرا\nتیسرا",
     paragraphFormats: [
-      { spaceBeforePt: 14, firstLineIndentMm: 6 },
+      { spaceBeforePt: 14, firstLineIndentMm: 6, lineGapPt: 6 },
       { leading: { mode: "points" as const, value: 28 }, indentStartMm: 8, indentEndMm: 4 },
       null,
     ],
   };
   const [validated] = validatePrintFrames([frame]);
   expect(validated.paragraphFormats).toEqual([
-    { spaceBeforePt: 14, firstLineIndentMm: 6 },
+    { spaceBeforePt: 14, firstLineIndentMm: 6, lineGapPt: 6 },
     { leading: { mode: "points", value: 28 }, indentStartMm: 8, indentEndMm: 4 },
     null,
   ]);
   const html = renderPrintFrame(validated);
+  const typography = frameTypography(validated);
+  const fallbackLeading = blockLeadingPt({ type: "paragraph" }, getFontById(typography.defaultRtlFontId).cssStack, typography, "rtl");
   expect(html).toContain('data-print-frame-paragraph="0"');
   expect(html).toContain('data-space-before-pt="14"');
   expect(html).toContain('margin-block-start:14pt;--qalam-space-before:14pt;');
   expect(html).toContain('data-first-line-indent-mm="6"');
   expect(html).toContain('text-indent:6mm;');
+  expect(html).toContain('data-line-gap-pt="6"');
+  expect(html).toContain(`line-height:${fallbackLeading + 6}pt`);
+  expect(html).not.toContain('data-line-gap-pt="0"');
 
   expect(html).toContain('data-print-frame-paragraph="1"');
   expect(html).toContain('line-height:28pt;');
@@ -159,6 +166,9 @@ it("prints each multiline paragraph with its own formats and keeps a legacy fram
   const legacyFrame = { ...base, kind: "text" as const, text: "سادہ متن" };
   const legacyHtml = renderPrintFrame(legacyFrame);
   expect(legacyHtml).not.toContain("data-print-frame-paragraph");
+  expect(legacyHtml).not.toContain("data-line-gap-pt");
+  expect(legacyHtml).not.toContain("lineGapPt");
 
   expect(() => validatePrintFrames([{ ...frame, paragraphFormats: [{ invalidKey: true }] }])).toThrow(/paragraph formats/);
+  expect(() => validatePrintFrames([{ ...frame, paragraphFormats: [{ lineGapPt: -1 }] }])).toThrow(/paragraph formats/);
 });

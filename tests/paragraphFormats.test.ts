@@ -18,6 +18,7 @@ describe("paragraphFormats", () => {
       "leading",
       "spaceBeforePt",
       "spaceAfterPt",
+      "lineGapPt",
       "firstLineIndentMm",
       "indentStartMm",
       "indentEndMm",
@@ -28,7 +29,9 @@ describe("paragraphFormats", () => {
     expect(isEmptyParagraphFormat(null)).toBe(true);
     expect(isEmptyParagraphFormat({})).toBe(true);
     expect(isEmptyParagraphFormat({ spaceBeforePt: null })).toBe(true);
+    expect(isEmptyParagraphFormat({ lineGapPt: null })).toBe(true);
     expect(isEmptyParagraphFormat({ spaceBeforePt: 12 })).toBe(false);
+    expect(isEmptyParagraphFormat({ lineGapPt: 0 })).toBe(false);
   });
 
   it("normalizes paragraph formats", () => {
@@ -36,6 +39,11 @@ describe("paragraphFormats", () => {
     expect(normalizeParagraphFormat({})).toBe(null);
     expect(normalizeParagraphFormat({ spaceBeforePt: 12 })).toEqual({ spaceBeforePt: 12 });
     expect(normalizeParagraphFormat({ spaceBeforePt: -5 })).toBe(null);
+    expect(normalizeParagraphFormat({ lineGapPt: 6 })).toEqual({ lineGapPt: 6 });
+    expect(normalizeParagraphFormat({ lineGapPt: 0 })).toEqual({ lineGapPt: 0 });
+    expect(normalizeParagraphFormat({ lineGapPt: null })).toBe(null);
+    expect(normalizeParagraphFormat({ lineGapPt: -1 })).toBe(null);
+    expect(normalizeParagraphFormat({ lineGapPt: 201 })).toBe(null);
     expect(normalizeParagraphFormat({ leading: "18pt" })).toEqual({ leading: { mode: "points", value: 18 } });
     expect(normalizeParagraphFormat({ leading: { mode: "auto" } })).toEqual({ leading: { mode: "auto" } });
   });
@@ -44,6 +52,8 @@ describe("paragraphFormats", () => {
     expect(isParagraphFormat(null)).toBe(true);
     expect(isParagraphFormat({})).toBe(true);
     expect(isParagraphFormat({ spaceBeforePt: 12 })).toBe(true);
+    expect(isParagraphFormat({ lineGapPt: 6 })).toBe(true);
+    expect(isParagraphFormat({ lineGapPt: "6" })).toBe(false);
     expect(isParagraphFormat({ unknownKey: 12 })).toBe(false);
     expect(isParagraphFormat({ spaceBeforePt: "invalid" })).toBe(false);
   });
@@ -72,6 +82,8 @@ describe("paragraphFormats", () => {
       null,
       { spaceBeforePt: 10 },
     ]);
+    expect(collapseParagraphFormats([null, { lineGapPt: null }])).toBe(null);
+    expect(collapseParagraphFormats([{ lineGapPt: 6 }, null])).toEqual([{ lineGapPt: 6 }, null]);
   });
 
   it("fits formats to text length", () => {

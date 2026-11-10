@@ -142,4 +142,44 @@ describe("frameToDoc / docToFrame", () => {
     });
     expect(alignPatch && "paragraphFormats" in alignPatch).toBe(false);
   });
+
+  it("round-trips lineGapPt and keeps the key absent on a legacy frame", () => {
+    const frame = {
+      text: "first\nsecond",
+      textAlign: "right" as const,
+      paragraphFormats: [
+        { lineGapPt: 6, spaceBeforePt: 4 },
+        null,
+      ],
+    };
+    const doc = frameToDoc(frame.text, frame.textAlign, undefined, frame.paragraphFormats);
+    expect(doc.content?.[0]?.attrs?.lineGapPt).toBe(6);
+    expect(doc.content?.[0]?.attrs?.spaceBeforePt).toBe(4);
+    expect(doc.content?.[1]?.attrs?.lineGapPt).toBeUndefined();
+    expect(docToFrame(doc, frame.textAlign).paragraphFormats).toEqual([
+      { lineGapPt: 6, spaceBeforePt: 4 },
+      null,
+    ]);
+    expect(frameContentPatch(frame, doc)).toBeNull();
+
+    const legacy = { text: "first\nsecond", textAlign: "right" as const };
+    const legacyDoc = frameToDoc(legacy.text, legacy.textAlign);
+    expect(legacyDoc.content?.[0]?.attrs?.lineGapPt).toBeUndefined();
+    expect(frameContentPatch(legacy, legacyDoc)).toBeNull();
+    const textEdited = structuredClone(legacyDoc);
+    textEdited.content![0]!.content = [{ type: "text", text: "first!" }];
+    const textPatch = frameContentPatch(legacy, textEdited);
+    expect(textPatch).toEqual({ text: "first!\nsecond" });
+    expect(textPatch && "paragraphFormats" in textPatch).toBe(false);
+
+    const gapped = structuredClone(legacyDoc);
+    gapped.content![0]!.attrs = { ...(gapped.content![0]!.attrs ?? {}), lineGapPt: 6 };
+    expect(frameContentPatch(legacy, gapped)).toEqual({
+      text: "first\nsecond",
+      paragraphFormats: [{ lineGapPt: 6 }, null],
+    });
+
+    const cleared = frameToDoc("a\nb", "left", undefined, [{ lineGapPt: null }, null]);
+    expect(docToFrame(cleared, "left").paragraphFormats).toBeNull();
+  });
 });
