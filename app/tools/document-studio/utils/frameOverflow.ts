@@ -1,7 +1,7 @@
 /**
  * Editor-only overflow for text frames. Multiline boxes stay top-anchored and
- * clip below the box. RTL single-line boxes stay start-anchored (the right
- * edge) and clip on the left. The mark is screen UI:
+ * clip below the box. Single-line title boxes wrap and grow, so they never
+ * take a mark. The mark is screen UI:
  * data-studio-frame-overflow="bottom" | "start". It is not document text,
  * not QPG, and not print.
  */
@@ -44,9 +44,7 @@ export interface FrameOverflowMarkStyle {
 /** Content vs the visible box. Line counts are not a substitute for layout. */
 export function frameOverflowEdge(metrics: FrameOverflowMetrics): FrameOverflowEdge | null {
   if (!(metrics.clientWidth > 0) || !(metrics.clientHeight > 0)) return null;
-  if (metrics.singleLine) {
-    return metrics.scrollWidth > metrics.clientWidth + FRAME_OVERFLOW_SLOP_PX ? "start" : null;
-  }
+  if (metrics.singleLine) return null;
   return metrics.scrollHeight > metrics.clientHeight + FRAME_OVERFLOW_SLOP_PX ? "bottom" : null;
 }
 

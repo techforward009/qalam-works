@@ -44,32 +44,34 @@ export function formatGeometryLength(value: number): string {
 }
 
 export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPatch): StudioFrame | null {
+  const requested: ObjectGeometryPatch = { ...patch };
+  if (frame.singleLine) delete requested.hMm;
   for (const key of ["xMm", "yMm", "wMm", "hMm"] as const) {
-    const value = patch[key];
+    const value = requested[key];
     if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value) || ((key === "wMm" || key === "hMm") && value < 1))) return null;
   }
   for (const key of ["imageXMm", "imageYMm", "imageWMm", "imageHMm", "roundnessMm"] as const) {
-    const value = patch[key];
+    const value = requested[key];
     if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value) || ((key === "imageWMm" || key === "imageHMm") && value <= 0) || (key === "roundnessMm" && (value < 0 || value > PRINT_FRAME_LIMITS.mm)))) return null;
   }
   for (const key of ["angle1Deg", "angle2Deg"] as const) {
-    const value = patch[key];
+    const value = requested[key];
     if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value) || value < -3600 || value > 3600)) return null;
   }
-  if (patch.borderPosition !== undefined && patch.borderPosition !== "inside" && patch.borderPosition !== "outside") return null;
-  if (patch.locked !== undefined && typeof patch.locked !== "boolean") return null;
-  if (patch.dontPrint !== undefined && typeof patch.dontPrint !== "boolean") return null;
-  if (patch.template !== undefined && typeof patch.template !== "boolean") return null;
-  if (patch.kind !== undefined && (!isPictureBox(frame.kind) || !pictureKinds.includes(patch.kind))) return null;
-  if (patch.borderColor !== undefined && !normalizeSafeHex(patch.borderColor)) return null;
-  if (patch.backgroundColor !== undefined && patch.backgroundColor !== "" && !normalizeSafeHex(patch.backgroundColor)) return null;
-  if (patch.borderWidthMm !== undefined && (typeof patch.borderWidthMm !== "number" || !Number.isFinite(patch.borderWidthMm) || patch.borderWidthMm <= 0 || patch.borderWidthMm > PRINT_FRAME_LIMITS.mm)) return null;
-  if (patch.borderPattern !== undefined && patch.borderPattern !== "none") return null;
-  if (patch.backgroundHatch !== undefined && patch.backgroundHatch !== "none") return null;
-  const next: StudioFrame = { ...frame, ...patch, ...(patch.borderColor !== undefined ? { borderColor: normalizeSafeHex(patch.borderColor)! } : {}) };
-  if (patch.backgroundColor !== undefined) {
-    if (patch.backgroundColor === "") delete next.backgroundColor;
-    else next.backgroundColor = normalizeSafeHex(patch.backgroundColor)!;
+  if (requested.borderPosition !== undefined && requested.borderPosition !== "inside" && requested.borderPosition !== "outside") return null;
+  if (requested.locked !== undefined && typeof requested.locked !== "boolean") return null;
+  if (requested.dontPrint !== undefined && typeof requested.dontPrint !== "boolean") return null;
+  if (requested.template !== undefined && typeof requested.template !== "boolean") return null;
+  if (requested.kind !== undefined && (!isPictureBox(frame.kind) || !pictureKinds.includes(requested.kind))) return null;
+  if (requested.borderColor !== undefined && !normalizeSafeHex(requested.borderColor)) return null;
+  if (requested.backgroundColor !== undefined && requested.backgroundColor !== "" && !normalizeSafeHex(requested.backgroundColor)) return null;
+  if (requested.borderWidthMm !== undefined && (typeof requested.borderWidthMm !== "number" || !Number.isFinite(requested.borderWidthMm) || requested.borderWidthMm <= 0 || requested.borderWidthMm > PRINT_FRAME_LIMITS.mm)) return null;
+  if (requested.borderPattern !== undefined && requested.borderPattern !== "none") return null;
+  if (requested.backgroundHatch !== undefined && requested.backgroundHatch !== "none") return null;
+  const next: StudioFrame = { ...frame, ...requested, ...(requested.borderColor !== undefined ? { borderColor: normalizeSafeHex(requested.borderColor)! } : {}) };
+  if (requested.backgroundColor !== undefined) {
+    if (requested.backgroundColor === "") delete next.backgroundColor;
+    else next.backgroundColor = normalizeSafeHex(requested.backgroundColor)!;
   }
   return next;
 }

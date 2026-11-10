@@ -271,7 +271,7 @@ test('a multi-line box clips overflow, keeps the first line, and marks it', asyn
   expect(revealed.value).toBe(lines);
 });
 
-test('a single-line RTL box clips on the left and marks that edge', async ({ page }) => {
+test('a single-line RTL box wraps and grows downward', async ({ page }) => {
   await page.addInitScript(() => {
     const id = localStorage.getItem('qalam-document-studio-active-document-v1');
     if (!id) return;
@@ -284,68 +284,49 @@ test('a single-line RTL box clips on the left and marks that edge', async ({ pag
     localStorage.setItem(key, JSON.stringify(map));
   });
   await page.reload();
-  const input = object(page, 'title').locator('input[data-studio-text-frame]');
+  const input = object(page, 'title').locator('textarea[data-studio-text-frame]');
   const frame = object(page, 'title');
   await expect(input).toBeVisible();
+  const before = await frame.evaluate(el => ({ y: (el as HTMLElement).offsetTop, height: (el as HTMLElement).offsetHeight }));
   const text = `شروع${' عبارت'.repeat(24)}`;
   await input.click();
   await input.fill(text);
-  await expect.poll(async () => input.evaluate(el => (el as HTMLInputElement).scrollWidth > (el as HTMLInputElement).clientWidth + 2)).toBe(true);
-  const mark = frame.locator('[data-studio-frame-overflow="start"]');
-  await expect(mark).toBeVisible();
-  const stripe = await mark.evaluate(el => {
-    const markBox = el.getBoundingClientRect();
-    const host = el.parentElement!.getBoundingClientRect();
-    const style = getComputedStyle(el);
-    return {
-      height: markBox.height,
-      width: markBox.width,
-      insetLeft: markBox.left - host.left,
-      insetBottom: host.bottom - markBox.bottom,
-      hostWidth: host.width,
-      background: style.backgroundColor,
-      pointer: style.pointerEvents,
-    };
+  await expect.poll(async () => frame.evaluate(el => (el as HTMLElement).offsetHeight)).toBeGreaterThan(before.height + 8);
+  const after = await frame.evaluate(el => (el as HTMLElement).offsetTop);
+  expect(Math.abs(after - before.y)).toBeLessThanOrEqual(1);
+  await expect(frame.locator('[data-studio-frame-overflow]')).toHaveCount(0);
+  const clip = await input.evaluate(el => {
+    const field = el as HTMLTextAreaElement;
+    return { scrollWidth: field.scrollWidth, clientWidth: field.clientWidth, scrollHeight: field.scrollHeight, clientHeight: field.clientHeight };
   });
-  expect(stripe.height).toBeGreaterThanOrEqual(4);
-  expect(stripe.height).toBeLessThanOrEqual(6);
-  expect(stripe.width).toBeGreaterThan(stripe.height);
-  expect(stripe.width).toBeLessThan(stripe.hostWidth * 0.75);
-  expect(stripe.insetLeft).toBeLessThanOrEqual(3);
-  expect(stripe.insetBottom).toBeLessThanOrEqual(stripe.height + 4);
-  expect(stripe.background).toBe('rgb(255, 0, 0)');
-  expect(stripe.pointer).toBe('none');
-  const scrollLeft = () => input.evaluate(el => (el as HTMLInputElement).scrollLeft);
-  await input.evaluate(el => { (el as HTMLInputElement).scrollLeft = -80; });
-  await expect.poll(scrollLeft).toBe(0);
-  await input.hover();
-  await page.mouse.wheel(0, 80);
-  await input.press('End');
-  await input.press('Control+End');
-  await expect.poll(scrollLeft).toBe(0);
-  await expect(frame.locator('[data-studio-frame-caret]')).toHaveCount(0);
-  expect(await input.inputValue()).toBe(text);
-  await input.press('Home');
-  await expect(frame.locator('[data-studio-frame-caret]')).toBeVisible();
-  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeLessThanOrEqual(4);
+  expect(clip.scrollWidth).toBeLessThanOrEqual(clip.clientWidth + 2);
+  expect(clip.scrollHeight).toBeLessThanOrEqual(clip.clientHeight + 4);
+  await input.press('Enter');
+  await expect(input).toHaveValue(text);
   await page.locator('[data-studio-tool-button="select"]').click();
   await frame.scrollIntoViewIfNeeded();
   await frame.click();
+  await expect(frame.locator('[data-studio-frame-handle]')).toHaveCount(2);
+  await expect(frame.locator('[data-studio-frame-handle="n"]')).toHaveCount(0);
+  await expect(frame.locator('[data-studio-frame-handle="s"]')).toHaveCount(0);
+  const storedBefore = await page.evaluate(() => {
+    const id = localStorage.getItem('qalam-document-studio-active-document-v1');
+    const frames = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}')[id!] as Array<{ id: string; hMm: number; yMm: number; wMm: number }>;
+    return frames.find(item => item.id === 'title')!;
+  });
   const handle = frame.locator('[data-studio-frame-handle="e"]');
-  await expect(handle).toBeVisible();
-  const extra = await input.evaluate(el => (el as HTMLInputElement).scrollWidth - (el as HTMLInputElement).clientWidth + 24);
   const handleBox = await handle.boundingBox();
   if (!handleBox) throw new Error('missing east handle');
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
-  await page.mouse.move(handleBox.x + handleBox.width / 2 + extra, handleBox.y + handleBox.height / 2, { steps: 8 });
+  await page.mouse.move(handleBox.x + handleBox.width / 2 + 180, handleBox.y + handleBox.height / 2, { steps: 8 });
   await page.mouse.up();
+  await expect.poll(async () => page.evaluate(() => {
+    const id = localStorage.getItem('qalam-document-studio-active-document-v1');
+    const frames = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}')[id!] as Array<{ id: string; hMm: number; yMm: number; wMm: number }>;
+    return frames.find(item => item.id === 'title');
+  }).then(saved => Boolean(saved && saved.wMm > storedBefore.wMm + 5 && saved.hMm < storedBefore.hMm - 0.5 && saved.yMm === storedBefore.yMm))).toBe(true);
   await expect(frame.locator('[data-studio-frame-overflow]')).toHaveCount(0);
-  await page.locator('[data-studio-tool-button="text"]').click();
-  await input.click();
-  await input.press('End');
-  await expect.poll(scrollLeft).toBe(0);
-  await expect(frame.locator('[data-studio-frame-caret]')).toBeVisible();
   expect(await input.inputValue()).toBe(text);
 });
 

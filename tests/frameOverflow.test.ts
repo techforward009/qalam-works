@@ -22,9 +22,10 @@ describe("frameOverflowEdge", () => {
     expect(frameOverflowEdge({ singleLine: false, scrollHeight: 83, clientHeight: 80, scrollWidth: 100, clientWidth: 100 })).toBe("bottom");
   });
 
-  it("marks RTL single-line overflow at the start when content is wider than the box", () => {
-    expect(frameOverflowEdge({ singleLine: true, scrollHeight: 40, clientHeight: 20, scrollWidth: 300, clientWidth: 100 })).toBe("start");
+  it("does not mark a wrapping single-line box", () => {
+    expect(frameOverflowEdge({ singleLine: true, scrollHeight: 40, clientHeight: 20, scrollWidth: 300, clientWidth: 100 })).toBeNull();
     expect(frameOverflowEdge({ singleLine: true, scrollHeight: 40, clientHeight: 20, scrollWidth: 102, clientWidth: 100 })).toBeNull();
+    expect(frameOverflowEdge({ singleLine: true, scrollHeight: 200, clientHeight: 40, scrollWidth: 100, clientWidth: 100 })).toBeNull();
   });
 
   it("returns null for an empty box", () => {

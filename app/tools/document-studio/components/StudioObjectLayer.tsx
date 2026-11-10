@@ -17,7 +17,7 @@ import { isFormattingSurface } from "../utils/formattingSafety";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { textboxPmEnabled } from "../utils/textboxPmFlag";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
-import { singleLineLeadingPt, singleLineOuterHeightMm, singleLineOuterHeightPx } from "../utils/singleLineFrame";
+import { measureSingleLineOuterHeightMm, singleLineLeadingPt, singleLineOuterHeightPx } from "../utils/singleLineFrame";
 import type { Editor } from "@tiptap/react";
 import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
@@ -173,6 +173,13 @@ function newId(): string {
 }
 
 const PX_PER_MM = 96 / 25.4;
+
+/** Exact print width and the snapped editor width. The taller wrap wins. */
+function singleLineWidthsPx(wMm: number, scale: number): number[] {
+  const exact = Math.max(1, wMm * PX_PER_MM);
+  const rendered = scale > 0 ? Math.max(1, Math.round(exact * scale) / scale) : exact;
+  return [exact, rendered];
+}
 const PICTURE_CORNER_RX_PX = 6.35 * PX_PER_MM;
 const pictureCornerRadiusPx = (frame: StudioFrame) => (frame.roundnessMm ?? 6.35) * PX_PER_MM;
 
@@ -409,6 +416,36 @@ export function StudioObjectLayer({
 
   const onChangeRef = useRef(onFramesChange);
   onChangeRef.current = onFramesChange;
+  const [singleLineFontEpoch, setSingleLineFontEpoch] = useState(0);
+  useEffect(() => {
+    if (typeof document === "undefined" || !document.fonts?.addEventListener) return;
+    const rerun = () => setSingleLineFontEpoch(epoch => epoch + 1);
+    document.fonts.addEventListener("loadingdone", rerun);
+    return () => document.fonts.removeEventListener("loadingdone", rerun);
+  }, []);
+  const frameScale = () => {
+    const rootBox = rootRef.current?.getBoundingClientRect();
+    return projectionProp ? zoom : rootBox && rootBox.width > 0 ? rootBox.width / pageWidthPx : 1;
+  };
+  const fittedSingleLineHeightMm = (text: string, frameTypography: DocumentStudioSettings["typography"] | undefined, wMm: number) =>
+    measureSingleLineOuterHeightMm({
+      text,
+      typography: frameTypography ?? typography ?? defaultDocumentSettings().typography,
+      outerWidthPx: singleLineWidthsPx(wMm, frameScale()),
+    });
+  useLayoutEffect(() => {
+    let changed = false;
+    const next = frames.map((frame) => {
+      if (!frame.singleLine || frame.kind !== "text") return frame;
+      const hMm = fittedSingleLineHeightMm(frame.text, frame.typography, frame.wMm);
+      if (Math.abs(hMm - frame.hMm) < 0.01) return frame;
+      changed = true;
+      return { ...frame, hMm };
+    });
+    if (changed) onChangeRef.current(next);
+    // Height is derived. The helper is closed over the same inputs listed here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frames, typography, zoom, pageWidthPx, projectionProp, singleLineFontEpoch]);
 
   const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign" | "paragraphFormats">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null; paragraphFormats?: ParagraphFormat[] | null }) => {
     onChangeRef.current(framesRef.current.map((frame) => {
@@ -472,7 +509,7 @@ export function StudioObjectLayer({
       xMm: x / PX_PER_MM,
       yMm: Math.max(0, yOnPage) / PX_PER_MM,
       wMm: Math.max(1, w) / PX_PER_MM,
-      hMm: singleLine ? singleLineOuterHeightMm(frameTypography) : Math.max(1, h) / PX_PER_MM,
+      hMm: singleLine ? measureSingleLineOuterHeightMm({ text: "", typography: frameTypography, outerWidthPx: Math.max(1, w) }) : Math.max(1, h) / PX_PER_MM,
       flip,
       text: "",
       typography,
@@ -628,11 +665,13 @@ export function StudioObjectLayer({
           if (drag.edge.includes("w")) x1 = point.x;
           if (drag.edge.includes("e")) x2 = point.x;
           const x = Math.min(x1, x2);
+          const newWMm = Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM;
           pictureDraggedRef.current = true;
           lastPressRef.current = null;
           updateFrame(frame.id, {
             xMm: x / PX_PER_MM,
-            wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
+            wMm: newWMm,
+            hMm: fittedSingleLineHeightMm(frame.text, frame.typography, newWMm),
           });
           return;
         }
@@ -780,7 +819,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} pmEditing={pmFrameId === frame.id} pageWidthPx={pageWidthPx} zoom={zoom} getKeyboardLayout={getKeyboardLayout ?? (() => null)} clickPoint={pmFrameId === frame.id ? pmClickRef.current : null} onPmEdit={(point) => beginPmEdit(frame.id, point)} onPmCommit={() => requestPmCommit()} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onDoc={(doc) => { const current = framesRef.current.find((item) => item.id === frame.id); if (!current) return; const patch = frameContentPatch(current, doc); if (patch) updateFrame(frame.id, patch); }} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} pmEditing={pmFrameId === frame.id} pageWidthPx={pageWidthPx} zoom={zoom} getKeyboardLayout={getKeyboardLayout ?? (() => null)} clickPoint={pmFrameId === frame.id ? pmClickRef.current : null} onPmEdit={(point) => beginPmEdit(frame.id, point)} onPmCommit={() => requestPmCommit()} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); const patch = current ? paragraphTextPatch(current, next, edit) : { text: next }; updateFrame(frame.id, current?.singleLine ? { ...patch, hMm: fittedSingleLineHeightMm(next, current.typography, current.wMm) } : patch); }} onRestore={(snap) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current?.singleLine ? { ...snap, hMm: fittedSingleLineHeightMm(snap.text, current.typography, current.wMm) } : snap); }} onDoc={(doc) => { const current = framesRef.current.find((item) => item.id === frame.id); if (!current) return; const patch = frameContentPatch(current, doc); if (patch) updateFrame(frame.id, patch); }} onStyle={(patch) => { const current = framesRef.current.find((item) => item.id === frame.id) ?? frame; updateFrame(frame.id, current.singleLine && patch.typography ? { ...patch, hMm: fittedSingleLineHeightMm(current.text, patch.typography, current.wMm) } : patch); }} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}

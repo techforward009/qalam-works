@@ -9,6 +9,7 @@ import { isParagraphFormatList, type ParagraphFormat } from './paragraphFormats'
 import { validateIndentMm, validateLineHeight, validateSpacingPt } from './documentSettings';
 import { parseLeading } from './leading';
 import { normalizeSafeHex } from './studioColors';
+import { normalizeSingleLineText } from './singleLineFrame';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
 const kinds = new Set([
@@ -101,7 +102,8 @@ export function frameTypography(frame: StudioFrame) {
 }
 export function frameTextNode(frame: StudioFrame): DocNode {
   const t = frameTypography(frame);
-  return { type: 'paragraph', attrs: { dir: 'rtl' }, content: [{ type: 'text', text: frame.text, marks: [{ type: 'textStyle', attrs: { fontFamily: getFontById(t.defaultRtlFontId).editorFamily, fontSize: `${t.bodyFontSizePt}pt` } }] }] };
+  const text = frame.singleLine ? normalizeSingleLineText(frame.text) : frame.text;
+  return { type: 'paragraph', attrs: { dir: 'rtl' }, content: [{ type: 'text', text, marks: [{ type: 'textStyle', attrs: { fontFamily: getFontById(t.defaultRtlFontId).editorFamily, fontSize: `${t.bodyFontSizePt}pt` } }] }] };
 }
 export function framePrintTopMm(frame: Pick<StudioFrame, "page" | "yMm">, height: number): number {
   return (frame.page - 1) * height + frame.yMm;
@@ -213,7 +215,8 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
     const textAlign = frame.textAlign === 'justify-all' ? 'justify' : frame.textAlign ?? 'start';
     const textAlignLast = frame.textAlign === 'justify-all' ? 'text-align-last:justify;' : '';
     const paragraphs = frameParagraphMarkup(frame, leading);
-    return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}padding:0.5291666667mm;overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:${frame.singleLine ? 'nowrap' : 'pre-wrap'};${frame.singleLine ? '' : 'overflow-wrap:break-word;'}text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${paragraphs ?? textHtml ?? escape(frame.text)}</div>`;
+    const plain = frame.singleLine ? normalizeSingleLineText(frame.text) : frame.text;
+    return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}padding:0.5291666667mm;overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:pre-wrap;overflow-wrap:break-word;text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${paragraphs ?? textHtml ?? escape(plain)}</div>`;
   }
   const legacyStroke = 'fill="none" stroke="#000" stroke-width="0.2645833333"';
   const borderColor = frame.borderColor ?? '#000';

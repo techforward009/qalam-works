@@ -111,16 +111,20 @@ it("prints each multiline paragraph with its own alignment and keeps a legacy fr
   expect(html).toContain('data-print-frame-paragraph="2" style="margin:0;padding:0;white-space:pre-wrap;');
   expect(html).toContain("&lt;دوسرا&gt;");
   expect(html).not.toContain("<دوسرا>");
-  expect(renderPrintFrame({ ...base, kind: "text", singleLine: true, text: "ایک\nلکیر", paragraphAligns: ["left", "right"] })).not.toContain("data-print-frame-paragraph");
+  const singleLinePrint = renderPrintFrame({ ...base, kind: "text", singleLine: true, text: "ایک\nلکیر", paragraphAligns: ["left", "right"] });
+  expect(singleLinePrint).not.toContain("data-print-frame-paragraph");
+  expect(singleLinePrint).toContain("ایک لکیر");
+  expect(singleLinePrint).not.toContain("ایک\nلکیر");
   expect(() => validatePrintFrames([{ ...frame, paragraphAligns: ["sideways"] }])).toThrow(/paragraph alignment/);
 });
 
-it("persists and prints single-line text without wrapping while retaining unknown-key stripping", () => {
+it("persists and prints single-line text with soft wrap while retaining unknown-key stripping", () => {
   const [frame] = validatePrintFrames([{ ...base, kind: "text", singleLine: true, text: "ایک سطر", typo: "discard" }]);
   expect(frame).toMatchObject({ singleLine: true });
   expect(frame).not.toHaveProperty("typo");
   expect(renderPrintFrame(frame)).toContain('data-print-frame-single-line="true"');
-  expect(renderPrintFrame(frame)).toContain("white-space:nowrap;");
+  expect(renderPrintFrame(frame)).toContain("white-space:pre-wrap;overflow-wrap:break-word;");
+  expect(renderPrintFrame(frame)).not.toContain("white-space:nowrap;");
   expect(renderPrintFrame({ ...frame, singleLine: false })).toContain("white-space:pre-wrap;");
 });
 

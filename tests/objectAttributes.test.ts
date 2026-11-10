@@ -50,6 +50,15 @@ describe("applyObjectGeometry", () => {
     expect(applyObjectGeometry(frame, { kind: "picture-ellipse" })?.kind).toBe("picture-ellipse");
     expect(applyObjectGeometry(frame, { kind: "text" })).toBeNull();
   });
+
+  it("ignores height on a single-line frame and still applies width", () => {
+    const title: StudioFrame = { ...frame, kind: "text", singleLine: true, text: "عنوان", hMm: 8.5725 };
+    expect(applyObjectGeometry(title, { hMm: 40 })?.hMm).toBe(8.5725);
+    expect(applyObjectGeometry(title, { wMm: 70, hMm: 40 })).toMatchObject({ wMm: 70, hMm: 8.5725 });
+    expect(applyObjectGeometry(title, { wMm: 70, hMm: 0.5 })).toMatchObject({ wMm: 70, hMm: 8.5725 });
+    const multi: StudioFrame = { ...frame, kind: "text", text: "سطر", hMm: 25 };
+    expect(applyObjectGeometry(multi, { hMm: 40 })?.hMm).toBe(40);
+  });
 });
 
 

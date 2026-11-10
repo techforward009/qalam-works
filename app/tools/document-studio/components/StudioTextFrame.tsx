@@ -7,7 +7,8 @@ import { editorFontFamilyStack, getFontById } from "../utils/fontRegistry";
 import type { StudioFrame } from "./StudioObjectLayer";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { emptyFrameCaretLeft } from "../utils/frameCaret";
-import { centerSingleLinePadding } from "../utils/singleLineFrame";
+import { centerSingleLinePadding, normalizeSingleLineText, SINGLE_LINE_OVERFLOW_WRAP, SINGLE_LINE_WHITE_SPACE } from "../utils/singleLineFrame";
+export { normalizeSingleLineText };
 import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLineBoxes";
 import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKeyboard";
 import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
@@ -16,10 +17,6 @@ import { applyParagraphAlignment, createFrameHistory, paragraphIndexAt, toolbarP
 import type { ParagraphFormat } from "../utils/paragraphFormats";
 import { textboxPmEnabled } from "../utils/textboxPmFlag";
 import { bindFrameScrollLock, caretInClippedOverflow, frameContentBox, frameOverflowEdge, frameOverflowMarkStyle, pinFrameScroll, type FrameOverflowEdge } from "../utils/frameOverflow";
-
-export function normalizeSingleLineText(text: string): string {
-  return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
-}
 
 function paragraphStyle(align: ParagraphAlign | undefined, format?: ParagraphFormat, fallbackLeadingPt?: number): CSSProperties {
   const style: CSSProperties = {};
@@ -273,6 +270,11 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     range.selectNodeContents(node);
     const ink = range.getBoundingClientRect();
     if (ink.height < 0.5) return;
+    const linePx = leading * (96 / 72);
+    if (ink.height > linePx * 1.75) {
+      setPadY(prev => prev.top === 2 && prev.bottom === 2 ? prev : { top: 2, bottom: 2 });
+      return;
+    }
     const box = node.getBoundingClientRect();
     const computed = getComputedStyle(node);
     const above = ink.top - (box.top + (parseFloat(computed.borderTopWidth) || 0));
@@ -284,7 +286,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       const next = centerSingleLinePadding(prev, above, below);
       return Math.abs(next.top - prev.top) < 0.25 && Math.abs(next.bottom - prev.bottom) < 0.25 ? prev : next;
     });
-  }, [singleLine, alignKey, padY.top, padY.bottom]);
+  }, [singleLine, alignKey, leading, padY.top, padY.bottom]);
   useEffect(() => {
     if (!singleLine) return;
     const rerun = () => setFontEpoch(epoch => epoch + 1);
@@ -327,7 +329,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     if (ref.current) observer.observe(ref.current);
     return () => { cancelAnimationFrame(raf); observer.disconnect(); document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("selectionchange", update); root?.removeEventListener(FORMATTING_TARGET_CHANGE, update); document.fonts.removeEventListener("loadingdone", update); };
   }, [measure]);
-  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",...(singleLine ? { paddingTop: padY.top, paddingRight: 2, paddingBottom: padY.bottom, paddingLeft: 2 } : { padding: 2 }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:singleLine?"nowrap":"pre-wrap",overflowWrap:singleLine?"normal":"break-word",overflow:"hidden",color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
+  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",...(singleLine ? { paddingTop: padY.top, paddingRight: 2, paddingBottom: padY.bottom, paddingLeft: 2 } : { padding: 2 }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:SINGLE_LINE_WHITE_SPACE,overflowWrap:SINGLE_LINE_OVERFLOW_WRAP,overflow:"hidden",color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
   const handlePaste = (event: ReactClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!singleLine) return;
     event.preventDefault();
@@ -418,7 +420,11 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     };
   }, [keyboardLayout, onText, rememberAt, singleLine]);
   const handleBeforeInput = (event: ReactFormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (singleLine) return;
+    if (singleLine) {
+      const native = event.nativeEvent as InputEvent;
+      if (native.inputType === "insertLineBreak" || native.inputType === "insertParagraph") event.preventDefault();
+      return;
+    }
     const native = event.nativeEvent as InputEvent;
     if (native.inputType === "historyUndo" || native.inputType === "historyRedo") {
       event.preventDefault();
@@ -439,10 +445,10 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   return <>
     {singleLine ? <div ref={textRef} aria-hidden data-studio-single-line-text style={{ ...style, pointerEvents: "none", userSelect: "none" }}>{displayText}</div> : null}
     {paragraphPaint ? <div ref={visible} aria-hidden data-studio-frame-paragraphs style={{ ...style, borderColor: "transparent", overflow: "hidden", pointerEvents: "none", background: "transparent" }}>{paragraphBlock()}</div> : null}
-    {singleLine ? <input {...sharedProps} type="text" data-studio-text-frame data-studio-text-single-line="true" data-studio-selection-painted="true" style={{ ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" }} /> : <textarea {...sharedProps} data-studio-paragraph-paint={paragraphPaint ? "true" : undefined} data-studio-selection-painted={boxes.length?"true":undefined} style={{ ...fieldStyle, scrollbarWidth: "none" }} />}
+    {singleLine ? <textarea {...sharedProps} rows={1} wrap="soft" data-studio-text-frame data-studio-text-single-line="true" data-studio-selection-painted="true" style={{ ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent", scrollbarWidth: "none", minHeight: 0 }} /> : <textarea {...sharedProps} data-studio-paragraph-paint={paragraphPaint ? "true" : undefined} data-studio-selection-painted={boxes.length?"true":undefined} style={{ ...fieldStyle, scrollbarWidth: "none" }} />}
     <div ref={mirror} aria-hidden style={{...style,height:"auto",minHeight:"100%",visibility:"hidden",pointerEvents:"none",borderColor:"transparent",transform:"none"}}>{paragraphPaint ? paragraphBlock() : null}</div>
     {caret?<div key={`${caret.left}:${caret.top}:${caret.height}`} data-studio-frame-caret style={{position:"absolute",...caret,background:"#000",pointerEvents:"none",animation:"qalam-studio-caret-blink 1060ms step-end infinite"}} />:null}
-    {boxes.length>0?<div data-studio-text-frame-selection style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>{boxes.map((box,i)=><div key={i} data-studio-line-selection style={{position:"absolute",...box,background:"#000",overflow:"hidden"}}><div style={{...style,inset:undefined,left:-box.left,top:-box.top,width:ref.current?.offsetWidth,height:"auto",minHeight:"100%",color:"#fff",borderColor:"transparent",background:"transparent"}}>{paragraphPaint ? paragraphBlock() : text+"\u200b"}</div></div>)}</div>:null}
+    {boxes.length>0?<div data-studio-text-frame-selection style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>{boxes.map((box,i)=><div key={i} data-studio-line-selection style={{position:"absolute",...box,background:"#000",overflow:"hidden"}}><div style={{...style,inset:undefined,left:-box.left,top:-box.top,width:ref.current?.offsetWidth,height:"auto",minHeight:"100%",color:"#fff",borderColor:"transparent",background:"transparent"}}>{paragraphPaint ? paragraphBlock() : `${singleLine ? displayText : text}\u200b`}</div></div>)}</div>:null}
     {overflow ? <div data-studio-frame-overflow={overflow} aria-hidden style={frameOverflowMarkStyle(overflow)} /> : null}
   </>;
 }

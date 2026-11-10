@@ -11,7 +11,7 @@ const pxPerMm = 96 / 25.4;
 async function storedFrames(page: Page) {
   return page.evaluate(() => {
     const id = localStorage.getItem('qalam-document-studio-active-document-v1');
-    const map = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}') as Record<string, Array<{ id: string; singleLine?: boolean; hMm: number; wMm: number; text: string }>>;
+    const map = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}') as Record<string, Array<{ id: string; singleLine?: boolean; hMm: number; wMm: number; yMm: number; text: string }>>;
     return id ? map[id] || [] : [];
   });
 }
@@ -54,7 +54,7 @@ test('creates a single-line title box beside an independently styled multiline b
   const x = bounds.x + 25 * pxPerMm, y = bounds.y + 75 * pxPerMm;
   await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + 90 * pxPerMm, y + 20 * pxPerMm, { steps: 4 }); await page.mouse.up();
   const singleObject = page.locator('[data-studio-text-single-line="true"]').locator('..');
-  const single = page.locator('input[data-studio-text-frame][data-studio-text-single-line="true"]');
+  const single = page.locator('textarea[data-studio-text-frame][data-studio-text-single-line="true"]');
   await expect(single).toBeVisible();
   await expect.poll(async () => (await storedFrames(page)).find(frame => frame.singleLine)?.hMm).toBeCloseTo(8.5725, 3);
   expect((await singleObject.evaluate(el => (el as HTMLElement).offsetHeight))).toBeGreaterThan(28);
@@ -97,7 +97,7 @@ test('creates a single-line title box beside an independently styled multiline b
   });
   expect(selectionAligned).toBe(true);
   await single.evaluate(el => {
-    const input = el as HTMLInputElement;
+    const input = el as HTMLTextAreaElement;
     const end = input.value.length;
     input.setSelectionRange(end, end);
     input.dispatchEvent(new Event('select', { bubbles: true }));
@@ -136,7 +136,8 @@ test('creates a single-line title box beside an independently styled multiline b
   await object(page, 'multiline').click();
   await expect(object(page, 'multiline').locator('[data-studio-frame-handle]')).toHaveCount(8);
   await page.locator('[data-studio-tool-button="text"]').click();
-  await expect(single).toHaveCSS('white-space', 'nowrap');
+  await expect(single).toHaveCSS('white-space', 'pre-wrap');
+  await expect(single).toHaveCSS('overflow-wrap', 'break-word');
   await expect(multiline).toHaveCSS('white-space', 'pre-wrap');
   await expect(page.locator('[data-studio-single-line-text]')).toHaveCSS('color', 'rgb(255, 0, 0)');
   await expect(single).toHaveCSS('color', 'rgba(0, 0, 0, 0)');
@@ -157,7 +158,7 @@ test('a horizontal single-line drag is one line tall and a multiline drag keeps 
   await page.locator('[data-studio-tool-button="title-text"]').click();
   const x = bounds.x + 30 * pxPerMm, y = bounds.y + 110 * pxPerMm;
   await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + 70 * pxPerMm, y, { steps: 3 }); await page.mouse.up();
-  const single = page.locator('input[data-studio-text-single-line="true"]');
+  const single = page.locator('textarea[data-studio-text-single-line="true"]');
   await expect(single).toBeVisible();
   await expect.poll(async () => (await storedFrames(page)).find(frame => frame.singleLine)?.hMm).toBeCloseTo(8.5725, 3);
   expect((await storedFrames(page)).find(frame => frame.singleLine)?.wMm).toBeGreaterThan(60);
@@ -172,7 +173,7 @@ test('a horizontal single-line drag is one line tall and a multiline drag keeps 
   expect(multiHeight).toBeLessThan(22);
 });
 
-test('loading a saved single-line frame does not change its height', async ({ page }) => {
+test('loading a saved single-line frame fits its content height', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('qalam-site-language', 'en'));
   await page.goto('/tools/document-studio');
   await expect(story(page)).toBeEditable({ timeout: 15000 });
@@ -185,6 +186,8 @@ test('loading a saved single-line frame does not change its height', async ({ pa
     ] }));
   }, typography);
   await page.reload();
-  await expect(page.locator('input[data-studio-text-single-line="true"]')).toHaveValue('محفوظ عنوان');
-  expect((await storedFrames(page)).find(frame => frame.id === 'saved-title')?.hMm).toBe(25);
+  await expect(page.locator('textarea[data-studio-text-single-line="true"]')).toHaveValue('محفوظ عنوان');
+  await expect.poll(async () => (await storedFrames(page)).find(frame => frame.id === 'saved-title')?.hMm).toBeCloseTo(8.5725, 3);
+  expect((await storedFrames(page)).find(frame => frame.id === 'saved-title')?.yMm).toBe(40);
+  await expect(page.locator('[data-studio-frame-overflow]')).toHaveCount(0);
 });
