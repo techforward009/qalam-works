@@ -75,14 +75,16 @@ describe("Picture frames in Qalam Page", () => {
         : []),
     );
     const topmostHandPixel = handPixels.reduce((top, pixel) => pixel.y < top.y || (pixel.y === top.y && pixel.x < top.x) ? pixel : top);
-    const cursorData = PICTURE_HAND_CURSOR.match(/^url\("data:image\/svg\+xml,([^"]+)"\) 15 4, auto$/)?.[1];
+    const cursorData = PICTURE_HAND_CURSOR.match(/^url\("data:image\/svg\+xml,([^"]+)"\) 15 4, grab$/)?.[1];
     expect(cursorData).toBeTruthy();
     const svg = decodeURIComponent(cursorData!);
     expect(handPixels).toHaveLength(totalPixels - stem.size);
     expect(svg.match(/<rect /g)).toHaveLength(handPixels.length);
     expect(topmostHandPixel).toMatchObject({ x: 15, y: 4 });
-    expect(PICTURE_HAND_CURSOR).toContain(`) ${topmostHandPixel.x} ${topmostHandPixel.y}, auto`);
+    expect(PICTURE_HAND_CURSOR).toContain(`) ${topmostHandPixel.x} ${topmostHandPixel.y}, grab`);
     expect(svg).toContain('shape-rendering="crispEdges"');
+    expect(svg).toContain('fill="#fff"');
+    expect(svg.indexOf('fill="#fff"')).toBeLessThan(svg.indexOf("<rect "));
     const cursorPixels = [...svg.matchAll(/<rect x="(\d+)" y="(\d+)" width="1" height="1" fill="(#[0-9a-f]{3})"\/>/g)]
       .map((match) => `${match[1]},${match[2]}`);
     expect(cursorPixels.every((pixel) => !stem.has(pixel))).toBe(true);
@@ -637,7 +639,9 @@ describe("picture box move keeps the picture inside the box", () => {
     );
     const node = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
     const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+    expect(node.style.cursor).toMatch(/, grab$/);
     fireEvent.pointerDown(node, { clientX: 120, clientY: 140, pointerId: 1, button: 0 });
+    expect(node.style.cursor).toMatch(/, grabbing$/);
     fireEvent.pointerMove(layer, { clientX: 200, clientY: 210, pointerId: 1, buttons: 1 });
     expect(onFramesChange).toHaveBeenCalled();
     const panned = onFramesChange.mock.calls.at(-1)![0][0] as StudioFrame;
@@ -650,6 +654,7 @@ describe("picture box move keeps the picture inside the box", () => {
     expect(panned.imageWMm).toBeCloseTo(frame.imageWMm!);
     expect(panned.imageHMm).toBeCloseTo(frame.imageHMm!);
     fireEvent.pointerUp(layer, { clientX: 200, clientY: 210, pointerId: 1, button: 0 });
+    expect(node.style.cursor).toMatch(/, grab$/);
     fireEvent.doubleClick(layer);
     expect(onOpen).not.toHaveBeenCalled();
 
@@ -660,7 +665,9 @@ describe("picture box move keeps the picture inside the box", () => {
     );
     const lockedNode = locked.container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
     const lockedLayer = locked.container.querySelector("[data-studio-objects]") as HTMLElement;
+    expect(lockedNode.style.cursor).toMatch(/, grab$/);
     fireEvent.pointerDown(lockedNode, { clientX: 120, clientY: 140, pointerId: 2, button: 0 });
+    expect(lockedNode.style.cursor).toMatch(/, grab$/);
     fireEvent.pointerMove(lockedLayer, { clientX: 200, clientY: 210, pointerId: 2, buttons: 1 });
     expect(onFramesChange).not.toHaveBeenCalled();
   });

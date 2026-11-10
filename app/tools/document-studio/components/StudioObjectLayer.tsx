@@ -104,10 +104,100 @@ const textHandPixels = textGlyph.flatMap((row, y) =>
     ? [{ x, y, color: pixel === "#" ? "#000" : "#fff" }]
     : []),
 );
-const textHandCursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" shape-rendering="crispEdges">${textHandPixels.map(({ x, y, color }) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`).join("")}</svg>`;
+
+const HAND_CURSOR_W = 27;
+const handKey = (x: number, y: number) => y * HAND_CURSOR_W + x;
+
+/** White silhouette of the toolbox hand, plus the black pixels that close its outline. */
+function pictureHandShapes(outline: ReadonlyArray<{ x: number; y: number }>): { fill: string; border: string } {
+  const outlineSet = new Set(outline.map(({ x, y }) => handKey(x, y)));
+  const points = [...outline].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (o: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower: Array<{ x: number; y: number }> = [];
+  for (const point of points) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) lower.pop();
+    lower.push(point);
+  }
+  const upper: Array<{ x: number; y: number }> = [];
+  for (const point of [...points].reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) upper.pop();
+    upper.push(point);
+  }
+  const hull = lower.slice(0, -1).concat(upper.slice(0, -1));
+  const insideHull = (x: number, y: number) => {
+    const px = x + 0.5;
+    const py = y + 0.5;
+    let inside = false;
+    for (let i = 0, j = hull.length - 1; i < hull.length; j = i++) {
+      const xi = hull[i].x;
+      const yi = hull[i].y;
+      const xj = hull[j].x;
+      const yj = hull[j].y;
+      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  };
+  const sides = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+  const exposure = (x: number, y: number, fill: Set<number>) => {
+    let outside = 0;
+    let onOutline = 0;
+    for (const [dx, dy] of sides) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= HAND_CURSOR_W || ny >= textGlyph.length) {
+        outside += 1;
+        continue;
+      }
+      const key = handKey(nx, ny);
+      if (outlineSet.has(key)) onOutline += 1;
+      else if (!fill.has(key)) outside += 1;
+    }
+    return { outside, onOutline };
+  };
+  const base = [];
+  for (let y = 0; y < textGlyph.length; y += 1) {
+    for (let x = 0; x < HAND_CURSOR_W; x += 1) {
+      const key = handKey(x, y);
+      // Keep the fingertip pixel (15, 4) as the topmost hand pixel and the hotspot.
+      if (outlineSet.has(key) || iBeamPixels.has(`${x},${y}`) || (y === 4 && x < 15) || !insideHull(x, y)) continue;
+      base.push({ x, y });
+    }
+  }
+  const baseSet = new Set(base.map(({ x, y }) => handKey(x, y)));
+  const kept = base.filter(({ x, y }) => {
+    const { outside, onOutline } = exposure(x, y, baseSet);
+    return !(outside > 0 && onOutline === 0);
+  });
+  const keptSet = new Set(kept.map(({ x, y }) => handKey(x, y)));
+  // White nubs on the thumb (x <= 10) that are open on two sides sit outside the silhouette.
+  const interior = kept.filter(({ x, y }) => x > 10 || exposure(x, y, keptSet).outside < 2);
+  const mask = new Set(interior.map(({ x, y }) => handKey(x, y)));
+  for (const key of outlineSet) mask.add(key);
+  const border: Array<{ x: number; y: number }> = [];
+  for (const key of mask) {
+    const x = key % HAND_CURSOR_W;
+    const y = (key - x) / HAND_CURSOR_W;
+    for (const [dx, dy] of sides) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const next = handKey(nx, ny);
+      if (nx < 0 || ny < 0 || nx >= HAND_CURSOR_W || ny >= textGlyph.length || mask.has(next) || iBeamPixels.has(`${nx},${ny}`)) continue;
+      if (ny < 4 || (ny === 4 && nx < 15)) continue;
+      if (!border.some((pixel) => pixel.x === nx && pixel.y === ny)) border.push({ x: nx, y: ny });
+    }
+  }
+  const path = (pixels: ReadonlyArray<{ x: number; y: number }>) => pixels.map(({ x, y }) => `M${x} ${y}h1v1h-1z`).join("");
+  return { fill: path(interior), border: path(border) };
+}
+
+const pictureHandPaths = pictureHandShapes(textHandPixels);
+const textHandCursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" shape-rendering="crispEdges"><path fill="#000" d="${pictureHandPaths.border}"/><path fill="#fff" d="${pictureHandPaths.fill}"/>${textHandPixels.map(({ x, y, color }) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`).join("")}</svg>`;
+const pictureHandCursorUrl = `url("data:image/svg+xml,${encodeURIComponent(textHandCursorSvg)}") 15 4`;
 
 // Hotspot is the uppermost pixel of the raised fingertip in the toolbox glyph.
-export const PICTURE_HAND_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(textHandCursorSvg)}") 15 4, auto`;
+export const PICTURE_HAND_CURSOR = `${pictureHandCursorUrl}, grab`;
+const PICTURE_HAND_CURSOR_DRAGGING = `${pictureHandCursorUrl}, grabbing`;
 
 const DRAW_TOOLS = new Set<StudioToolId>([
   "textbox",
@@ -268,6 +358,7 @@ export function StudioObjectLayer({
   // Hand (content) tool, as in InPage.
   const pictureSelectionRef = useRef<string | null>(null);
   const pictureDraggedRef = useRef(false);
+  const [panningFrameId, setPanningFrameId] = useState<string | null>(null);
   // Frame pressed by the last Arrow pointerdown, and whether it was dragged.
   // Under pointer capture the browser targets click/dblclick at the layer, so
   // the layer opens the chooser from this record instead of frame handlers.
@@ -300,6 +391,7 @@ export function StudioObjectLayer({
   // the Arrow and Hand tools keeps a targeted picture box, so Insert > Picture
   // and Import Picture still fill it.
   useEffect(() => {
+    setPanningFrameId(null);
     const pictureIds = new Set(framesRef.current.filter((frame) => isPictureBox(frame.kind)).map((frame) => frame.id));
     const fresh = pictureSelectionRef.current;
     pictureSelectionRef.current = null;
@@ -334,6 +426,7 @@ export function StudioObjectLayer({
         setSelected([]);
         setDraft(null);
         dragRef.current = null;
+        setPanningFrameId(null);
         endGestureRef.current();
       }
     };
@@ -657,6 +750,7 @@ export function StudioObjectLayer({
       }}
       onPointerCancel={(event) => {
         dragRef.current = null;
+        setPanningFrameId(null);
         setDraft(null);
         endGesture();
         releaseCapturedPointer(event.currentTarget, event.pointerId);
@@ -665,6 +759,7 @@ export function StudioObjectLayer({
       onPointerUp={(event) => {
         const drag = dragRef.current;
         dragRef.current = null;
+        setPanningFrameId(null);
         if (drag?.mode === "draw") {
           const point = localPoint(event);
           let w = point.x - drag.x;
@@ -727,7 +822,7 @@ export function StudioObjectLayer({
               transformOrigin: "50% 50%",
               overflow: frame.borderPosition === "outside" || frame.angle1Deg !== undefined && Math.abs(frame.angle1Deg) > 1e-9 ? "visible" : undefined,
               pointerEvents: tool === "text" && frame.kind !== "text" && !isPictureBox(frame.kind) ? "none" : "auto",
-              cursor: handTarget ? PICTURE_HAND_CURSOR : tool === "text" ? "text" : drawing ? "crosshair" : tool === "select" ? "move" : "default",
+              cursor: handTarget ? (panningFrameId === frame.id ? PICTURE_HAND_CURSOR_DRAGGING : PICTURE_HAND_CURSOR) : tool === "text" ? "text" : drawing ? "crosshair" : tool === "select" ? "move" : "default",
             }}
             onPointerDown={(event) => {
               onObjectPointerRef.current?.();
@@ -743,6 +838,7 @@ export function StudioObjectLayer({
                   const point = localPoint(event);
                   lastPressRef.current = { id: frame.id, moved: false };
                   beginGesture();
+                  setPanningFrameId(frame.id);
                   dragRef.current = {
                     mode: "pan",
                     id: frame.id,
