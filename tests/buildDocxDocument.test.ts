@@ -773,10 +773,15 @@ describe("createDocxDocument — v1.3: enhanced blockquote (italic + size)", () 
 
 describe("createDocxDocument — v1.3: header and footer", () => {
   test("header shows the document's first H1 text", async () => {
+    const settings = {
+      ...defaultDocumentSettings(),
+      headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "auto-title" as const },
+    };
     const buffer = await Packer.toBuffer(
       createDocxDocument(
         docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "My Research Paper" }] }]),
-        "ltr"
+        "ltr",
+        settings
       )
     );
     const zip = await JSZip.loadAsync(buffer);
@@ -786,18 +791,34 @@ describe("createDocxDocument — v1.3: header and footer", () => {
     expect(headerXml).toContain("My Research Paper");
   });
 
-  test("header falls back to 'Qalam Works' when there is no H1", async () => {
+  test("auto-title without an H1 yields no header text", async () => {
+    const settings = {
+      ...defaultDocumentSettings(),
+      headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "auto-title" as const },
+    };
     const buffer = await Packer.toBuffer(
-      createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "just text" }] }]), "ltr")
+      createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "just text" }] }]), "ltr", settings)
     );
     const zip = await JSZip.loadAsync(buffer);
     const headerFile = Object.keys(zip.files).find((f) => /word\/header\d+\.xml$/.test(f));
-    const headerXml = await zip.file(headerFile!)!.async("text");
-    expect(headerXml).toContain("Qalam Works");
+    expect(headerFile).toBeUndefined();
+    const coreXml = await zip.file("docProps/core.xml")!.async("text");
+    expect(coreXml).toContain("<dc:title>Qalam Works</dc:title>");
+  });
+
+  test("default settings add neither a header nor a footer", async () => {
+    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr"));
+    const zip = await JSZip.loadAsync(buffer);
+    expect(Object.keys(zip.files).some((f) => /word\/header\d+\.xml$/.test(f))).toBe(false);
+    expect(Object.keys(zip.files).some((f) => /word\/footer\d+\.xml$/.test(f))).toBe(false);
   });
 
   test("footer contains a real PAGE field", async () => {
-    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr"));
+    const settings = {
+      ...defaultDocumentSettings(),
+      headerFooter: { ...defaultDocumentSettings().headerFooter, footerEnabled: true, pageNumbers: "current-total" as const },
+    };
+    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr", settings));
     const zip = await JSZip.loadAsync(buffer);
     const footerFile = Object.keys(zip.files).find((f) => /word\/footer\d+\.xml$/.test(f));
     expect(footerFile).toBeDefined();
@@ -806,7 +827,11 @@ describe("createDocxDocument — v1.3: header and footer", () => {
   });
 
   test("footer contains a real NUMPAGES (total pages) field", async () => {
-    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr"));
+    const settings = {
+      ...defaultDocumentSettings(),
+      headerFooter: { ...defaultDocumentSettings().headerFooter, footerEnabled: true, pageNumbers: "current-total" as const },
+    };
+    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr", settings));
     const zip = await JSZip.loadAsync(buffer);
     const footerFile = Object.keys(zip.files).find((f) => /word\/footer\d+\.xml$/.test(f));
     const footerXml = await zip.file(footerFile!)!.async("text");
@@ -814,12 +839,20 @@ describe("createDocxDocument — v1.3: header and footer", () => {
   });
 
   // Regression (2026-08-11): the DOCX header paragraph must NOT inherit
-  // RTL/bidi formatting when the title text is pure Latin ("Qalam Works").
+  // RTL/bidi formatting when the header text is pure Latin.
   // Previously, bidirectional was always set to `dir === "rtl"`, causing
   // Word to render the header with strange character spacing on RTL docs.
-  test("pure-Latin fallback header ('Qalam Works') is never bidirectional even in an RTL document", async () => {
+  test("pure-Latin header is never bidirectional even in an RTL document", async () => {
+    const settings = {
+      ...defaultDocumentSettings(),
+      headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "auto-title" as const },
+    };
     const buffer = await Packer.toBuffer(
-      createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "اردو متن" }] }]), "rtl")
+      createDocxDocument(
+        docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Annual Report" }] }]),
+        "rtl",
+        settings
+      )
     );
     const zip = await JSZip.loadAsync(buffer);
     const headerFile = Object.keys(zip.files).find((f) => /word\/header\d+\.xml$/.test(f));
@@ -833,10 +866,15 @@ describe("createDocxDocument — v1.3: header and footer", () => {
   });
 
   test("RTL document with an Urdu H1 header IS bidirectional", async () => {
+    const settings = {
+      ...defaultDocumentSettings(),
+      headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "auto-title" as const },
+    };
     const buffer = await Packer.toBuffer(
       createDocxDocument(
         docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "اردو تحقیق" }] }]),
-        "rtl"
+        "rtl",
+        settings
       )
     );
     const zip = await JSZip.loadAsync(buffer);

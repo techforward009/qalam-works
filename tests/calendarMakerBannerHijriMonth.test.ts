@@ -99,9 +99,11 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
       bannerSideText: "City Campus",
     });
     expect(html).not.toMatch(/class="brand-name">Qalam Works/);
+    const body = html.slice(html.indexOf("<body>"), html.indexOf("</body>"));
+    expect(body).not.toContain("Qalam Works");
     expect(html).toContain("School Calendar 2027");
     expect(html).toContain("City Campus");
-    expect(html).toContain("qalamworks.com");
+    expect(html).not.toContain("qalamworks.com");
     expect(html).not.toMatch(/<footer class="footer">[\s\S]*Gregorian \+ Hijri/);
   });
 

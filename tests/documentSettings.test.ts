@@ -33,6 +33,51 @@ describe("documentSettings", () => {
     expect(s.version).toBe(1);
     expect(s.page.size).toBe("a4");
     expect(s.typography.bodyFontSizePt).toBe(12);
+    expect(s.headerFooter).toEqual({
+      headerEnabled: false,
+      headerMode: "auto-title",
+      headerText: "",
+      footerEnabled: false,
+      footerText: "",
+      pageNumbers: "none",
+    });
+  });
+
+  test("an untouched legacy header/footer tuple is turned off", () => {
+    const off = defaultDocumentSettings().headerFooter;
+    const legacy = {
+      headerEnabled: true,
+      headerMode: "auto-title",
+      headerText: "",
+      footerEnabled: true,
+      footerText: "",
+      pageNumbers: "current-total",
+    };
+    expect(parseDocumentSettings({ headerFooter: legacy }).headerFooter).toEqual(off);
+    expect(parseDocumentSettings({ headerFooter: {} }).headerFooter).toEqual(off);
+    expect(parseDocumentSettings({ headerFooter: { headerEnabled: true } }).headerFooter).toEqual(off);
+    expect(parseDocumentSettings({}).headerFooter).toEqual(off);
+  });
+
+  test("a custom header, footer, or page-number choice is preserved", () => {
+    const custom = {
+      headerEnabled: true,
+      headerMode: "custom" as const,
+      headerText: "My Header",
+      footerEnabled: true,
+      footerText: "Confidential",
+      pageNumbers: "current" as const,
+    };
+    expect(parseDocumentSettings({ headerFooter: custom }).headerFooter).toEqual(custom);
+    const headerOffOnly = {
+      headerEnabled: false,
+      headerMode: "auto-title" as const,
+      headerText: "",
+      footerEnabled: true,
+      footerText: "",
+      pageNumbers: "current-total" as const,
+    };
+    expect(parseDocumentSettings({ headerFooter: headerOffOnly }).headerFooter).toEqual(headerOffOnly);
   });
 
   test("parse recovers from corrupt input", () => {

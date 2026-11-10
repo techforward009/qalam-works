@@ -91,12 +91,12 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
       defaultLtrFontId: "inter",
     },
     headerFooter: {
-      headerEnabled: true,
+      headerEnabled: false,
       headerMode: "auto-title",
       headerText: "",
-      footerEnabled: true,
+      footerEnabled: false,
       footerText: "",
-      pageNumbers: "current-total",
+      pageNumbers: "none",
     },
   };
 }
@@ -225,6 +225,19 @@ function sanitizeFontId(raw: unknown, fallback: FontId): FontId {
     : fallback;
 }
 
+function isBlankHeaderFooterText(value: unknown): boolean {
+  return value === undefined || value === "";
+}
+
+/** True when stored header/footer is still the pre-change factory tuple. */
+function isLegacyUntouchedHeaderFooter(hf: Record<string, unknown>): boolean {
+  const headerOn = hf.headerEnabled === true || hf.headerEnabled === undefined;
+  const footerOn = hf.footerEnabled === true || hf.footerEnabled === undefined;
+  const autoTitle = hf.headerMode === "auto-title" || hf.headerMode === undefined;
+  const currentTotal = hf.pageNumbers === "current-total" || hf.pageNumbers === undefined;
+  return headerOn && footerOn && autoTitle && currentTotal && isBlankHeaderFooterText(hf.headerText) && isBlankHeaderFooterText(hf.footerText);
+}
+
 /** Validate and coerce unknown input into safe settings. */
 export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
   const defaults = defaultDocumentSettings();
@@ -277,12 +290,18 @@ export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
     o.headerFooter && typeof o.headerFooter === "object"
       ? (o.headerFooter as Record<string, unknown>)
       : {};
+  // The previous untouched header/footer (auto-title, empty texts, both
+  // regions on, current/total page numbers — missing fields included, because
+  // those used to mean the same thing) is mapped to the new off defaults.
+  // Any other combination is kept: custom header mode or text, footer text,
+  // a different page-number mode, or an explicit toggle that is not that tuple.
+  const legacyUntouchedHeaderFooter = isLegacyUntouchedHeaderFooter(hfIn);
   const pageNumbers: PageNumberMode =
     hfIn.pageNumbers === "none" ||
     hfIn.pageNumbers === "current" ||
     hfIn.pageNumbers === "current-total"
       ? hfIn.pageNumbers
-      : defaults.headerFooter.pageNumbers;
+      : "current-total";
 
   return {
     version: 1,
@@ -323,14 +342,16 @@ export function parseDocumentSettings(raw: unknown): DocumentStudioSettings {
         defaults.typography.defaultLtrFontId
       ),
     },
-    headerFooter: {
-      headerEnabled: hfIn.headerEnabled !== false,
-      headerMode: hfIn.headerMode === "custom" ? "custom" : "auto-title",
-      headerText: typeof hfIn.headerText === "string" ? hfIn.headerText.slice(0, 200) : "",
-      footerEnabled: hfIn.footerEnabled !== false,
-      footerText: typeof hfIn.footerText === "string" ? hfIn.footerText.slice(0, 200) : "",
-      pageNumbers,
-    },
+    headerFooter: legacyUntouchedHeaderFooter
+      ? defaults.headerFooter
+      : {
+          headerEnabled: hfIn.headerEnabled !== false,
+          headerMode: hfIn.headerMode === "custom" ? "custom" : "auto-title",
+          headerText: typeof hfIn.headerText === "string" ? hfIn.headerText.slice(0, 200) : "",
+          footerEnabled: hfIn.footerEnabled !== false,
+          footerText: typeof hfIn.footerText === "string" ? hfIn.footerText.slice(0, 200) : "",
+          pageNumbers,
+        },
   };
 }
 

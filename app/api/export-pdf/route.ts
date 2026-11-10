@@ -1,6 +1,6 @@
 import { validatePrintFrames, frameTextNode } from "../../tools/document-studio/utils/printableFrames";
 import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
-import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../../tools/document-studio/utils/pdfHeaderFooter";
+import { buildPdfHeaderTemplate, buildPdfFooterTemplate, shouldDisplayPdfHeaderFooter } from "../../tools/document-studio/utils/pdfHeaderFooter";
 import { fontsForDocument } from "../../tools/document-studio/utils/pdfDocumentFonts";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
         left: frames.length || digitalInkBleed ? "0mm" : `${physical.leftMm}mm`,
         right: frames.length || digitalInkBleed ? "0mm" : `${physical.rightMm}mm`,
       },
-      displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
+      displayHeaderFooter: shouldDisplayPdfHeaderFooter(settings, doc),
       headerTemplate: buildPdfHeaderTemplate(settings, doc, templateCss),
       footerTemplate: buildPdfFooterTemplate(settings, templateCss),
     });

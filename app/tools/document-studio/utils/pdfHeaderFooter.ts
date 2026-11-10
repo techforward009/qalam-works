@@ -1,5 +1,5 @@
 import type { DocNode } from "./extractPlainText";
-import { deriveDocumentTitle } from "./extractPlainText";
+import { deriveDocumentHeading } from "./extractPlainText";
 import type { DocumentStudioSettings } from "./documentSettings";
 
 function escapeHtml(s: string): string {
@@ -21,12 +21,24 @@ function safeDir(text: string): string {
 
 const HF_STYLE = "font-family:Arial,Tahoma,sans-serif;font-size:9px;color:#444;width:100%;padding:0 10mm;box-sizing:border-box;";
 
+export function pdfHeaderText(settings: DocumentStudioSettings, doc: DocNode): string {
+  if (!settings.headerFooter.headerEnabled) return "";
+  const { headerMode, headerText } = settings.headerFooter;
+  if (headerMode === "custom" && headerText) return headerText;
+  return deriveDocumentHeading(doc);
+}
+
+/** Puppeteer draws a header/footer band only when there is visible content. */
+export function shouldDisplayPdfHeaderFooter(settings: DocumentStudioSettings, doc: DocNode): boolean {
+  if (pdfHeaderText(settings, doc)) return true;
+  if (!settings.headerFooter.footerEnabled) return false;
+  const { footerText, pageNumbers } = settings.headerFooter;
+  return footerText.trim().length > 0 || pageNumbers !== "none";
+}
+
 export function buildPdfHeaderTemplate(settings: DocumentStudioSettings, doc: DocNode, fontCss = ""): string {
-  if (!settings.headerFooter.headerEnabled) return "<div></div>";
-  const text =
-    settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
-      ? settings.headerFooter.headerText
-      : deriveDocumentTitle(doc);
+  const text = pdfHeaderText(settings, doc);
+  if (!text) return "<div></div>";
   const d = safeDir(text);
   return `${templateFontStyle(fontCss)}<div dir="${d}" style="${templateStyle(fontCss)}text-align:center;">${escapeHtml(text)}</div>`;
 }

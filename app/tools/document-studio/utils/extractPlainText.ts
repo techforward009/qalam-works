@@ -213,3 +213,20 @@ export function deriveDocumentTitle(doc: DocNode): string {
   }
   return "Qalam Works";
 }
+
+/**
+ * First H1 plain text for a visible page header. Empty when there is no H1.
+ * Does not substitute a brand name; metadata title still uses deriveDocumentTitle.
+ */
+export function deriveDocumentHeading(doc: DocNode): string {
+  for (const node of doc.content ?? []) {
+    if (node.type === "heading" && node.attrs?.level === 1) {
+      const text = (node.content ?? [])
+        .filter((n) => n.type === "text" && typeof n.text === "string")
+        .map((n) => n.text as string)
+        .join("");
+      if (text.trim().length > 0) return text;
+    }
+  }
+  return "";
+}

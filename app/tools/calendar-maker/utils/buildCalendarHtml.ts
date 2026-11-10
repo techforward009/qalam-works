@@ -462,7 +462,7 @@ body{
   min-height:3.1mm;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
   gap:2mm;
   padding:.4mm 1.4mm;
   border-top:.4px solid var(--calendar-frame);
@@ -485,7 +485,7 @@ body{
   </header>
   ${researchNoteHtml}
   <div class="year-grid">${monthsHtml}</div>
-  <footer class="footer"><span>qalamworks.com</span>${evidenceFootnote ? `<span class="research-note-footer" data-hijri-source-note="true">${escapeHtml(evidenceFootnote)}</span>` : ""}${researchNoteFooterHtml}</footer>
+  <footer class="footer">${evidenceFootnote ? `<span class="research-note-footer" data-hijri-source-note="true">${escapeHtml(evidenceFootnote)}</span>` : ""}${researchNoteFooterHtml}</footer>
 </main>
 </body>
 </html>`;

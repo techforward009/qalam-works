@@ -1,5 +1,5 @@
 // Batch 16C — pure template unit tests (no Chromium required)
-import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../app/tools/document-studio/utils/pdfHeaderFooter";
+import { buildPdfHeaderTemplate, buildPdfFooterTemplate, shouldDisplayPdfHeaderFooter } from "../app/tools/document-studio/utils/pdfHeaderFooter";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
@@ -25,9 +25,17 @@ describe("buildPdfHeaderTemplate", () => {
     expect(html).not.toContain("<script");
   });
 
-  test("auto-title: falls back to Qalam Works when no H1", () => {
+  test("auto-title without an H1 yields no header text", () => {
     const html = buildPdfHeaderTemplate(s({ headerEnabled: true, headerMode: "auto-title" }), emptyDoc);
-    expect(html).toContain("Qalam Works");
+    expect(html).toBe("<div></div>");
+    expect(html).not.toContain("Qalam Works");
+  });
+
+  test("empty header and footer do not enable the PDF header/footer band", () => {
+    const settings = s({ headerEnabled: true, headerMode: "auto-title", footerEnabled: true, footerText: "", pageNumbers: "none" });
+    expect(shouldDisplayPdfHeaderFooter(settings, emptyDoc)).toBe(false);
+    expect(shouldDisplayPdfHeaderFooter(s({ headerEnabled: true, headerMode: "auto-title" }), docWithH1)).toBe(true);
+    expect(shouldDisplayPdfHeaderFooter(s({ footerEnabled: true, footerText: "", pageNumbers: "current" }), emptyDoc)).toBe(true);
   });
 
   test("custom header: renders escaped custom text", () => {

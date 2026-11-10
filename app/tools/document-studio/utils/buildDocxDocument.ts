@@ -44,7 +44,7 @@ import {
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
-import { deriveDocumentTitle } from "./extractPlainText";
+import { deriveDocumentHeading, deriveDocumentTitle } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { hexToDocxColor } from "./studioColors";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
@@ -802,6 +802,12 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
   });
 
   const title = deriveDocumentTitle(doc);
+  // Metadata title may still use the brand fallback. The visible header does not.
+  const headerText = !settings.headerFooter.headerEnabled
+    ? ""
+    : settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
+      ? settings.headerFooter.headerText
+      : deriveDocumentHeading(doc);
 
   return new Document({
     // v1.3 Phase — Professional Polish: document metadata. Subject and
@@ -849,30 +855,17 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
             };
           })(),
         },
-        headers: settings.headerFooter.headerEnabled
+        headers: headerText
           ? {
               default: new Header({
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    bidirectional: !isPureLatinText(
-                      settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
-                        ? settings.headerFooter.headerText
-                        : title
-                    ) && dir === "rtl",
+                    bidirectional: !isPureLatinText(headerText) && dir === "rtl",
                     children: [
                       new TextRun({
-                        text:
-                          settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
-                            ? settings.headerFooter.headerText
-                            : title,
-                        font: resolveHFFont(
-                          settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
-                            ? settings.headerFooter.headerText
-                            : title,
-                          dir,
-                          settings.typography
-                        ),
+                        text: headerText,
+                        font: resolveHFFont(headerText, dir, settings.typography),
                         size: 18,
                       }),
                     ],

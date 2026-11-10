@@ -156,7 +156,7 @@ export default function CalendarMakerContent() {
   const [weekStart, setWeekStart] = useState<WeekStart>("monday");
   const [hijriOffsets, setHijriOffsets] = useState<number[]>(() => Array(12).fill(0));
   const [researchNote, setResearchNote] = useState("");
-  const [bannerName, setBannerName] = useState("Qalam Works");
+  const [bannerName, setBannerName] = useState("");
   const [bannerTitle, setBannerTitle] = useState("");
   const [bannerSideText, setBannerSideText] = useState("");
   const [bannerLogo, setBannerLogo] = useState("");
