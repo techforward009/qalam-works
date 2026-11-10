@@ -56,6 +56,25 @@ export function resolveKey(layout: KeyboardLayout, e: ResolveKeyEvent): string |
   return mappedChar;
 }
 
+/** Maps text produced by virtual/IME input using US-QWERTY physical-key positions. */
+export function mapLatinText(layout: KeyboardLayout, text: string): string {
+  const reverse = new Map<string, { code: string; state: KeyState }>();
+  const qwerty: Array<[string, string, string]> = [
+    ...[..."abcdefghijklmnopqrstuvwxyz"].map((c) => [c, `Key${c.toUpperCase()}`, c.toUpperCase()] as [string,string,string]),
+    ...[..."0123456789"].map((c) => [c, `Digit${c}`, ")!@#$%^&*("[Number(c)]] as [string,string,string]),
+    [" ", "Space", " "], ["-", "Minus", "_"], ["=", "Equal", "+"], ["[", "BracketLeft", "{"], ["]", "BracketRight", "}"],
+    ["\\", "Backslash", "|"], [";", "Semicolon", ":"], ["'", "Quote", '"'], [",", "Comma", "<"], [".", "Period", ">"], ["/", "Slash", "?"], ["`", "Backquote", "~"],
+  ];
+  for (const [normal, code, shifted] of qwerty) for (const [char, state] of [[normal,"normal"],[shifted,"shift"]] as const) {
+    const mapped = layout[code]?.[state];
+    if (mapped !== undefined && !reverse.has(char)) reverse.set(char, { code, state });
+  }
+  return [...text].map((char) => {
+    const key = reverse.get(char);
+    return key ? (layout[key.code]?.[key.state] ?? char) : char;
+  }).join("");
+}
+
 const VALID_CODES = new Set([
   "Backquote", "Minus", "Equal", "BracketLeft", "BracketRight", "Backslash",
   "Semicolon", "Quote", "Comma", "Period", "Slash", "IntlBackslash", "Space",

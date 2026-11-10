@@ -22,6 +22,7 @@ import { TABLE_CELL_VERTICAL_ALIGNMENT } from "../utils/tableCellVerticalAlignme
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
+import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
   DOCUMENT_ZOOM_PRESETS,
@@ -85,6 +86,7 @@ export default function DocumentCanvas({
   onDoubleClickFrame,
   tool: toolProp,
   englishFont = "Arial Unicode MS",
+  keyboardLayout = null,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -115,6 +117,7 @@ export default function DocumentCanvas({
   onDoubleClickFrame?: (frame: StudioFrame) => void;
   tool?: StudioToolId;
   englishFont?: string;
+  keyboardLayout?: KeyboardLayout | null;
 }) {
   const isPages = viewMode !== "pageless";
   const facing=viewMode === "facing";
@@ -629,7 +632,7 @@ export default function DocumentCanvas({
                         />
                         {isPages ? (
                           <StudioObjectLayer zoom={zoomFactor} projection={projection}
-                            editor={editor}
+                            editor={editor} keyboardLayout={keyboardLayout}
                             tool={tool}
                             frames={frames}
                             typography={documentSettings.typography}

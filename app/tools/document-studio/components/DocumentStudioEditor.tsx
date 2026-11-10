@@ -2655,6 +2655,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onSelectedFramesChange={setSelectedFrameIds}
             onDoubleClickFrame={(frame) => openPictureChooser(frame.id)}
             englishFont={englishFont}
+            keyboardLayout={getKeyboardLayout()}
             tool={canvasTool}
             onToolAction={onCanvasTool}
           />}
