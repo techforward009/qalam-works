@@ -37,8 +37,14 @@ test('empty RTL caret starts at the insertion edge in Single/Facing at 50/100/20
         return Math.abs(r.right - (parseFloat(s.borderRightWidth) + parseFloat(s.paddingRight)) * scale - c.right);
       })).toBeLessThanOrEqual(1.1);
       await input.pressSequentially('ب'); await expect(input).toHaveValue('ب');
-      const typed = (await caret.boundingBox())!, field = (await input.boundingBox())!;
-      expect(typed.x).toBeGreaterThan(field.x); expect(typed.x + typed.width).toBeLessThanOrEqual(field.x + field.width);
+      const edges = await input.evaluate(el => {
+        const area = el as HTMLTextAreaElement;
+        const mark = area.parentElement!.querySelector('[data-studio-frame-caret]')!.getBoundingClientRect();
+        const box = area.getBoundingClientRect();
+        return { caretLeft: mark.left, caretRight: mark.right, fieldLeft: box.left, fieldRight: box.right };
+      });
+      expect(edges.caretLeft).toBeGreaterThan(edges.fieldLeft);
+      expect(edges.caretRight).toBeLessThanOrEqual(edges.fieldRight);
       await page.getByRole('textbox', { name: 'Size', exact: true }).focus(); await input.focus(); await input.fill('');
       await page.evaluate(async () => { await document.fonts.ready; document.fonts.dispatchEvent(new Event('loadingdone')); });
       await expect.poll(async () => input.evaluate(el => {
@@ -163,30 +169,184 @@ async function caretMetrics(input: ReturnType<typeof box>) {
   });
 }
 
-test('a multi-line box hides its scrollbar and still scrolls', async ({ page }) => {
+async function fieldBox(input: ReturnType<typeof box>) {
+  return input.evaluate(el => {
+    const field = el as HTMLTextAreaElement;
+    const style = getComputedStyle(field);
+    return {
+      scrollTop: field.scrollTop,
+      scrollHeight: field.scrollHeight,
+      clientHeight: field.clientHeight,
+      scrollbarWidth: style.scrollbarWidth,
+      overflowY: style.overflowY,
+      borderTop: style.borderTopWidth,
+      offsetHeight: field.offsetHeight,
+      value: field.value,
+    };
+  });
+}
+
+test('a multi-line box clips overflow, keeps the first line, and marks it', async ({ page }) => {
   const before = await snapshot(page);
   const input = box(page, 'multi');
+  const frame = object(page, 'multi');
   const heightBefore = await input.evaluate(el => (el as HTMLTextAreaElement).offsetHeight);
   await input.click();
   const lines = Array.from({ length: 14 }, (_, index) => `سطر ${index + 1}`).join('\n');
   await input.fill(lines);
-  await expect.poll(async () => (await caretMetrics(input)).scrollHeight).toBeGreaterThan((await caretMetrics(input)).clientHeight);
-  const fitted = await caretMetrics(input);
+  await expect.poll(async () => (await fieldBox(input)).scrollHeight).toBeGreaterThan((await fieldBox(input)).clientHeight + 2);
+  await input.press('Control+Home');
+  const firstTop = (await caretMetrics(input)).top;
+  const fitted = await fieldBox(input);
   expect(fitted.scrollbarWidth).toBe('none');
-  expect(fitted.overflowY).toBe('auto');
+  expect(fitted.overflowY).toBe('hidden');
+  expect(fitted.scrollTop).toBe(0);
   expect(fitted.borderTop).toBe('1px');
   expect(fitted.offsetHeight).toBe(heightBefore);
   expect(fitted.value).toBe(lines);
+  const mark = frame.locator('[data-studio-frame-overflow="bottom"]');
+  await expect(mark).toBeVisible();
+  const stripe = await mark.evaluate(el => {
+    const markBox = el.getBoundingClientRect();
+    const host = el.parentElement!.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return {
+      height: markBox.height,
+      width: markBox.width,
+      insetLeft: markBox.left - host.left,
+      insetRight: host.right - markBox.right,
+      insetBottom: host.bottom - markBox.bottom,
+      background: style.backgroundColor,
+      pointer: style.pointerEvents,
+    };
+  });
+  expect(stripe.height).toBeGreaterThanOrEqual(4);
+  expect(stripe.height).toBeLessThanOrEqual(6);
+  expect(stripe.width).toBeGreaterThan(stripe.height * 4);
+  expect(stripe.insetLeft).toBeLessThanOrEqual(3);
+  expect(stripe.insetRight).toBeLessThanOrEqual(3);
+  expect(stripe.insetBottom).toBeLessThanOrEqual(3);
+  expect(stripe.background).toBe('rgb(255, 0, 0)');
+  expect(stripe.pointer).toBe('none');
   await input.evaluate(el => { (el as HTMLTextAreaElement).scrollTop = 36; });
-  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(20);
-  await input.evaluate(el => { (el as HTMLTextAreaElement).scrollTop = 0; });
+  await expect.poll(async () => (await fieldBox(input)).scrollTop).toBe(0);
   await input.hover();
   await page.mouse.wheel(0, 120);
-  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(10);
+  await expect.poll(async () => (await fieldBox(input)).scrollTop).toBe(0);
   await input.press('Control+End');
-  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(20);
+  await expect.poll(async () => (await fieldBox(input)).scrollTop).toBe(0);
+  await expect(frame.locator('[data-studio-frame-caret]')).toHaveCount(0);
+  await input.press('Control+Home');
+  await expect.poll(async () => (await caretMetrics(input)).top).toBeLessThanOrEqual(firstTop + 2);
+  expect(await input.evaluate(el => (el as HTMLTextAreaElement).offsetHeight)).toBe(heightBefore);
   expect(await input.inputValue()).toBe(lines);
+  const stored = await page.evaluate(() => {
+    const id = localStorage.getItem('qalam-document-studio-active-document-v1');
+    const frames = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}')[id!] as Array<{ id: string; text: string }>;
+    return frames.find(frame => frame.id === 'multi')?.text;
+  });
+  expect(stored).toBe(lines);
   expect(await snapshot(page)).toEqual(before);
+  await page.locator('[data-studio-tool-button="select"]').click();
+  await frame.scrollIntoViewIfNeeded();
+  await frame.click();
+  const handle = frame.locator('[data-studio-frame-handle="s"]');
+  await expect(handle).toBeVisible();
+  const extra = await input.evaluate(el => (el as HTMLTextAreaElement).scrollHeight - (el as HTMLTextAreaElement).clientHeight + 20);
+  const handleBox = await handle.boundingBox();
+  if (!handleBox) throw new Error('missing south handle');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2 + extra, { steps: 8 });
+  await page.mouse.up();
+  await expect(frame.locator('[data-studio-frame-overflow]')).toHaveCount(0);
+  await page.locator('[data-studio-tool-button="text"]').click();
+  await input.click();
+  await input.press('Control+End');
+  await expect.poll(async () => (await fieldBox(input)).scrollTop).toBe(0);
+  await expect(frame.locator('[data-studio-frame-caret]')).toBeVisible();
+  const revealed = await caretMetrics(input);
+  expect(revealed.top).toBeGreaterThan(firstTop + 16);
+  expect(revealed.top).toBeLessThan(revealed.offsetHeight);
+  expect(revealed.value).toBe(lines);
+});
+
+test('a single-line RTL box clips on the left and marks that edge', async ({ page }) => {
+  await page.addInitScript(() => {
+    const id = localStorage.getItem('qalam-document-studio-active-document-v1');
+    if (!id) return;
+    const key = 'qalam-studio-frames-v1';
+    const map = JSON.parse(localStorage.getItem(key) || '{}') as Record<string, Array<Record<string, unknown>>>;
+    const frames = map[id] ?? [];
+    if (frames.some(frame => frame.id === 'title')) return;
+    const sample = frames[0] ?? {};
+    map[id] = [...frames, { ...sample, id: 'title', yMm: 160, wMm: 65, hMm: 10, text: 'عنوان', singleLine: true }];
+    localStorage.setItem(key, JSON.stringify(map));
+  });
+  await page.reload();
+  const input = object(page, 'title').locator('input[data-studio-text-frame]');
+  const frame = object(page, 'title');
+  await expect(input).toBeVisible();
+  const text = `شروع${' عبارت'.repeat(24)}`;
+  await input.click();
+  await input.fill(text);
+  await expect.poll(async () => input.evaluate(el => (el as HTMLInputElement).scrollWidth > (el as HTMLInputElement).clientWidth + 2)).toBe(true);
+  const mark = frame.locator('[data-studio-frame-overflow="start"]');
+  await expect(mark).toBeVisible();
+  const stripe = await mark.evaluate(el => {
+    const markBox = el.getBoundingClientRect();
+    const host = el.parentElement!.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return {
+      height: markBox.height,
+      width: markBox.width,
+      insetLeft: markBox.left - host.left,
+      insetBottom: host.bottom - markBox.bottom,
+      hostWidth: host.width,
+      background: style.backgroundColor,
+      pointer: style.pointerEvents,
+    };
+  });
+  expect(stripe.height).toBeGreaterThanOrEqual(4);
+  expect(stripe.height).toBeLessThanOrEqual(6);
+  expect(stripe.width).toBeGreaterThan(stripe.height);
+  expect(stripe.width).toBeLessThan(stripe.hostWidth * 0.75);
+  expect(stripe.insetLeft).toBeLessThanOrEqual(3);
+  expect(stripe.insetBottom).toBeLessThanOrEqual(stripe.height + 4);
+  expect(stripe.background).toBe('rgb(255, 0, 0)');
+  expect(stripe.pointer).toBe('none');
+  const scrollLeft = () => input.evaluate(el => (el as HTMLInputElement).scrollLeft);
+  await input.evaluate(el => { (el as HTMLInputElement).scrollLeft = -80; });
+  await expect.poll(scrollLeft).toBe(0);
+  await input.hover();
+  await page.mouse.wheel(0, 80);
+  await input.press('End');
+  await input.press('Control+End');
+  await expect.poll(scrollLeft).toBe(0);
+  await expect(frame.locator('[data-studio-frame-caret]')).toHaveCount(0);
+  expect(await input.inputValue()).toBe(text);
+  await input.press('Home');
+  await expect(frame.locator('[data-studio-frame-caret]')).toBeVisible();
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeLessThanOrEqual(4);
+  await page.locator('[data-studio-tool-button="select"]').click();
+  await frame.scrollIntoViewIfNeeded();
+  await frame.click();
+  const handle = frame.locator('[data-studio-frame-handle="e"]');
+  await expect(handle).toBeVisible();
+  const extra = await input.evaluate(el => (el as HTMLInputElement).scrollWidth - (el as HTMLInputElement).clientWidth + 24);
+  const handleBox = await handle.boundingBox();
+  if (!handleBox) throw new Error('missing east handle');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2 + extra, handleBox.y + handleBox.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(frame.locator('[data-studio-frame-overflow]')).toHaveCount(0);
+  await page.locator('[data-studio-tool-button="text"]').click();
+  await input.click();
+  await input.press('End');
+  await expect.poll(scrollLeft).toBe(0);
+  await expect(frame.locator('[data-studio-frame-caret]')).toBeVisible();
+  expect(await input.inputValue()).toBe(text);
 });
 
 test('Enter places the empty-line caret from the frame alignment', async ({ page }) => {
@@ -287,15 +447,37 @@ test('the first animation frame after Enter paints the caret on the new line', a
   await input.pressSequentially('ب');
   await expect(input).toHaveValue(`${trace[0].value}ب`);
   await input.press('Enter');
-  const second = await caretMetrics(input);
-  expect(second.value.endsWith('\n')).toBe(true);
-  expect([second.start, second.end]).toEqual([second.value.length, second.value.length]);
-  expect(second.fromRight).toBeLessThanOrEqual(4);
-  // A 25mm frame scrolls once the wrapped paragraph passes the visible bottom.
-  // The painted top is then the scrolled line, not another raw +16px content step.
   const linePitch = (trace[0].top ?? 0) - before.top;
-  const visualTop = (trace[0].top ?? 0) + linePitch - second.scrollTop;
-  expect(Math.abs(second.top - visualTop)).toBeLessThanOrEqual(4);
+  const anchoredTop = (trace[0].top ?? 0) + linePitch;
+  const placed = await input.evaluate(el => {
+    const field = el as HTMLTextAreaElement;
+    const caret = el.parentElement?.querySelector('[data-studio-frame-caret]');
+    const bounds = field.getBoundingClientRect();
+    const caretBox = caret?.getBoundingClientRect();
+    return {
+      value: field.value,
+      start: field.selectionStart,
+      end: field.selectionEnd,
+      scrollTop: field.scrollTop,
+      clientHeight: field.clientHeight,
+      top: caretBox ? caretBox.top - bounds.top : null,
+      fromRight: caretBox ? (() => {
+        const style = getComputedStyle(field);
+        const scale = bounds.width / field.offsetWidth;
+        const rightInset = (parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight)) * scale;
+        return bounds.right - rightInset - caretBox.right;
+      })() : null,
+    };
+  });
+  expect(placed.value.endsWith('\n')).toBe(true);
+  expect([placed.start, placed.end]).toEqual([placed.value.length, placed.value.length]);
+  expect(placed.scrollTop).toBe(0);
+  // The frame stays top-anchored. A caret past the clip is omitted, not parked on the bottom edge.
+  if (placed.top == null) expect(anchoredTop).toBeGreaterThan(placed.clientHeight - 8);
+  else {
+    expect(placed.fromRight!).toBeLessThanOrEqual(4);
+    expect(Math.abs(placed.top - anchoredTop)).toBeLessThanOrEqual(4);
+  }
 });
 
 test('each multiline paragraph keeps its own alignment', async ({ page }) => {

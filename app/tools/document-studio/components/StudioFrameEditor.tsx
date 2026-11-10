@@ -17,10 +17,11 @@ import { createFrameEditorExtensions } from "../utils/frameEditorExtensions";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { toolbarParagraphAlign, type ParagraphAlign } from "../utils/paragraphAlign";
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
+import { bindFrameScrollLock, caretInClippedOverflow, frameOverflowEdge, frameOverflowMarkStyle, pinFrameScroll, type FrameOverflowEdge } from "../utils/frameOverflow";
 import type { StudioFrame } from "./StudioObjectLayer";
 
 const FRAME_EDITOR_CSS = `
-[data-studio-frame-editor]{box-sizing:border-box;height:100%;min-height:100%;border:1px solid #000;padding:2px;margin:0;text-indent:0;overflow:auto;scrollbar-width:none;caret-color:transparent;outline:none;background:transparent;white-space:pre-wrap;overflow-wrap:break-word;tab-size:8;font-kerning:auto;font-variant-ligatures:normal;font-feature-settings:normal;}
+[data-studio-frame-editor]{box-sizing:border-box;height:100%;min-height:100%;max-height:100%;border:1px solid #000;padding:2px;margin:0;text-indent:0;overflow:hidden;scrollbar-width:none;caret-color:transparent;outline:none;background:transparent;white-space:pre-wrap;overflow-wrap:break-word;tab-size:8;font-kerning:auto;font-variant-ligatures:normal;font-feature-settings:normal;}
 [data-studio-frame-editor]::-webkit-scrollbar{display:none;}
 [data-studio-frame-editor] p{margin:0;padding:0;unicode-bidi:plaintext;white-space:pre-wrap;overflow-wrap:break-word;}
 `;
@@ -72,11 +73,12 @@ function placeClick(editor: Editor, point: { x: number; y: number }): boolean {
   return true;
 }
 
-/** Box-local caret. Viewport coords already include the frame's scroll; divide by the zoom scale. */
+/** Box-local caret. The frame scroll is pinned first, so coords are top-anchored. */
 function measureFrameCaret(editor: Editor, pageWidthPx: number, zoom: number) {
   if (editor.isDestroyed || !editor.isFocused || !editor.state.selection.empty) return null;
   const view = editor.view;
   const dom = view.dom as HTMLElement;
+  pinFrameScroll(dom, false);
   const shell = dom.closest<HTMLElement>("[data-studio-frame-editor-shell]");
   if (!shell) return null;
   let coords: { left: number; top: number; bottom: number };
@@ -112,18 +114,30 @@ function measureFrameCaret(editor: Editor, pageWidthPx: number, zoom: number) {
   const padTop = (parseFloat(editorStyle.paddingTop) || 0) + (parseFloat(editorStyle.borderTopWidth) || 0);
   const padBottom = (parseFloat(editorStyle.paddingBottom) || 0) + (parseFloat(editorStyle.borderBottomWidth) || 0);
   const leading = parseFloat(blockStyle.lineHeight);
+  const height = Number.isFinite(leading) ? leading : Math.max(0, (coords.bottom - coords.top) / scale);
+  const contentLeft = (editorRect.left - origin.left) / scale + padLeft;
+  const contentRight = (editorRect.right - origin.left) / scale - padRight;
+  const contentTop = (editorRect.top - origin.top) / scale + padTop;
+  const contentBottom = (editorRect.bottom - origin.top) / scale - padBottom;
+  const rawTop = (coords.top - origin.top) / scale;
+  const rawX = (point - origin.left) / scale;
+  const inkWidth = 2 / scale;
+  if (caretInClippedOverflow(
+    { left: rtl ? rawX - inkWidth : rawX, top: rawTop, width: inkWidth, height },
+    { left: contentLeft, top: contentTop, right: contentRight, bottom: contentBottom },
+  )) return null;
   return caretGeometry({
-    x: (point - origin.left) / scale,
-    top: (coords.top - origin.top) / scale,
-    height: Number.isFinite(leading) ? leading : Math.max(0, (coords.bottom - coords.top) / scale),
+    x: rawX,
+    top: rawTop,
+    height,
     scale,
     rtl,
     blockLeft: (bounds.left - origin.left) / scale,
     blockRight: (bounds.right - origin.left) / scale,
-    contentLeft: (editorRect.left - origin.left) / scale + padLeft,
-    contentRight: (editorRect.right - origin.left) / scale - padRight,
-    contentTop: (editorRect.top - origin.top) / scale + padTop,
-    contentBottom: (editorRect.bottom - origin.top) / scale - padBottom,
+    contentLeft,
+    contentRight,
+    contentTop,
+    contentBottom,
   });
 }
 
@@ -169,6 +183,8 @@ export function StudioFrameEditor({
   const clickRef = useRef(clickPoint);
   const seed = useRef({ text, textAlign, paragraphAligns, paragraphFormats });
   const [caret, setCaret] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [overflow, setOverflow] = useState<FrameOverflowEdge | null>(null);
+  const formatKey = JSON.stringify(paragraphFormats ?? null);
   const family = typography ? editorFontFamilyStack(typography.defaultRtlFontId) : "\"Jameel Noori Nastaleeq\", serif";
   const size = typography?.bodyFontSizePt ?? 12;
   const editorFamily = typography ? getFontById(typography.defaultRtlFontId).editorFamily : "Jameel Noori Nastaleeq";
@@ -229,6 +245,8 @@ export function StudioFrameEditor({
     dom.style.lineHeight = `${leading}pt`;
     dom.style.color = textColor ?? "#000";
     dom.style.direction = "rtl";
+    dom.style.overflow = "hidden";
+    dom.style.maxHeight = "100%";
     publishAlign(editor);
   }, [editor, editorFamily, family, leading, size, textColor, typography]);
 
@@ -288,8 +306,19 @@ export function StudioFrameEditor({
   useEffect(() => {
     if (!editor) return;
     let raf = 0;
+    const dom = editor.view.dom as HTMLElement;
+    const releaseScroll = bindFrameScrollLock(dom, false);
     const measure = () => {
       if (editor.isDestroyed) return;
+      pinFrameScroll(dom, false);
+      const edge = frameOverflowEdge({
+        singleLine: false,
+        scrollHeight: dom.scrollHeight,
+        clientHeight: dom.clientHeight,
+        scrollWidth: dom.scrollWidth,
+        clientWidth: dom.clientWidth,
+      });
+      setOverflow((prev) => prev === edge ? prev : edge);
       const next = measureFrameCaret(editor, pageWidthPx, zoom);
       setCaret((prev) => {
         if (!next) return prev ? null : prev;
@@ -306,25 +335,33 @@ export function StudioFrameEditor({
     editor.on("transaction", schedule);
     editor.on("focus", schedule);
     editor.on("blur", schedule);
-    const dom = editor.view.dom;
     dom.addEventListener("scroll", schedule);
     document.addEventListener("selectionchange", schedule);
+    document.fonts?.addEventListener("loadingdone", schedule);
+    const observer = new ResizeObserver(schedule);
+    observer.observe(dom);
+    const shell = dom.closest<HTMLElement>("[data-studio-frame-editor-shell]");
+    if (shell) observer.observe(shell);
     return () => {
       cancelAnimationFrame(raf);
+      releaseScroll();
+      observer.disconnect();
       editor.off("selectionUpdate", schedule);
       editor.off("transaction", schedule);
       editor.off("focus", schedule);
       editor.off("blur", schedule);
       dom.removeEventListener("scroll", schedule);
       document.removeEventListener("selectionchange", schedule);
+      document.fonts?.removeEventListener("loadingdone", schedule);
     };
-  }, [editor, leading, pageWidthPx, zoom]);
+  }, [editor, leading, pageWidthPx, zoom, size, family, formatKey]);
 
   return (
     <div data-studio-frame-editor-shell style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
       <style>{FRAME_EDITOR_CSS}</style>
-      <EditorContent editor={editor} style={{ height: "100%", minHeight: "100%" }} />
+      <EditorContent editor={editor} style={{ height: "100%", minHeight: "100%", maxHeight: "100%", overflow: "hidden" }} />
       {caret ? <div key={`${caret.left}:${caret.top}:${caret.height}`} data-studio-frame-caret style={{ position: "absolute", ...caret, background: "#000", pointerEvents: "none", animation: "qalam-studio-caret-blink 1060ms step-end infinite" }} /> : null}
+      {overflow ? <div data-studio-frame-overflow={overflow} aria-hidden style={frameOverflowMarkStyle(overflow)} /> : null}
     </div>
   );
 }

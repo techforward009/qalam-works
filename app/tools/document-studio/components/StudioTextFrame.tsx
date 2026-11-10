@@ -15,6 +15,7 @@ import type { StudioTextAlign } from "../utils/documentCommands";
 import { applyParagraphAlignment, createFrameHistory, paragraphIndexAt, toolbarParagraphAlign, type FrameAlignSnapshot, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
 import type { ParagraphFormat } from "../utils/paragraphFormats";
 import { textboxPmEnabled } from "../utils/textboxPmFlag";
+import { bindFrameScrollLock, caretInClippedOverflow, frameContentBox, frameOverflowEdge, frameOverflowMarkStyle, pinFrameScroll, type FrameOverflowEdge } from "../utils/frameOverflow";
 
 export function normalizeSingleLineText(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
@@ -79,6 +80,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   const dismissed = useRef(false);
   const [boxes,setBoxes] = useState<TextLineBox[]>([]);
   const [caret,setCaret] = useState<TextLineBox | null>(null);
+  const [overflow,setOverflow] = useState<FrameOverflowEdge | null>(null);
   const [padY,setPadY] = useState({ top: 2, bottom: 2 });
   const [fontEpoch,setFontEpoch] = useState(0);
   const [alignLabel,setAlignLabel] = useState(textAlign ?? "");
@@ -130,17 +132,33 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   }, [singleLine]);
   const measure = useCallback(() => {
     const input=ref.current, clone=mirror.current;
+    if (input) {
+      pinFrameScroll(input, singleLine);
+      const edge = frameOverflowEdge({ singleLine, scrollHeight: input.scrollHeight, clientHeight: input.clientHeight, scrollWidth: input.scrollWidth, clientWidth: input.clientWidth });
+      setOverflow(prev => prev === edge ? prev : edge);
+    }
     const target = input ? readFormattingTarget(input) : undefined;
     const focused = document.activeElement === input;
     const ownsSelection = target ? target.owner === "frame" && target.input === input : focused;
     if(!input || !clone || !ownsSelection || !editable || dismissed.current) { setCaret(null);setBoxes(prev=>prev.length?[]:prev);return; }
     const selectionStart = input.selectionStart ?? 0, selectionEnd = input.selectionEnd ?? selectionStart;
     publishAlign(input, selectionStart, selectionEnd);
-    const shift = `translate(${-input.scrollLeft}px,${-input.scrollTop}px)`;
+    // Scroll is locked to the anchor, so paint must not follow a transient viewport.
+    const commitCaret = (rawLeft: number, rawTop: number, pitch: number, scale: number, preserveLeft: boolean) => {
+      const computed = getComputedStyle(input);
+      const width = 2 / scale;
+      const visibleBox = frameContentBox(input.clientWidth, input.clientHeight, parseFloat(computed.borderTopWidth) || 0, parseFloat(computed.borderLeftWidth) || 0);
+      if (caretInClippedOverflow({ left: rawLeft, top: rawTop, width, height: pitch }, visibleBox)) { setCaret(null); return; }
+      const top = Math.max(3, rawTop);
+      const left = preserveLeft ? rawLeft : Math.max(3, Math.min(input.clientWidth - 3 - width, rawLeft));
+      const height = Math.min(pitch, input.clientHeight - top - 2);
+      if (height < 2) { setCaret(null); return; }
+      setCaret({ left, top, width, height });
+    };
     if (paragraphPaint) {
-      clone.style.transform = shift;
+      clone.style.transform = "none";
       const visibleText = visible.current?.firstElementChild;
-      if (visibleText instanceof HTMLElement) visibleText.style.transform = shift;
+      if (visibleText instanceof HTMLElement) visibleText.style.transform = "none";
       const paragraphs = [...clone.querySelectorAll<HTMLElement>("[data-studio-frame-paragraph]")];
       const value = input.value;
       const chunks = value.split("\n");
@@ -177,7 +195,8 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
         if (!focused) { setCaret(null); return; }
         let rect = range.getBoundingClientRect();
         if (!rect.height && startPoint.offset < startPoint.node.length) { range.setEnd(startPoint.node, startPoint.offset + 1); rect = range.getBoundingClientRect(); }
-        const pitch = leading * 4 / 3, top = Math.max(3, Math.min(input.clientHeight - pitch - 2, (lineBoxTop(rect.top, rect.height, pitch * scale) - origin.top) / scale));
+        const pitch = leading * 4 / 3;
+        const rawTop = (lineBoxTop(rect.top, rect.height, pitch * scale) - origin.top) / scale;
         const computed = getComputedStyle(input);
         const rightInset = parseFloat(computed.borderRightWidth) + parseFloat(computed.paddingRight);
         const emptyRight = input.offsetWidth - rightInset - 2 / scale;
@@ -186,9 +205,9 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
         const emptyCenter = input.offsetWidth / 2;
         const paragraphAlign = paragraphAligns?.[caretPlace.paragraph] ?? textAlign;
         const alignName = paragraphAlign === "justify-all" ? "justify" : paragraphAlign ?? computed.textAlign;
-        const measured = Math.max(3, Math.min(input.clientWidth - 3 - 2 / scale, (rect.left - origin.left) / scale - 3 / scale));
+        const measured = (rect.left - origin.left) / scale - 3 / scale;
         const emptyLine = emptyFrameCaretLeft(value, selectionStart, alignName, computed.direction === "ltr" ? "ltr" : "rtl", { left: emptyLeft, right: emptyRight, center: emptyCenter });
-        setCaret({ left: emptyLine ?? measured, top, width: 2 / scale, height: Math.min(pitch, input.clientHeight - top - 2) });
+        commitCaret(emptyLine ?? measured, rawTop, pitch, scale, emptyLine != null);
       } else {
         setCaret(null);
         const next = selectedLineBoxes(clone, range, bounds).map(box => ({ ...box, left: (box.left - origin.left) / scale, top: (box.top - origin.top) / scale, width: box.width / scale, height: box.height / scale }));
@@ -197,7 +216,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       return;
     }
     clone.textContent=input.value+"\u200b";
-    clone.style.transform = shift;
+    clone.style.transform = "none";
     const range=document.createRange();range.setStart(clone.firstChild!,selectionStart);range.setEnd(clone.firstChild!,selectionEnd);
     const bounds=clone.getBoundingClientRect(),scale=bounds.width/clone.offsetWidth || 1;
     if(selectionStart===selectionEnd){
@@ -205,7 +224,8 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       if (!focused) { setCaret(null); return; }
       let rect=range.getBoundingClientRect();
       if(!rect.height){range.setEnd(clone.firstChild!,selectionEnd+1);rect=range.getBoundingClientRect();}
-      const pitch=leading*4/3,top=Math.max(3,Math.min(input.clientHeight-pitch-2,(lineBoxTop(rect.top,rect.height,pitch*scale)-bounds.top)/scale));
+      const pitch=leading*4/3;
+      const rawTop=(lineBoxTop(rect.top,rect.height,pitch*scale)-bounds.top)/scale;
       const computed = getComputedStyle(input);
       const rightInset = parseFloat(computed.borderRightWidth) + parseFloat(computed.paddingRight);
       const emptyRight = input.offsetWidth - rightInset - 2/scale;
@@ -213,15 +233,21 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       const emptyLeft = leftInset + 2/scale;
       const emptyCenter = input.offsetWidth / 2;
       const emptyPosition = textAlign === "left" ? emptyLeft : textAlign === "center" || textAlign === "justify" || textAlign === "justify-all" ? emptyCenter : emptyRight;
-      const measured = Math.max(3, Math.min(input.clientWidth - 3 - 2 / scale, (rect.left - bounds.left) / scale - 3 / scale));
+      const measured = (rect.left - bounds.left) / scale - 3 / scale;
       const emptyLine = singleLine ? null : emptyFrameCaretLeft(input.value, selectionStart, computed.textAlign, computed.direction === "ltr" ? "ltr" : "rtl", { left: emptyLeft, right: emptyRight, center: emptyCenter });
-      setCaret({left: emptyLine ?? (input.value.length === 0 ? emptyPosition : measured), top, width: 2 / scale, height: Math.min(pitch, input.clientHeight - top - 2)});
+      const preserveLeft = emptyLine != null || input.value.length === 0;
+      commitCaret(emptyLine ?? (input.value.length === 0 ? emptyPosition : measured), rawTop, pitch, scale, preserveLeft);
     }else{
       setCaret(null);
       const next=selectedLineBoxes(clone,range,bounds).map(box=>({...box,left:(box.left-bounds.left)/scale,top:(box.top-bounds.top)/scale,width:box.width/scale,height:box.height/scale}));
       setBoxes(prev=>prev.length||next.length?next:prev);
     }
   }, [editable, leading, family, textAlign, paragraphAligns, paragraphPaint, singleLine, publishAlign]);
+  useEffect(() => {
+    const input = ref.current;
+    if (!input) return;
+    return bindFrameScrollLock(input, singleLine);
+  }, [singleLine]);
   useLayoutEffect(() => {
     const pending = restoreSelection.current;
     const input = ref.current;
@@ -232,7 +258,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       input.setSelectionRange(start, end);
     }
     measure();
-  }, [measure, text, leading, family, editable, textAlign, paragraphAligns, padY.top, padY.bottom]);
+  }, [measure, text, leading, family, size, editable, textAlign, paragraphAligns, paragraphFormats, padY.top, padY.bottom]);
   const alignKey = `${text}\0${leading}\0${family}\0${size}\0${fontEpoch}`;
   const alignKeyRef = useRef(alignKey);
   useLayoutEffect(() => {
@@ -301,7 +327,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     if (ref.current) observer.observe(ref.current);
     return () => { cancelAnimationFrame(raf); observer.disconnect(); document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("selectionchange", update); root?.removeEventListener(FORMATTING_TARGET_CHANGE, update); document.fonts.removeEventListener("loadingdone", update); };
   }, [measure]);
-  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",...(singleLine ? { paddingTop: padY.top, paddingRight: 2, paddingBottom: padY.bottom, paddingLeft: 2 } : { padding: 2 }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:singleLine?"nowrap":"pre-wrap",overflowWrap:singleLine?"normal":"break-word",overflow:singleLine?"hidden":undefined,color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
+  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",...(singleLine ? { paddingTop: padY.top, paddingRight: 2, paddingBottom: padY.bottom, paddingLeft: 2 } : { padding: 2 }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:singleLine?"nowrap":"pre-wrap",overflowWrap:singleLine?"normal":"break-word",overflow:"hidden",color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
   const handlePaste = (event: ReactClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!singleLine) return;
     event.preventDefault();
@@ -414,8 +440,9 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     {singleLine ? <div ref={textRef} aria-hidden data-studio-single-line-text style={{ ...style, pointerEvents: "none", userSelect: "none" }}>{displayText}</div> : null}
     {paragraphPaint ? <div ref={visible} aria-hidden data-studio-frame-paragraphs style={{ ...style, borderColor: "transparent", overflow: "hidden", pointerEvents: "none", background: "transparent" }}>{paragraphBlock()}</div> : null}
     {singleLine ? <input {...sharedProps} type="text" data-studio-text-frame data-studio-text-single-line="true" data-studio-selection-painted="true" style={{ ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" }} /> : <textarea {...sharedProps} data-studio-paragraph-paint={paragraphPaint ? "true" : undefined} data-studio-selection-painted={boxes.length?"true":undefined} style={{ ...fieldStyle, scrollbarWidth: "none" }} />}
-    <div ref={mirror} aria-hidden style={{...style,height:"auto",minHeight:"100%",visibility:"hidden",pointerEvents:"none",borderColor:"transparent",transform:`translate(${- (ref.current?.scrollLeft??0)}px,${- (ref.current?.scrollTop??0)}px)`}}>{paragraphPaint ? paragraphBlock() : null}</div>
+    <div ref={mirror} aria-hidden style={{...style,height:"auto",minHeight:"100%",visibility:"hidden",pointerEvents:"none",borderColor:"transparent",transform:"none"}}>{paragraphPaint ? paragraphBlock() : null}</div>
     {caret?<div key={`${caret.left}:${caret.top}:${caret.height}`} data-studio-frame-caret style={{position:"absolute",...caret,background:"#000",pointerEvents:"none",animation:"qalam-studio-caret-blink 1060ms step-end infinite"}} />:null}
-    {boxes.length>0?<div data-studio-text-frame-selection style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>{boxes.map((box,i)=><div key={i} data-studio-line-selection style={{position:"absolute",...box,background:"#000",overflow:"hidden"}}><div style={{...style,inset:undefined,left:-box.left,top:-box.top,width:ref.current?.offsetWidth,height:"auto",minHeight:"100%",color:"#fff",borderColor:"transparent",background:"transparent",transform:paragraphPaint?`translate(0,${-(ref.current?.scrollTop??0)}px)`:undefined}}>{paragraphPaint ? paragraphBlock() : text+"\u200b"}</div></div>)}</div>:null}
+    {boxes.length>0?<div data-studio-text-frame-selection style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>{boxes.map((box,i)=><div key={i} data-studio-line-selection style={{position:"absolute",...box,background:"#000",overflow:"hidden"}}><div style={{...style,inset:undefined,left:-box.left,top:-box.top,width:ref.current?.offsetWidth,height:"auto",minHeight:"100%",color:"#fff",borderColor:"transparent",background:"transparent"}}>{paragraphPaint ? paragraphBlock() : text+"\u200b"}</div></div>)}</div>:null}
+    {overflow ? <div data-studio-frame-overflow={overflow} aria-hidden style={frameOverflowMarkStyle(overflow)} /> : null}
   </>;
 }

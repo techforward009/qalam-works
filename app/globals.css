@@ -2202,8 +2202,10 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
 textarea[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: #000; }
 textarea[data-studio-text-frame][data-studio-paragraph-paint="true"]::selection { background: transparent; color: transparent; }
 input[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: transparent; }
-textarea[data-studio-text-frame] { scrollbar-width: none; }
-textarea[data-studio-text-frame]::-webkit-scrollbar { width: 0; height: 0; display: none; }
+textarea[data-studio-text-frame],
+input[data-studio-text-frame] { overflow: hidden; scrollbar-width: none; }
+textarea[data-studio-text-frame]::-webkit-scrollbar,
+input[data-studio-text-frame]::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* Facing Pages paints one editable, canonical document into view-only slots. */
 .ProseMirror[data-studio-facing-editor] { background: transparent !important; }
