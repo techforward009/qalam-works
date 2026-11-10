@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   bindFrameScrollLock,
   caretInClippedOverflow,
+  columnFrameOverflowEdge,
   frameContentBox,
   frameOverflowEdge,
   frameOverflowMarkStyle,
@@ -30,6 +31,23 @@ describe("frameOverflowEdge", () => {
 
   it("returns null for an empty box", () => {
     expect(frameOverflowEdge({ singleLine: false, scrollHeight: 0, clientHeight: 0, scrollWidth: 0, clientWidth: 0 })).toBeNull();
+  });
+});
+
+describe("columnFrameOverflowEdge", () => {
+  it("keeps a fitting single column free of a stripe", () => {
+    expect(columnFrameOverflowEdge({ singleLine: false, scrollHeight: 80, clientHeight: 80, scrollWidth: 400, clientWidth: 100 }, 1)).toBeNull();
+  });
+
+  it("marks extra columns with the bottom stripe", () => {
+    expect(columnFrameOverflowEdge({ singleLine: false, scrollHeight: 80, clientHeight: 80, scrollWidth: 240, clientWidth: 100 }, 2)).toBe("bottom");
+    expect(columnFrameOverflowEdge({ singleLine: false, scrollHeight: 200, clientHeight: 80, scrollWidth: 100, clientWidth: 100 }, 2)).toBe("bottom");
+  });
+
+  it("ignores a 2px column slop and a fitting pair of columns", () => {
+    expect(columnFrameOverflowEdge({ singleLine: false, scrollHeight: 80, clientHeight: 80, scrollWidth: 102, clientWidth: 100 }, 2)).toBeNull();
+    expect(columnFrameOverflowEdge({ singleLine: false, scrollHeight: 80, clientHeight: 80, scrollWidth: 100, clientWidth: 100 }, 2)).toBeNull();
+    expect(columnFrameOverflowEdge({ singleLine: true, scrollHeight: 200, clientHeight: 40, scrollWidth: 300, clientWidth: 100 }, 3)).toBeNull();
   });
 });
 

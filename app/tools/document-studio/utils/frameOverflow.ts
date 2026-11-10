@@ -48,6 +48,15 @@ export function frameOverflowEdge(metrics: FrameOverflowMetrics): FrameOverflowE
   return metrics.scrollHeight > metrics.clientHeight + FRAME_OVERFLOW_SLOP_PX ? "bottom" : null;
 }
 
+/** CSS columns that do not fit spill into extra columns (scrollWidth), not a taller box.
+ * That spill is the same clipped overflow the bottom stripe marks. */
+export function columnFrameOverflowEdge(metrics: FrameOverflowMetrics, columnCount: number): FrameOverflowEdge | null {
+  const edge = frameOverflowEdge(metrics);
+  if (edge || metrics.singleLine || !(columnCount > 1)) return edge;
+  if (!(metrics.clientWidth > 0) || !(metrics.clientHeight > 0)) return null;
+  return metrics.scrollWidth > metrics.clientWidth + FRAME_OVERFLOW_SLOP_PX ? "bottom" : null;
+}
+
 /**
  * Chromium pins an RTL field's inline start (right edge) at scrollLeft 0.
  * Negative scrollLeft moves toward the clipped left. Multiline boxes pin both

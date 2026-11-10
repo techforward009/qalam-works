@@ -15,7 +15,7 @@ import { StudioFrameEditor } from "./StudioFrameEditor";
 import { frameContentPatch, type FrameDocNode } from "../utils/frameEditorDoc";
 import { isFormattingSurface } from "../utils/formattingSafety";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
-import { textboxPmEnabled } from "../utils/textboxPmFlag";
+import { textFrameUsesPmEditor } from "../utils/textboxPmFlag";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
 import { measureSingleLineOuterHeightMm, SINGLE_LINE_PADDING_PX, singleLineLeadingPt, singleLineOuterHeightPx } from "../utils/singleLineFrame";
 import { frameBorderPattern, frameBorderVisible, frameBorderWidthMm } from "../utils/frameBorder";
@@ -344,7 +344,7 @@ export function StudioObjectLayer({
     const id = pendingTextFocus.current;
     const frameNode = rootRef.current?.querySelector<HTMLElement>(`[data-studio-frame-id="${id}"]`);
     const frameRecord = framesRef.current.find((item) => item.id === id);
-    if (frameRecord && !frameRecord.singleLine && textboxPmEnabled()) {
+    if (frameRecord && textFrameUsesPmEditor(frameRecord)) {
       pendingTextFocus.current = null;
       beginPmEdit(id, null);
       return;
@@ -358,6 +358,13 @@ export function StudioObjectLayer({
   useEffect(() => {
     if (tool !== "text") requestPmCommit();
   }, [tool]);
+
+  useEffect(() => {
+    const id = pmFrameIdRef.current;
+    if (!id) return;
+    const frame = framesRef.current.find((item) => item.id === id);
+    if (frame && frame.kind === "text" && !textFrameUsesPmEditor(frame)) requestPmCommit();
+  }, [frames]);
 
   useEffect(() => {
     const clearOnEmpty = (event: PointerEvent) => {
@@ -811,7 +818,7 @@ export function StudioObjectLayer({
               if (frame.kind === "text" && tool === "text") {
                 event.stopPropagation();
                 setSelected([]);
-                if (!frame.singleLine && textboxPmEnabled()) {
+                if (textFrameUsesPmEditor(frame)) {
                   if (pmFrameIdRef.current !== frame.id) beginPmEdit(frame.id, { x: event.clientX, y: event.clientY });
                   return;
                 }

@@ -17,7 +17,7 @@ import { createFrameEditorExtensions } from "../utils/frameEditorExtensions";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { toolbarParagraphAlign, type ParagraphAlign } from "../utils/paragraphAlign";
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
-import { bindFrameScrollLock, caretInClippedOverflow, frameOverflowEdge, frameOverflowMarkStyle, pinFrameScroll, type FrameOverflowEdge } from "../utils/frameOverflow";
+import { bindFrameScrollLock, caretInClippedOverflow, columnFrameOverflowEdge, frameOverflowMarkStyle, pinFrameScroll, type FrameOverflowEdge } from "../utils/frameOverflow";
 import { textColumnFlowStyle, textScreenChrome, type TextColumnFrame } from "../utils/textColumns";
 import type { StudioFrame } from "./StudioObjectLayer";
 
@@ -98,7 +98,11 @@ function measureFrameCaret(editor: Editor, pageWidthPx: number, zoom: number) {
     ? resolved.node.parentElement
     : resolved.node instanceof HTMLElement ? resolved.node : dom;
   const block = anchor?.closest<HTMLElement>("p") ?? dom;
-  const bounds = block.getBoundingClientRect();
+  const fragments = block.getClientRects();
+  const fragment = fragments.length > 1
+    ? [...fragments].find((rect) => coords.left >= rect.left - 2 && coords.left <= rect.right + 2 && coords.top >= rect.top - 2 && coords.top <= rect.bottom + 2)
+    : undefined;
+  const bounds = fragment ?? block.getBoundingClientRect();
   const blockStyle = getComputedStyle(block);
   const rtl = getComputedStyle(anchor ?? dom).direction === "rtl";
   const empty = head.parent.isTextblock && head.parent.content.size === 0;
@@ -254,7 +258,7 @@ export function StudioFrameEditor({
     publishAlign(editor);
   }, [editor, editorFamily, family, flow, leading, size, textColor, typography]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor || editor.isDestroyed) return;
     const dom = editor.view.dom as HTMLElement;
     const chrome = textScreenChrome(flow ?? {});
@@ -341,13 +345,14 @@ export function StudioFrameEditor({
     const measure = () => {
       if (editor.isDestroyed) return;
       pinFrameScroll(dom, false);
-      const edge = frameOverflowEdge({
+      const counted = Number(dom.getAttribute("data-studio-text-columns"));
+      const edge = columnFrameOverflowEdge({
         singleLine: false,
         scrollHeight: dom.scrollHeight,
         clientHeight: dom.clientHeight,
         scrollWidth: dom.scrollWidth,
         clientWidth: dom.clientWidth,
-      });
+      }, Number.isFinite(counted) ? counted : 1);
       setOverflow((prev) => prev === edge ? prev : edge);
       const next = measureFrameCaret(editor, pageWidthPx, zoom);
       setCaret((prev) => {

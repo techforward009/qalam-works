@@ -1,3 +1,5 @@
+import { resolvedColumnCount } from "./textColumns";
+
 /** Multi-line text box ProseMirror editor. Off unless a client signal turns it on.
  * SSR and the first paint must not call this with a live `window` result:
  * read it from event handlers and effects, not during the server render. */
@@ -18,4 +20,12 @@ export function textboxPmEnabled(): boolean {
     /* private mode */
   }
   return process.env.NEXT_PUBLIC_QALAM_TEXTBOX_PM === "1";
+}
+
+/** Flagged boxes use the ProseMirror surface. Multi-column boxes do too,
+ * so the caret is inside the CSS columns. Single-line titles stay a field.
+ * False during SSR; call from events and effects. */
+export function textFrameUsesPmEditor(frame: { singleLine?: boolean; columnCount?: number }): boolean {
+  if (frame.singleLine || typeof window === "undefined") return false;
+  return textboxPmEnabled() || resolvedColumnCount(frame) > 1;
 }
