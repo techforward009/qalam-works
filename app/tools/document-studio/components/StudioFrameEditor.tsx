@@ -18,12 +18,13 @@ import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { toolbarParagraphAlign, type ParagraphAlign } from "../utils/paragraphAlign";
 import { handleStudioDocumentNavigation } from "../utils/studioDocumentNavigation";
 import { bindFrameScrollLock, caretInClippedOverflow, frameOverflowEdge, frameOverflowMarkStyle, pinFrameScroll, type FrameOverflowEdge } from "../utils/frameOverflow";
+import { textColumnFlowStyle, textScreenChrome, type TextColumnFrame } from "../utils/textColumns";
 import type { StudioFrame } from "./StudioObjectLayer";
 
 const FRAME_EDITOR_CSS = `
 [data-studio-frame-editor]{box-sizing:border-box;height:100%;min-height:100%;max-height:100%;border:1px solid #000;padding:2px;margin:0;text-indent:0;overflow:hidden;scrollbar-width:none;caret-color:transparent;outline:none;background:transparent;white-space:pre-wrap;overflow-wrap:break-word;tab-size:8;font-kerning:auto;font-variant-ligatures:normal;font-feature-settings:normal;}
 [data-studio-frame-editor]::-webkit-scrollbar{display:none;}
-[data-studio-frame-editor] p{margin:0;padding:0;unicode-bidi:plaintext;white-space:pre-wrap;overflow-wrap:break-word;}
+[data-studio-frame-editor] p{margin:0;padding:0;unicode-bidi:plaintext;white-space:pre-wrap;overflow-wrap:break-word;direction:rtl;}
 `;
 
 function pmPlainOffset(doc: PMNode, pos: number): number {
@@ -155,6 +156,7 @@ export function StudioFrameEditor({
   onDoc,
   onStyle,
   onCommit,
+  flow,
 }: {
   text: string;
   textAlign?: StudioTextAlign;
@@ -169,6 +171,7 @@ export function StudioFrameEditor({
   onDoc: (frame: FrameTextState, doc: FrameDocNode) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onCommit: () => void;
+  flow?: Partial<TextColumnFrame>;
 }) {
   const onDocRef = useRef(onDoc);
   onDocRef.current = onDoc;
@@ -185,6 +188,7 @@ export function StudioFrameEditor({
   const [caret, setCaret] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [overflow, setOverflow] = useState<FrameOverflowEdge | null>(null);
   const formatKey = JSON.stringify(paragraphFormats ?? null);
+  const flowKey = JSON.stringify(flow ?? null);
   const family = typography ? editorFontFamilyStack(typography.defaultRtlFontId) : "\"Jameel Noori Nastaleeq\", serif";
   const size = typography?.bodyFontSizePt ?? 12;
   const editorFamily = typography ? getFontById(typography.defaultRtlFontId).editorFamily : "Jameel Noori Nastaleeq";
@@ -244,11 +248,37 @@ export function StudioFrameEditor({
     dom.style.fontSize = `${size}pt`;
     dom.style.lineHeight = `${leading}pt`;
     dom.style.color = textColor ?? "#000";
-    dom.style.direction = "rtl";
+    dom.style.direction = (flow ? textColumnFlowStyle(flow)?.direction : undefined) ?? "rtl";
     dom.style.overflow = "hidden";
     dom.style.maxHeight = "100%";
     publishAlign(editor);
-  }, [editor, editorFamily, family, leading, size, textColor, typography]);
+  }, [editor, editorFamily, family, flow, leading, size, textColor, typography]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const dom = editor.view.dom as HTMLElement;
+    const chrome = textScreenChrome(flow ?? {});
+    dom.style.border = chrome.border;
+    dom.style.outline = chrome.outline ?? "";
+    dom.style.padding = `${chrome.paddingPx}px`;
+    dom.style.borderRadius = chrome.radius ?? "";
+    dom.style.background = chrome.background ?? "transparent";
+    if (chrome.guide) dom.setAttribute("data-studio-frame-guide", "true");
+    else dom.removeAttribute("data-studio-frame-guide");
+    const columns = flow ? textColumnFlowStyle(flow) : null;
+    dom.style.columnCount = columns ? String(columns.columnCount) : "";
+    dom.style.columnGap = columns?.columnGap ?? "";
+    dom.style.columnFill = columns?.columnFill ?? "";
+    if (columns) dom.style.direction = columns.direction;
+    dom.style.columnRule = columns?.columnRule ?? "";
+    if (columns) {
+      dom.setAttribute("data-studio-text-columns", String(columns.columnCount));
+      dom.setAttribute("data-studio-column-direction", columns.direction);
+    } else {
+      dom.removeAttribute("data-studio-text-columns");
+      dom.removeAttribute("data-studio-column-direction");
+    }
+  }, [editor, flow, flowKey]);
 
   useLayoutEffect(() => {
     if (!editor || editor.isDestroyed) return;

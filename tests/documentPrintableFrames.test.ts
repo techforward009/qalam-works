@@ -26,7 +26,8 @@ describe('validated printable drawing objects', () => {
 
   it('maps page numbers independently of zoom or spread layout', () => { expect(framePrintTopMm(base, 210)).toBeCloseTo(240); });
   it('keeps rounded radius, opposite line directions and escaped text', () => {
-    expect(renderPrintFrame({ ...base, kind: 'round-rect' })).toContain('rx="6.21770833335"');
+    expect(renderPrintFrame({ ...base, kind: 'round-rect' })).toContain('rx="6.35"');
+    expect(renderPrintFrame({ ...base, kind: 'round-rect', borderWidthMm: 2 })).toContain('rx="5.35"');
     expect(renderPrintFrame({ ...base, kind: 'line', flip: true })).not.toEqual(renderPrintFrame({ ...base, kind: 'line', flip: false }));
     const html = renderPrintFrame({ ...base, kind: 'text', text: '<img src=x onerror=alert(1)> & سلام' });
     expect(html).toContain('&lt;img'); expect(html).not.toContain('<img'); expect(html).toContain('&amp;');
@@ -48,11 +49,12 @@ it('bounds the complete payload, including unknown fields, before producing mark
 describe("picture appearance in printable frames", () => {
   it("keeps legacy stroke when styles are absent and validates explicit appearance", () => {
     const legacy = renderPrintFrame({ ...base, kind: "rect" });
-    expect(legacy).toContain('stroke="#000"');
-    expect(legacy).toContain('stroke-width="0.2645833333"');
+    expect(legacy).toContain('stroke="none"');
+    expect(legacy).not.toContain('stroke="#000"');
     expect(legacy).not.toContain('fill="#FFFFFF"');
     const styled = { ...base, kind: "picture-rect" as const, borderColor: "#123456", borderWidthMm: 1, borderPattern: "none" as const, backgroundColor: "#FFFFFF", backgroundHatch: "none" as const };
-    expect(renderPrintFrame(styled)).toContain('stroke="#123456" stroke-width="1"');
+    expect(renderPrintFrame(styled)).not.toContain('stroke="#123456"');
+    expect(renderPrintFrame({ ...styled, borderPattern: "solid" as const })).toContain('stroke="#123456" stroke-width="1"');
     expect(renderPrintFrame(styled)).toContain('fill="#FFFFFF"');
     expect(validatePrintFrames([styled])[0]).toMatchObject({ borderColor: "#123456", borderWidthMm: 1, backgroundColor: "#FFFFFF", borderPattern: "none", backgroundHatch: "none" });
     expect(renderPrintFrame({ ...base, kind: "picture-rect" as const, backgroundColor: "#FFFFFF", imageSrc: undefined })).toContain('fill="#FFFFFF"');

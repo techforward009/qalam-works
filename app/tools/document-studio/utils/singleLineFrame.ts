@@ -27,14 +27,14 @@ export function singleLineLeadingPt(typography: FrameTypography): number {
 }
 
 /** Outer border-box height in CSS pixels: both borders, both paddings, and one line. */
-export function singleLineOuterHeightPx(leadingPt: number): number {
-  return SINGLE_LINE_BORDER_PX * 2 + SINGLE_LINE_PADDING_PX * 2 + leadingPt * PX_PER_PT;
+export function singleLineOuterHeightPx(leadingPt: number, paddingPx = SINGLE_LINE_PADDING_PX): number {
+  return SINGLE_LINE_BORDER_PX * 2 + paddingPx * 2 + leadingPt * PX_PER_PT;
 }
 
 /** Outer border-box height for `lineCount` wrapped lines. At least one line. */
-export function singleLineWrappedOuterHeightPx(leadingPt: number, lineCount: number): number {
+export function singleLineWrappedOuterHeightPx(leadingPt: number, lineCount: number, paddingPx = SINGLE_LINE_PADDING_PX): number {
   const lines = Number.isFinite(lineCount) ? Math.max(1, Math.round(lineCount)) : 1;
-  const chrome = SINGLE_LINE_BORDER_PX * 2 + SINGLE_LINE_PADDING_PX * 2;
+  const chrome = SINGLE_LINE_BORDER_PX * 2 + paddingPx * 2;
   return chrome + lines * leadingPt * PX_PER_PT;
 }
 
@@ -52,10 +52,10 @@ export function singleLineWrappedOuterHeightMm(typography: FrameTypography, line
  * Snap a measured border box onto the line grid.
  * Empty or failed measurements stay one line. A little extra px does not add a line.
  */
-export function singleLineOuterHeightPxFromMeasured(leadingPt: number, measuredBorderPx: number): number {
-  const min = singleLineOuterHeightPx(leadingPt);
+export function singleLineOuterHeightPxFromMeasured(leadingPt: number, measuredBorderPx: number, paddingPx = SINGLE_LINE_PADDING_PX): number {
+  const min = singleLineOuterHeightPx(leadingPt, paddingPx);
   if (!(measuredBorderPx > 0) || !(leadingPt > 0)) return min;
-  const chrome = SINGLE_LINE_BORDER_PX * 2 + SINGLE_LINE_PADDING_PX * 2;
+  const chrome = SINGLE_LINE_BORDER_PX * 2 + paddingPx * 2;
   const linePx = leadingPt * PX_PER_PT;
   if (!(linePx > 0)) return min;
   const content = measuredBorderPx - chrome;
@@ -68,6 +68,8 @@ export interface SingleLineMeasureInput {
   typography: FrameTypography;
   /** Border-box width in CSS pixels. Pass the editor width and the print width; the taller fit wins. */
   outerWidthPx: number | readonly number[];
+  /** Horizontal and vertical padding. The default is the 2px text-frame padding. */
+  paddingPx?: number;
 }
 
 let measureProbe: HTMLDivElement | null = null;
@@ -106,18 +108,20 @@ function singleLineMeasureProbe(): HTMLDivElement | null {
 
 function measureSingleLineOuterHeightPxAt(input: SingleLineMeasureInput, outerWidthPx: number): number {
   const leading = singleLineLeadingPt(input.typography);
-  const min = singleLineOuterHeightPx(leading);
+  const paddingPx = input.paddingPx ?? SINGLE_LINE_PADDING_PX;
+  const min = singleLineOuterHeightPx(leading, paddingPx);
   const text = normalizeSingleLineText(input.text);
   if (!text || !(outerWidthPx > 0)) return min;
   const probe = singleLineMeasureProbe();
   if (!probe) return min;
   probe.style.width = `${outerWidthPx}px`;
+  probe.style.padding = `${paddingPx}px`;
   probe.style.fontFamily = editorFontFamilyStack(input.typography.defaultRtlFontId);
   probe.style.fontSize = `${input.typography.bodyFontSizePt}pt`;
   probe.style.lineHeight = `${leading}pt`;
   probe.textContent = text;
   const measured = probe.getBoundingClientRect().height;
-  return singleLineOuterHeightPxFromMeasured(leading, measured);
+  return singleLineOuterHeightPxFromMeasured(leading, measured, paddingPx);
 }
 
 /** Fitted border-box height in CSS pixels. One line when the text is empty or layout is unavailable. */

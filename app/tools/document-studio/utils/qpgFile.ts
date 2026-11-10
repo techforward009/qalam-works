@@ -5,6 +5,7 @@ import type { DocumentViewMode } from "./documentView";
 import { isParagraphAlignList } from "./paragraphAlign";
 import { isParagraphFormatList } from "./paragraphFormats";
 import { normalizeSafeHex } from "./studioColors";
+import { validTextColumnFields } from "./textColumns";
 
 export const QPG_FILE_ACCEPT = ".qpg,.inp,.txt,.docx";
 export const QPG_MIME_TYPE = "application/octet-stream";
@@ -42,7 +43,7 @@ export function serializeQpg(document: QpgDocument): string {
   return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document, frames: document.frames.map(copyQpgFrame) });
 }
 
-const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "paragraphFormats", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
+const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "paragraphFormats", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch", "columnCount", "columnGutterMm", "columnDirection", "columnRuleColor", "columnRuleSizeMm", "columnRulePattern", "insetMm", "textShape"] as const;
 function copyQpgFrame(frame: StudioFrame): StudioFrame {
   return Object.fromEntries(QPG_FRAME_KEYS.flatMap(key => frame[key] === undefined ? [] : [[key, frame[key]]])) as unknown as StudioFrame;
 }
@@ -74,14 +75,14 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       (frame.borderPosition === undefined || frame.borderPosition === "inside" || frame.borderPosition === "outside") &&
       (frame.borderColor === undefined || normalizeSafeHex(frame.borderColor) !== null) &&
       (frame.borderWidthMm === undefined || typeof frame.borderWidthMm === "number" && Number.isFinite(frame.borderWidthMm) && frame.borderWidthMm > 0 && frame.borderWidthMm <= 2000) &&
-      (frame.borderPattern === undefined || frame.borderPattern === "none") &&
       (frame.backgroundColor === undefined || normalizeSafeHex(frame.backgroundColor) !== null) &&
       (frame.textColor === undefined || normalizeSafeHex(frame.textColor) !== null) &&
       (frame.textAlign === undefined || ["left", "center", "right", "justify", "justify-all"].includes(String(frame.textAlign))) &&
       (frame.paragraphAligns === undefined || isParagraphAlignList(frame.paragraphAligns)) &&
       (frame.paragraphFormats === undefined || isParagraphFormatList(frame.paragraphFormats)) &&
       (frame.singleLine === undefined || typeof frame.singleLine === "boolean") &&
-      (frame.backgroundHatch === undefined || frame.backgroundHatch === "none")) ||
+      (frame.backgroundHatch === undefined || frame.backgroundHatch === "none") &&
+      validTextColumnFields(frame)) ||
     !Number.isInteger(value.minimumPages) || (value.minimumPages as number) < 1 ||
     !isObject(value.columns) || !Number.isInteger(value.columns.count) ||
     (value.columns.count as number) < 1 || (value.columns.count as number) > 32 ||

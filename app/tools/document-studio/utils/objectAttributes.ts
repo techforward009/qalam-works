@@ -1,8 +1,10 @@
 import { isPictureBox, type FrameKind, type StudioFrame } from "../components/StudioObjectLayer";
+import { isFrameBorderPattern } from "./frameBorder";
 import { normalizeSafeHex } from "./studioColors";
+import { TEXT_COLUMN_MAX, validTextColumnFields } from "./textColumns";
 import { PRINT_FRAME_LIMITS } from "./printableFrames";
 
-export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition">>;
+export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition" | "columnCount" | "columnGutterMm" | "columnDirection" | "columnRuleColor" | "columnRuleSizeMm" | "columnRulePattern" | "insetMm" | "textShape">>;
 const pictureKinds: readonly FrameKind[] = ["picture-rect", "picture-round-rect", "picture-ellipse"];
 
 export function parseGeometryLength(raw: string): number {
@@ -45,7 +47,11 @@ export function formatGeometryLength(value: number): string {
 
 export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPatch): StudioFrame | null {
   const requested: ObjectGeometryPatch = { ...patch };
-  if (frame.singleLine) delete requested.hMm;
+  if (frame.singleLine) {
+    delete requested.hMm;
+    delete requested.columnCount;
+    delete requested.columnGutterMm;
+  }
   for (const key of ["xMm", "yMm", "wMm", "hMm"] as const) {
     const value = requested[key];
     if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value) || ((key === "wMm" || key === "hMm") && value < 1))) return null;
@@ -66,8 +72,12 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (requested.borderColor !== undefined && !normalizeSafeHex(requested.borderColor)) return null;
   if (requested.backgroundColor !== undefined && requested.backgroundColor !== "" && !normalizeSafeHex(requested.backgroundColor)) return null;
   if (requested.borderWidthMm !== undefined && (typeof requested.borderWidthMm !== "number" || !Number.isFinite(requested.borderWidthMm) || requested.borderWidthMm <= 0 || requested.borderWidthMm > PRINT_FRAME_LIMITS.mm)) return null;
-  if (requested.borderPattern !== undefined && requested.borderPattern !== "none") return null;
+  if (requested.borderPattern !== undefined && !isFrameBorderPattern(requested.borderPattern)) return null;
   if (requested.backgroundHatch !== undefined && requested.backgroundHatch !== "none") return null;
+  if (frame.kind !== "text" && (requested.columnCount !== undefined || requested.columnGutterMm !== undefined || requested.columnDirection !== undefined || requested.columnRuleColor !== undefined || requested.columnRuleSizeMm !== undefined || requested.columnRulePattern !== undefined || requested.insetMm !== undefined || requested.textShape !== undefined)) return null;
+  if (requested.columnCount !== undefined && (!Number.isInteger(requested.columnCount) || requested.columnCount < 1 || requested.columnCount > TEXT_COLUMN_MAX)) return null;
+  if (!validTextColumnFields(requested)) return null;
+  if (requested.textShape !== undefined && frame.kind !== "text") return null;
   const next: StudioFrame = { ...frame, ...requested, ...(requested.borderColor !== undefined ? { borderColor: normalizeSafeHex(requested.borderColor)! } : {}) };
   if (requested.backgroundColor !== undefined) {
     if (requested.backgroundColor === "") delete next.backgroundColor;

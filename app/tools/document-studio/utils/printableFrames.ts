@@ -10,6 +10,8 @@ import { validateIndentMm, validateLineHeight, validateSpacingPt } from './docum
 import { parseLeading } from './leading';
 import { normalizeSafeHex } from './studioColors';
 import { normalizeSingleLineText } from './singleLineFrame';
+import { frameBorderCss, svgStrokeAttributes } from './frameBorder';
+import { formatInsetMm, measureTextColumns, resolvedInsetMm, textColumnCss, validTextColumnFields } from './textColumns';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
 const kinds = new Set([
@@ -45,7 +47,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
     if (f.paragraphFormats !== undefined && !isParagraphFormatList(f.paragraphFormats)) throw new Error('Invalid drawing frame paragraph formats; export blocked');
     if (f.singleLine !== undefined && typeof f.singleLine !== 'boolean') throw new Error('Invalid drawing frame single-line flag; export blocked');
     if (f.borderWidthMm !== undefined && (typeof f.borderWidthMm !== 'number' || !Number.isFinite(f.borderWidthMm) || f.borderWidthMm <= 0 || f.borderWidthMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame border width; export blocked');
-    if (f.borderPattern !== undefined && f.borderPattern !== 'none') throw new Error('Invalid drawing frame border pattern; export blocked');
+    if (!validTextColumnFields(f)) throw new Error('Invalid drawing frame text columns; export blocked');
     if (f.backgroundHatch !== undefined && f.backgroundHatch !== 'none') throw new Error('Invalid drawing frame background hatch; export blocked');
     if (f.imageSrc !== undefined) {
       if (typeof f.imageSrc !== 'string' || !/^data:image\/(?:png|jpeg|webp|gif|bmp);base64,/i.test(f.imageSrc)) {
@@ -94,6 +96,14 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.borderPattern !== undefined ? { borderPattern: f.borderPattern } : {}),
       ...(f.backgroundColor !== undefined ? { backgroundColor: normalizeSafeHex(f.backgroundColor)! } : {}),
       ...(f.backgroundHatch !== undefined ? { backgroundHatch: f.backgroundHatch } : {}),
+      ...(f.columnCount !== undefined ? { columnCount: f.columnCount } : {}),
+      ...(f.columnGutterMm !== undefined ? { columnGutterMm: f.columnGutterMm } : {}),
+      ...(f.columnDirection !== undefined ? { columnDirection: f.columnDirection } : {}),
+      ...(f.columnRuleColor !== undefined ? { columnRuleColor: normalizeSafeHex(f.columnRuleColor)! } : {}),
+      ...(f.columnRuleSizeMm !== undefined ? { columnRuleSizeMm: f.columnRuleSizeMm } : {}),
+      ...(f.columnRulePattern !== undefined ? { columnRulePattern: f.columnRulePattern } : {}),
+      ...(f.insetMm !== undefined ? { insetMm: f.insetMm } : {}),
+      ...(f.textShape !== undefined ? { textShape: f.textShape } : {}),
     };
   });
 }
@@ -210,22 +220,31 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
   const attr = `data-print-frame="${frame.kind}" data-print-frame-id="${escape(frame.id)}" data-print-frame-page="${frame.page}"`;
   if (frame.kind === 'text') {
     const t = frameTypography(frame), family = getFontById(t.defaultRtlFontId).cssStack, leading = blockLeadingPt({ type: 'paragraph' }, family, t, 'rtl');
-    const textBorder = `border:${frame.borderWidthMm ?? 0.2645833333}mm solid ${escape(frame.borderColor ?? "#000")};`;
+    const textBorder = frameBorderCss(frame);
     const textBackground = frame.backgroundColor ? `background:${escape(frame.backgroundColor)};` : "background:transparent;";
     const textAlign = frame.textAlign === 'justify-all' ? 'justify' : frame.textAlign ?? 'start';
     const textAlignLast = frame.textAlign === 'justify-all' ? 'text-align-last:justify;' : '';
     const paragraphs = frameParagraphMarkup(frame, leading);
     const plain = frame.singleLine ? normalizeSingleLineText(frame.text) : frame.text;
-    return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}padding:0.5291666667mm;overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:pre-wrap;overflow-wrap:break-word;text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${paragraphs ?? textHtml ?? escape(plain)}</div>`;
+    const insetCss = frame.insetMm === undefined ? "padding:0.5291666667mm;" : `padding:${formatInsetMm(resolvedInsetMm(frame))}mm;`;
+    const shapeCss = frame.textShape === "ellipse" ? "border-radius:50%;" : "";
+    const shapeAttr = frame.textShape === "ellipse" ? ' data-print-text-shape="ellipse"' : "";
+    const insetAttr = frame.insetMm === undefined ? "" : ` data-print-text-inset-mm="${formatInsetMm(frame.insetMm)}"`;
+    const body = paragraphs ?? textHtml ?? escape(plain);
+    const measured = measureTextColumns(frame);
+    const columnCss = textColumnCss(frame);
+    const flowed = columnCss
+      ? `<div data-print-text-columns="${measured.count}" data-print-column-direction="${measured.direction}" data-print-column-gutter-mm="${formatInsetMm(measured.gutterMm)}" data-print-column-width-mm="${formatInsetMm(measured.columnWidthMm)}" style="height:100%;${columnCss}"><div style="direction:rtl">${body}</div></div>`
+      : body;
+    return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''}${shapeAttr}${insetAttr} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}${insetCss}${shapeCss}overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:pre-wrap;overflow-wrap:break-word;text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${flowed}</div>`;
   }
+  const userStroke = svgStrokeAttributes(frame);
   const legacyStroke = 'fill="none" stroke="#000" stroke-width="0.2645833333"';
-  const borderColor = frame.borderColor ?? '#000';
+  const stroke = userStroke || (frame.kind === 'line' ? legacyStroke : 'fill="none" stroke="none"');
+  const diagStroke = userStroke || legacyStroke;
   const borderWidth = frame.borderWidthMm ?? 0.2645833333;
-  const stroke = frame.borderWidthMm === undefined
-    ? frame.borderColor === undefined ? legacyStroke : `fill="none" stroke="${escape(borderColor)}" stroke-width="0.2645833333"`
-    : `fill="none" stroke="${escape(borderColor)}" stroke-width="${borderWidth}"`;
-  const inset = frame.borderPosition === 'outside' ? -borderWidth / 2 : borderWidth / 2;
-  const clipInset = frame.borderPosition === 'inside' ? borderWidth : 0;
+  const inset = !userStroke ? 0 : frame.borderPosition === 'outside' ? -borderWidth / 2 : borderWidth / 2;
+  const clipInset = userStroke && frame.borderPosition === 'inside' ? borderWidth : 0;
   if (frame.kind === 'picture-rect' || frame.kind === 'picture-ellipse' || frame.kind === 'picture-round-rect') {
     const clipId = `print-clip-${escape(frame.id)}-${frame.page}`;
     let clipShape = '';
@@ -253,7 +272,7 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
       const imageRotation = Math.abs(angle2) > 1e-9 ? ` transform="rotate(${-angle2} ${ix + iw / 2} ${iy + ih / 2})"` : '';
       content = `<g clip-path="url(#${clipId})"><rect x="0" y="0" width="${w}" height="${h}" fill="${escape(frame.backgroundColor ?? "#ffffff")}"/><image href="${escape(frame.imageSrc)}" xlink:href="${escape(frame.imageSrc)}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none"${imageRotation}/></g>`;
     } else {
-      const diags = `<line x1="0" y1="0" x2="${w}" y2="${h}" ${stroke}/><line x1="${w}" y1="0" x2="0" y2="${h}" ${stroke}/>`;
+      const diags = `<line x1="0" y1="0" x2="${w}" y2="${h}" ${diagStroke}/><line x1="${w}" y1="0" x2="0" y2="${h}" ${diagStroke}/>`;
       content = frame.kind === 'picture-ellipse' ? `<g clip-path="url(#${clipId})">${diags}</g>` : diags;
     }
 

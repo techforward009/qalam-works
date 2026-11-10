@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot } from "../utils/inpageToolbar";
 import { applyObjectGeometry, formatGeometryLength, parseGeometryLength, parseBorderWidth, formatBorderWidth, parseDegrees, formatDegrees, type ObjectGeometryPatch } from "../utils/objectAttributes";
+import { FRAME_BORDER_PATTERNS, type FrameBorderPattern } from "../utils/frameBorder";
+import { DEFAULT_TEXT_INSET_MM, type TextShape } from "../utils/textColumns";
 import { normalizeSafeHex, STUDIO_TEXT_COLORS } from "../utils/studioColors";
 import type { StudioFrame } from "./StudioObjectLayer";
 import { useMovableStudioDialog } from "./useMovableStudioDialog";
@@ -12,6 +14,10 @@ const kinds = [
   ["picture-rect", "Rectangular Picture Box", "Rectangular", "▱"],
   ["picture-ellipse", "Elliptical Picture Box", "Elliptical", "◯"],
   ["picture-round-rect", "Rounded Rectangular Picture Box", "Rounded", "▢"],
+] as const;
+const textShapes = [
+  ["rect", "Rectangular Text Box", "Rectangular", "▱"],
+  ["ellipse", "Elliptical Text Box", "Elliptical", "◯"],
 ] as const;
 const fields = [["xMm", "X", "x"], ["yMm", "Y", "y"], ["wMm", "Width", "w"], ["hMm", "Height", "h"]] as const;
 type GeometryKey = typeof fields[number][0];
@@ -29,8 +35,9 @@ export function StudioObjectRibbon({ frame, onChange }: Props) {
   useEffect(() => {
     const open = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      const box = target?.closest<HTMLElement>('[data-studio-frame^="picture-"][data-studio-frame-id]');
-      if (!box) return;
+      const box = target?.closest<HTMLElement>("[data-studio-frame][data-studio-frame-id]");
+      const kind = box?.dataset.studioFrame ?? "";
+      if (!box || (!kind.startsWith("picture-") && kind !== "text")) return;
       event.preventDefault();
       const current = box.dataset.studioFrameId === frame.id ? frame : null;
       if (current) { menuReturnFocus.current = document.activeElement as HTMLElement; setMenu({ x: event.clientX, y: event.clientY, frame: current }); }
@@ -73,11 +80,11 @@ export function StudioObjectRibbon({ frame, onChange }: Props) {
 
   const ribbonFields = <GeometryFields key={frame.id} frame={frame} onApply={patch => onChange(frame.id, patch)} />;
   return <>
-    <div data-studio-object-ribbon="true" className="flex min-h-[34px] flex-wrap items-center gap-2 border-b border-[#b8b8b8] bg-[#f0f0f0] px-2 py-1 text-[11px] text-black" dir="ltr">
+    {frame.kind === "text" ? <TextRibbon frame={frame} onChange={onChange} /> : <div data-studio-object-ribbon="true" className="flex min-h-[34px] flex-wrap items-center gap-2 border-b border-[#b8b8b8] bg-[#f0f0f0] px-2 py-1 text-[11px] text-black" dir="ltr">
       {ribbonFields}
       <span className="mx-1 h-5 border-l border-[#c0c0c0]" />
       {kinds.map(([kind, label, , glyph]) => <button key={kind} type="button" aria-label={label} aria-pressed={frame.kind === kind} title={label} onClick={() => onChange(frame.id, { kind })} className="h-6 min-w-7 border border-[#aaa] bg-gradient-to-b from-white to-[#e5e5e5] px-1 aria-pressed:border-[#567b9e] aria-pressed:bg-[#d7e8f8]">{glyph}</button>)}
-    </div>
+    </div>}
     {menu ? createPortal(<div ref={menuRef} role="menu" aria-label="Object context menu" data-object-menu-root="true" className="fixed z-[120] border border-[#808080] bg-[#f0f0f0] p-1 shadow-md" style={{ left: menu.x, top: menu.y }} onPointerDown={e => e.stopPropagation()}><button type="button" role="menuitem" data-object-menu="format" className="px-4 py-1 text-left text-[11px] hover:bg-[#d6dff2]" onClick={() => { dialogReturnFocus.current = menuReturnFocus.current; setDialogFrame(menu.frame); setMenu(null); }}>Format Object...</button></div>, studioOverlayRoot()) : null}
     {dialogFrame ? <FormatDialog frame={dialogFrame} returnFocus={dialogReturnFocus} onCancel={() => setDialogFrame(null)} onApply={patch => { onChange(dialogFrame.id, patch); setDialogFrame(null); }} /> : null}
   </>;
@@ -100,6 +107,90 @@ function GeometryFields({ frame, onApply, firstFieldRef }: { frame: StudioFrame;
     const locked = heightLocked(key);
     return <label key={key} className="flex items-center gap-1">{label}<input ref={index === 0 ? firstFieldRef : undefined} aria-label={label} data-object-field={data} value={values[key]} disabled={locked} readOnly={locked} onChange={e => { if (locked) return; setValues(prev => ({ ...prev, [key]: e.target.value })); }} onKeyDown={e => { if (locked) return; if (e.key === "Enter") { if (e.currentTarget.form?.getAttribute("role") !== "dialog") { commit(key); e.currentTarget.blur(); } } if (e.key === "Escape") { skipBlur.current = key; revert(key); e.currentTarget.blur(); } }} onBlur={() => { if (skipBlur.current === key) { skipBlur.current = null; return; } commit(key); }} className="h-6 w-[62px] border border-[#999] bg-white px-1 text-[11px]" style={locked ? { background: "#d4d4d4", color: "#666" } : undefined} /></label>;
   })}</>;
+}
+
+const ribbonInput: React.CSSProperties = { height: 22, width: 62, boxSizing: "border-box", border: "1px solid #999", background: "#fff", padding: "0 3px", fontSize: 11, color: "#000" };
+const ribbonLocked: React.CSSProperties = { background: "#d4d4d4", color: "#666" };
+const patternLabel = (pattern: string) => pattern === "none" ? "None" : pattern.charAt(0).toUpperCase() + pattern.slice(1);
+function patternOptions() { return FRAME_BORDER_PATTERNS.map(pattern => <option key={pattern} value={pattern}>{patternLabel(pattern)}</option>); }
+function colorOptions(includeNone = false) { return <>{includeNone ? <option value="">None</option> : null}{includeNone ? <option value="#FFFFFF">White</option> : null}{STUDIO_TEXT_COLORS.filter(c => c.hex).map(c => <option key={c.id} value={c.hex}>{c.label}</option>)}</>; }
+
+function TextRibbon({ frame, onChange }: Props) {
+  const heightLocked = Boolean(frame.singleLine);
+  const columnsLocked = Boolean(frame.singleLine);
+  const [lengths, setLengths] = useState({
+    xMm: formatGeometryLength(frame.xMm), yMm: formatGeometryLength(frame.yMm), wMm: formatGeometryLength(frame.wMm), hMm: formatGeometryLength(frame.hMm),
+    gutter: formatGeometryLength(frame.columnGutterMm ?? 0), borderWidth: formatBorderWidth(frame.borderWidthMm ?? 25.4 / 96), angle: formatDegrees(frame.angle1Deg ?? 0), columns: String(frame.columnCount ?? 1),
+  });
+  const skip = useRef<string | null>(null);
+  useEffect(() => setLengths({
+    xMm: formatGeometryLength(frame.xMm), yMm: formatGeometryLength(frame.yMm), wMm: formatGeometryLength(frame.wMm), hMm: formatGeometryLength(frame.hMm),
+    gutter: formatGeometryLength(frame.columnGutterMm ?? 0), borderWidth: formatBorderWidth(frame.borderWidthMm ?? 25.4 / 96), angle: formatDegrees(frame.angle1Deg ?? 0), columns: String(frame.columnCount ?? 1),
+  }), [frame]);
+  const revert = (key: keyof typeof lengths, text: string) => setLengths(prev => ({ ...prev, [key]: text }));
+  const send = (patch: ObjectGeometryPatch, undo: () => void) => { if (applyObjectGeometry(frame, patch)) onChange(frame.id, patch); else undo(); };
+  const commitLength = (key: "xMm" | "yMm" | "wMm" | "hMm") => {
+    if (key === "hMm" && heightLocked) { revert("hMm", formatGeometryLength(frame.hMm)); return; }
+    const value = parseGeometryLength(lengths[key]);
+    if (!Number.isFinite(value) || Math.abs(value - frame[key]) <= 1e-6) { revert(key, formatGeometryLength(frame[key])); return; }
+    send({ [key]: value }, () => revert(key, formatGeometryLength(frame[key])));
+  };
+  const commitColumns = () => {
+    const shown = String(frame.columnCount ?? 1);
+    if (columnsLocked) { revert("columns", shown); return; }
+    const value = Number(lengths.columns);
+    if (!Number.isInteger(value) || value === (frame.columnCount ?? 1)) { revert("columns", shown); return; }
+    send({ columnCount: value }, () => revert("columns", shown));
+  };
+  const commitGutter = () => {
+    const shown = formatGeometryLength(frame.columnGutterMm ?? 0);
+    if (columnsLocked) { revert("gutter", shown); return; }
+    const value = parseGeometryLength(lengths.gutter);
+    if (!Number.isFinite(value) || Math.abs(value - (frame.columnGutterMm ?? 0)) <= 1e-6) { revert("gutter", shown); return; }
+    send({ columnGutterMm: value }, () => revert("gutter", shown));
+  };
+  const commitBorderWidth = () => {
+    const base = frame.borderWidthMm ?? 25.4 / 96;
+    const value = parseBorderWidth(lengths.borderWidth);
+    if (!Number.isFinite(value) || Math.abs(value - base) <= 1e-6) { revert("borderWidth", formatBorderWidth(base)); return; }
+    send({ borderWidthMm: value }, () => revert("borderWidth", formatBorderWidth(base)));
+  };
+  const commitAngle = () => {
+    const base = frame.angle1Deg ?? 0;
+    const value = parseDegrees(lengths.angle);
+    if (!Number.isFinite(value) || Math.abs(value - base) <= 1e-6) { revert("angle", formatDegrees(base)); return; }
+    send({ angle1Deg: value }, () => revert("angle", formatDegrees(base)));
+  };
+  const blur = (id: string, commit: () => void) => { if (skip.current === id) { skip.current = null; return; } commit(); };
+  const keys = (id: string, commit: () => void, restore: () => void) => (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") { commit(); event.currentTarget.blur(); }
+    if (event.key === "Escape") { skip.current = id; restore(); event.currentTarget.blur(); }
+  };
+  const lengthField = (key: "xMm" | "yMm" | "wMm" | "hMm", label: string, data: string) => {
+    const locked = key === "hMm" && heightLocked;
+    return <label className="flex items-center gap-1">{label}<input aria-label={label} data-object-field={data} value={lengths[key]} disabled={locked} readOnly={locked} onChange={e => { if (!locked) setLengths(prev => ({ ...prev, [key]: e.target.value })); }} onKeyDown={locked ? undefined : keys(key, () => commitLength(key), () => revert(key, formatGeometryLength(frame[key])))} onBlur={() => blur(key, () => commitLength(key))} style={{ ...ribbonInput, ...(locked ? ribbonLocked : {}) }} /></label>;
+  };
+  const shape = frame.textShape ?? "rect";
+  return <div data-studio-object-ribbon="true" className="border-b border-[#b8b8b8] bg-[#f0f0f0] px-2 py-1 text-[11px] text-black" dir="ltr">
+    <div className="flex min-h-[26px] flex-wrap items-center gap-2">
+      {lengthField("xMm", "X", "x")}
+      {lengthField("wMm", "Width", "w")}
+      {textShapes.map(([id, label, , glyph]) => <button key={id} type="button" aria-label={label} aria-pressed={shape === id} title={label} onClick={() => { if (shape !== id) onChange(frame.id, { textShape: id }); }} className="h-6 min-w-7 border border-[#aaa] bg-gradient-to-b from-white to-[#e5e5e5] px-1 aria-pressed:border-[#567b9e] aria-pressed:bg-[#d7e8f8]">{glyph}</button>)}
+      <label className="flex items-center gap-1">Border<select aria-label="Border Color" value={frame.borderColor ?? "#000000"} onChange={e => { if ((normalizeSafeHex(e.target.value) ?? e.target.value).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) onChange(frame.id, { borderColor: e.target.value }); }} style={{ ...ribbonInput, width: 78 }}>{colorOptions()}</select></label>
+      <label className="flex items-center gap-1">Fill<select aria-label="Background Color" value={frame.backgroundColor ?? ""} onChange={e => { if (e.target.value !== (frame.backgroundColor ?? "")) onChange(frame.id, { backgroundColor: e.target.value }); }} style={{ ...ribbonInput, width: 78 }}>{colorOptions(true)}</select></label>
+      <label className="flex items-center gap-1"><svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true"><rect x="0.5" y="0.5" width="5" height="11" fill="none" stroke="#000" /><rect x="8.5" y="0.5" width="5" height="11" fill="none" stroke="#000" /></svg><input aria-label="Column count" data-object-field="columns" value={lengths.columns} disabled={columnsLocked} readOnly={columnsLocked} onChange={e => { if (!columnsLocked) setLengths(prev => ({ ...prev, columns: e.target.value })); }} onKeyDown={columnsLocked ? undefined : keys("columns", commitColumns, () => revert("columns", String(frame.columnCount ?? 1)))} onBlur={() => blur("columns", commitColumns)} style={{ ...ribbonInput, width: 36, ...(columnsLocked ? ribbonLocked : {}) }} /></label>
+      <label className="flex items-center gap-1">Angle<input aria-label="Angle1" value={lengths.angle} onChange={e => setLengths(prev => ({ ...prev, angle: e.target.value }))} onKeyDown={keys("angle", commitAngle, () => revert("angle", formatDegrees(frame.angle1Deg ?? 0)))} onBlur={() => blur("angle", commitAngle)} style={{ ...ribbonInput, width: 52 }} /></label>
+    </div>
+    <div className="mt-1 flex min-h-[26px] flex-wrap items-center gap-2">
+      {lengthField("yMm", "Y", "y")}
+      {lengthField("hMm", "Height", "h")}
+      <label className="flex items-center gap-1">Pattern<select aria-label="Border Pattern" value={frame.borderPattern ?? "none"} onChange={e => { const next = e.target.value as FrameBorderPattern; if (next !== (frame.borderPattern ?? "none")) onChange(frame.id, { borderPattern: next }); }} style={{ ...ribbonInput, width: 72 }}>{patternOptions()}</select></label>
+      <label className="flex items-center gap-1">Hatch<select aria-label="Background Hatch" value={frame.backgroundHatch ?? "none"} onChange={() => undefined} style={{ ...ribbonInput, width: 64 }}><option value="none">None</option></select></label>
+      <label className="flex items-center gap-1">Width<input aria-label="Border Width" value={lengths.borderWidth} onChange={e => setLengths(prev => ({ ...prev, borderWidth: e.target.value }))} onKeyDown={keys("borderWidth", commitBorderWidth, () => revert("borderWidth", formatBorderWidth(frame.borderWidthMm ?? 25.4 / 96)))} onBlur={() => blur("borderWidth", commitBorderWidth)} style={{ ...ribbonInput, width: 52 }} /></label>
+      <label className="flex items-center gap-1">Gutter<input aria-label="Column gutter" data-object-field="gutter" value={lengths.gutter} disabled={columnsLocked} readOnly={columnsLocked} onChange={e => { if (!columnsLocked) setLengths(prev => ({ ...prev, gutter: e.target.value })); }} onKeyDown={columnsLocked ? undefined : keys("gutter", commitGutter, () => revert("gutter", formatGeometryLength(frame.columnGutterMm ?? 0)))} onBlur={() => blur("gutter", commitGutter)} style={{ ...ribbonInput, ...(columnsLocked ? ribbonLocked : {}) }} /></label>
+      <label className="flex items-center gap-1">Rule<select aria-label="Column rule pattern" value={frame.columnRulePattern ?? "none"} onChange={e => { const next = e.target.value as FrameBorderPattern; if (next !== (frame.columnRulePattern ?? "none")) onChange(frame.id, { columnRulePattern: next }); }} style={{ ...ribbonInput, width: 72 }}>{patternOptions()}</select></label>
+    </div>
+  </div>;
 }
 
 const unsupported = { title: "Not supported yet in Qalam Page", "aria-description": "Not supported yet in Qalam Page", disabled: true } as const;
@@ -127,8 +218,18 @@ function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: Studio
   const [angle1, setAngle1] = useState(formatDegrees(frame.angle1Deg ?? 0));
   const [angle2, setAngle2] = useState(formatDegrees(frame.angle2Deg ?? 0));
   const [borderPosition, setBorderPosition] = useState<"inside" | "outside" | undefined>(frame.borderPosition);
+  const [borderPattern, setBorderPattern] = useState<FrameBorderPattern>(frame.borderPattern ?? "none");
+  const [columnCount, setColumnCount] = useState(String(frame.columnCount ?? 1));
+  const [gutter, setGutter] = useState(formatGeometryLength(frame.columnGutterMm ?? 0));
+  const [insetText, setInsetText] = useState(formatGeometryLength(frame.insetMm ?? DEFAULT_TEXT_INSET_MM));
+  const [columnDirection, setColumnDirection] = useState<"ltr" | "rtl">(frame.columnDirection ?? "rtl");
+  const [ruleColor, setRuleColor] = useState(frame.columnRuleColor ?? "#000000");
+  const [ruleSizeText, setRuleSizeText] = useState(formatBorderWidth(frame.columnRuleSizeMm ?? 25.4 / 72));
+  const [rulePattern, setRulePattern] = useState<FrameBorderPattern>(frame.columnRulePattern ?? "none");
   const [draft, setDraft] = useState<Record<GeometryKey, string>>(() => Object.fromEntries(fields.map(([key]) => [key, formatGeometryLength(frame[key])])) as Record<GeometryKey, string>);
   const preview = { ...frame, ...patch };
+  const isText = frame.kind === "text";
+  const columnsLocked = Boolean(frame.singleLine);
   useEffect(() => { firstField.current?.focus({ preventScroll: true }); return () => returnFocus.current?.focus({ preventScroll: true }); }, [returnFocus]);
   useEffect(() => { const escape = (event: KeyboardEvent) => { if (event.key === "Escape") onCancel(); }; document.addEventListener("keydown", escape); return () => document.removeEventListener("keydown", escape); }, [onCancel]);
   return createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 130, display: "grid", placeItems: "center", background: "rgba(0,0,0,.25)", padding: 12 }}><form ref={node => { drag.dialogRef.current = node; formRef.current = node; }} role="dialog" aria-modal="true" aria-label="Modify Object" data-studio-format-object-dialog="true" data-inpage2009-dialog="true" data-modify-object-window="true" dir="ltr" onSubmit={e => { e.preventDefault(); const current = Object.fromEntries(fields.map(([key]) => [key, parseGeometryLength(draft[key])] )) as ObjectGeometryPatch; if (frame.singleLine) delete current.hMm; const style: ObjectGeometryPatch = {};
@@ -146,10 +247,27 @@ function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: Studio
       if (Number.isFinite(parsedAngle1) && Math.abs(parsedAngle1 - (frame.angle1Deg ?? 0)) > 1e-6) current.angle1Deg = parsedAngle1;
       if (Number.isFinite(parsedAngle2) && Math.abs(parsedAngle2 - (frame.angle2Deg ?? 0)) > 1e-6) current.angle2Deg = parsedAngle2;
       if (borderPosition !== undefined && borderPosition !== frame.borderPosition) current.borderPosition = borderPosition;
+      if (isText) {
+        if (!frame.singleLine) {
+          const cols = Number(columnCount);
+          if (Number.isInteger(cols) && cols !== (frame.columnCount ?? 1)) current.columnCount = cols;
+          const gutterMm = parseGeometryLength(gutter);
+          if (Number.isFinite(gutterMm) && Math.abs(gutterMm - (frame.columnGutterMm ?? 0)) > 1e-6) current.columnGutterMm = gutterMm;
+        }
+        const insetShown = parseGeometryLength(formatGeometryLength(frame.insetMm ?? DEFAULT_TEXT_INSET_MM));
+        const insetMm = parseGeometryLength(insetText);
+        if (Number.isFinite(insetMm) && Math.abs(insetMm - insetShown) > 1e-6) current.insetMm = insetMm;
+        if (columnDirection !== (frame.columnDirection ?? "rtl")) current.columnDirection = columnDirection;
+        const ruleShown = frame.columnRuleSizeMm ?? 25.4 / 72;
+        const ruleSizeMm = parseBorderWidth(ruleSizeText);
+        if (Number.isFinite(ruleSizeMm) && Math.abs(ruleSizeMm - ruleShown) > 1e-6) current.columnRuleSizeMm = ruleSizeMm;
+        if (rulePattern !== (frame.columnRulePattern ?? "none")) current.columnRulePattern = rulePattern;
+        if ((normalizeSafeHex(ruleColor) ?? ruleColor).toLowerCase() !== (normalizeSafeHex(frame.columnRuleColor ?? "#000000") ?? "#000000").toLowerCase()) current.columnRuleColor = ruleColor;
+      }
       if (patch.locked !== undefined && patch.locked !== (frame.locked ?? false)) current.locked = patch.locked;
       if (patch.dontPrint !== undefined && patch.dontPrint !== (frame.dontPrint ?? false)) current.dontPrint = patch.dontPrint;
       if (patch.template !== undefined && patch.template !== (frame.template ?? false)) current.template = patch.template;
-      const parsedWidth = parseBorderWidth(borderWidth); if (Number.isFinite(parsedWidth) && Math.abs(parsedWidth - (frame.borderWidthMm ?? 25.4 / 96)) > 1e-6) style.borderWidthMm = parsedWidth; if ((normalizeSafeHex(borderColor) ?? borderColor).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) style.borderColor = borderColor; if (backgroundColor !== (frame.backgroundColor ?? "")) style.backgroundColor = backgroundColor; if (frame.borderPattern !== undefined) style.borderPattern = frame.borderPattern; if (frame.backgroundHatch !== undefined) style.backgroundHatch = frame.backgroundHatch; const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; if (frame.singleLine) delete selection.hMm; onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
+      const parsedWidth = parseBorderWidth(borderWidth); if (Number.isFinite(parsedWidth) && Math.abs(parsedWidth - (frame.borderWidthMm ?? 25.4 / 96)) > 1e-6) style.borderWidthMm = parsedWidth; if ((normalizeSafeHex(borderColor) ?? borderColor).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) style.borderColor = borderColor; if (backgroundColor !== (frame.backgroundColor ?? "")) style.backgroundColor = backgroundColor; if (borderPattern !== (frame.borderPattern ?? "none")) style.borderPattern = borderPattern; else if (frame.borderPattern !== undefined) style.borderPattern = frame.borderPattern; if (frame.backgroundHatch !== undefined) style.backgroundHatch = frame.backgroundHatch; const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; if (frame.singleLine) { delete selection.hMm; delete selection.columnCount; delete selection.columnGutterMm; delete current.columnCount; delete current.columnGutterMm; } onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
     <div {...drag.handleProps} style={{ ...drag.handleProps.style, position: "absolute", left: 0, top: 0, right: 0, height: 29, boxSizing: "border-box", paddingLeft: 7, display: "flex", alignItems: "center", fontWeight: "normal", fontSize: 11, borderBottom: "1px solid #5d6c7a", background: "linear-gradient(#e9f5ff,#c6e2fc 70%,#b8dbfd)" }}>Modify Object</div>
     <button type="button" aria-label="Close" onClick={onCancel} style={{ position: "absolute", right: 3, top: 2, width: 43, height: 18, padding: 0, border: "1px solid #9e382d", borderRadius: "0 0 4px 4px", color: "white", font: 'bold 13px QalamUIArial, Arial, sans-serif', lineHeight: "15px", textShadow: "0 1px #6b1915", background: "linear-gradient(#f7a08f,#ce392c 55%,#a51d18)", zIndex: 2 }}>×</button>
     <div style={{ position: "absolute", left: 7, top: 29, width: 336, height: 284, boxSizing: "border-box", border: "1px solid #5d6c7a", background: "#f0f0f0" }}>
@@ -163,17 +281,29 @@ function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: Studio
         <select aria-label="Border Color" value={borderColor} onChange={e => setBorderColor(e.target.value)} style={{ ...control, position: "absolute", left: 44, top: 14, width: 70, height: 20 }}>{STUDIO_TEXT_COLORS.filter(c => c.hex).map(c => <option key={c.id} value={c.hex}>{c.label}</option>)}</select>
         <input aria-label="Border Width" value={borderWidth} onChange={e => setBorderWidth(e.target.value)} style={{ ...control, position: "absolute", left: 44, top: 37, width: 52 }} />
         <span style={{ position: "absolute", left: 98, top: 37, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Border Width" onClick={() => setBorderWidth(formatBorderWidth(parseBorderWidth(borderWidth) + 25.4 / 288))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Border Width" onClick={() => setBorderWidth(formatBorderWidth(Math.max(0.01, parseBorderWidth(borderWidth) - 25.4 / 288)))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span>
-        <select aria-label="Border Pattern" defaultValue="none" style={{ ...control, position: "absolute", left: 44, top: 60, width: 70, height: 20 }}><option value="none">None</option></select>
+        <select aria-label="Border Pattern" value={borderPattern} onChange={e => setBorderPattern(e.target.value as FrameBorderPattern)} style={{ ...control, position: "absolute", left: 44, top: 60, width: 70, height: 20 }}>{patternOptions()}</select>
         <label style={{ position: "absolute", left: 5, top: 83 }}>{radio(borderPosition === "inside")}Inside<input type="radio" name="border-position" aria-label="Inside" checked={borderPosition === "inside"} onChange={() => setBorderPosition("inside")} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label><label style={{ position: "absolute", left: 58, top: 83 }}>{radio(borderPosition === "outside")}Outside<input type="radio" name="border-position" aria-label="Outside" checked={borderPosition === "outside"} onChange={() => setBorderPosition("outside")} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>
-        {caption(5, 102, "Roundness:")}<input aria-label="Roundness" value={roundness} onChange={e => setRoundness(e.target.value)} style={{ ...control, position: "absolute", left: 62, top: 102, width: 52 }} />
+        {isText ? null : <>{caption(5, 102, "Roundness:")}<input aria-label="Roundness" value={roundness} onChange={e => setRoundness(e.target.value)} style={{ ...control, position: "absolute", left: 62, top: 102, width: 52 }} /></>}
       </>)}
-      {group(3, 139, 242, 99, "Picture", <>
+      {isText ? group(3, 139, 242, 99, "Columns", <>
+        {caption(4, 12, "Columns:")}{caption(100, 12, "Gutter:")}
+        <input aria-label="Column count" data-object-field="columns" value={columnCount} disabled={columnsLocked} readOnly={columnsLocked} onChange={e => { if (!columnsLocked) setColumnCount(e.target.value); }} style={{ ...control, position: "absolute", left: 54, top: 12, width: 40, ...(columnsLocked ? { background: "#d4d4d4", color: "#666" } : {}) }} />
+        <input aria-label="Column gutter" data-object-field="gutter" value={gutter} disabled={columnsLocked} readOnly={columnsLocked} onChange={e => { if (!columnsLocked) setGutter(e.target.value); }} style={{ ...control, position: "absolute", left: 142, top: 12, width: 52, ...(columnsLocked ? { background: "#d4d4d4", color: "#666" } : {}) }} />
+        {caption(4, 34, "Color:")}{caption(118, 34, "Size:")}
+        <select aria-label="Column rule color" value={ruleColor} onChange={e => setRuleColor(e.target.value)} style={{ ...control, position: "absolute", left: 40, top: 34, width: 72 }}>{colorOptions()}</select>
+        <input aria-label="Column rule size" value={ruleSizeText} onChange={e => setRuleSizeText(e.target.value)} style={{ ...control, position: "absolute", left: 148, top: 34, width: 48 }} />
+        {caption(4, 56, "Pattern:")}{caption(118, 56, "Inset:")}
+        <select aria-label="Column rule pattern" value={rulePattern} onChange={e => setRulePattern(e.target.value as FrameBorderPattern)} style={{ ...control, position: "absolute", left: 52, top: 56, width: 60 }}>{patternOptions()}</select>
+        <input aria-label="Inset" data-object-field="inset" value={insetText} onChange={e => setInsetText(e.target.value)} style={{ ...control, position: "absolute", left: 150, top: 56, width: 48 }} />
+        <label style={{ position: "absolute", left: 4, top: 78 }}>{radio(columnDirection === "rtl")}Right to Left<input type="radio" name="column-direction" aria-label="Right to Left" checked={columnDirection === "rtl"} onChange={() => setColumnDirection("rtl")} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>
+        <label style={{ position: "absolute", left: 112, top: 78 }}>{radio(columnDirection === "ltr")}Left to Right<input type="radio" name="column-direction" aria-label="Left to Right" checked={columnDirection === "ltr"} onChange={() => setColumnDirection("ltr")} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>
+      </>) : group(3, 139, 242, 99, "Picture", <>
         {group(3, 12, 113, 58, "Origin", <>{caption(4, 14, "Across:")}{caption(4, 34, "Down:")}<input aria-label="Origin Across" value={origin.x} onChange={e => setOrigin(v => ({ ...v, x: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 14, width: 62 }} /><input aria-label="Origin Down" value={origin.y} onChange={e => setOrigin(v => ({ ...v, y: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 34, width: 62 }} /></>)}
         {group(120, 12, 119, 58, "Scaling", <>{caption(4, 14, "Across:")}{caption(4, 34, "Down:")}<input aria-label="Scaling Across" value={scale.x} onChange={e => setScale(v => ({ ...v, x: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 14, width: 58 }} /><input aria-label="Scaling Down" value={scale.y} onChange={e => setScale(v => ({ ...v, y: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 34, width: 58 }} /><span style={{ position: "absolute", left: 103, top: 14, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Scaling Across" onClick={() => setScale(v => ({ ...v, x: formatPercent(parsePercent(v.x) + 1) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Scaling Across" onClick={() => setScale(v => ({ ...v, x: formatPercent(Math.max(0.01, parsePercent(v.x) - 1)) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span><span style={{ position: "absolute", left: 103, top: 34, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Scaling Down" onClick={() => setScale(v => ({ ...v, y: formatPercent(parsePercent(v.y) + 1) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Scaling Down" onClick={() => setScale(v => ({ ...v, y: formatPercent(Math.max(0.01, parsePercent(v.y) - 1)) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span></>)}
         {caption(4, 76, "Angle2:")}<input aria-label="Angle2" value={angle2} onChange={e => setAngle2(e.target.value)} style={{ ...control, position: "absolute", left: 45, top: 76, width: 62 }} /><label style={{ position: "absolute", left: 121, top: 76, whiteSpace: "nowrap" }}>{checkbox()}White Transparent(q)<input type="checkbox" aria-label="Not supported" {...unsupported} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>
       </>)}
-      {group(3, 245, 242, 35, "Background", <>{caption(5, 13, "Color(z):")}<select aria-label="Background Color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} style={{ ...control, position: "absolute", left: 47, top: 13, width: 74, height: 20 }}><option value="">None</option><option value="#FFFFFF">White</option>{STUDIO_TEXT_COLORS.filter(c => c.hex).map(c => <option key={c.id} value={c.hex}>{c.label}</option>)}</select>{caption(126, 13, "Hatch:")}<select aria-label="Background Hatch" defaultValue="none" style={{ ...control, position: "absolute", left: 164, top: 13, width: 72, height: 20 }}><option value="none">None</option></select></>)}
-      <div data-object-shape-group="true" style={{ position: "absolute", left: 250, top: 140, width: 83, height: 65, boxSizing: "border-box", border: "1px solid #a0a0a0", boxShadow: "inset 0 1px #fff" }}><span style={{ position: "absolute", left: 7, top: -6, padding: "0 3px", lineHeight: "12px", background: "#f0f0f0", whiteSpace: "nowrap" }}>Shape</span>{kinds.map(([kind, label, short], i) => <label key={kind} style={{ position: "absolute", left: 4, top: 17 + i * 16, width: 77, maxWidth: 77, height: 10, display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{radio(preview.kind === kind)}{short}<input type="radio" name="object-shape" aria-label={label} checked={preview.kind === kind} onChange={() => setPatch(prev => ({ ...prev, kind }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>)}</div>
+      {group(3, 245, 242, 35, "Background", <>{caption(5, 13, "Color(z):")}<select aria-label="Background Color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} style={{ ...control, position: "absolute", left: 47, top: 13, width: 74, height: 20 }}><option value="">None</option><option value="#FFFFFF">White</option>{STUDIO_TEXT_COLORS.filter(c => c.hex).map(c => <option key={c.id} value={c.hex}>{c.label}</option>)}</select>{caption(126, 13, "Hatch:")}<select aria-label="Background Hatch" value={frame.backgroundHatch ?? "none"} onChange={() => undefined} style={{ ...control, position: "absolute", left: 164, top: 13, width: 72, height: 20 }}><option value="none">None</option></select></>)}
+      <div data-object-shape-group="true" style={{ position: "absolute", left: 250, top: 140, width: 83, height: 65, boxSizing: "border-box", border: "1px solid #a0a0a0", boxShadow: "inset 0 1px #fff" }}><span style={{ position: "absolute", left: 7, top: -6, padding: "0 3px", lineHeight: "12px", background: "#f0f0f0", whiteSpace: "nowrap" }}>Shape</span>{isText ? textShapes.map(([id, label, short], i) => { const chosen = (patch.textShape ?? frame.textShape ?? "rect") as TextShape; return <label key={id} style={{ position: "absolute", left: 4, top: 17 + i * 16, width: 77, maxWidth: 77, height: 10, display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{radio(chosen === id)}{short}<input type="radio" name="object-shape" aria-label={label} checked={chosen === id} onChange={() => setPatch(prev => { const next = { ...prev }; if (id === (frame.textShape ?? "rect")) delete next.textShape; else next.textShape = id; return next; })} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>; }) : kinds.map(([kind, label, short], i) => <label key={kind} style={{ position: "absolute", left: 4, top: 17 + i * 16, width: 77, maxWidth: 77, height: 10, display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{radio(preview.kind === kind)}{short}<input type="radio" name="object-shape" aria-label={label} checked={preview.kind === kind} onChange={() => setPatch(prev => ({ ...prev, kind }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>)}</div>
       {caption(250, 115, "Number:", 19)}<input data-object-number-field="true" aria-label="Not supported" {...unsupported} value="" readOnly style={{ ...control, position: "absolute", left: 295, top: 115, width: 38, height: 19, textAlign: "left", lineHeight: "17px" }} />
       <button type="submit" style={{ ...classicButton, position: "absolute", left: 257, top: 7, width: 75, height: 22, outline: "1px solid #59636b", outlineOffset: 1 }}>OK</button>
       <button type="button" onClick={onCancel} style={{ ...classicButton, position: "absolute", left: 257, top: 34, width: 75, height: 22 }}>Cancel</button>

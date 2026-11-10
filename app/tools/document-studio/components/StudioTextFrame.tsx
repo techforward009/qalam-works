@@ -8,6 +8,7 @@ import type { StudioFrame } from "./StudioObjectLayer";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { emptyFrameCaretLeft } from "../utils/frameCaret";
 import { centerSingleLinePadding, normalizeSingleLineText, SINGLE_LINE_OVERFLOW_WRAP, SINGLE_LINE_WHITE_SPACE } from "../utils/singleLineFrame";
+import { textColumnFlowStyle, textScreenChrome, type TextColumnFrame } from "../utils/textColumns";
 export { normalizeSingleLineText };
 import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLineBoxes";
 import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKeyboard";
@@ -64,10 +65,11 @@ function ParagraphColumn({ parts, aligns, formats, textAlign, fallbackLeadingPt 
 }
 
 /** A natural-size mirror preserves textarea wrapping even inside a zoom transform. */
-export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, paragraphFormats, keyboardLayout, onFocus, onText, onRestore, onStyle, onPmEdit }: {
+export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, paragraphFormats, keyboardLayout, flow, onFocus, onText, onRestore, onStyle, onPmEdit }: {
   text: string; singleLine?: boolean; editable: boolean; typography?: DocumentStudioSettings["typography"];
   keyboardLayout?: KeyboardLayout | null;
   textColor?: string; textAlign?: StudioTextAlign; paragraphAligns?: ParagraphAlign[]; paragraphFormats?: ParagraphFormat[];
+  flow?: Partial<TextColumnFrame>;
   onFocus: () => void; onText: (text: string, edit?: TextEditRange) => void;
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
@@ -78,7 +80,10 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   const [boxes,setBoxes] = useState<TextLineBox[]>([]);
   const [caret,setCaret] = useState<TextLineBox | null>(null);
   const [overflow,setOverflow] = useState<FrameOverflowEdge | null>(null);
-  const [padY,setPadY] = useState({ top: 2, bottom: 2 });
+  const boxFlow = { ...flow, singleLine };
+  const chrome = textScreenChrome(boxFlow);
+  const columnFlow = textColumnFlowStyle(boxFlow);
+  const [padY,setPadY] = useState({ top: chrome.paddingPx, bottom: chrome.paddingPx });
   const [fontEpoch,setFontEpoch] = useState(0);
   const [alignLabel,setAlignLabel] = useState(textAlign ?? "");
   const padShifts = useRef(0);
@@ -262,8 +267,9 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     if (alignKeyRef.current !== alignKey) { alignKeyRef.current = alignKey; padShifts.current = 0; }
     if (!singleLine) return;
     const node = textRef.current;
+    const pad = chrome.paddingPx;
     if (!node?.textContent) {
-      setPadY(prev => prev.top === 2 && prev.bottom === 2 ? prev : { top: 2, bottom: 2 });
+      setPadY(prev => prev.top === pad && prev.bottom === pad ? prev : { top: pad, bottom: pad });
       return;
     }
     const range = document.createRange();
@@ -272,7 +278,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     if (ink.height < 0.5) return;
     const linePx = leading * (96 / 72);
     if (ink.height > linePx * 1.75) {
-      setPadY(prev => prev.top === 2 && prev.bottom === 2 ? prev : { top: 2, bottom: 2 });
+      setPadY(prev => prev.top === pad && prev.bottom === pad ? prev : { top: pad, bottom: pad });
       return;
     }
     const box = node.getBoundingClientRect();
@@ -286,7 +292,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       const next = centerSingleLinePadding(prev, above, below);
       return Math.abs(next.top - prev.top) < 0.25 && Math.abs(next.bottom - prev.bottom) < 0.25 ? prev : next;
     });
-  }, [singleLine, alignKey, leading, padY.top, padY.bottom]);
+  }, [singleLine, alignKey, leading, padY.top, padY.bottom, chrome.paddingPx]);
   useEffect(() => {
     if (!singleLine) return;
     const rerun = () => setFontEpoch(epoch => epoch + 1);
@@ -329,7 +335,8 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     if (ref.current) observer.observe(ref.current);
     return () => { cancelAnimationFrame(raf); observer.disconnect(); document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("selectionchange", update); root?.removeEventListener(FORMATTING_TARGET_CHANGE, update); document.fonts.removeEventListener("loadingdone", update); };
   }, [measure]);
-  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",...(singleLine ? { paddingTop: padY.top, paddingRight: 2, paddingBottom: padY.bottom, paddingLeft: 2 } : { padding: 2 }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:SINGLE_LINE_WHITE_SPACE,overflowWrap:SINGLE_LINE_OVERFLOW_WRAP,overflow:"hidden",color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
+  useEffect(() => { padShifts.current = 0; setPadY({ top: chrome.paddingPx, bottom: chrome.paddingPx }); }, [chrome.paddingPx]);
+  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:chrome.border,outline:chrome.outline,borderRadius:chrome.radius,background:chrome.background,...(singleLine ? { paddingTop: padY.top, paddingRight: chrome.paddingPx, paddingBottom: padY.bottom, paddingLeft: chrome.paddingPx } : { padding: chrome.paddingPx }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:SINGLE_LINE_WHITE_SPACE,overflowWrap:SINGLE_LINE_OVERFLOW_WRAP,overflow:"hidden",color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
   const handlePaste = (event: ReactClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!singleLine) return;
     event.preventDefault();
@@ -439,12 +446,14 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     if (!remembered.current) { remembered.current = true; rememberAt(input.value, start, end); }
   };
   const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} formats={paragraphFormats} textAlign={textAlign} fallbackLeadingPt={leading} /></div>;
-  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(!editable)return; if(!singleLine && onPmEdit && textboxPmEnabled()){event.preventDefault();event.stopPropagation();onPmEdit({x:event.clientX,y:event.clientY});return;} event.stopPropagation();onFocus();}, onFocus:()=>{if(!singleLine && editable && onPmEdit && textboxPmEnabled()){onPmEdit(null);return;} dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!singleLine && !remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBeforeInput:handleBeforeInput, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
+  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-guide": chrome.guide ? "true" : undefined, "data-studio-text-shape": flow?.textShape === "ellipse" ? "ellipse" : undefined, "data-studio-text-inset-mm": flow?.insetMm === undefined ? undefined : String(flow.insetMm), "data-studio-text-columns": columnFlow ? String(columnFlow.columnCount) : undefined, "data-studio-column-direction": columnFlow ? columnFlow.direction : undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(!editable)return; if(!singleLine && onPmEdit && textboxPmEnabled()){event.preventDefault();event.stopPropagation();onPmEdit({x:event.clientX,y:event.clientY});return;} event.stopPropagation();onFocus();}, onFocus:()=>{if(!singleLine && editable && onPmEdit && textboxPmEnabled()){onPmEdit(null);return;} dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!singleLine && !remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBeforeInput:handleBeforeInput, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
   const displayText = singleLine ? normalizeSingleLineText(text) : text;
-  const fieldStyle = paragraphPaint ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;
+  const fieldStyle = paragraphPaint || columnFlow ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;
+  const columnText = paragraphPaint ? paragraphBlock() : text;
   return <>
     {singleLine ? <div ref={textRef} aria-hidden data-studio-single-line-text style={{ ...style, pointerEvents: "none", userSelect: "none" }}>{displayText}</div> : null}
-    {paragraphPaint ? <div ref={visible} aria-hidden data-studio-frame-paragraphs style={{ ...style, borderColor: "transparent", overflow: "hidden", pointerEvents: "none", background: "transparent" }}>{paragraphBlock()}</div> : null}
+    {columnFlow ? <div aria-hidden data-studio-text-columns={columnFlow.columnCount} data-studio-column-direction={columnFlow.direction} style={{ ...style, borderColor: "transparent", background: "transparent", pointerEvents: "none", columnCount: columnFlow.columnCount, columnGap: columnFlow.columnGap, columnFill: columnFlow.columnFill, columnRule: columnFlow.columnRule, direction: columnFlow.direction, color: textColor ?? "#000" }}><div style={{ direction: "rtl" }}>{columnText}</div></div> : null}
+    {paragraphPaint && !columnFlow ? <div ref={visible} aria-hidden data-studio-frame-paragraphs style={{ ...style, borderColor: "transparent", overflow: "hidden", pointerEvents: "none", background: "transparent" }}>{paragraphBlock()}</div> : null}
     {singleLine ? <textarea {...sharedProps} rows={1} wrap="soft" data-studio-text-frame data-studio-text-single-line="true" data-studio-selection-painted="true" style={{ ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent", scrollbarWidth: "none", minHeight: 0 }} /> : <textarea {...sharedProps} data-studio-paragraph-paint={paragraphPaint ? "true" : undefined} data-studio-selection-painted={boxes.length?"true":undefined} style={{ ...fieldStyle, scrollbarWidth: "none" }} />}
     <div ref={mirror} aria-hidden style={{...style,height:"auto",minHeight:"100%",visibility:"hidden",pointerEvents:"none",borderColor:"transparent",transform:"none"}}>{paragraphPaint ? paragraphBlock() : null}</div>
     {caret?<div key={`${caret.left}:${caret.top}:${caret.height}`} data-studio-frame-caret style={{position:"absolute",...caret,background:"#000",pointerEvents:"none",animation:"qalam-studio-caret-blink 1060ms step-end infinite"}} />:null}

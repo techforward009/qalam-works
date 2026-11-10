@@ -78,7 +78,7 @@ describe("appearance patches", () => {
     expect(applyObjectGeometry(frame, { borderColor: "#123456", borderWidthMm: 1, borderPattern: "none", backgroundColor: "#FFFFFF", backgroundHatch: "none" })).toMatchObject({ borderColor: "#123456", borderWidthMm: 1, backgroundColor: "#FFFFFF" });
     expect(applyObjectGeometry({ ...frame, backgroundColor: "#FFFFFF" }, { backgroundColor: "" })?.backgroundColor).toBeUndefined();
   });
-  it.each([{ borderColor: "red" }, { backgroundColor: "transparent" }, { borderWidthMm: 0 }, { borderWidthMm: Infinity }, { borderPattern: "dashed" }, { backgroundHatch: "cross" }])("rejects invalid style patch $patch", patch => {
+  it.each([{ borderColor: "red" }, { backgroundColor: "transparent" }, { borderWidthMm: 0 }, { borderWidthMm: Infinity }, { borderPattern: "zigzag" }, { backgroundHatch: "cross" }])("rejects invalid style patch $patch", patch => {
     expect(applyObjectGeometry(frame, patch as never)).toBeNull();
   });
 });

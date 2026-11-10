@@ -158,7 +158,7 @@ import { applyObjectGeometry } from "../utils/objectAttributes";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
-import { readStoredFrames, writeStoredFrames, isPictureBox, pictureMenuDisabledIds, type StudioFrame } from "./StudioObjectLayer";
+import { readStoredFrames, writeStoredFrames, isPictureBox, isTextBox, pictureMenuDisabledIds, type StudioFrame } from "./StudioObjectLayer";
 import { fitPictureInBox, PICTURE_SOURCE_HARD_CAP_BYTES } from "../utils/pictureFit";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
@@ -2010,6 +2010,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const selectedPictureBox = frames.find((f) => selectedFrameIds.includes(f.id) && isPictureBox(f.kind));
+  const selectedObjectFrame = selectedFrameIds.length === 1 ? frames.find((f) => f.id === selectedFrameIds[0] && (isPictureBox(f.kind) || isTextBox(f.kind))) : undefined;
 
   const openPictureChooser = (frameId?: string) => {
     const targetId = frameId ?? selectedPictureBox?.id;
@@ -2516,7 +2517,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedFrameIds.length === 1 && selectedPictureBox ? <StudioObjectRibbon frame={selectedPictureBox} onChange={(frameId, patch) => {
+          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedObjectFrame ? <StudioObjectRibbon frame={selectedObjectFrame} onChange={(frameId, patch) => {
             const target = frames.find(frame => frame.id === frameId);
             const updated = target && applyObjectGeometry(target, patch);
             if (updated) changeFrames(frames.map(frame => frame.id === frameId ? updated : frame));

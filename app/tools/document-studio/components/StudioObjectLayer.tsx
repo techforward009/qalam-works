@@ -17,13 +17,16 @@ import { isFormattingSurface } from "../utils/formattingSafety";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { textboxPmEnabled } from "../utils/textboxPmFlag";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
-import { measureSingleLineOuterHeightMm, singleLineLeadingPt, singleLineOuterHeightPx } from "../utils/singleLineFrame";
+import { measureSingleLineOuterHeightMm, SINGLE_LINE_PADDING_PX, singleLineLeadingPt, singleLineOuterHeightPx } from "../utils/singleLineFrame";
+import { frameBorderPattern, frameBorderVisible, frameBorderWidthMm } from "../utils/frameBorder";
 import type { Editor } from "@tiptap/react";
 import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
 import type { ParagraphFormat } from "../utils/paragraphFormats";
+import type { FrameBorderPattern } from "../utils/frameBorder";
+import type { ColumnDirection, TextShape } from "../utils/textColumns";
 
 export type FrameKind =
   | "rect"
@@ -70,13 +73,29 @@ export type StudioFrame = {
   borderPosition?: "inside" | "outside";
   borderColor?: string;
   borderWidthMm?: number;
-  borderPattern?: "none";
+  borderPattern?: FrameBorderPattern;
   backgroundColor?: string;
   backgroundHatch?: "none";
+  /** Multiline text columns. Absent means one column, no gutter, and no rule. */
+  columnCount?: number;
+  columnGutterMm?: number;
+  /** Which column fills first. Absent means the right column (Urdu). */
+  columnDirection?: ColumnDirection;
+  columnRuleColor?: string;
+  columnRuleSizeMm?: number;
+  columnRulePattern?: FrameBorderPattern;
+  /** Inner padding. Absent keeps the existing 2px text padding. */
+  insetMm?: number;
+  /** Text-box shape. Absent means rectangular. Pictures use kind instead. */
+  textShape?: TextShape;
 };
 
 export function isPictureBox(kind: string): boolean {
   return kind === "picture-rect" || kind === "picture-ellipse" || kind === "picture-round-rect";
+}
+
+export function isTextBox(kind: string): boolean {
+  return kind === "text";
 }
 
 /** The selected (targeted) picture box that Insert > Picture and Import Picture fill. */
@@ -427,17 +446,18 @@ export function StudioObjectLayer({
     const rootBox = rootRef.current?.getBoundingClientRect();
     return projectionProp ? zoom : rootBox && rootBox.width > 0 ? rootBox.width / pageWidthPx : 1;
   };
-  const fittedSingleLineHeightMm = (text: string, frameTypography: DocumentStudioSettings["typography"] | undefined, wMm: number) =>
+  const fittedSingleLineHeightMm = (text: string, frameTypography: DocumentStudioSettings["typography"] | undefined, wMm: number, insetMm?: number) =>
     measureSingleLineOuterHeightMm({
       text,
       typography: frameTypography ?? typography ?? defaultDocumentSettings().typography,
       outerWidthPx: singleLineWidthsPx(wMm, frameScale()),
+      paddingPx: insetMm === undefined ? SINGLE_LINE_PADDING_PX : insetMm * PX_PER_MM,
     });
   useLayoutEffect(() => {
     let changed = false;
     const next = frames.map((frame) => {
       if (!frame.singleLine || frame.kind !== "text") return frame;
-      const hMm = fittedSingleLineHeightMm(frame.text, frame.typography, frame.wMm);
+      const hMm = fittedSingleLineHeightMm(frame.text, frame.typography, frame.wMm, frame.insetMm);
       if (Math.abs(hMm - frame.hMm) < 0.01) return frame;
       changed = true;
       return { ...frame, hMm };
@@ -671,7 +691,7 @@ export function StudioObjectLayer({
           updateFrame(frame.id, {
             xMm: x / PX_PER_MM,
             wMm: newWMm,
-            hMm: fittedSingleLineHeightMm(frame.text, frame.typography, newWMm),
+            hMm: fittedSingleLineHeightMm(frame.text, frame.typography, newWMm, frame.insetMm),
           });
           return;
         }
@@ -757,7 +777,7 @@ export function StudioObjectLayer({
             data-studio-frame={frame.kind}
             data-studio-frame-id={frame.id}
             onContextMenu={(event) => {
-              if (!isPictureBox(frame.kind)) return;
+              if (!isPictureBox(frame.kind) && !isTextBox(frame.kind)) return;
               event.preventDefault();
               setSelected([frame.id]);
               const detail = { id: frame.id, x: event.clientX, y: event.clientY };
@@ -819,7 +839,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} pmEditing={pmFrameId === frame.id} pageWidthPx={pageWidthPx} zoom={zoom} getKeyboardLayout={getKeyboardLayout ?? (() => null)} clickPoint={pmFrameId === frame.id ? pmClickRef.current : null} onPmEdit={(point) => beginPmEdit(frame.id, point)} onPmCommit={() => requestPmCommit()} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); const patch = current ? paragraphTextPatch(current, next, edit) : { text: next }; updateFrame(frame.id, current?.singleLine ? { ...patch, hMm: fittedSingleLineHeightMm(next, current.typography, current.wMm) } : patch); }} onRestore={(snap) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current?.singleLine ? { ...snap, hMm: fittedSingleLineHeightMm(snap.text, current.typography, current.wMm) } : snap); }} onDoc={(doc) => { const current = framesRef.current.find((item) => item.id === frame.id); if (!current) return; const patch = frameContentPatch(current, doc); if (patch) updateFrame(frame.id, patch); }} onStyle={(patch) => { const current = framesRef.current.find((item) => item.id === frame.id) ?? frame; updateFrame(frame.id, current.singleLine && patch.typography ? { ...patch, hMm: fittedSingleLineHeightMm(current.text, patch.typography, current.wMm) } : patch); }} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} pmEditing={pmFrameId === frame.id} pageWidthPx={pageWidthPx} zoom={zoom} getKeyboardLayout={getKeyboardLayout ?? (() => null)} clickPoint={pmFrameId === frame.id ? pmClickRef.current : null} onPmEdit={(point) => beginPmEdit(frame.id, point)} onPmCommit={() => requestPmCommit()} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); const patch = current ? paragraphTextPatch(current, next, edit) : { text: next }; updateFrame(frame.id, current?.singleLine ? { ...patch, hMm: fittedSingleLineHeightMm(next, current.typography, current.wMm, current.insetMm) } : patch); }} onRestore={(snap) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current?.singleLine ? { ...snap, hMm: fittedSingleLineHeightMm(snap.text, current.typography, current.wMm, current.insetMm) } : snap); }} onDoc={(doc) => { const current = framesRef.current.find((item) => item.id === frame.id); if (!current) return; const patch = frameContentPatch(current, doc); if (patch) updateFrame(frame.id, patch); }} onStyle={(patch) => { const current = framesRef.current.find((item) => item.id === frame.id) ?? frame; updateFrame(frame.id, current.singleLine && patch.typography ? { ...patch, hMm: fittedSingleLineHeightMm(current.text, patch.typography, current.wMm, current.insetMm) } : patch); }} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -991,20 +1011,26 @@ function FrameShape({
           onDoc={(_frame, doc) => onDoc(doc)}
           onStyle={onStyle}
           onCommit={onPmCommit}
+          flow={frame}
         />
       );
     }
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} paragraphFormats={frame.paragraphFormats} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} onPmEdit={onPmEdit} />;
+    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} paragraphFormats={frame.paragraphFormats} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} flow={frame} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} onPmEdit={onPmEdit} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
-  const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;
-  const inset = frame.borderPosition === "outside" ? -strokeWidth / 2 : strokeWidth / 2;
+  const userBorder = frameBorderVisible(frame);
+  const strokeWidth = userBorder ? (frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM) : 1;
+  const inset = !userBorder ? 0 : frame.borderPosition === "outside" ? -strokeWidth / 2 : strokeWidth / 2;
   const innerWidth = Math.max(0, width - 2 * inset);
   const innerHeight = Math.max(0, height - 2 * inset);
-  const clipInset = frame.borderPosition === "inside" ? strokeWidth : 0;
-  const stroke = frame.borderWidthMm === undefined
-    ? { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
-    : { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: frame.borderWidthMm * PX_PER_MM };
+  const clipInset = userBorder && frame.borderPosition === "inside" ? strokeWidth : 0;
+  const pattern = userBorder ? frameBorderPattern(frame) : "solid";
+  const dash = pattern === "dashed" ? "6 3" : pattern === "dotted" ? "1.2 2" : undefined;
+  const stroke = userBorder
+    ? frame.borderWidthMm === undefined
+      ? { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const, strokeDasharray: dash, strokeLinecap: pattern === "dotted" ? "round" as const : undefined }
+      : { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: frameBorderWidthMm(frame) * PX_PER_MM, strokeDasharray: dash, strokeLinecap: pattern === "dotted" ? "round" as const : undefined }
+    : { fill: "none" as const, stroke: "#b0b0b0", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const, strokeDasharray: "3 2" };
 
   if (isPictureBox(frame.kind)) {
     const rx = frame.kind === "picture-round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined;
@@ -1049,6 +1075,7 @@ function FrameShape({
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="none"
           aria-hidden
+          data-studio-frame-guide={userBorder ? undefined : "true"}
           style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: frame.borderPosition === "outside" ? "visible" : undefined }}
         >
           {frame.kind === "picture-ellipse" ? (
@@ -1086,7 +1113,7 @@ function FrameShape({
   }
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden style={{ overflow: frame.borderPosition === "outside" ? "visible" : undefined }}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden data-studio-frame-guide={userBorder ? undefined : "true"} style={{ overflow: frame.borderPosition === "outside" ? "visible" : undefined }}>
       {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} fill={frame.backgroundColor ?? "none"} /> : null}
         {frame.kind === "rect" || frame.kind === "round-rect" ? (
         <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined} {...stroke} fill={frame.backgroundColor ?? "none"} />
