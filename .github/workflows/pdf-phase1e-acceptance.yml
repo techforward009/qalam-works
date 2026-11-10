@@ -26,7 +26,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Verify pinned Digital Khatt cmap matches actual WOFF2
         run: |
-          python3 -m pip install --break-system-packages fonttools brotli
+          python3 -m pip install --break-system-packages fonttools brotli pdfplumber==0.11.10
           python3 - <<'PY'
           import json
           from fontTools.ttLib import TTFont
@@ -46,15 +46,29 @@ jobs:
           echo "QALAM_PDF_CHROMIUM=$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Run real production route script-aware acceptance
         run: npx vitest run tests/pdfPhase1eScriptAware.test.ts --reporter=verbose
+      - name: Production build (no deploy)
+        run: npm run build
+      - name: Start Document Studio for browser PDF tests
+        run: |
+          (npm run start -- -H 127.0.0.1 > /tmp/pdf-phase1e-next.log 2>&1 & echo $! > /tmp/pdf-phase1e-next.pid)
+          for i in $(seq 1 80); do
+            if curl --fail --silent http://127.0.0.1:3000/tools/document-studio -o /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/pdf-phase1e-next.log
+          exit 1
       - name: Run existing PDF regression suite
         shell: bash
         run: |
           mapfile -t pdf_specs < <(find tests -type f \( -iname '*pdf*.test.ts' -o -iname '*pdf*.test.tsx' \) ! -name 'pdfPhase1eScriptAware.test.ts')
           npx vitest run "${pdf_specs[@]}" --reporter=verbose
+      - name: Stop Document Studio test server
+        if: always()
+        run: |
+          if [ -f /tmp/pdf-phase1e-next.pid ]; then kill "$(cat /tmp/pdf-phase1e-next.pid)" || true; fi
+          if [ "${{ job.status }}" = "failure" ]; then cat /tmp/pdf-phase1e-next.log || true; fi
       - name: TypeScript check
         run: npx tsc --noEmit
-      - name: Production build (no deploy)
-        run: npm run build
       - name: Review whitespace and diff
         run: |
           git diff --check origin/main...HEAD

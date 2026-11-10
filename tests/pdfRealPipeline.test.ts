@@ -164,8 +164,9 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     writeFileSync(path.join(output, `${currentCase}.pdf`), bytes);
     const html = await import("node:fs").then(fs => fs.readFileSync(path.join(output, `${currentCase}.html`), "utf8"));
     expect(html).toContain('href="https://qalamworks.com"');
-    expect(html).toContain("background-color:#FEF3C7");
-    expect(html).toContain("font-size:28pt");
+    // Chromium page.content() serializes the highlight as rgb(); keep the semantic color check.
+    expect(html).toMatch(/background-color:\s*(#FEF3C7|rgb\(\s*254,\s*243,\s*199\s*\))/i);
+    expect(html).toMatch(/font-size:\s*28pt/);
     expect((html.match(/display: list-item/g) ?? []).length).toBeGreaterThanOrEqual(2);
     expect((html.match(/data-pdf-ink-line=/g) ?? []).length).toBeGreaterThan(5);
     expect((html.match(/data-pdf-preserved-break="hard-break"/g) ?? []).length).toBe(2);
@@ -222,8 +223,17 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     const printableWidth = parseFloat(String(response.headers.get("x-pdf-printable-width") ?? 1e9));
     const physicalRight = printableWidth + 25.4 * 96 / 25.4 + 1;
     for (const line of lines) {
-      expect(line.finalBounds.left - line.css.left).toBeCloseTo(line.measuredInk.horizontalShift, 2);
-      expect(line.finalBounds.right - line.finalBounds.left).toBeCloseTo(line.css.width, 2);
+      // Intentional glyph paint bleed uses padding-inline 64 + margin-inline -64 on some
+      // shaped lines; getBoundingClientRect then expands by 128px and shifts left by 64.
+      const borderWidth = line.finalBounds.right - line.finalBounds.left;
+      const leftDelta = line.finalBounds.left - line.css.left;
+      if (Math.abs(borderWidth - line.css.width) < 1) {
+        expect(leftDelta).toBeCloseTo(line.measuredInk.horizontalShift, 2);
+        expect(borderWidth).toBeCloseTo(line.css.width, 2);
+      } else {
+        expect(leftDelta).toBeCloseTo(line.measuredInk.horizontalShift - 64, 2);
+        expect(borderWidth).toBeCloseTo(line.css.width + 128, 2);
+      }
       expect(line.measuredInk.left).toBeGreaterThanOrEqual(-25.4 * 96 / 25.4 - 1);
       expect(line.measuredInk.right).toBeLessThanOrEqual(physicalRight);
       expect(line.measuredInk.horizontalShift).toBe(0);
@@ -270,7 +280,9 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     });
     expect(beside.length).toBeGreaterThan(0);
     for (const line of beside) {
-      const separate = line.finalBounds.right <= image!.finalBounds.left + 1 || line.finalBounds.left >= image!.finalBounds.right - 1;
+      // Use measured ink (not paint-bleed border box) so wrap clearance stays meaningful
+      // when a line has intentional margin-inline -64 for glyph overhang.
+      const separate = line.measuredInk.right <= image!.finalBounds.left + 1 || line.measuredInk.left >= image!.finalBounds.right - 1;
       expect(separate).toBe(true);
       expect(line.css.width).toBeLessThan(image!.css.left + image!.css.width - 8);
     }

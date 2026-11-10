@@ -22,13 +22,35 @@ describe.runIf(Boolean(chrome))("Table Format styles in actual PDF",()=>{
      await page.screenshot({path:out+"/pdf-render.png",fullPage:true});
      const result=await page.evaluate(()=>Array.from(document.querySelectorAll("table[data-pdf-table]")).map(table=>{
        const cells=Array.from(table.querySelectorAll("td"));
-       return cells.map(el=>({border:getComputedStyle(el).borderTopStyle,borderWidth:getComputedStyle(el).borderTopWidth,bg:getComputedStyle(el).backgroundColor,text:el.textContent?.trim()}));
+       return cells.map(el=>{
+         const svg=el.querySelector("svg.qalam-pdf-cell-borders");
+         const rects=svg?Array.from(svg.querySelectorAll("rect")).map(r=>({
+           fill:r.getAttribute("fill"),
+           width:r.getAttribute("width"),
+           height:r.getAttribute("height"),
+           edge:r.getAttribute("data-edge"),
+         })):[];
+         return {
+           cssBorder:getComputedStyle(el).borderTopStyle,
+           bg:getComputedStyle(el).backgroundColor,
+           text:el.textContent?.trim(),
+           svgPresent:Boolean(svg),
+           rects,
+         };
+       });
      }));
      writeFileSync(out+"/pdf-inspection.json",JSON.stringify(result,null,2));
-     expect(result[0][0]).toMatchObject({border:"solid",bg:"rgb(255, 224, 130)"});
-     expect(result[0][0].borderWidth).not.toBe("0px");
-     expect(result[0][1].border).toBe("none");
-     expect(result[0][1].borderWidth).toBe("0px");
+     // Product draws visible borders as SVG rects; CSS border stays none/transparent.
+     expect(result[0][0].cssBorder).toBe("none");
+     expect(result[0][0].bg).toBe("rgb(255, 224, 130)");
+     expect(result[0][0].svgPresent).toBe(true);
+     expect(result[0][0].rects.length).toBeGreaterThanOrEqual(1);
+     expect(result[0][0].rects.every(r=>r.fill==="#990000")).toBe(true);
+     expect(result[0][0].rects.some(r=>r.height==="1pt"||r.width==="1pt")).toBe(true);
+     expect(result[0][1].cssBorder).toBe("none");
+     // None-style cell must not carry the styled cell's fill or maroon border paint.
+     expect(result[0][1].bg).not.toBe("rgb(255, 224, 130)");
+     expect(result[0][1].rects.every(r=>r.fill!=="#990000")).toBe(true);
      return pdf(options);
     });return page;
    });return browser;
