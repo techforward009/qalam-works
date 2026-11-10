@@ -148,7 +148,7 @@ function saveDefaultDraft(draft: NewDocumentDraft) {
 }
 
 const fieldCls = "box-border h-[18px] shrink-0 border-0 bg-white px-0.5 text-black";
-const fieldStyle = { boxShadow: "inset 1px 1px 0 #696969, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #fff", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", minWidth: 0 } as const;
+const fieldStyle = { boxShadow: "inset 1px 1px 0 #696969, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #fff", fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", minWidth: 0 } as const;
 const labelCls = "whitespace-nowrap text-[11px] leading-none text-black";
 const groupCls = "min-w-0 bg-[#f0f0f0]";
 const groupStyle = { position: "absolute", boxSizing: "border-box", border: "1px solid #a0a0a0", boxShadow: "inset 1px 1px 0 #fff", padding: "2px 3px", margin: 0 } as const;
@@ -163,7 +163,7 @@ const selectStyle = {
   padding: "0 12px 0 2px",
 };
 const raised = "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0";
-const btnStyle = { width: 59, height: 20, border: "none", background: "#f0f0f0", boxShadow: raised, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "18px", color: "#000", padding: 0 } as const;
+const btnStyle = { width: 59, height: 20, border: "none", background: "#f0f0f0", boxShadow: raised, fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "18px", color: "#000", padding: 0 } as const;
 const checkStyle = { width: 13, height: 13, minWidth: 13, margin: 0, appearance: "none", backgroundColor: "#fff", boxShadow: "inset 1px 1px 0 #696969, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #fff" } as const;
 const radioStyle = { width: 12, height: 12, minWidth: 12, margin: 0, appearance: "none", borderRadius: "50%", border: "1px solid #808080", backgroundColor: "#fff", boxShadow: "inset 1px 1px 0 #a0a0a0, 1px 1px 0 #fff" } as const;
 
@@ -226,7 +226,7 @@ export default function NewDocumentDialog({
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center" style={{ background: "#ababab" }} data-studio-new-document="true">
       <form ref={drag.dialogRef} role="dialog" aria-modal="true" aria-label="New Document" className="text-black" dir="ltr"
-        style={{ position: "relative", transform: `${drag.style.transform} scale(${scale})`, width: 402, height: 218, boxSizing: "border-box", background: "#f0f0f0", border: "7px solid rgb(164, 181, 199)", outline: "1px solid #191e23", boxShadow: "0 3px 14px rgba(0,0,0,0.5)", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}
+        style={{ position: "relative", transform: `${drag.style.transform} scale(${scale})`, width: 402, height: 218, boxSizing: "border-box", background: "#f0f0f0", border: "7px solid rgb(164, 181, 199)", outline: "1px solid #191e23", boxShadow: "0 3px 14px rgba(0,0,0,0.5)", fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif", fontSize: 11 }}
         onSubmit={(event) => { event.preventDefault(); onConfirm(draft); }}>
         <div {...drag.handleProps} className="flex items-center" style={{ ...drag.handleProps.style, height: 20, paddingLeft: 1, background: "#a4b5c7", fontSize: 11, fontWeight: 400 }} data-studio-new-document-title="true">New Document</div>
         <fieldset className={groupCls} style={{ ...groupStyle, left: 7, top: 31, width: 120, height: 165 }} data-studio-dialog-group="page">

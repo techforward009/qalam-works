@@ -12,6 +12,7 @@ import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { StudioTextFrame } from "./StudioTextFrame";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
+import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import type { Editor } from "@tiptap/react";
 import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
@@ -204,6 +205,7 @@ export function StudioObjectLayer({
   typography,
   zoom = 1,
   projection: projectionProp,
+  keyboardLayout,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
@@ -211,6 +213,7 @@ export function StudioObjectLayer({
   typography?: DocumentStudioSettings["typography"];
   zoom?:number;
   projection?:PageProjection;
+  keyboardLayout?: KeyboardLayout | null;
   onFramesChange: (frames: StudioFrame[]) => void;
   onToolAction: (tool: StudioToolId) => void;
   onSelectedChange?: (selectedIds: string[]) => void;
@@ -666,7 +669,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} onTextFocus={() => setSelected([])} onText={(text) => updateFrame(frame.id, { text })} onStyle={(patch) => updateFrame(frame.id, patch)} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} onTextFocus={() => setSelected([])} onText={(text) => updateFrame(frame.id, { text })} onStyle={(patch) => updateFrame(frame.id, patch)} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -790,6 +793,7 @@ function FrameShape({
   onTextFocus,
   onText,
   onStyle,
+  keyboardLayout,
 }: {
   frame: StudioFrame;
   active: boolean;
@@ -799,9 +803,10 @@ function FrameShape({
   onTextFocus: () => void;
   onText: (text: string) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor" | "textAlign">>) => void;
+  keyboardLayout?: KeyboardLayout | null;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} editable={editable} onFocus={onTextFocus} onText={onText} onStyle={onStyle} />;
+    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onStyle={onStyle} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;

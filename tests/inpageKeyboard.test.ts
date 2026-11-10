@@ -8,6 +8,7 @@ import {
   loadKeyboardChoice,
   saveKeyboardChoice,
   nextLayout,
+  mapLatinText,
   KeyboardLayout,
   KeyboardLayoutId
 } from "../app/tools/document-studio/utils/inpageKeyboard";
@@ -49,6 +50,11 @@ describe("inpageKeyboard utilities", () => {
 
     const layoutNoSpace: KeyboardLayout = { KeyA: { normal: "م" } };
     expect(resolveKey(layoutNoSpace, { ...baseEvent, code: "Space" })).toBeNull();
+  });
+
+  it("maps virtual keyboard text by US-QWERTY position and preserves unmapped text", () => {
+    expect(mapLatinText(fakeLayout, "aAbZ !" )).toBe("مژبZ !");
+    expect(mapLatinText({ Digit1: { normal: "ض", shift: "؛" }, Space: { normal: " " } }, "1! ")).toBe("ض؛ ");
   });
 
   it("parseCustomLayout validates JSON structure", () => {
