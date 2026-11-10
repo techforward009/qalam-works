@@ -32,7 +32,7 @@ const cases: Case[] = [
  { id: "punctuation-only-digital", document: doc([para("، ؛ ؟", "Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "aal-imran-urdu-markers-punctuation", document: doc(urduAyat.map((value, i) => para(value + (i === 0 ? " ۝۲۶۔" : " ۝۲۷۔"), "Digital Khatt Indo-Pak"))), expected: 200 },
  { id: "naskh-punctuation-and-mark", document: doc([para("ا۔ ، ؛ ؟ ا۫", "Digital Khatt Indo-Pak")]), expected: 200 },
- { id: "unsupported-list", document: doc([para("ا😀🚀", "Digital Khatt Indo-Pak")]), expected: 500 },
+ { id: "unsupported-list", document: doc([para("ا😀🚀", "Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "urdu-digital-aliases", document: doc([para("ی ہ ھ ک", "Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "urdu-digits-aliased", document: doc([para("۰۱۲۳۴۵۶۷۸۹", "Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "original-23-periods", document: originalDoc, expected: 200, periods: 23, pages: 3 },
@@ -47,8 +47,8 @@ const cases: Case[] = [
  { id: "later-arabic-substitution", document: doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak")]), expected: 500, fault: true },
  { id: "quranic-naskh-later-run", document: doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("ا\u06D7 ","Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "joining-control", document: doc([para("ا\u200Dب ","Digital Khatt Indo-Pak")]), expected: 200 },
- { id: "unapproved-question-mark", document: doc([para("ا? ","Digital Khatt Indo-Pak")]), expected: 500 },
- { id: "period-wrong-context", document: doc([para("ا.ا ","Digital Khatt Indo-Pak")]), expected: 500 },
+ { id: "unapproved-question-mark", document: doc([para("ا? ","Digital Khatt Indo-Pak")]), expected: 200 },
+ { id: "period-wrong-context", document: doc([para("ا.ا ","Digital Khatt Indo-Pak")]), expected: 200 },
  { id: "arabic-12pt", document: doc([para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak","12pt")]), expected: 200, periods: 1 },
  { id: "arabic-20pt", document: doc([para("اَلْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمِينَ. ","Digital Khatt Indo-Pak","20pt")]), expected: 200, periods: 1 },
  { id: "urdu-jameel", document: doc([para("یہ مصنوعی اردو نستعلیق کی جانچ ہے۔ ".repeat(20),"Jameel Noori Nastaleeq")]), expected: 200 },
@@ -102,6 +102,20 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
    expect(response.status, fixture.id).toBe(fixture.expected);
    if (response.status === 200) {
      const bytes = new Uint8Array(await response.arrayBuffer());
+     if (fixture.id === "unsupported-list" || fixture.id === "unapproved-question-mark" || fixture.id === "period-wrong-context") {
+       const raw = response.headers.get("x-pdf-warnings");
+       expect(raw, fixture.id).toBeTruthy();
+       const warnings = JSON.parse(raw!) as string[];
+       if (fixture.id === "unsupported-list") {
+         expect(warnings).toEqual(expect.arrayContaining(["U+1F600", "U+1F680"]));
+       }
+       if (fixture.id === "unapproved-question-mark") {
+         expect(warnings).toEqual(expect.arrayContaining(["U+003F"]));
+       }
+       if (fixture.id === "period-wrong-context") {
+         expect(warnings).toEqual(expect.arrayContaining(["U+002E"]));
+       }
+     }
      if (fixture.id === "aal-imran-urdu-markers-punctuation") {
        const extracted = execFileSync("pdftotext", ["-", "-"], { input: bytes }).toString("utf8");
        writeFileSync(join(DIR, "aal-imran-text-layer.txt"), extracted);
@@ -137,7 +151,6 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
    } else {
      const body = await response.json() as { error?: string };
      expect(body.error).toMatch(/blocked/i);
-     if (fixture.id === "unsupported-list") expect(body.error).toContain("U+1F600, U+1F680");
    }
    fault = false;
  }, 150000);

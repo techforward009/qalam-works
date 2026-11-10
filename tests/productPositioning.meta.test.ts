@@ -12,7 +12,7 @@ describe("Product positioning metadata", () => {
     ["document-cleaner", "Fix Copied Urdu Text", "کاپی شدہ اردو درست کریں"],
     ["quality-checker", "Find Mistakes in Urdu Text", "اردو متن میں غلطیاں دیکھیں"],
     ["whatsapp-rtl-formatter", "Urdu for WhatsApp", "واٹس ایپ کے لیے اردو"],
-    ["roman-urdu-writer", "Roman Urdu to Urdu", "رومن اردو سے اردو"],
+    ["roman-urdu-writer", "Roman Urdu Writer", "رومن اردو رائٹر"],
     ["crescent-visibility", "Moon Sighting", "رؤیتِ ہلال"],
     ["invoice-generator", "Invoice Maker", "انوائس بنائیں"],
     ["date-converter", "Date Converter", "تاریخ کنورٹر"],

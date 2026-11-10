@@ -40,7 +40,13 @@ describe.runIf(Boolean(chrome))("PDF text colours", () => {
             const pageRect = sheet.getBoundingClientRect();
             const lines = [...document.querySelectorAll<HTMLElement>('[data-pdf-ink-line]')].map(line => line.textContent || "");
             const runs = values.flatMap(value => {
-              const node = [...sheet.querySelectorAll<HTMLElement>('[data-pdf-ink-line] span')].find(el => el.childNodes.length === 1 && el.textContent?.trim() === value);
+              // Default-colour trailing words may wrap the final space in data-studio-preserved-space
+              // (childNodes length 2). Match the styled word span by font-size, not child count.
+              const node = [...sheet.querySelectorAll<HTMLElement>('[data-pdf-ink-line] span')].find(el => {
+                if (el.textContent?.trim() !== value) return false;
+                if (el.dataset.studioPreservedSpace || el.dataset.pdfSafePart) return false;
+                return /font-size/i.test(el.getAttribute("style") || "");
+              });
               if (!node) return [];
               const r = node.getBoundingClientRect(), s = getComputedStyle(node);
               return [{ value, left: r.left - pageRect.left + 48, right: r.right - pageRect.left + 48, top: r.top - pageRect.top + 48, bottom: r.bottom - pageRect.top + 48, colour: s.color, fill: s.webkitTextFillColor }];
@@ -61,11 +67,14 @@ describe.runIf(Boolean(chrome))("PDF text colours", () => {
     const browser = await launch({ executablePath: chrome, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 800 });
-    await page.goto("http://127.0.0.1:3000/tools/document-studio", { waitUntil: "domcontentloaded" });
+    await page.goto(process.env.QALAM_DOCUMENT_STUDIO_URL || "http://127.0.0.1:3000/tools/document-studio", { waitUntil: "domcontentloaded" });
     await page.waitForSelector(".ProseMirror");
     await page.waitForFunction(() => Boolean(localStorage.getItem("qalam-document-studio-active-document-v1")));
+    // TipTap setContent without focus can leave an empty paragraph on this editor; focus first.
+    await page.click(".ProseMirror");
     await page.$eval(".ProseMirror", (element, content) => {
-      (element as HTMLElement & { editor: { commands: { setContent: (value: unknown) => void } } }).editor.commands.setContent(content);
+      const editor = (element as HTMLElement & { editor: { chain: () => ({ focus: () => ({ setContent: (value: unknown) => ({ run: () => boolean }) }) }) } }).editor;
+      editor.chain().focus().setContent(content).run();
     }, doc);
     await page.evaluate(() => document.fonts.ready);
     const editorLines = await page.$$eval(".ProseMirror p", blocks => blocks.flatMap(block => {

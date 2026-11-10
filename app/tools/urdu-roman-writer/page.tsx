@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Urdu to Roman Urdu Converter | Qalam Works",
   description:
     "Convert Urdu script to Roman Urdu with deterministic transliteration — not translation. Choose a Roman style and copy the result.",
+  alternates: { canonical: "/tools/urdu-roman-writer" },
 };
 
 export default function UrduRomanWriterPage() {
