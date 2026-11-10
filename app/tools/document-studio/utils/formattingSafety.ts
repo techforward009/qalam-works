@@ -37,10 +37,27 @@ export function registerFrameHistory(input: FormattingInput, handler: FrameHisto
 export function runFrameHistory(input: FormattingInput, action: "undo" | "redo"): boolean {
   return frameHistories.get(input)?.[action]() ?? false;
 }
+const frameEditors = new WeakMap<FormattingInput, Editor>();
+export function registerFrameEditor(input: FormattingInput, editor: Editor): () => void {
+  frameEditors.set(input, editor);
+  return () => { if (frameEditors.get(input) === editor) frameEditors.delete(input); };
+}
+export function getFrameEditor(input: FormattingInput | null | undefined): Editor | null {
+  return (input && frameEditors.get(input)) ?? null;
+}
+/** Story commands keep the passed editor. A flagged box editor receives them instead, and a claimed box without one is refused. */
+export function resolveFormattingEditor(editor: Editor): Editor | null {
+  const dom = editor.view?.dom;
+  if (!dom) return editor;
+  const target = readFormattingTarget(dom);
+  if (target?.owner !== "frame" || !target.input) return editor;
+  return getFrameEditor(target.input) ?? (target.input === dom ? editor : null);
+}
 export function isFormattingSurface(target: Element | null): boolean {
   return Boolean(target?.closest('[data-studio-toolbar], [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [data-menu-root], [data-menu-dropdown], [data-studio-formatting-notice]'));
 }
-export function readFormattingTarget(element: HTMLElement): FormattingTarget | undefined {
+export function readFormattingTarget(element: HTMLElement | null | undefined): FormattingTarget | undefined {
+  if (!element) return undefined;
   const root = element.closest<HTMLElement>('[data-studio-root]');
   return root ? targets.get(root) : undefined;
 }
@@ -96,7 +113,11 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
   const canFormat = () => {
     if (owner === 'frame' && (!input?.isConnected || frameFieldReadOnly(input))) invalidate();
     if (owner === 'story') return true;
-    if (owner === 'frame') { reject(); return false; }
+    if (owner === 'frame') {
+      if (input?.hasAttribute('data-studio-frame-editor')) return true;
+      reject();
+      return false;
+    }
     if (selectedPictureBox()) return true;
     reject(); return false;
   };
@@ -108,6 +129,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
       if (tr.docChanged && tr.getMeta(TABLE_DIALOG_CHANGE) === true && owner === 'none') return true;
       // Includes collapsed-selection stored marks and direct dialog/shortcut
       // transactions. Layout-only and selection-only transactions still work.
+      if (owner === 'frame') return !(tr.docChanged || tr.storedMarksSet);
       return !(tr.docChanged || tr.storedMarksSet) || canFormat();
     },
   });

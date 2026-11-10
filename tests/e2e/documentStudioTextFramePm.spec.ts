@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Editor } from "@tiptap/core";
 import { defaultDocumentSettings } from "../../app/tools/document-studio/utils/documentSettings";
+import { renderPrintFrame } from "../../app/tools/document-studio/utils/printableFrames";
 
 const object = (page: Page, id: string) => page.locator(`[data-studio-frame-id="${id}"]`);
 const box = (page: Page, id: string) => object(page, id).locator("textarea");
@@ -29,10 +30,14 @@ async function openStudio(page: Page, flag: boolean) {
   await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible();
   const typography = { ...defaultDocumentSettings().typography, defaultRtlFontId: "mehr-nastaliq-web" };
   await page.addInitScript(({ typography: type }) => {
-    const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
-    localStorage.setItem("qalam-studio-frames-v1", JSON.stringify({
-      [id]: [{ kind: "text", page: 1, xMm: 25, yMm: 40, wMm: 80, hMm: 40, flip: false, typography: type, id: "multi", text: "پہلی" }],
-    }));
+    const id = localStorage.getItem("qalam-document-studio-active-document-v1");
+    if (!id) return;
+    const key = "qalam-studio-frames-v1";
+    const map = JSON.parse(localStorage.getItem(key) || "{}") as Record<string, unknown>;
+    const existing = map[id];
+    if (Array.isArray(existing) && existing.some((frame) => frame && typeof frame === "object" && (frame as { id?: string }).id === "multi")) return;
+    map[id] = [{ kind: "text", page: 1, xMm: 25, yMm: 40, wMm: 80, hMm: 40, flip: false, typography: type, id: "multi", text: "پہلی" }];
+    localStorage.setItem(key, JSON.stringify(map));
   }, { typography });
   await page.reload();
   await expect(box(page, "multi")).toBeVisible();
@@ -111,4 +116,56 @@ test("flag off keeps the textarea path", async ({ page }) => {
   await page.keyboard.press("End");
   await page.keyboard.type("x");
   await expect(box(page, "multi")).toHaveValue("پہلیx");
+  await page.locator('[data-menu-root="format"]').click();
+  await page.locator('[data-menu-action="format.paragraph"]').click();
+  await expect(page.locator('[data-studio-paragraph-dialog="true"]')).toHaveCount(0);
+  await expect(page.locator('[data-studio-formatting-notice]')).toBeVisible();
+});
+
+test("flag on: set space-before on a box paragraph, leave edit, reload, and assert print HTML contains margin-block-start", async ({ page }) => {
+  await openStudio(page, true);
+  const host = object(page, "multi");
+  const bounds = await host.boundingBox();
+  if (!bounds) throw new Error("text frame has no box");
+  await page.mouse.click(bounds.x + bounds.width - 8, bounds.y + 14);
+  const editor = frameEditor(page, "multi");
+  await expect(editor).toBeVisible();
+  await editor.click();
+
+  // Open paragraph preferences dialog from Format menu
+  await page.locator('[data-menu-root="format"]').click();
+  await page.locator('[data-menu-action="format.paragraph"]').click();
+  const dialog = page.locator('[data-studio-paragraph-dialog="true"]');
+  await expect(dialog).toBeVisible();
+
+  // Set space-before to 14
+  const beforeInput = dialog.locator('input[name="before"]');
+  await beforeInput.fill("14");
+  await dialog.locator('button[type="submit"]').click();
+  await expect(dialog).toHaveCount(0);
+
+  // Save the document
+  await page.locator('[data-menu-root="file"]').click();
+  await page.locator('[data-menu-action="file.save"]').click();
+  await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible();
+
+  // Leave edit mode
+  await page.keyboard.press("Escape");
+  await expect(editor).toHaveCount(0);
+
+  // Reload page
+  await page.reload();
+  await expect(box(page, "multi")).toBeVisible();
+
+  // Read saved frame from localStorage and verify print HTML
+  const saved = await page.evaluate(() => {
+    const id = localStorage.getItem("qalam-document-studio-active-document-v1");
+    const frames = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}")[id!] as Array<any>;
+    return frames.find((frame) => frame.id === "multi");
+  });
+  expect(saved).toBeDefined();
+  expect(saved?.paragraphFormats?.[0]?.spaceBeforePt).toBeGreaterThan(0);
+  const printHtml = renderPrintFrame(saved);
+  expect(printHtml).toContain("margin-block-start");
+  expect(printHtml).toContain("--qalam-space-before");
 });

@@ -13,30 +13,60 @@ import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKe
 import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { applyParagraphAlignment, createFrameHistory, paragraphIndexAt, toolbarParagraphAlign, type FrameAlignSnapshot, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
+import type { ParagraphFormat } from "../utils/paragraphFormats";
 import { textboxPmEnabled } from "../utils/textboxPmFlag";
 
 export function normalizeSingleLineText(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
 }
 
-function paragraphStyle(align: ParagraphAlign | undefined): CSSProperties {
-  if (align === "justify-all") return { textAlign: "justify", textAlignLast: "justify" };
-  return align ? { textAlign: align } : {};
+function paragraphStyle(align: ParagraphAlign | undefined, format?: ParagraphFormat): CSSProperties {
+  const style: CSSProperties = {};
+  if (align === "justify-all") {
+    style.textAlign = "justify";
+    style.textAlignLast = "justify";
+  } else if (align) {
+    style.textAlign = align;
+  }
+  if (format) {
+    if (typeof format.firstLineIndentMm === "number" && format.firstLineIndentMm > 0) {
+      style.textIndent = `${format.firstLineIndentMm}mm`;
+    }
+    if (typeof format.spaceBeforePt === "number") {
+      style.marginBlockStart = `${format.spaceBeforePt}pt`;
+    }
+    if (typeof format.spaceAfterPt === "number") {
+      style.marginBlockEnd = `${format.spaceAfterPt}pt`;
+    }
+    if (typeof format.indentStartMm === "number") {
+      style.marginInlineStart = `${format.indentStartMm}mm`;
+    }
+    if (typeof format.indentEndMm === "number") {
+      style.marginInlineEnd = `${format.indentEndMm}mm`;
+    }
+    if (format.leading?.mode === "points") {
+      style.lineHeight = `${format.leading.value}pt`;
+    } else if (typeof format.lineHeight === "number") {
+      style.lineHeight = format.lineHeight;
+    }
+  }
+  return style;
 }
 
-function ParagraphColumn({ parts, aligns, textAlign }: { parts: string[]; aligns?: readonly ParagraphAlign[]; textAlign?: StudioTextAlign }) {
+function ParagraphColumn({ parts, aligns, formats, textAlign }: { parts: string[]; aligns?: readonly ParagraphAlign[]; formats?: readonly ParagraphFormat[]; textAlign?: StudioTextAlign }) {
   return <>{parts.map((part, index) => {
     const stored = aligns?.[index];
     const align = stored === undefined ? textAlign ?? null : stored;
-    return <p key={index} data-studio-frame-paragraph={index} style={{ margin: 0, padding: 0, unicodeBidi: "plaintext", whiteSpace: "pre-wrap", overflowWrap: "break-word", ...paragraphStyle(align) }}>{part.length ? part : "\u200b"}</p>;
+    const format = formats?.[index];
+    return <p key={index} data-studio-frame-paragraph={index} style={{ margin: 0, padding: 0, unicodeBidi: "plaintext", whiteSpace: "pre-wrap", overflowWrap: "break-word", ...paragraphStyle(align, format) }}>{part.length ? part : "\u200b"}</p>;
   })}</>;
 }
 
 /** A natural-size mirror preserves textarea wrapping even inside a zoom transform. */
-export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, keyboardLayout, onFocus, onText, onRestore, onStyle, onPmEdit }: {
+export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, paragraphFormats, keyboardLayout, onFocus, onText, onRestore, onStyle, onPmEdit }: {
   text: string; singleLine?: boolean; editable: boolean; typography?: DocumentStudioSettings["typography"];
   keyboardLayout?: KeyboardLayout | null;
-  textColor?: string; textAlign?: StudioTextAlign; paragraphAligns?: ParagraphAlign[];
+  textColor?: string; textAlign?: StudioTextAlign; paragraphAligns?: ParagraphAlign[]; paragraphFormats?: ParagraphFormat[];
   onFocus: () => void; onText: (text: string, edit?: TextEditRange) => void;
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
@@ -63,7 +93,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   const size = typography?.bodyFontSizePt ?? 12;
   const editorFamily = typography ? getFontById(typography.defaultRtlFontId).editorFamily : "Jameel Noori Nastaleeq";
   const leading = blockLeadingPt({type:"paragraph"},family,typography ?? {bodyFontSizePt:12,lineHeight:1.5},"rtl");
-  const paragraphPaint = !singleLine && Boolean(paragraphAligns?.length);
+  const paragraphPaint = !singleLine && (Boolean(paragraphAligns?.length) || Boolean(paragraphFormats?.length));
   const parts = text.split("\n");
   const snapshot = useCallback((): FrameAlignSnapshot => {
     const input = ref.current;
@@ -373,7 +403,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     pendingEdit.current = { start, end };
     if (!remembered.current) { remembered.current = true; rememberAt(input.value, start, end); }
   };
-  const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} textAlign={textAlign} /></div>;
+  const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} formats={paragraphFormats} textAlign={textAlign} /></div>;
   const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(!editable)return; if(!singleLine && onPmEdit && textboxPmEnabled()){event.preventDefault();event.stopPropagation();onPmEdit({x:event.clientX,y:event.clientY});return;} event.stopPropagation();onFocus();}, onFocus:()=>{if(!singleLine && editable && onPmEdit && textboxPmEnabled()){onPmEdit(null);return;} dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!singleLine && !remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBeforeInput:handleBeforeInput, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
   const displayText = singleLine ? normalizeSingleLineText(text) : text;
   const fieldStyle = paragraphPaint ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;

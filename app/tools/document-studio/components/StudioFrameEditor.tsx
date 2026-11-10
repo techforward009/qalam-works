@@ -10,8 +10,9 @@ import type { StudioTextAlign } from "../utils/documentCommands";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { caretGeometry } from "../utils/caretGeometry";
 import { editorFontFamilyStack, getFontById } from "../utils/fontRegistry";
-import { FORMATTING_TARGET_CHANGE, registerFrameHistory, registerFrameStyleUpdater } from "../utils/formattingSafety";
-import { docToFrame, frameToDoc, type FrameDocNode, type FrameTextState } from "../utils/frameEditorDoc";
+import { FORMATTING_TARGET_CHANGE, registerFrameEditor, registerFrameHistory, registerFrameStyleUpdater } from "../utils/formattingSafety";
+import type { ParagraphFormat } from "../utils/paragraphFormats";
+import { docToFrame, frameContentPatch, frameToDoc, type FrameDocNode, type FrameTextState } from "../utils/frameEditorDoc";
 import { createFrameEditorExtensions } from "../utils/frameEditorExtensions";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import { toolbarParagraphAlign, type ParagraphAlign } from "../utils/paragraphAlign";
@@ -130,6 +131,7 @@ export function StudioFrameEditor({
   text,
   textAlign,
   paragraphAligns,
+  paragraphFormats,
   typography,
   textColor,
   pageWidthPx,
@@ -143,6 +145,7 @@ export function StudioFrameEditor({
   text: string;
   textAlign?: StudioTextAlign;
   paragraphAligns?: ParagraphAlign[];
+  paragraphFormats?: readonly ParagraphFormat[] | null;
   typography?: DocumentStudioSettings["typography"];
   textColor?: string;
   pageWidthPx: number;
@@ -161,17 +164,17 @@ export function StudioFrameEditor({
   onStyleRef.current = onStyle;
   const layoutRef = useRef(getKeyboardLayout);
   layoutRef.current = getKeyboardLayout;
-  const frameRef = useRef<FrameTextState>({ text, textAlign, paragraphAligns });
-  frameRef.current = { text, textAlign, paragraphAligns };
+  const frameRef = useRef<FrameTextState>({ text, textAlign, paragraphAligns, paragraphFormats });
+  frameRef.current = { text, textAlign, paragraphAligns, paragraphFormats };
   const clickRef = useRef(clickPoint);
-  const seed = useRef({ text, textAlign, paragraphAligns });
+  const seed = useRef({ text, textAlign, paragraphAligns, paragraphFormats });
   const [caret, setCaret] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const family = typography ? editorFontFamilyStack(typography.defaultRtlFontId) : "\"Jameel Noori Nastaleeq\", serif";
   const size = typography?.bodyFontSizePt ?? 12;
   const editorFamily = typography ? getFontById(typography.defaultRtlFontId).editorFamily : "Jameel Noori Nastaleeq";
   const leading = blockLeadingPt({ type: "paragraph" }, family, typography ?? { bodyFontSizePt: 12, lineHeight: 1.5 }, "rtl");
   const extensions = useMemo(() => createFrameEditorExtensions(() => layoutRef.current()), []);
-  const content = useMemo(() => frameToDoc(seed.current.text, seed.current.textAlign, seed.current.paragraphAligns), []);
+  const content = useMemo(() => frameToDoc(seed.current.text, seed.current.textAlign, seed.current.paragraphAligns, seed.current.paragraphFormats), []);
   const editorProps = useMemo(() => ({
     attributes: {
       "data-studio-text-frame": "true",
@@ -250,9 +253,10 @@ export function StudioFrameEditor({
     focus();
   }, [editor]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor || editor.isDestroyed) return;
     const dom = editor.view.dom;
+    const unregisterEditor = registerFrameEditor(dom, editor);
     const unregisterStyle = registerFrameStyleUpdater(dom, (patch) => {
       if (patch.textAlign) editor.chain().focus(undefined, { scrollIntoView: false }).setTextAlign(patch.textAlign).run();
       if (patch.typography || patch.textColor !== undefined) {
@@ -266,8 +270,20 @@ export function StudioFrameEditor({
       undo: () => { editor.commands.undo(); return true; },
       redo: () => { editor.commands.redo(); return true; },
     });
-    return () => { unregisterStyle(); unregisterHistory(); };
+    return () => { unregisterEditor(); unregisterStyle(); unregisterHistory(); };
   }, [editor]);
+
+  // Prop echo matches the mounted doc and is left alone. A later external frame edit replaces that doc before the next keystroke can write the stale seed back.
+  useLayoutEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    if (editor.view.dom.hasAttribute("data-studio-frame-composing")) return;
+    const incoming: FrameTextState = { text, textAlign, paragraphAligns, paragraphFormats };
+    if (frameContentPatch(incoming, editor.getJSON() as FrameDocNode) === null) return;
+    editor.chain().command(({ tr }) => {
+      tr.setMeta("addToHistory", false);
+      return true;
+    }).setContent(frameToDoc(text, textAlign, paragraphAligns, paragraphFormats), { emitUpdate: false }).run();
+  }, [editor, text, textAlign, paragraphAligns, paragraphFormats]);
 
   useEffect(() => {
     if (!editor) return;

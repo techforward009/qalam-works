@@ -121,3 +121,44 @@ it("persists and prints single-line text without wrapping while retaining unknow
   expect(renderPrintFrame(frame)).toContain("white-space:nowrap;");
   expect(renderPrintFrame({ ...frame, singleLine: false })).toContain("white-space:pre-wrap;");
 });
+
+it("prints each multiline paragraph with its own formats and keeps a legacy frame intact", () => {
+  const frame = {
+    ...base,
+    kind: "text" as const,
+    text: "پہلا\nدوسرا\nتیسرا",
+    paragraphFormats: [
+      { spaceBeforePt: 14, firstLineIndentMm: 6 },
+      { leading: { mode: "points" as const, value: 28 }, indentStartMm: 8, indentEndMm: 4 },
+      null,
+    ],
+  };
+  const [validated] = validatePrintFrames([frame]);
+  expect(validated.paragraphFormats).toEqual([
+    { spaceBeforePt: 14, firstLineIndentMm: 6 },
+    { leading: { mode: "points", value: 28 }, indentStartMm: 8, indentEndMm: 4 },
+    null,
+  ]);
+  const html = renderPrintFrame(validated);
+  expect(html).toContain('data-print-frame-paragraph="0"');
+  expect(html).toContain('data-space-before-pt="14"');
+  expect(html).toContain('margin-block-start:14pt;--qalam-space-before:14pt;');
+  expect(html).toContain('data-first-line-indent-mm="6"');
+  expect(html).toContain('text-indent:6mm;');
+
+  expect(html).toContain('data-print-frame-paragraph="1"');
+  expect(html).toContain('line-height:28pt;');
+  expect(html).toContain('min-height:28pt;');
+  expect(html).toContain('margin-inline-start:8mm;');
+  expect(html).toContain('margin-inline-end:4mm;');
+
+  expect(html).toContain('data-print-frame-paragraph="2"');
+  expect(html).not.toContain('data-space-before-pt="0"');
+
+  // Legacy frame without paragraphFormats prints as today
+  const legacyFrame = { ...base, kind: "text" as const, text: "سادہ متن" };
+  const legacyHtml = renderPrintFrame(legacyFrame);
+  expect(legacyHtml).not.toContain("data-print-frame-paragraph");
+
+  expect(() => validatePrintFrames([{ ...frame, paragraphFormats: [{ invalidKey: true }] }])).toThrow(/paragraph formats/);
+});

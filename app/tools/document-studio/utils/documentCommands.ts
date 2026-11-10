@@ -1,4 +1,4 @@
-import { CONTENT_REPLACEMENT, readFormattingTarget, runFrameHistory, updateFormattingFrame } from "./formattingSafety";
+import { CONTENT_REPLACEMENT, readFormattingTarget, resolveFormattingEditor, runFrameHistory, updateFormattingFrame } from "./formattingSafety";
 import type { Leading } from "./leading";
 /**
  * Shared Document Studio editor commands.
@@ -192,11 +192,13 @@ export type ParagraphSpacingAttrs = {
 };
 
 export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs, focus = true): void {
+  const targetEditor = resolveFormattingEditor(editor);
+  if (!targetEditor) return;
   if (typeof attrs.lineHeight === "number" && attrs.leading == null) attrs = { ...attrs, leading: { mode: "points", value: attrs.lineHeight }, lineHeight: null };
-  const { state } = editor;
+  const { state } = targetEditor;
   if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
-    const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
-    const chain = editor.chain();
+    const nodeType = targetEditor.isActive("heading") ? "heading" : "paragraph";
+    const chain = targetEditor.chain();
     if (focus) chain.focus();
     chain.updateAttributes(nodeType, attrs).run();
     return;
@@ -229,9 +231,9 @@ export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs
       return false;
     });
   }
-  if (changed) editor.view.dispatch(tr);
+  if (changed) targetEditor.view.dispatch(tr);
   if (!focus) return;
-  editor.chain().focus().run();
+  targetEditor.chain().focus().run();
 }
 
 export function addSpaceBeforeParagraph(editor: Editor, settings: DocumentStudioSettings = defaultDocumentSettings()): void {

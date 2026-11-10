@@ -9,7 +9,7 @@ import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
 import {inheritPreviousTableRow,inheritPreviousCellStoredMarks} from "../utils/tableRowFormatInheritance";
 import {splitTableAbove} from "../utils/splitTableAbove";
 import {hasTableForFormat} from "../utils/tableFormat";
-import { hasEditableFormattingFrame, installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
+import { getFrameEditor, hasEditableFormattingFrame, installFormattingSafety, formattingSafetyMessage, readFormattingTarget } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
 import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
@@ -2094,7 +2094,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         void persistActiveNow().then(() => setSaveStatus("saved"), () => setSaveStatus("error"));
       },
       character: () => setCharacterOpen(true),
-      paragraph: () => setParagraphOpen(true),
+      paragraph: () => { if (formattingSafety.current?.canFormat()) setParagraphOpen(true); },
       tableLayout: () => setTableLayoutOpen(true),
       tableFormat: () => setTableFormatOpen(true),
       tableToText: () => {if(editor?.isActive("table"))setTableToTextOpen(true);},
@@ -2295,6 +2295,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     };
   }, [editor]);
 
+  const paragraphDialogEditor = (editor && getFrameEditor(readFormattingTarget(editor.view.dom)?.input)) ?? editor;
 
   return (
     <div data-studio-root="true" inert={switchingDocument || undefined} aria-busy={switchingDocument || undefined} className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
@@ -2354,7 +2355,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
-      {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
+      {paragraphOpen && paragraphDialogEditor ? <StudioParagraphDialog editor={paragraphDialogEditor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
       {imageMenu && editor ? (
         <div
           role="menu"

@@ -2,6 +2,7 @@ import type { Editor } from "@tiptap/react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { resolveActiveToolbarFormatting } from "./activeToolbarFormatting";
 import { validateIndentMm, validateSpacingPt, type DocumentStudioSettings } from "./documentSettings";
+import { resolveFormattingEditor } from "./formattingSafety";
 import { formatLeading, parseLeading } from "./leading";
 
 /** Same millimetre used by the ruler and InPage setup import. */
@@ -216,9 +217,11 @@ export function preferencesFromForm(form: ParagraphForm, initial: ParagraphForm)
 
 const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
 
-/** One transaction, so one Undo restores every selected paragraph. */
+/** One transaction, so one Undo restores every selected paragraph. A flagged box editor is the target while it owns formatting. */
 export function applyParagraphPreferences(editor: Editor, attrs: Record<string, unknown>): boolean {
-  const { state } = editor;
+  const target = resolveFormattingEditor(editor);
+  if (!target) return false;
+  const { state } = target;
   let tr = state.tr;
   let changed = false;
   const seen = new Set<number>();
@@ -245,6 +248,6 @@ export function applyParagraphPreferences(editor: Editor, attrs: Record<string, 
       return false;
     });
   }
-  if (changed) editor.view.dispatch(tr);
+  if (changed) target.view.dispatch(tr);
   return changed;
 }

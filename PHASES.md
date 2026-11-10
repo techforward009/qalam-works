@@ -4,7 +4,7 @@ Branch `feat/textbox-pm-editor-phase1`. This is the scoped Option C from `.pm-do
 
 Each phase is shippable on its own. The flag stays **off** by default. With the flag off, screen, QPG, and print stay on today’s path. With the flag on, only a **multi-line** box that is **being edited** mounts ProseMirror. Idle boxes, print/PDF, and the single-line Title Text Box stay as they are.
 
-Stored frame text remains `StudioFrame.text` plus optional `paragraphAligns` (`QPG_FRAME_KEYS` in `utils/qpgFile.ts`). Phases 1–4 add no QPG keys.
+Stored frame text remains `StudioFrame.text` plus optional `paragraphAligns` and (starting in Phase 2) `paragraphFormats` (`QPG_FRAME_KEYS` in `utils/qpgFile.ts`).
 
 ## Flag
 

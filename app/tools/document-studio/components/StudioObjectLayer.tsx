@@ -23,6 +23,7 @@ import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
+import type { ParagraphFormat } from "../utils/paragraphFormats";
 
 export type FrameKind =
   | "rect"
@@ -50,6 +51,8 @@ export type StudioFrame = {
   textAlign?: StudioTextAlign;
   /** Per-paragraph alignment. Absent on legacy frames, which keep using textAlign for every paragraph. */
   paragraphAligns?: ParagraphAlign[];
+  /** Per-paragraph formatting (line spacing, paragraph spacing, indents). Absent on legacy frames. */
+  paragraphFormats?: ParagraphFormat[];
   singleLine?: boolean;
   imageSrc?: string;
   imageNaturalW?: number;
@@ -407,14 +410,18 @@ export function StudioObjectLayer({
   const onChangeRef = useRef(onFramesChange);
   onChangeRef.current = onFramesChange;
 
-  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => {
+  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign" | "paragraphFormats">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null; paragraphFormats?: ParagraphFormat[] | null }) => {
     onChangeRef.current(framesRef.current.map((frame) => {
       if (frame.id !== id) return frame;
-      const { paragraphAligns, textAlign, ...rest } = patch;
+      const { paragraphAligns, textAlign, paragraphFormats, ...rest } = patch;
       const next: StudioFrame = { ...frame, ...rest };
       if (paragraphAligns !== undefined) {
         if (paragraphAligns === null) delete next.paragraphAligns;
         else next.paragraphAligns = paragraphAligns;
+      }
+      if (paragraphFormats !== undefined) {
+        if (paragraphFormats === null) delete next.paragraphFormats;
+        else next.paragraphFormats = paragraphFormats;
       }
       if (textAlign !== undefined) {
         if (textAlign === null) delete next.textAlign;
@@ -935,6 +942,7 @@ function FrameShape({
           text={frame.text}
           textAlign={frame.textAlign}
           paragraphAligns={frame.paragraphAligns}
+          paragraphFormats={frame.paragraphFormats}
           typography={frame.typography}
           textColor={frame.textColor}
           pageWidthPx={pageWidthPx}
@@ -947,7 +955,7 @@ function FrameShape({
         />
       );
     }
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} onPmEdit={onPmEdit} />;
+    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} paragraphFormats={frame.paragraphFormats} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} onPmEdit={onPmEdit} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;

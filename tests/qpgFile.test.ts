@@ -49,6 +49,31 @@ describe("Qalam Page portable files", () => {
     (broken.frames[1] as unknown as { paragraphAligns: string[] }).paragraphAligns = ["middle"];
     expect(() => deserializeQpg(serializeQpg(broken))).toThrow();
   });
+  it("round-trips paragraph formats and still opens a legacy frame that has no paragraphFormats", () => {
+    const document = example();
+    document.frames[1] = {
+      ...document.frames[1],
+      text: "پہلا\nدوسرا",
+      paragraphFormats: [
+        { spaceBeforePt: 12, firstLineIndentMm: 5 },
+        null,
+      ],
+    };
+    const restored = deserializeQpg(serializeQpg(document));
+    expect(restored.frames[1]).toMatchObject({
+      paragraphFormats: [
+        { spaceBeforePt: 12, firstLineIndentMm: 5 },
+        null,
+      ],
+    });
+    expect(restored.frames[0]).not.toHaveProperty("paragraphFormats");
+    const legacy = deserializeQpg(serializeQpg(example()));
+    expect(legacy.frames[0]).not.toHaveProperty("paragraphFormats");
+    expect(legacy.frames[1]).not.toHaveProperty("paragraphFormats");
+    const broken = example();
+    (broken.frames[1] as unknown as { paragraphFormats: unknown[] }).paragraphFormats = [{ unknownField: 123 }];
+    expect(() => deserializeQpg(serializeQpg(broken))).toThrow();
+  });
   it("keeps the single-line flag and strips unknown frame fields", () => {
     const document = example();
     (document.frames[0] as unknown as Record<string, unknown>).unrecognized = "drop";

@@ -5,6 +5,9 @@ import { getFontById } from './fontRegistry';
 import { blockLeadingPt } from './autoLeading';
 import type { DocNode } from './extractPlainText';
 import { isParagraphAlignList, type ParagraphAlign } from './paragraphAlign';
+import { isParagraphFormatList, type ParagraphFormat } from './paragraphFormats';
+import { validateIndentMm, validateLineHeight, validateSpacingPt } from './documentSettings';
+import { parseLeading } from './leading';
 import { normalizeSafeHex } from './studioColors';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
@@ -38,6 +41,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
     if (f.textColor !== undefined && !normalizeSafeHex(f.textColor)) throw new Error('Invalid drawing frame text color; export blocked');
     if (f.textAlign !== undefined && !['left', 'center', 'right', 'justify', 'justify-all'].includes(f.textAlign)) throw new Error('Invalid drawing frame text alignment; export blocked');
     if (f.paragraphAligns !== undefined && !isParagraphAlignList(f.paragraphAligns)) throw new Error('Invalid drawing frame paragraph alignment; export blocked');
+    if (f.paragraphFormats !== undefined && !isParagraphFormatList(f.paragraphFormats)) throw new Error('Invalid drawing frame paragraph formats; export blocked');
     if (f.singleLine !== undefined && typeof f.singleLine !== 'boolean') throw new Error('Invalid drawing frame single-line flag; export blocked');
     if (f.borderWidthMm !== undefined && (typeof f.borderWidthMm !== 'number' || !Number.isFinite(f.borderWidthMm) || f.borderWidthMm <= 0 || f.borderWidthMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame border width; export blocked');
     if (f.borderPattern !== undefined && f.borderPattern !== 'none') throw new Error('Invalid drawing frame border pattern; export blocked');
@@ -68,6 +72,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.textColor !== undefined ? { textColor: normalizeSafeHex(f.textColor)! } : {}),
       ...(f.textAlign !== undefined ? { textAlign: f.textAlign } : {}),
       ...(f.paragraphAligns !== undefined ? { paragraphAligns: f.paragraphAligns } : {}),
+      ...(f.paragraphFormats !== undefined ? { paragraphFormats: f.paragraphFormats } : {}),
       ...(f.singleLine !== undefined ? { singleLine: f.singleLine } : {}),
       ...(f.imageSrc !== undefined ? { imageSrc: f.imageSrc } : {}),
       ...(f.imageNaturalW !== undefined ? { imageNaturalW: f.imageNaturalW } : {}),
@@ -107,13 +112,72 @@ function alignDeclarations(align: ParagraphAlign | undefined): string {
   return `text-align:${align};`;
 }
 
+function formatDeclarations(format: ParagraphFormat | undefined, fallbackLeadingPt: number): { style: string; attrs: string; leadingPt: number } {
+  if (!format) return { style: '', attrs: '', leadingPt: fallbackLeadingPt };
+  const styles: string[] = [];
+  const attrs: string[] = [];
+
+  const leading = parseLeading(format.leading);
+  const lineHeight = !leading && typeof format.lineHeight === 'number' ? validateLineHeight(format.lineHeight) : null;
+  let resolvedLeading = fallbackLeadingPt;
+  if (leading) {
+    attrs.push(`data-leading="${escape(JSON.stringify(leading))}"`);
+    if (leading.mode === 'points') {
+      resolvedLeading = leading.value;
+      styles.push(`line-height:${leading.value}pt`);
+    } else {
+      styles.push(`line-height:${fallbackLeadingPt}pt`);
+    }
+  } else if (lineHeight !== null) {
+    styles.push(`line-height:${lineHeight}`);
+  }
+
+  const firstLine = typeof format.firstLineIndentMm === 'number' ? validateIndentMm(format.firstLineIndentMm) : null;
+  if (firstLine !== null && firstLine > 0) {
+    attrs.push(`data-first-line-indent-mm="${firstLine}"`);
+    styles.push(`text-indent:${firstLine}mm`);
+  }
+
+  const start = typeof format.indentStartMm === 'number' ? validateIndentMm(format.indentStartMm) : null;
+  if (start !== null) {
+    attrs.push(`data-indent-start-mm="${start}"`);
+    styles.push(`margin-inline-start:${start}mm`);
+  }
+
+  const end = typeof format.indentEndMm === 'number' ? validateIndentMm(format.indentEndMm) : null;
+  if (end !== null) {
+    attrs.push(`data-indent-end-mm="${end}"`);
+    styles.push(`margin-inline-end:${end}mm`);
+  }
+
+  const before = typeof format.spaceBeforePt === 'number' ? validateSpacingPt(format.spaceBeforePt) : null;
+  if (before !== null) {
+    attrs.push(`data-space-before-pt="${before}"`);
+    styles.push(`margin-block-start:${before}pt;--qalam-space-before:${before}pt`);
+  }
+
+  const after = typeof format.spaceAfterPt === 'number' ? validateSpacingPt(format.spaceAfterPt) : null;
+  if (after !== null) {
+    attrs.push(`data-space-after-pt="${after}"`);
+    styles.push(`margin-block-end:${after}pt;--qalam-space-after:${after}pt`);
+  }
+
+  return {
+    style: styles.length ? styles.join(';') + ';' : '',
+    attrs: attrs.length ? ' ' + attrs.join(' ') : '',
+    leadingPt: resolvedLeading,
+  };
+}
+
 /** One block per paragraph. Legacy frames with no paragraphAligns stay a single text run. */
 export function frameParagraphMarkup(frame: StudioFrame, leadingPt: number, renderText: (text: string) => string = escape): string | null {
-  if (frame.singleLine || !frame.paragraphAligns?.length || frame.kind !== 'text') return null;
+  if (frame.singleLine || (!frame.paragraphAligns?.length && !frame.paragraphFormats?.length) || frame.kind !== 'text') return null;
   return frame.text.split('\n').map((part, index) => {
     const stored = frame.paragraphAligns?.[index];
     const align = stored === undefined ? frame.textAlign ?? null : stored;
-    return `<p data-print-frame-paragraph="${index}" style="margin:0;padding:0;${alignDeclarations(align)}white-space:pre-wrap;overflow-wrap:break-word;unicode-bidi:plaintext;min-height:${leadingPt}pt;">${part.length ? renderText(part) : '<br>'}</p>`;
+    const format = frame.paragraphFormats?.[index];
+    const { style, attrs, leadingPt: paraLeading } = formatDeclarations(format, leadingPt);
+    return `<p data-print-frame-paragraph="${index}"${attrs} style="margin:0;padding:0;${alignDeclarations(align)}${style}white-space:pre-wrap;overflow-wrap:break-word;unicode-bidi:plaintext;min-height:${paraLeading}pt;">${part.length ? renderText(part) : '<br>'}</p>`;
   }).join('');
 }
 

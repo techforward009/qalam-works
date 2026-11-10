@@ -18,14 +18,14 @@ describe("frameToDoc / docToFrame", () => {
     expect(doc.content).toHaveLength(1);
     expect(paragraphTexts(doc)).toEqual([""]);
     expect(paragraphAligns(doc)).toEqual([null]);
-    expect(docToFrame(doc)).toEqual({ text: "", paragraphAligns: null });
+    expect(docToFrame(doc)).toEqual({ text: "", paragraphAligns: null, paragraphFormats: null });
   });
 
   it("keeps empty paragraphs, including a blank line between text", () => {
     expect(paragraphTexts(frameToDoc("\n\n", "right"))).toEqual(["", "", ""]);
     const doc = frameToDoc("a\n\nb", "right");
     expect(paragraphTexts(doc)).toEqual(["a", "", "b"]);
-    expect(docToFrame(doc, "right")).toEqual({ text: "a\n\nb", textAlign: "right", paragraphAligns: null });
+    expect(docToFrame(doc, "right")).toEqual({ text: "a\n\nb", textAlign: "right", paragraphAligns: null, paragraphFormats: null });
   });
 
   it("round-trips mixed aligns and keeps stored nulls on a text-only edit", () => {
@@ -44,7 +44,7 @@ describe("frameToDoc / docToFrame", () => {
 
   it("collapses a shared alignment onto textAlign and omits paragraphAligns", () => {
     const doc = frameToDoc("a\nb", "left", ["center", "center"]);
-    expect(docToFrame(doc, "left")).toEqual({ text: "a\nb", textAlign: "center", paragraphAligns: null });
+    expect(docToFrame(doc, "left")).toEqual({ text: "a\nb", textAlign: "center", paragraphAligns: null, paragraphFormats: null });
   });
 
   it("does not add paragraphAligns to a legacy frame after a text-only edit", () => {
@@ -84,8 +84,62 @@ describe("frameToDoc / docToFrame", () => {
       text: "boldrest\nH\nitem",
       textAlign: "right",
       paragraphAligns: ["center", "left", "right"],
+      paragraphFormats: null,
     });
     expect(JSON.stringify(frame)).not.toContain("dir");
     expect(JSON.stringify(frame)).not.toContain("marks");
+  });
+
+  it("round-trips paragraph formats and collapses away empty format lists", () => {
+    const frame = {
+      text: "first\nsecond\nthird",
+      textAlign: "right" as const,
+      paragraphFormats: [
+        { spaceBeforePt: 12, firstLineIndentMm: 5 },
+        null,
+        { leading: { mode: "points" as const, value: 24 } },
+      ],
+    };
+    const doc = frameToDoc(frame.text, frame.textAlign, undefined, frame.paragraphFormats);
+    expect(doc.content?.[0]?.attrs?.spaceBeforePt).toBe(12);
+    expect(doc.content?.[0]?.attrs?.firstLineIndentMm).toBe(5);
+    expect(doc.content?.[1]?.attrs?.spaceBeforePt).toBeUndefined();
+    expect(doc.content?.[2]?.attrs?.leading).toEqual({ mode: "points", value: 24 });
+
+    const restored = docToFrame(doc, frame.textAlign);
+    expect(restored.paragraphFormats).toEqual([
+      { spaceBeforePt: 12, firstLineIndentMm: 5 },
+      null,
+      { leading: { mode: "points", value: 24 } },
+    ]);
+    expect(frameContentPatch(frame, doc)).toBeNull();
+
+    const emptyDoc = frameToDoc("a\nb", "left", undefined, [null, null]);
+    expect(docToFrame(emptyDoc, "left").paragraphFormats).toBeNull();
+  });
+
+  it("does not add paragraphFormats to a legacy frame after text-only or align-only edit", () => {
+    const legacy = { text: "سطر اول\nسطر دوم", textAlign: "right" as const };
+    const doc = frameToDoc(legacy.text, legacy.textAlign);
+    expect(frameContentPatch(legacy, doc)).toBeNull();
+
+    // Text-only edit
+    const textEdited = structuredClone(doc);
+    textEdited.content![0]!.content = [{ type: "text", text: "بدلا ہوا سطر" }];
+    const textPatch = frameContentPatch(legacy, textEdited);
+    expect(textPatch).toEqual({ text: "بدلا ہوا سطر\nسطر دوم" });
+    expect(textPatch && "paragraphFormats" in textPatch).toBe(false);
+    expect(textPatch && "paragraphAligns" in textPatch).toBe(false);
+
+    // Align-only edit
+    const alignEdited = structuredClone(doc);
+    alignEdited.content![0]!.attrs = { textAlign: "center" };
+    const alignPatch = frameContentPatch(legacy, alignEdited);
+    expect(alignPatch).toEqual({
+      text: "سطر اول\nسطر دوم",
+      textAlign: "right",
+      paragraphAligns: ["center", "right"],
+    });
+    expect(alignPatch && "paragraphFormats" in alignPatch).toBe(false);
   });
 });
