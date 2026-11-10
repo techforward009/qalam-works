@@ -11,12 +11,14 @@ import {hardBreakLineTop} from "../utils/hardBreakLineGrid";
 import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
 import { StudioTextFrame } from "./StudioTextFrame";
-import type { DocumentStudioSettings } from "../utils/documentSettings";
+import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
+import { singleLineLeadingPt, singleLineOuterHeightMm, singleLineOuterHeightPx } from "../utils/singleLineFrame";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import type { Editor } from "@tiptap/react";
 import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
+import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
 
 export type FrameKind =
   | "rect"
@@ -42,6 +44,8 @@ export type StudioFrame = {
   typography?: DocumentStudioSettings["typography"];
   textColor?: string;
   textAlign?: StudioTextAlign;
+  /** Per-paragraph alignment. Absent on legacy frames, which keep using textAlign for every paragraph. */
+  paragraphAligns?: ParagraphAlign[];
   singleLine?: boolean;
   imageSrc?: string;
   imageNaturalW?: number;
@@ -341,8 +345,21 @@ export function StudioObjectLayer({
   const onChangeRef = useRef(onFramesChange);
   onChangeRef.current = onFramesChange;
 
-  const updateFrame = (id: string, patch: Partial<StudioFrame>) => {
-    onChangeRef.current(framesRef.current.map((frame) => (frame.id === id ? { ...frame, ...patch } : frame)));
+  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => {
+    onChangeRef.current(framesRef.current.map((frame) => {
+      if (frame.id !== id) return frame;
+      const { paragraphAligns, textAlign, ...rest } = patch;
+      const next: StudioFrame = { ...frame, ...rest };
+      if (paragraphAligns !== undefined) {
+        if (paragraphAligns === null) delete next.paragraphAligns;
+        else next.paragraphAligns = paragraphAligns;
+      }
+      if (textAlign !== undefined) {
+        if (textAlign === null) delete next.textAlign;
+        else next.textAlign = textAlign;
+      }
+      return next;
+    }));
   };
 
   const commitBox = (box: { x: number; y: number; w: number; h: number; flip: boolean }) => {
@@ -361,20 +378,24 @@ export function StudioObjectLayer({
                 : null;
     if (!kind) return;
     let { x, y, w, h } = box;
+    const singleLine = tool === "title-text";
     const flip = (w < 0) !== (h < 0);
     if (w < 0) {
       x += w;
       w = -w;
     }
-    if (h < 0) {
+    if (!singleLine && h < 0) {
       y += h;
       h = -h;
     }
-    if (textTool && (w < 4 || h < 4)) return;
-    if (isUndraggedShape(w, h)) return;
+    if (singleLine) {
+      if (w < 4) return;
+    } else if (textTool && (w < 4 || h < 4)) return;
+    if (!singleLine && isUndraggedShape(w, h)) return;
     const stride = pageHeightPx + gapPx;
     const page = pageOf(y);
     const yOnPage = y - (page - 1) * stride;
+    const frameTypography = typography ?? defaultDocumentSettings().typography;
     const frame: StudioFrame = {
       id: newId(),
       kind,
@@ -382,11 +403,11 @@ export function StudioObjectLayer({
       xMm: x / PX_PER_MM,
       yMm: Math.max(0, yOnPage) / PX_PER_MM,
       wMm: Math.max(1, w) / PX_PER_MM,
-      hMm: Math.max(1, h) / PX_PER_MM,
+      hMm: singleLine ? singleLineOuterHeightMm(frameTypography) : Math.max(1, h) / PX_PER_MM,
       flip,
       text: "",
       typography,
-      ...(tool === "title-text" ? { singleLine: true } : {}),
+      ...(singleLine ? { singleLine: true } : {}),
     };
     if (textTool) pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
@@ -529,6 +550,23 @@ export function StudioObjectLayer({
         }
         const frame = frames.find((item) => item.id === drag.id);
         if (!frame) return;
+        if (frame.singleLine) {
+          if (!drag.edge.includes("e") && !drag.edge.includes("w")) return;
+          const left = frame.xMm * PX_PER_MM;
+          const right = left + frame.wMm * PX_PER_MM;
+          let x1 = left;
+          let x2 = right;
+          if (drag.edge.includes("w")) x1 = point.x;
+          if (drag.edge.includes("e")) x2 = point.x;
+          const x = Math.min(x1, x2);
+          pictureDraggedRef.current = true;
+          lastPressRef.current = null;
+          updateFrame(frame.id, {
+            xMm: x / PX_PER_MM,
+            wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
+          });
+          return;
+        }
         const stride = pageHeightPx + gapPx;
         const origin = (frame.page - 1) * stride;
         const left = frame.xMm * PX_PER_MM;
@@ -669,7 +707,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} onTextFocus={() => setSelected([])} onText={(text) => updateFrame(frame.id, { text })} onStyle={(patch) => updateFrame(frame.id, patch)} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -686,7 +724,7 @@ export function StudioObjectLayer({
               </svg>
             ) : null}
             {active && !(frame.angle1Deg !== undefined && Math.abs(frame.angle1Deg) > 1e-9)
-              ? (["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
+              ? (frame.singleLine ? ["e", "w"] as const : ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
                   <div
                     key={edge}
                     data-studio-frame-handle={edge}
@@ -720,9 +758,9 @@ export function StudioObjectLayer({
           style={{
             position: "absolute",
             left: Math.min(draft.x, draft.x + draft.w),
-            top: Math.min(draft.y, draft.y + draft.h),
+            top: tool === "title-text" ? draft.y : Math.min(draft.y, draft.y + draft.h),
             width: Math.abs(draft.w),
-            height: Math.abs(draft.h),
+            height: tool === "title-text" ? singleLineOuterHeightPx(singleLineLeadingPt(typography ?? defaultDocumentSettings().typography)) : Math.abs(draft.h),
             border: "1px dashed #000",
             pointerEvents: "none",
           }}
@@ -792,6 +830,7 @@ function FrameShape({
   height,
   onTextFocus,
   onText,
+  onRestore,
   onStyle,
   keyboardLayout,
 }: {
@@ -801,12 +840,13 @@ function FrameShape({
   width: number;
   height: number;
   onTextFocus: () => void;
-  onText: (text: string) => void;
-  onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor" | "textAlign">>) => void;
+  onText: (text: string, edit?: TextEditRange) => void;
+  onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
+  onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   keyboardLayout?: KeyboardLayout | null;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onStyle={onStyle} />;
+    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;

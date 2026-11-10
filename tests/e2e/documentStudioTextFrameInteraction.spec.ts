@@ -134,3 +134,239 @@ test('story selection stays painted at a size field but clears when the target c
   await page.getByRole('dialog', { name: 'New Document', exact: true }).getByRole('button', { name: 'OK', exact: true }).click();
   await expect(page.locator('[data-studio-text-frame-selection], [data-studio-selection-layer]')).toHaveCount(0);
 });
+
+async function caretMetrics(input: ReturnType<typeof box>) {
+  return input.evaluate(el => {
+    const field = el as HTMLTextAreaElement;
+    const caret = field.parentElement!.querySelector('[data-studio-frame-caret]')!.getBoundingClientRect();
+    const bounds = field.getBoundingClientRect();
+    const style = getComputedStyle(field);
+    const scale = bounds.width / field.offsetWidth;
+    const rightInset = (parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight)) * scale;
+    const leftInset = (parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft)) * scale;
+    return {
+      value: field.value,
+      start: field.selectionStart,
+      end: field.selectionEnd,
+      fromRight: bounds.right - rightInset - caret.right,
+      fromLeft: caret.left - (bounds.left + leftInset),
+      fromCenter: caret.left + caret.width / 2 - (bounds.left + bounds.width / 2),
+      top: caret.top - bounds.top,
+      scrollTop: field.scrollTop,
+      scrollHeight: field.scrollHeight,
+      clientHeight: field.clientHeight,
+      scrollbarWidth: style.scrollbarWidth,
+      overflowY: style.overflowY,
+      borderTop: style.borderTopWidth,
+      offsetHeight: field.offsetHeight,
+    };
+  });
+}
+
+test('a multi-line box hides its scrollbar and still scrolls', async ({ page }) => {
+  const before = await snapshot(page);
+  const input = box(page, 'multi');
+  const heightBefore = await input.evaluate(el => (el as HTMLTextAreaElement).offsetHeight);
+  await input.click();
+  const lines = Array.from({ length: 14 }, (_, index) => `سطر ${index + 1}`).join('\n');
+  await input.fill(lines);
+  await expect.poll(async () => (await caretMetrics(input)).scrollHeight).toBeGreaterThan((await caretMetrics(input)).clientHeight);
+  const fitted = await caretMetrics(input);
+  expect(fitted.scrollbarWidth).toBe('none');
+  expect(fitted.overflowY).toBe('auto');
+  expect(fitted.borderTop).toBe('1px');
+  expect(fitted.offsetHeight).toBe(heightBefore);
+  expect(fitted.value).toBe(lines);
+  await input.evaluate(el => { (el as HTMLTextAreaElement).scrollTop = 36; });
+  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(20);
+  await input.evaluate(el => { (el as HTMLTextAreaElement).scrollTop = 0; });
+  await input.hover();
+  await page.mouse.wheel(0, 120);
+  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(10);
+  await input.press('Control+End');
+  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(20);
+  expect(await input.inputValue()).toBe(lines);
+  expect(await snapshot(page)).toEqual(before);
+});
+
+test('Enter places the empty-line caret from the frame alignment', async ({ page }) => {
+  const before = await snapshot(page);
+  const input = box(page, 'multi');
+  const align = (name: string) => page.getByRole('button', { name, exact: true }).click();
+  await input.click();
+  await input.fill('عنوان');
+  await align('Align right');
+  await input.press('End');
+  await input.press('Enter');
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeLessThanOrEqual(2);
+  let metrics = await caretMetrics(input);
+  expect(metrics.value).toBe('عنوان\n');
+  expect([metrics.start, metrics.end]).toEqual([6, 6]);
+  const firstTop = metrics.top;
+  await input.press('Enter');
+  await expect.poll(async () => (await caretMetrics(input)).top).toBeGreaterThan(firstTop + 16);
+  metrics = await caretMetrics(input);
+  expect(metrics.value).toBe('عنوان\n\n');
+  expect(metrics.fromRight).toBeLessThanOrEqual(2);
+  await input.pressSequentially('ب');
+  await expect(input).toHaveValue('عنوان\n\nب');
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeGreaterThan(8);
+
+  await input.fill('عنوان');
+  await align('Align center');
+  await input.press('End');
+  await input.press('Enter');
+  await expect.poll(async () => Math.abs((await caretMetrics(input)).fromCenter)).toBeLessThanOrEqual(4);
+  expect(await input.inputValue()).toBe('عنوان\n');
+
+  await input.fill('عنوان');
+  await align('Justify');
+  await input.press('End');
+  await input.press('Enter');
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeLessThanOrEqual(2);
+  metrics = await caretMetrics(input);
+  expect(Math.abs(metrics.fromCenter)).toBeGreaterThan(20);
+  expect(metrics.value).toBe('عنوان\n');
+
+  await input.fill('عنوان');
+  await align('Full justify');
+  await input.press('End');
+  await input.press('Enter');
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeLessThanOrEqual(2);
+
+  await input.fill('Hello');
+  await align('Align left');
+  await input.press('End');
+  await input.press('Enter');
+  await expect.poll(async () => (await caretMetrics(input)).fromLeft).toBeLessThanOrEqual(4);
+  expect(await input.inputValue()).toBe('Hello\n');
+  await input.pressSequentially('A');
+  await expect(input).toHaveValue('Hello\nA');
+  await expect.poll(async () => (await caretMetrics(input)).fromLeft).toBeGreaterThan(6);
+  expect(await snapshot(page)).toEqual(before);
+});
+
+test('the first animation frame after Enter paints the caret on the new line', async ({ page }) => {
+  const input = box(page, 'multi');
+  await input.click();
+  await input.fill('یہ ایک لمبا پیراگراف ہے جو کئی سطروں میں بٹ جائے گا اور اس کے بعد ایک نئی سطر بنے گی۔');
+  await page.getByRole('button', { name: 'Justify', exact: true }).click();
+  await input.press('End');
+  await page.waitForTimeout(80);
+  const before = await caretMetrics(input);
+  await input.evaluate(el => {
+    const target = el as HTMLTextAreaElement & { __enterCaret?: unknown[] };
+    target.__enterCaret = [];
+    el.addEventListener('keydown', () => {
+      requestAnimationFrame(() => {
+        const caret = el.parentElement?.querySelector('[data-studio-frame-caret]');
+        const bounds = el.getBoundingClientRect();
+        const box = caret?.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        const scale = bounds.width / (el as HTMLTextAreaElement).offsetWidth;
+        const rightInset = (parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight)) * scale;
+        target.__enterCaret?.push({
+          value: (el as HTMLTextAreaElement).value,
+          start: (el as HTMLTextAreaElement).selectionStart,
+          end: (el as HTMLTextAreaElement).selectionEnd,
+          top: box ? box.top - bounds.top : null,
+          fromRight: box ? bounds.right - rightInset - box.right : null,
+        });
+      });
+    }, true);
+  });
+  await input.press('Enter');
+  const trace = await input.evaluate(el => (el as HTMLTextAreaElement & { __enterCaret: Array<{ value: string; start: number; end: number; top: number | null; fromRight: number | null }> }).__enterCaret);
+  expect(trace.length).toBeGreaterThan(0);
+  expect(trace[0].value.endsWith('\n')).toBe(true);
+  expect(trace[0].start).toBe(trace[0].value.length);
+  expect(trace[0].end).toBe(trace[0].start);
+  expect(trace[0].top).not.toBeNull();
+  expect(trace[0].top!).toBeGreaterThan(before.top + 16);
+  expect(trace[0].fromRight!).toBeLessThanOrEqual(4);
+  await input.pressSequentially('ب');
+  await expect(input).toHaveValue(`${trace[0].value}ب`);
+  await input.press('Enter');
+  const second = await caretMetrics(input);
+  expect(second.value.endsWith('\n')).toBe(true);
+  expect([second.start, second.end]).toEqual([second.value.length, second.value.length]);
+  expect(second.fromRight).toBeLessThanOrEqual(4);
+  // A 25mm frame scrolls once the wrapped paragraph passes the visible bottom.
+  // The painted top is then the scrolled line, not another raw +16px content step.
+  const linePitch = (trace[0].top ?? 0) - before.top;
+  const visualTop = (trace[0].top ?? 0) + linePitch - second.scrollTop;
+  expect(Math.abs(second.top - visualTop)).toBeLessThanOrEqual(4);
+});
+
+test('each multiline paragraph keeps its own alignment', async ({ page }) => {
+  const before = await snapshot(page);
+  const input = box(page, 'multi');
+  const height = await input.evaluate(el => (el as HTMLTextAreaElement).offsetHeight);
+  const align = (name: string) => page.getByRole('button', { name, exact: true }).click();
+  const paragraphs = () => object(page, 'multi').locator('[data-studio-frame-paragraphs] [data-studio-frame-paragraph]');
+  await input.click();
+  await input.press('Control+Home');
+  await align('Align left');
+  await input.press('Control+End');
+  await align('Align right');
+  await expect.poll(async () => input.getAttribute('data-studio-frame-text-align')).toBe('right');
+  await expect(paragraphs()).toHaveCount(2);
+  await expect(paragraphs().first()).toHaveCSS('text-align', 'left');
+  await expect(paragraphs().nth(1)).toHaveCSS('text-align', 'right');
+  const stored = async () => page.evaluate(() => {
+    const id = localStorage.getItem('qalam-document-studio-active-document-v1');
+    const frames = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}')[id!] as Array<{ id: string; textAlign?: string; paragraphAligns?: Array<string | null>; hMm: number; text: string }>;
+    return frames.find(frame => frame.id === 'multi');
+  });
+  await expect.poll(async () => (await stored())?.paragraphAligns).toEqual(['left', 'right']);
+  expect((await stored())?.text).toBe('پہلی سطر\nدوسری سطر');
+  expect((await stored())?.hMm).toBe(25);
+  await input.press('Control+Home');
+  await expect.poll(async () => input.getAttribute('data-studio-frame-text-align')).toBe('left');
+  await expect(page.getByRole('button', { name: 'Align left', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Align right', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await input.press('Control+a');
+  await expect.poll(async () => input.getAttribute('data-studio-frame-text-align')).toBe('mixed');
+  await expect(page.getByRole('button', { name: 'Align left', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('button', { name: 'Align right', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await input.press('Control+Home');
+  await input.press('End');
+  await input.press('Enter');
+  await expect.poll(async () => (await stored())?.paragraphAligns).toEqual(['left', 'left', 'right']);
+  expect((await stored())?.text).toBe('پہلی سطر\n\nدوسری سطر');
+  await input.press('Control+End');
+  await input.press('Home');
+  await input.press('Backspace');
+  await expect.poll(async () => (await stored())?.text).toBe('پہلی سطر\nدوسری سطر');
+  expect((await stored())?.paragraphAligns).toEqual(['left', 'right']);
+  await input.press('Control+z');
+  await expect.poll(async () => (await stored())?.text).toBe('پہلی سطر\n\nدوسری سطر');
+  expect((await stored())?.paragraphAligns).toEqual(['left', 'left', 'right']);
+  await input.press('Control+Shift+z');
+  await expect.poll(async () => (await stored())?.text).toBe('پہلی سطر\nدوسری سطر');
+  expect((await stored())?.paragraphAligns).toEqual(['left', 'right']);
+  expect(await input.evaluate(el => (el as HTMLTextAreaElement).offsetHeight)).toBe(height);
+  expect(await snapshot(page)).toEqual(before);
+});
+
+test('filled multi-line navigation keeps the caret on its glyphs', async ({ page }) => {
+  const before = await snapshot(page);
+  const input = box(page, 'multi');
+  await input.click();
+  await input.press('Control+Home');
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeLessThanOrEqual(2);
+  const lineTop = (await caretMetrics(input)).top;
+  await input.press('End');
+  await expect.poll(async () => (await caretMetrics(input)).fromRight).toBeGreaterThan(8);
+  expect((await caretMetrics(input)).top).toBeLessThan(lineTop + 8);
+  await input.press('ArrowDown');
+  await expect.poll(async () => (await caretMetrics(input)).top).toBeGreaterThan(lineTop + 16);
+  expect(await input.inputValue()).toBe('پہلی سطر\nدوسری سطر');
+  await input.press('ArrowUp');
+  await expect.poll(async () => (await caretMetrics(input)).top).toBeLessThan(lineTop + 8);
+  await input.press('End');
+  await input.press('Backspace');
+  await expect(input).toHaveValue('پہلی سط\nدوسری سطر');
+  await expect.poll(async () => (await caretMetrics(input)).top).toBeLessThan(lineTop + 8);
+  expect(await snapshot(page)).toEqual(before);
+});

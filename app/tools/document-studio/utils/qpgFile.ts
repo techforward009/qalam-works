@@ -2,6 +2,7 @@ import type { DocNode } from "./extractPlainText";
 import type { DocumentStudioSettings } from "./documentSettings";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 import type { DocumentViewMode } from "./documentView";
+import { isParagraphAlignList } from "./paragraphAlign";
 import { normalizeSafeHex } from "./studioColors";
 
 export const QPG_FILE_ACCEPT = ".qpg,.inp,.txt,.docx";
@@ -40,7 +41,7 @@ export function serializeQpg(document: QpgDocument): string {
   return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document, frames: document.frames.map(copyQpgFrame) });
 }
 
-const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
+const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
 function copyQpgFrame(frame: StudioFrame): StudioFrame {
   return Object.fromEntries(QPG_FRAME_KEYS.flatMap(key => frame[key] === undefined ? [] : [[key, frame[key]]])) as unknown as StudioFrame;
 }
@@ -76,6 +77,7 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       (frame.backgroundColor === undefined || normalizeSafeHex(frame.backgroundColor) !== null) &&
       (frame.textColor === undefined || normalizeSafeHex(frame.textColor) !== null) &&
       (frame.textAlign === undefined || ["left", "center", "right", "justify", "justify-all"].includes(String(frame.textAlign))) &&
+      (frame.paragraphAligns === undefined || isParagraphAlignList(frame.paragraphAligns)) &&
       (frame.singleLine === undefined || typeof frame.singleLine === "boolean") &&
       (frame.backgroundHatch === undefined || frame.backgroundHatch === "none")) ||
     !Number.isInteger(value.minimumPages) || (value.minimumPages as number) < 1 ||

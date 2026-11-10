@@ -4,6 +4,7 @@ import { defaultDocumentSettings, parseDocumentSettings } from './documentSettin
 import { getFontById } from './fontRegistry';
 import { blockLeadingPt } from './autoLeading';
 import type { DocNode } from './extractPlainText';
+import { isParagraphAlignList, type ParagraphAlign } from './paragraphAlign';
 import { normalizeSafeHex } from './studioColors';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
@@ -36,6 +37,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
     if (f.backgroundColor !== undefined && !normalizeSafeHex(f.backgroundColor)) throw new Error('Invalid drawing frame background color; export blocked');
     if (f.textColor !== undefined && !normalizeSafeHex(f.textColor)) throw new Error('Invalid drawing frame text color; export blocked');
     if (f.textAlign !== undefined && !['left', 'center', 'right', 'justify', 'justify-all'].includes(f.textAlign)) throw new Error('Invalid drawing frame text alignment; export blocked');
+    if (f.paragraphAligns !== undefined && !isParagraphAlignList(f.paragraphAligns)) throw new Error('Invalid drawing frame paragraph alignment; export blocked');
     if (f.singleLine !== undefined && typeof f.singleLine !== 'boolean') throw new Error('Invalid drawing frame single-line flag; export blocked');
     if (f.borderWidthMm !== undefined && (typeof f.borderWidthMm !== 'number' || !Number.isFinite(f.borderWidthMm) || f.borderWidthMm <= 0 || f.borderWidthMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame border width; export blocked');
     if (f.borderPattern !== undefined && f.borderPattern !== 'none') throw new Error('Invalid drawing frame border pattern; export blocked');
@@ -65,6 +67,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.typography ? { typography: parseDocumentSettings({ typography: f.typography }).typography } : {}),
       ...(f.textColor !== undefined ? { textColor: normalizeSafeHex(f.textColor)! } : {}),
       ...(f.textAlign !== undefined ? { textAlign: f.textAlign } : {}),
+      ...(f.paragraphAligns !== undefined ? { paragraphAligns: f.paragraphAligns } : {}),
       ...(f.singleLine !== undefined ? { singleLine: f.singleLine } : {}),
       ...(f.imageSrc !== undefined ? { imageSrc: f.imageSrc } : {}),
       ...(f.imageNaturalW !== undefined ? { imageNaturalW: f.imageNaturalW } : {}),
@@ -98,6 +101,22 @@ export function frameTextNode(frame: StudioFrame): DocNode {
 export function framePrintTopMm(frame: Pick<StudioFrame, "page" | "yMm">, height: number): number {
   return (frame.page - 1) * height + frame.yMm;
 }
+function alignDeclarations(align: ParagraphAlign | undefined): string {
+  if (!align) return '';
+  if (align === 'justify-all') return 'text-align:justify;text-align-last:justify;';
+  return `text-align:${align};`;
+}
+
+/** One block per paragraph. Legacy frames with no paragraphAligns stay a single text run. */
+export function frameParagraphMarkup(frame: StudioFrame, leadingPt: number, renderText: (text: string) => string = escape): string | null {
+  if (frame.singleLine || !frame.paragraphAligns?.length || frame.kind !== 'text') return null;
+  return frame.text.split('\n').map((part, index) => {
+    const stored = frame.paragraphAligns?.[index];
+    const align = stored === undefined ? frame.textAlign ?? null : stored;
+    return `<p data-print-frame-paragraph="${index}" style="margin:0;padding:0;${alignDeclarations(align)}white-space:pre-wrap;overflow-wrap:break-word;unicode-bidi:plaintext;min-height:${leadingPt}pt;">${part.length ? renderText(part) : '<br>'}</p>`;
+  }).join('');
+}
+
 /** Only trusted converter output may supply textHtml; raw request text always
  * goes through escaping. Shapes contain no author-provided markup or SVG. */
 export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string {
@@ -113,7 +132,8 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
     const textBackground = frame.backgroundColor ? `background:${escape(frame.backgroundColor)};` : "background:transparent;";
     const textAlign = frame.textAlign === 'justify-all' ? 'justify' : frame.textAlign ?? 'start';
     const textAlignLast = frame.textAlign === 'justify-all' ? 'text-align-last:justify;' : '';
-    return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}padding:0.5291666667mm;overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:${frame.singleLine ? 'nowrap' : 'pre-wrap'};${frame.singleLine ? '' : 'overflow-wrap:break-word;'}text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${textHtml ?? escape(frame.text)}</div>`;
+    const paragraphs = frameParagraphMarkup(frame, leading);
+    return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}padding:0.5291666667mm;overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:${frame.singleLine ? 'nowrap' : 'pre-wrap'};${frame.singleLine ? '' : 'overflow-wrap:break-word;'}text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${paragraphs ?? textHtml ?? escape(frame.text)}</div>`;
   }
   const legacyStroke = 'fill="none" stroke="#000" stroke-width="0.2645833333"';
   const borderColor = frame.borderColor ?? '#000';
