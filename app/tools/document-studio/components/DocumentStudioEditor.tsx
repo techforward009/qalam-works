@@ -2345,7 +2345,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           role="menu"
           data-studio-image-menu="true"
           className="fixed z-[90] border border-[#808080] bg-[#f0f0f0] py-1 text-[11px] text-black shadow-md"
-          style={{ left: imageMenu.x, top: imageMenu.y, fontFamily: "Tahoma, 'Segoe UI', sans-serif" }}
+          style={{ left: imageMenu.x, top: imageMenu.y, fontFamily: "QalamUITahoma, Tahoma, 'Segoe UI', sans-serif" }}
           onPointerDown={(event) => event.stopPropagation()}
         >
           {([

@@ -108,7 +108,7 @@ export function WindowRuler({
         borderBottom: vertical ? undefined : "2px solid #000",
         borderRight: vertical ? "2px solid #000" : undefined,
         background: "#fff",
-        fontFamily: "Tahoma, 'Segoe UI', sans-serif",
+        fontFamily: "QalamUITahoma, Tahoma, 'Segoe UI', sans-serif",
       }}
       data-studio-ruler={vertical ? undefined : "true"}
       data-studio-vertical-ruler={vertical ? "true" : undefined}
