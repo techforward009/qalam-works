@@ -241,7 +241,8 @@ describe("document menus", () => {
       },
       run: () => true,
     };
-    const editor = { chain: () => chain, isActive: () => false } as never;
+    // Align first checks for a focused text frame via editor.view.dom (none here).
+    const editor = { chain: () => chain, isActive: () => false, view: { dom: document.createElement("div") } } as never;
     const h = mockHandlers();
     dispatchDocumentMenuAction("format.bold", editor, h);
     dispatchDocumentMenuAction("format.alignCenter", editor, h);
@@ -287,7 +288,7 @@ describe("document menus", () => {
   it("keeps Page actions wired while future items are non-dispatchable", () => {
     const insert = DOCUMENT_MENU_BAR.find((m) => m.id === "insert");
     expect(collectMenuActionIds(insert?.items ?? [])).toEqual([
-      "insert.pageBreak", "insert.image", "insert.table",
+      "insert.pageBreak", "insert.image", "insert.table", "insert.splitTable",
       "insert.sectionBreakNextPage", "insert.sectionBreakContinuous",
     ]);
   });

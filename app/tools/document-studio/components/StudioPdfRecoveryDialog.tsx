@@ -62,7 +62,7 @@ export default function StudioPdfRecoveryDialog({ isUr, recoverable, error, onCl
       [data-studio-pdf-recovery] button:focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
       [data-studio-pdf-recovery] button:disabled { color: #808080 !important; cursor: default; }`}</style>
     <div ref={root} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-message`} dir={isUr ? "rtl" : "ltr"}
-      style={{ ...drag.style, width: 390, maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 16px)", overflowY: "auto", boxSizing: "border-box", border: "1px solid #808080", borderRadius: 0, padding: 3, background: "#f0f0f0", color: "#000", boxShadow: "inset 1px 1px #fff, inset -1px -1px #a0a0a0, 2px 2px 4px #0005", fontFamily: "Tahoma, 'Segoe UI', sans-serif", fontSize: isUr ? 13 : 12 }}
+      style={{ ...drag.style, width: 390, maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 16px)", overflowY: "auto", boxSizing: "border-box", border: "1px solid #808080", borderRadius: 0, padding: 3, background: "#f0f0f0", color: "#000", boxShadow: "inset 1px 1px #fff, inset -1px -1px #a0a0a0, 2px 2px 4px #0005", fontFamily: "QalamUITahoma, Tahoma, 'Segoe UI', sans-serif", fontSize: isUr ? 13 : 12 }}
       onKeyDown={event => {
         // Modal keystrokes must not reach document formatting/zoom handlers.
         event.stopPropagation();

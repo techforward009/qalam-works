@@ -1,3 +1,4 @@
+import { NonBreakingSpace } from "./nonBreakingSpace";
 /**
  * Document Studio TipTap schema — independent of React UI.
  * ParagraphWithDir / HeadingWithDir and canvas block-style CSS live here
@@ -803,6 +804,7 @@ const QuotedFontFamily = FontFamily.extend({
 
 export function createDocumentStudioExtensions() {
   return [
+    NonBreakingSpace,
     StarterKit.configure({
       paragraph: false,
       heading: false,

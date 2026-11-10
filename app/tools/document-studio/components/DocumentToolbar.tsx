@@ -88,7 +88,7 @@ function ToolbarButton({
   );
 }
 
-const RIBBON_FONT = 'Arial, "Liberation Sans", sans-serif';
+const RIBBON_FONT = 'QalamUIArial, Arial, "Liberation Sans", sans-serif';
 
 function art(rows: string[], ox = 0, oy = 0): Array<[number, number]> {
   const points: Array<[number, number]> = [];
@@ -1108,7 +1108,7 @@ function ClassicCombo({ className, style, width, gap = 0, leadingIcon, entryFiel
       <select
         {...props}
         className="h-[20px] min-w-0 w-full appearance-none rounded-none bg-white text-left text-[11px] text-black focus:outline-none"
-        style={{ ...style, border: "none", padding: `2px ${entryField ? 4 : 23}px 2px ${leadingIcon ? 24 : 4}px`, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: props.disabled ? "#808080" : "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minWidth: 0, minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
+        style={{ ...style, border: "none", padding: `2px ${entryField ? 4 : 23}px 2px ${leadingIcon ? 24 : 4}px`, fontFamily: "QalamUITahoma, Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: props.disabled ? "#808080" : "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minWidth: 0, minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
       />
       {leadingIcon ? <span aria-hidden="true" className="pointer-events-none absolute left-[4px] top-[2px] flex h-[16px] w-[18px] items-center justify-center text-black">{leadingIcon}</span> : null}
       {!entryField ? <span aria-hidden="true" className="pointer-events-none absolute right-[2px] top-[2px] grid h-[16px] w-[17px] place-items-center bg-[#f0f0f0]" style={{ boxShadow: CLASSIC_RAISED }}>

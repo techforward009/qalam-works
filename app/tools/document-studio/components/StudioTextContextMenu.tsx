@@ -10,7 +10,7 @@ import {plainTextToDocNodeWithDir} from '../utils/plainTextToDocNode';
 import {textContextItems,CONTEXT_ZOOMS,textContextDisabled,contextMenuPosition} from '../utils/textContextMenu';
 import {tableContextMode} from '../utils/tableOperations';
 
-const itemStyle:React.CSSProperties={height:20,minHeight:20,width:'100%',padding:'0 20px',textAlign:'left',fontFamily:'Tahoma, MS Sans Serif, sans-serif',fontSize:11,color:'#000',whiteSpace:'nowrap'};
+const itemStyle:React.CSSProperties={height:20,minHeight:20,width:'100%',padding:'0 20px',textAlign:'left',fontFamily:'QalamUITahoma, Tahoma, MS Sans Serif, sans-serif',fontSize:11,color:'#000',whiteSpace:'nowrap'};
 function enabledItems(menu:HTMLElement|null){return menu?[...menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')]:[];}
 export type StudioTextActions = { run: (id: "cut" | "copy" | "paste" | "clear") => void };
 export function StudioTextContextMenu({editor,onZoom,onImport,onCharacter,onParagraph,onTable,onTextToTable,onTableLayout,onTableFormat,onTableToText,actionRef}:{editor:Editor|null;onZoom:(zoom:DocumentZoom)=>void;onImport:()=>void;onCharacter:()=>void;onParagraph:()=>void;onTable:()=>void;onTextToTable:()=>void;onTableLayout:()=>void;onTableFormat:()=>void;onTableToText:()=>void;actionRef?:Ref<StudioTextActions>}){

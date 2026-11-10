@@ -8,14 +8,17 @@ import { editorFontFamilyStack, getFontById } from "../utils/fontRegistry";
 import type { StudioFrame } from "./StudioObjectLayer";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLineBoxes";
+import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKeyboard";
+import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
 
 export function normalizeSingleLineText(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
 }
 
 /** A natural-size mirror preserves textarea wrapping even inside a zoom transform. */
-export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, onFocus, onText, onStyle }: {
+export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, keyboardLayout, onFocus, onText, onStyle }: {
   text: string; singleLine?: boolean; editable: boolean; typography?: DocumentStudioSettings["typography"];
+  keyboardLayout?: KeyboardLayout | null;
   textColor?: string; textAlign?: "left" | "center" | "right" | "justify" | "justify-all";
   onFocus: () => void; onText: (text: string) => void; onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor" | "textAlign">>) => void;
 }) {
@@ -93,8 +96,74 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   };
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (singleLine && (event.key === "Enter" || event.key === "NumpadEnter")) event.preventDefault();
+    if (keyboardLayout) {
+      const mapped = resolveKey(keyboardLayout, event);
+      if (mapped !== null) {
+        event.preventDefault();
+        const input = event.currentTarget, start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
+        const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+        onText(input.value.slice(0, start) + insertion + input.value.slice(end));
+        requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
+      }
+    }
+    // Ctrl/Cmd+Up/Down: logical paragraph starts in a multi-line textarea.
+    // resolveKey already ignores ctrl/meta, so this does not fight Monotype mapping.
+    if (!singleLine && !event.altKey && (event.ctrlKey || event.metaKey)
+        && (event.key === "ArrowUp" || event.key === "ArrowDown")
+        && event.currentTarget instanceof HTMLTextAreaElement) {
+      const input = event.currentTarget;
+      const next = frameParagraphNavigationSelection(
+        input.value,
+        input.selectionStart ?? 0,
+        input.selectionEnd ?? 0,
+        input.selectionDirection,
+        event.key,
+        event.shiftKey,
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      input.setSelectionRange(next.start, next.end, next.direction);
+      measure();
+      return;
+    }
   };
-  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": textAlign ?? "", "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: React.PointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;onFocus();measure();}, onChange:(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value), onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
+  const handleCompositionEnd = (input: HTMLInputElement | HTMLTextAreaElement, data: string) => {
+    if (!keyboardLayout || !data) return;
+    const mapped = mapLatinText(keyboardLayout, data);
+    if (mapped === data) return;
+    const end = input.selectionStart ?? input.value.length;
+    const start = Math.max(0, end - data.length);
+    // compositionend may precede the committed input event on some keyboards;
+    // in that case let beforeinput handle it instead of replacing old text.
+    if (input.value.slice(start, end) !== data) return;
+    const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+    onText(input.value.slice(0, start) + insertion + input.value.slice(end));
+    requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
+  };
+  useLayoutEffect(() => {
+    const input = ref.current;
+    if (!input || !keyboardLayout) return;
+    const beforeInput = (rawEvent: Event) => {
+      const event = rawEvent as InputEvent;
+      if (event.inputType !== "insertText" || !event.data || !event.cancelable) return;
+      const mapped = mapLatinText(keyboardLayout, event.data);
+      if (mapped === event.data) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
+      const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+      onText(input.value.slice(0, start) + insertion + input.value.slice(end));
+      requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
+    };
+    const compositionEnd = (rawEvent: Event) => handleCompositionEnd(input, (rawEvent as CompositionEvent).data);
+    input.addEventListener("beforeinput", beforeInput);
+    input.addEventListener("compositionend", compositionEnd);
+    return () => {
+      input.removeEventListener("beforeinput", beforeInput);
+      input.removeEventListener("compositionend", compositionEnd);
+    };
+  }, [keyboardLayout, onText, singleLine]);
+  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": textAlign ?? "", "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: React.PointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;onFocus();measure();}, onChange:(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value), onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
   return <>
     {singleLine ? <input {...sharedProps} type="text" data-studio-text-frame data-studio-text-single-line="true" /> : <textarea {...sharedProps} data-studio-selection-painted={boxes.length?"true":undefined} />}
     <div ref={mirror} aria-hidden style={{...style,height:"auto",minHeight:"100%",visibility:"hidden",pointerEvents:"none",transform:`translate(${- (ref.current?.scrollLeft??0)}px,${- (ref.current?.scrollTop??0)}px)`}} />

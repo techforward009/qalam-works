@@ -30,6 +30,7 @@ import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
 import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
 import { useEditor, type Editor } from "@tiptap/react";
 import { closeHistory } from "@tiptap/pm/history";
+import { Selection } from "@tiptap/pm/state";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
@@ -291,6 +292,20 @@ function getInitialDraftContent(): DocNode | string {
     // consumeHandoff failed — proceed to library bootstrap
   }
   return "<p></p>";
+}
+
+/** Load-time caret placement at the story start. Unlike tiptap's focus(), which
+ * calls view.focus() one animation frame later, this runs synchronously and
+ * leaves a focused text box alone, so a deferred load never pulls focus out of
+ * a frame the user has already focused. */
+function placeStoryCaretAtStart(editor: Editor) {
+  if (editor.isDestroyed) return;
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active.matches("[data-studio-text-frame]")) return;
+  const { state, view } = editor;
+  const start = Selection.atStart(state.doc);
+  view.dispatch((state.selection.eq(start) ? state.tr : state.tr.setSelection(start)).scrollIntoView());
+  view.focus();
 }
 
 export default function DocumentStudioEditor({ fillWindow = false }: { fillWindow?: boolean } = {}) {
@@ -898,7 +913,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     if (editor) {
       const place = () => {
         try {
-          if (canvasToolRef.current === "text") editor.commands.focus("start");
+          if (canvasToolRef.current === "text") placeStoryCaretAtStart(editor);
           else editor.commands.blur();
         } catch {
           /* view not mounted yet */
@@ -1898,7 +1913,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
         try {
-          if (canvasToolRef.current === "text") editor.commands.focus("start");
+          if (canvasToolRef.current === "text") placeStoryCaretAtStart(editor);
           else editor.commands.blur();
         } catch {
           /* view not mounted yet */
@@ -2345,7 +2360,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           role="menu"
           data-studio-image-menu="true"
           className="fixed z-[90] border border-[#808080] bg-[#f0f0f0] py-1 text-[11px] text-black shadow-md"
-          style={{ left: imageMenu.x, top: imageMenu.y, fontFamily: "Tahoma, 'Segoe UI', sans-serif" }}
+          style={{ left: imageMenu.x, top: imageMenu.y, fontFamily: "QalamUITahoma, Tahoma, 'Segoe UI', sans-serif" }}
           onPointerDown={(event) => event.stopPropagation()}
         >
           {([
@@ -2655,6 +2670,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onSelectedFramesChange={setSelectedFrameIds}
             onDoubleClickFrame={(frame) => openPictureChooser(frame.id)}
             englishFont={englishFont}
+            keyboardLayout={getKeyboardLayout()}
             tool={canvasTool}
             onToolAction={onCanvasTool}
           />}

@@ -13,7 +13,7 @@ export interface CustomKeyboardDialogProps {
 }
 
 const URDU_FONT = '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Noto Naskh Arabic", serif';
-const UI_FONT = '"Segoe UI", Tahoma, Arial, sans-serif';
+const UI_FONT = 'QalamUISegoe, "Segoe UI", Tahoma, Arial, sans-serif';
 
 interface KeyDef {
   code: string;
