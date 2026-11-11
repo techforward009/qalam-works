@@ -1,4 +1,6 @@
 import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
+import { runAroundBrowserProgram } from "../extensions/RunAroundLayout";
+import { runAroundExclusionPx, type RunAroundBox, type RunAroundRect } from "./runAroundFlow";
 import type { Page } from "puppeteer-core";
 export const PDF_TABLE_SELECTOR = "table.qalam-document-table,table[data-pdf-table]";
 export const isPdfTableBlock = (tagName: string) => tagName.toUpperCase() === "TABLE";
@@ -475,12 +477,32 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
   document.head.append(measurement); return lines;
 }
 
+function pdfRunAroundExclusions(
+  runAround: { frames: readonly RunAroundBox[] } | undefined,
+  contentHeightPx: number,
+  topMarginPx: number,
+  leftMarginPx: number,
+): RunAroundRect[] {
+  if (!runAround?.frames.length) return [];
+  return runAround.frames.flatMap(frame => {
+    const box = runAroundExclusionPx(frame, contentHeightPx);
+    if (!box) return [];
+    return [{
+      left: box.left - leftMarginPx,
+      right: box.right - leftMarginPx,
+      top: box.top - topMarginPx,
+      bottom: box.bottom - topMarginPx,
+    }];
+  });
+}
+
 export async function paginatePdfInk(
   page: Page,
   widthMm: number,
   heightMm: number,
   leftMarginMm = 0,
   rightMarginMm = 0,
+  runAround?: { frames: readonly RunAroundBox[]; topMarginMm: number; direction?: "rtl" | "ltr" },
 ): Promise<{ lines: number; pages: number; stagingHeight: number; screenshots: number; measurementMs: number }> {
   await page.evaluate(()=>{(window as unknown as {qalamApplyTypographicPreferences?:()=>void}).qalamApplyTypographicPreferences?.();});
   const measurementStarted = Date.now();
@@ -539,6 +561,11 @@ export async function paginatePdfInk(
       }
     }
   }, { w: width, overscan: horizontalOverscan });
+  const exclusions = pdfRunAroundExclusions(runAround, height, mmToCssPx(runAround?.topMarginMm ?? 0), leftMarginPx);
+  if (exclusions.length) {
+    const program = runAroundBrowserProgram();
+    await page.evaluate(new Function("exclusions", "direction", `${program}\nreturn applyStoryRunAround(document.body, exclusions, direction);`) as (exclusions: RunAroundRect[], direction: "rtl" | "ltr") => number, exclusions, runAround?.direction ?? "rtl");
+  }
   const lines = await page.evaluate(collectInkLines, PDF_MEASUREMENT_LIMITS), total = lines.at(-1)?.frameBottom ?? 0;
   const stageOffset = await page.$eval("[data-pdf-ink-stage]", element => Number((element as HTMLElement).dataset.pdfInkHorizontalOffset));
   // Non-finite numbers do not survive the browser's JSON result serialization.

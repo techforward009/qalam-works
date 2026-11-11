@@ -5,12 +5,16 @@ import { cancelCanonicalFrame, requestCanonicalFrame, withCanonicalPages } from 
 import { getQalamPaginationState } from "./QalamPagination";
 import {
   RUN_AROUND_MIN_SEGMENT_PX,
-  layoutRtlLineAroundExclusions,
+  graphemeEnd,
+  planRunAroundWidgets,
   runAroundExclusionPx,
   splitLineAroundExclusions,
   type RunAroundBox,
   type RunAroundRect,
 } from "../utils/runAroundFlow";
+
+export { applyStoryRunAround, runAroundBrowserProgram } from "../utils/runAroundFlow";
+export { planRunAroundWidgets };
 
 export const runAroundKey = new PluginKey<RunAroundState>("qalam-run-around");
 export const RUN_AROUND_REFRESH = "qalam-run-around-refresh";
@@ -93,45 +97,6 @@ function bandHits(line: RunAroundRect, exclusions: readonly RunAroundRect[]): bo
   return split.skip || split.segments.some(segment => segment.side !== "full");
 }
 
-/** Plan spacers and breaks for one paragraph. Positions are document positions. */
-export function planRunAroundWidgets(
-  glyphs: readonly Glyph[],
-  overlapTop: number,
-  lineHeight: number,
-  edges: (firstLine: boolean) => { left: number; right: number },
-  exclusions: readonly RunAroundRect[],
-): PlannedWidget[] {
-  const widgets: PlannedWidget[] = [];
-  if (!glyphs.length || !(lineHeight > 0)) return widgets;
-  let index = 0;
-  let y = overlapTop;
-  let first = true;
-  for (let guard = 0; index < glyphs.length && guard < 400; guard += 1) {
-    const { left, right } = edges(first);
-    first = false;
-    const line = { left, right, top: y, bottom: y + lineHeight };
-    if (!bandHits(line, exclusions)) break;
-    const widths = glyphs.map(glyph => glyph.width);
-    const layout = layoutRtlLineAroundExclusions(line, widths, exclusions, RUN_AROUND_MIN_SEGMENT_PX, index);
-    if (layout.skip) {
-      const bottom = layout.skipBottom ?? y + lineHeight;
-      const height = Math.max(lineHeight, bottom - y);
-      widgets.push({ pos: glyphs[index].pos, kind: "skip", size: height, side: -2 });
-      break;
-    }
-    if (!layout.pieces.length || layout.next === index) break;
-    if (layout.leadingGap > 0.5) widgets.push({ pos: glyphs[layout.pieces[0].from].pos, kind: "gap", size: layout.leadingGap, side: -1 });
-    for (const piece of layout.pieces) {
-      if (piece.gapAfter > 0.5 && piece.to < glyphs.length) widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size: piece.gapAfter, side: -1 });
-    }
-    index = layout.next;
-    y += lineHeight;
-    if (index >= glyphs.length) break;
-    widgets.push({ pos: glyphs[index].pos, kind: "break", size: 0, side: -2 });
-  }
-  return widgets;
-}
-
 function signatureOf(widgets: readonly PlannedWidget[]): string {
   return widgets.map(widget => `${widget.kind}@${widget.pos}:${widget.side}:${widget.size.toFixed(1)}`).join("|");
 }
@@ -199,11 +164,12 @@ class RunAroundView {
       this.burstKey = burstKey;
       this.burst = 0;
     }
-    if (!state || !geometry?.enabled) {
+    if (!state || !(geometry && geometry.pageWidthPx > 0)) {
       this.publish(state, []);
       return;
     }
     const root = view.dom.getBoundingClientRect();
+    // Pageless keeps the paper width in geometry even when page chrome is off.
     const scale = root.width > 0 ? root.width / geometry.pageWidthPx : 0;
     if (!(scale > 0)) return;
     const stride = geometry.pageHeightPx + geometry.gapPx;
@@ -240,8 +206,12 @@ class RunAroundView {
       const skipAt = skipEl ? Number(skipEl.getAttribute("data-run-around-at")) : NaN;
       const skipHeight = skipEl ? skipEl.getBoundingClientRect().height / scale : 0;
       const sample = view.coordsAtPos(Math.min(contentStart, contentEnd));
-      let lineHeight = parseFloat(style.lineHeight);
-      if (!Number.isFinite(lineHeight) || lineHeight <= 0) lineHeight = Math.max(1, (sample.bottom - sample.top) / scale);
+      // The painted line box, not the CSS line-height. Nastaliq's computed
+      // line-height is taller than the line the browser actually wraps, and
+      // that stride skipped a second object below the first.
+      const painted = Math.max(1, (sample.bottom - sample.top) / scale);
+      const cssHeight = parseFloat(style.lineHeight);
+      const lineHeight = Number.isFinite(cssHeight) && cssHeight > 0 ? Math.min(cssHeight, painted) : painted;
       const naturalTop = (at: number) => {
         const coords = view.coordsAtPos(at);
         let top = toPageY(coords.top);
@@ -254,7 +224,7 @@ class RunAroundView {
       for (let at = contentStart; at < contentEnd;) {
         const after = view.state.doc.resolve(at).nodeAfter;
         if (!after) break;
-        if (!after.isText) {
+        if (!after.isText || !after.text) {
           at += after.nodeSize;
           continue;
         }
@@ -268,25 +238,34 @@ class RunAroundView {
             break;
           }
         }
-        at += 1;
+        at += Math.max(1, graphemeEnd(after.text, 0));
       }
       if (overlapPos < 0) return false;
       const fallback = (parseFloat(style.fontSize) || 16) * 0.5;
       const indent = overlapPos === contentStart ? parseFloat(style.textIndent) || 0 : 0;
-      const rtl = style.direction === "rtl";
+      const rtl = style.direction !== "ltr";
       const glyphs: Glyph[] = [];
       for (let at = overlapPos; at < contentEnd && glyphs.length < 8000;) {
         const after = view.state.doc.resolve(at).nodeAfter;
-        if (!after?.isText) break;
-        glyphs.push({ pos: at, width: glyphWidth(view, at, scale) ?? fallback });
-        at += 1;
+        if (!after) break;
+        if (!after.isText || !after.text) {
+          at += Math.max(1, after.nodeSize);
+          continue;
+        }
+        const span = Math.max(1, graphemeEnd(after.text, 0));
+        const next = Math.min(contentEnd, at + span);
+        const measured = glyphWidth(view, at, next, scale);
+        // A collapsed range reports 0. Treating that as a real advance lets one
+        // line swallow the rest of the paragraph, so later boxes never wrap.
+        glyphs.push({ pos: at, width: measured && measured > 0.5 ? measured : fallback });
+        at = next;
       }
       const planned = planRunAroundWidgets(glyphs, overlapTop, lineHeight, firstLine => {
         if (!firstLine || !indent) return { left: contentLeft, right: contentRight };
         return rtl
           ? { left: contentLeft, right: contentRight - indent }
           : { left: contentLeft + indent, right: contentRight };
-      }, exclusions);
+      }, exclusions, rtl ? "rtl" : "ltr");
       const skipWidget = planned.find(widget => widget.kind === "skip");
       if (skipWidget && skipEl && Math.abs(skipWidget.size - skipHeight) < 3) skipWidget.size = skipHeight;
       widgets.push(...planned);
@@ -310,10 +289,10 @@ class RunAroundView {
   }
 }
 
-function glyphWidth(view: EditorView, pos: number, scale: number): number | null {
+function glyphWidth(view: EditorView, pos: number, endPos: number, scale: number): number | null {
   try {
     const start = view.domAtPos(pos);
-    const end = view.domAtPos(pos + 1);
+    const end = view.domAtPos(endPos);
     if (start.node.nodeType !== Node.TEXT_NODE || start.node !== end.node) return null;
     const range = document.createRange();
     range.setStart(start.node, start.offset);

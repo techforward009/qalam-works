@@ -228,7 +228,7 @@ export default function DocumentCanvas({
     onPageCountChange?.(isPages ? pageCount : null);
   }, [isPages, pageCount, onPageCountChange]);
   const stackHeight = isPages ? pageStackHeightPx(pageCount, natural.heightPx, PAGE_STACK_GAP_PX) : undefined;
-  const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, scrollerWidth || PAGELESS_MAX_WIDTH_PX);
+  const baseWidth = isPages || frames.length ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, scrollerWidth || PAGELESS_MAX_WIDTH_PX);
   const projection=facing?{width:natural.widthPx,height:natural.heightPx,gap:PAGE_STACK_GAP_PX,count:pageCount}:undefined;
   const spread=projection?facingExtent(projection):null;
   const bottomPad = 24;
@@ -632,7 +632,7 @@ export default function DocumentCanvas({
                       role="textbox"
                       aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
                     >
-                      <div className={isPages ? undefined : "px-5 py-6 sm:px-8 sm:py-8"}>
+                      <div className={!isPages && !frames.length ? "px-5 py-6 sm:px-8 sm:py-8" : undefined}>
                         <EditorContent
                           editor={editor}
                           className={`qalam-editor-content focus:outline-none ${isPages ? "qalam-doc-page qalam-view-pages" : "qalam-view-pageless"} ${
@@ -640,8 +640,7 @@ export default function DocumentCanvas({
                           }`}
                           style={typeVars}
                         />
-                        {isPages ? (
-                          <StudioObjectLayer zoom={zoomFactor} projection={projection}
+                        <StudioObjectLayer zoom={zoomFactor} projection={projection}
                             editor={editor} keyboardLayout={keyboardLayout}
                             tool={tool}
                             frames={frames}
@@ -662,7 +661,6 @@ export default function DocumentCanvas({
                             marginRightPx={geometry.marginRightPx}
                             getKeyboardLayout={getKeyboardLayout}
                           />
-                        ) : null}
                       </div>
                     </div>
                   </div>

@@ -64,6 +64,24 @@ describe("object frame history", () => {
     ]);
   });
 
+  it("restores move, size and run-around clearance for text and picture boxes", () => {
+    const before = [
+      frame("pic", { kind: "picture-rect", xMm: 10, yMm: 12, wMm: 30, hMm: 20, runAround: true, runAroundLeftMm: 1, runAroundRightMm: 2, runAroundTopMm: 0.4, runAroundBottomMm: 0.6 }),
+      frame("text", { kind: "text", xMm: 40, yMm: 12, wMm: 50, hMm: 24, text: "سلام", runAround: true, runAroundLeftMm: 3 }),
+    ];
+    const after = [
+      frame("pic", { kind: "picture-rect", xMm: 18, yMm: 16, wMm: 40, hMm: 28, runAround: true, runAroundLeftMm: 5, runAroundRightMm: 2, runAroundTopMm: 0.4, runAroundBottomMm: 0.6 }),
+      frame("text", { kind: "text", xMm: 40, yMm: 12, wMm: 50, hMm: 24, text: "سلام علیکم", runAround: false, runAroundLeftMm: 3 }),
+    ];
+    const state = recordObjectFrames(createObjectFrameHistory(), before, after);
+    const undone = undoObjectFrames(state, after);
+    expect(undone?.frames[0]).toMatchObject({ xMm: 10, wMm: 30, hMm: 20, runAroundLeftMm: 1 });
+    expect(undone?.frames[1]).toMatchObject({ kind: "text", text: "سلام علیکم", runAround: true, runAroundLeftMm: 3 });
+    const redone = redoObjectFrames(undone!.state, undone!.frames);
+    expect(redone?.frames[0]).toMatchObject({ xMm: 18, wMm: 40, runAroundLeftMm: 5 });
+    expect(redone?.frames[1]).toMatchObject({ runAround: false, text: "سلام علیکم" });
+  });
+
   it("clears the redo stack on a new object action and caps history", () => {
     const first = [frame("a", { xMm: 0 })];
     const second = [frame("a", { xMm: 1 })];

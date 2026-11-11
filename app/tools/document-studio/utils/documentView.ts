@@ -1,4 +1,6 @@
 import { validatePrintFrames, printFramePageMarkup } from "./printableFrames";
+import { applyStoryRunAround } from "../extensions/RunAroundLayout";
+import { runAroundExclusionPx } from "./runAroundFlow";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 /**
  * Single Pages / Facing Pages / Pageless are VIEW preferences only.
@@ -219,6 +221,20 @@ export async function printDocumentStudioAsync(frames: StudioFrame[] = []): Prom
     return;
   }
   await waitForPrintFonts(portal);
+  const page = portal.querySelector<HTMLElement>("[data-studio-print-page]");
+  if (page) {
+    const heightMm = Number(portal.getAttribute("data-print-page-height-mm") || 297);
+    const stride = heightMm * (96 / 25.4);
+    // The off-screen clone has no top padding yet. Print media adds the top
+    // margin later, and the in-flow spacers move with the text. Measure in
+    // that content box so page-1 boxes meet the story.
+    const topPx = Number(document.querySelector("[data-studio-print-root]")?.getAttribute("data-print-margin-top-mm") || 0) * (96 / 25.4);
+    const exclusions = frames.flatMap(frame => {
+      const box = runAroundExclusionPx(frame, stride);
+      return box ? [{ ...box, top: box.top - topPx, bottom: box.bottom - topPx }] : [];
+    });
+    if (exclusions.length) applyStoryRunAround(page, exclusions, page.getAttribute("dir") === "ltr" ? "ltr" : "rtl");
+  }
   const cleanup = () => unmountDocumentPrintPortal();
   window.addEventListener("afterprint", cleanup, { once: true });
   window.print();

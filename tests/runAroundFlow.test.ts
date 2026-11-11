@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { planRunAroundWidgets } from "../app/tools/document-studio/extensions/RunAroundLayout";
 import {
   RUN_AROUND_MIN_SEGMENT_PX,
+  graphemeEnd,
+  layoutLineAroundExclusions,
   layoutRtlLineAroundExclusions,
   runAroundExclusionMm,
   runAroundExclusionPx,
@@ -156,5 +158,54 @@ describe("run-around line splitting", () => {
       { pos: 13, kind: "gap", size: 40, side: -1 },
       { pos: 21, kind: "break", size: 0, side: -2 },
     ]);
+  });
+
+  it("keeps an Urdu cluster together and fills the left side before the right side for LTR", () => {
+    const word = "بِسم";
+    expect(graphemeEnd(word, 0)).toBeGreaterThan(1);
+    expect(word.slice(0, graphemeEnd(word, 0))).toBe("بِ");
+    const joined = `سلام${"\u200d"}علی`;
+    const base = joined.indexOf("\u200d") - 1;
+    expect(joined.slice(base, graphemeEnd(joined, base)).includes("\u200d")).toBe(true);
+    const widths = Array.from({ length: 20 }, () => 10);
+    const layout = layoutLineAroundExclusions(line(), widths, [{ left: 80, right: 120, top: -2, bottom: 30 }], 0, 0, "ltr");
+    expect(layout.pieces.map(piece => [piece.from, piece.to, piece.side])).toEqual([
+      [0, 8, "left"],
+      [8, 16, "right"],
+    ]);
+    expect(layout.pieces[0].gapAfter).toBe(40);
+  });
+
+  it("wraps a second object after the story returns to the full line width", () => {
+    const glyphs = Array.from({ length: 80 }, (_, index) => ({ pos: index, width: 10 }));
+    const widgets = planRunAroundWidgets(
+      glyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [
+        { left: 80, right: 120, top: -2, bottom: 20 },
+        { left: 30, right: 70, top: 36, bottom: 60 },
+      ],
+    );
+    const gaps = widgets.filter(widget => widget.kind === "gap").map(widget => widget.pos);
+    expect(gaps).toContain(8);
+    expect(gaps.some(pos => pos >= 40)).toBe(true);
+    expect(widgets.some(widget => widget.kind === "break")).toBe(true);
+  });
+
+  it("keeps wrapping a lower pair of boxes after the first pair", () => {
+    const px = (mm: number) => mm * 96 / 25.4;
+    const glyphs = Array.from({ length: 400 }, (_, index) => ({ pos: index, width: 13 }));
+    const widgets = planRunAroundWidgets(glyphs, px(36), 26.4, () => ({ left: px(25.4), right: px(184.6) }), [
+      { left: px(57), right: px(96), top: px(41.5), bottom: px(69) },
+      { left: px(125), right: px(161), top: px(40), bottom: px(68.4) },
+      { left: px(56), right: px(94), top: px(89), bottom: px(113) },
+      { left: px(125.5), right: px(165), top: px(89.6), bottom: px(114) },
+    ]);
+    const gapCount = widgets.filter(widget => widget.kind === "gap").length;
+    const breakCount = widgets.filter(widget => widget.kind === "break").length;
+    expect(gapCount).toBeGreaterThan(4);
+    expect(breakCount).toBeGreaterThan(4);
   });
 });

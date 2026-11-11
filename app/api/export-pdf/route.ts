@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
       layout.heightMm - layout.margins.topMm - layout.margins.bottomMm,
       physical.leftMm,
       physical.rightMm,
+      { frames, topMarginMm: layout.margins.topMm, direction: dir },
     );
     if (frames.length) {
       const pageCount = Math.max(inkPagination.pages, ...frames.map(f => f.page));
