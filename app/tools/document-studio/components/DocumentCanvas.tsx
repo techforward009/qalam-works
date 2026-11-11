@@ -777,6 +777,9 @@ export default function DocumentCanvas({
           text-align-last: justify !important;
           text-justify: inter-word;
         }
+        .qalam-editor-content .ProseMirror [data-run-around-justify="true"] {
+          text-justify: inter-word;
+        }
         .qalam-editor-content [data-studio-arabic-run] {
           font-family: var(--qalam-rtl-font, "Mehr Nastaliq Web") !important;
         }

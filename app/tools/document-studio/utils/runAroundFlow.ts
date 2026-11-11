@@ -125,7 +125,15 @@ export function runAroundContentExclusionPx(
 }
 
 interface FlowGlyph { pos: number; width: number; space?: boolean }
-interface FlowWidget { pos: number; kind: "gap" | "break" | "skip"; size: number; side: number }
+interface FlowWidget { pos: number; kind: "gap" | "break" | "skip" | "space"; size: number; side: number }
+interface FlowPlan {
+  pages?: { stride: number; marginTop: number; contentBottom: number } | null;
+  endY?: number;
+  /** `justify` / `justify-all` widen spaces only. Other values keep the packed line. */
+  align?: string | null;
+  /** When present, justified segments become fixed boxes and the hole stays put. */
+  segments?: Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }>;
+}
 
 /**
  * One function the PDF page can eval. Nested helpers stay in its source, so a
@@ -338,6 +346,13 @@ function runAroundEngineFactory() {
     return { skip: false, skipBottom: null, pieces: placed.pieces, next: placed.next, leadingGap };
   }
 
+  /** Width still free inside a segment after the natural word advances. */
+  function segmentSlack(widths: readonly number[], piece: RunAroundPiece): number {
+    let used = 0;
+    for (let index = piece.from; index < piece.to; index += 1) used += widths[index];
+    return Math.max(0, piece.right - piece.left - used);
+  }
+
   /**
    * Screen sheets are stacked with a gutter the float breaker inserts.
    * A line that does not fit the remaining text area continues at the next
@@ -393,7 +408,7 @@ function runAroundEngineFactory() {
     edges: (firstLine: boolean) => { left: number; right: number },
     exclusions: readonly RunAroundRect[],
     direction: "rtl" | "ltr" = "rtl",
-    flow?: { pages?: { stride: number; marginTop: number; contentBottom: number } | null; endY?: number } | null,
+    flow?: FlowPlan | null,
   ): FlowWidget[] {
     const widgets: FlowWidget[] = [];
     if (!glyphs.length || !(lineHeight > 0)) {
@@ -444,6 +459,12 @@ function runAroundEngineFactory() {
         }
         break;
       }
+      const align = flow?.align || "";
+      const justifyAll = align === "justify-all";
+      // A justified line that is still short gets its leftover stretched by the
+      // browser, including across the hole. Fill that leftover with a pad so
+      // only the paragraph's own word spacing remains, and not kashida.
+      const lock = justifyAll || (align === "justify" && layout.next < glyphs.length);
       if (layout.leadingGap > 0.5) widgets.push({ pos: glyphs[layout.pieces[0].from].pos, kind: "gap", size: layout.leadingGap, side: -1 });
       for (const piece of layout.pieces) {
         if (piece.gapAfter > 0.5 && piece.to < glyphs.length) {
@@ -452,6 +473,11 @@ function runAroundEngineFactory() {
           for (let cursor = piece.to - 1; cursor >= piece.from && glyphs[cursor].space; cursor -= 1) size += glyphs[cursor].width;
           widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size, side: -1 });
         }
+      }
+      const tailPiece = layout.pieces[layout.pieces.length - 1];
+      const tail = lock && tailPiece ? segmentSlack(widths, tailPiece) : 0;
+      if (tail > 0.5 && layout.next < glyphs.length) {
+        widgets.push({ pos: glyphs[layout.next].pos, kind: "gap", size: tail, side: -3 });
       }
       index = layout.next;
       y += lineHeight;
@@ -476,7 +502,12 @@ function runAroundEngineFactory() {
       span.style.cssText = `display:block;clear:both;width:100%;height:${widget.size}px;margin:0;padding:0;border:0;`;
       return span;
     }
-    const width = widget.size > 2 ? widget.size - 1 : widget.size;
+    if (widget.kind === "space") {
+      span.setAttribute("data-print-run-around", "space");
+      span.style.cssText = `display:inline;padding-inline-start:${widget.size}px;line-height:inherit;vertical-align:baseline;`;
+      return span;
+    }
+    const width = widget.side === -3 ? widget.size : widget.size > 2 ? widget.size - 1 : widget.size;
     span.style.cssText = `display:inline-block;width:${width}px;height:0;font-size:0;line-height:0;vertical-align:baseline;unicode-bidi:isolate;direction:ltr;`;
     return span;
   }
@@ -635,7 +666,10 @@ function runAroundEngineFactory() {
       }
       if (painted > 0) lineHeight = Math.min(lineHeight, painted);
       if (!glyphs.length) continue;
-      const planned = planRunAroundWidgets(glyphs, blockTop, lineHeight, () => ({ left: contentLeft, right: contentRight }), exclusions, direction);
+      const tagged = block.getAttribute("data-text-align");
+      const alignName = tagged || (style.textAlign === "justify" && style.textAlignLast === "justify" ? "justify-all" : style.textAlign);
+      if (alignName === "justify" || alignName === "justify-all") block.style.setProperty("text-justify", "inter-word");
+      const planned = planRunAroundWidgets(glyphs, blockTop, lineHeight, () => ({ left: contentLeft, right: contentRight }), exclusions, direction, { align: alignName });
       const ordered = [...planned].sort((a, b) => b.pos - a.pos || b.side - a.side);
       for (const widget of ordered) {
         const glyph = glyphs[widget.pos];
@@ -690,7 +724,7 @@ export const planRunAroundWidgets: (
   edges: (firstLine: boolean) => { left: number; right: number },
   exclusions: readonly RunAroundRect[],
   direction?: "rtl" | "ltr",
-  flow?: { pages?: { stride: number; marginTop: number; contentBottom: number } | null; endY?: number } | null,
+  flow?: FlowPlan | null,
 ) => FlowWidget[] = runAroundEngine.planRunAroundWidgets;
 export const applyStoryRunAround: (root: HTMLElement, exclusions: readonly RunAroundRect[], direction?: "rtl" | "ltr") => number = runAroundEngine.applyStoryRunAround;
 

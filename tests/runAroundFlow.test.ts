@@ -310,6 +310,74 @@ describe("run-around line splitting", () => {
     expect(slices("بندگی" + "،")).toEqual(["بندگی،"]);
   });
 
+  it("pads the leftover on a justified line and leaves the hole width unchanged", () => {
+    const glyphs = [
+      { pos: 1, width: 20 },
+      { pos: 2, width: 10, space: true },
+      { pos: 3, width: 20 },
+      { pos: 4, width: 30 },
+      { pos: 5, width: 10, space: true },
+      { pos: 6, width: 20 },
+      { pos: 7, width: 40 },
+    ];
+    const widgets = planRunAroundWidgets(
+      glyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 90, right: 130, top: -2, bottom: 14 }],
+      "rtl",
+      { align: "justify" },
+    );
+    expect(widgets.filter(widget => widget.kind === "space")).toEqual([]);
+    expect(widgets.find(widget => widget.kind === "gap" && widget.side === -1)).toMatchObject({ pos: 4, size: 60 });
+    expect(widgets.find(widget => widget.side === -3)).toMatchObject({ pos: 7, kind: "gap", size: 30 });
+    const plain = planRunAroundWidgets(
+      glyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 90, right: 130, top: -2, bottom: 14 }],
+    );
+    expect(plain.some(widget => widget.kind === "space")).toBe(false);
+  });
+
+  it("keeps the same hole when justify locks the leftover slack", () => {
+    const widgets = planRunAroundWidgets(
+      [
+        { pos: 1, width: 10 },
+        { pos: 2, width: 8, space: true },
+        { pos: 3, width: 10 },
+        { pos: 4, width: 40 },
+        { pos: 5, width: 20 },
+        { pos: 6, width: 50 },
+      ],
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 100, right: 140, top: -2, bottom: 14 }],
+      "rtl",
+      { align: "justify" },
+    );
+    const plain = planRunAroundWidgets(
+      [
+        { pos: 1, width: 10 },
+        { pos: 2, width: 8, space: true },
+        { pos: 3, width: 10 },
+        { pos: 4, width: 40 },
+        { pos: 5, width: 20 },
+        { pos: 6, width: 50 },
+      ],
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 100, right: 140, top: -2, bottom: 14 }],
+    );
+    const holes = (list: typeof widgets) => list.filter(widget => widget.kind === "gap" && widget.side === -1);
+    expect(holes(widgets)).toEqual(holes(plain));
+    expect(widgets.some(widget => widget.kind === "space")).toBe(false);
+  });
+
   it("sends the glyphs that remain after page 1 to the page-2 exclusion", () => {
     const glyphs = Array.from({ length: 30 }, (_, index) => ({ pos: index, width: 40 }));
     const pages = { stride: 100, marginTop: 10, contentBottom: 40 };

@@ -30,7 +30,7 @@ interface Glyph {
 
 interface PlannedWidget {
   pos: number;
-  kind: "gap" | "break" | "skip";
+  kind: "gap" | "break" | "skip" | "space";
   size: number;
   side: number;
 }
@@ -74,20 +74,43 @@ function widgetElement(widget: PlannedWidget): HTMLElement {
     span.style.cssText = `display:block;clear:both;width:100%;height:${widget.size}px;margin:0;padding:0;border:0;pointer-events:none;`;
     return span;
   }
+  if (widget.kind === "space") {
+    span.setAttribute("data-run-around-space", "true");
+    // Padding beside the space, not an isolate, so the word itself is not stretched.
+    span.style.cssText = `display:inline;padding-inline-start:${widget.size}px;line-height:inherit;vertical-align:baseline;pointer-events:none;`;
+    return span;
+  }
   span.setAttribute("data-run-around-gap", "true");
   // One pixel under the measured hole so subpixel glyph widths do not wrap the left run.
-  const width = widget.size > 2 ? widget.size - 1 : widget.size;
+  // A trailing pad (side -3) keeps its exact width so justification has nothing left to stretch.
+  const width = widget.side === -3 ? widget.size : widget.size > 2 ? widget.size - 1 : widget.size;
   // Isolate the hole so the RTL line keeps a run on each side of it.
   span.style.cssText = `display:inline-block;width:${width}px;height:0;font-size:0;line-height:0;vertical-align:baseline;unicode-bidi:isolate;direction:ltr;pointer-events:none;`;
   return span;
 }
 
-function decorationsFor(doc: PMNode, widgets: PlannedWidget[]): DecorationSet {
-  return DecorationSet.create(doc, widgets.map(widget => Decoration.widget(widget.pos, () => widgetElement(widget), {
+function decorationsFor(
+  doc: PMNode,
+  widgets: PlannedWidget[],
+  justifyBlocks: Array<{ pos: number; size: number }>,
+  segments: Array<{ from: number; to: number; style: string }>,
+): DecorationSet {
+  const decorations = widgets.map(widget => Decoration.widget(widget.pos, () => widgetElement(widget), {
     side: widget.side,
     ignoreSelection: true,
     key: `run-around-${widget.kind}-${widget.pos}-${widget.side}-${widget.size.toFixed(2)}`,
-  })));
+  }));
+  for (const segment of segments) {
+    if (segment.to <= segment.from) continue;
+    decorations.push(Decoration.inline(segment.from, segment.to, {
+      "data-run-around-segment": "true",
+      style: segment.style,
+    }));
+  }
+  for (const block of justifyBlocks) {
+    decorations.push(Decoration.node(block.pos, block.pos + block.size, { "data-run-around-justify": "true" }));
+  }
+  return DecorationSet.create(doc, decorations);
 }
 
 function signatureOf(widgets: readonly PlannedWidget[]): string {
@@ -185,6 +208,8 @@ class RunAroundView {
     const toPageX = (clientX: number) => (clientX - root.left) / scale;
     const toPageY = (clientY: number) => (clientY - root.top) / scale;
     const widgets: PlannedWidget[] = [];
+    const justifyBlocks: Array<{ pos: number; size: number }> = [];
+    const segmentStyles: Array<{ from: number; to: number; style: string }> = [];
     view.state.doc.descendants((node, pos) => {
       if (!node.isTextblock) return;
       if (insideTable(view.state.doc, pos)) return false;
@@ -231,16 +256,34 @@ class RunAroundView {
         // Adjacent text nodes are one run. A bold or italic boundary is not
         // a word boundary. A hard break or inline atom ends the run.
         const pieces: TextPiece[] = [];
+        const seenFonts = new Map<Element, string>();
         while (at < contentEnd && pieces.length < 400) {
           const next = view.state.doc.resolve(at).nodeAfter;
           if (!next?.isText || !next.text) break;
-          pieces.push({ pos: at, text: next.text, font: fontAt(view, at, style) });
+          // Bold and italic are already separate text nodes. Split only when
+          // one node paints Urdu and Latin in different families. Firefox
+          // reports a different computed weight than nodeDOM, and splitting
+          // on that weight drops marked words onto the object.
+          if (!/[A-Za-z0-9]/.test(next.text)) {
+            pieces.push({ pos: at, text: next.text, font: fontAtNode(view, at, style) });
+          } else {
+            let offset = 0;
+            while (offset < next.text.length && pieces.length < 2000) {
+              const end = Math.max(offset + 1, wordEnd(next.text, offset));
+              const font = fontAt(view, at + offset, style, seenFonts);
+              const previous = pieces[pieces.length - 1];
+              const continues = previous && previous.pos + previous.text.length === at + offset && firstFamily(previous.font) === firstFamily(font);
+              if (continues) previous.text += next.text.slice(offset, end);
+              else pieces.push({ pos: at + offset, text: next.text.slice(offset, end), font });
+              offset = end;
+            }
+          }
           at += next.nodeSize;
         }
         // Widths come from an undecorated probe. A gap widget changes
         // Nastaliq shaping, so measuring the decorated line makes one word
         // jump from side to side on every pass.
-        if (pieces.length === 1) {
+        if (pieces.length === 1 && !/[A-Za-z0-9]/.test(pieces[0].text)) {
           const widths = intrinsicWordWidths(dom, pieces[0].text);
           let offset = 0;
           let unit = 0;
@@ -263,20 +306,28 @@ class RunAroundView {
         }
       }
       if (!glyphs.length) return false;
+      const tagged = dom.getAttribute("data-text-align");
+      const alignName = tagged || (style.textAlign === "justify" && style.textAlignLast === "justify" ? "justify-all" : style.textAlign);
       const planned = planRunAroundWidgets(glyphs, overlapTop, lineHeight, firstLine => {
         if (!firstLine || !indent) return { left: contentLeft, right: contentRight };
         return rtl
           ? { left: contentLeft, right: contentRight - indent }
           : { left: contentLeft + indent, right: contentRight };
-      }, exclusions, rtl ? "rtl" : "ltr", pages ? { pages } : null);
+      }, exclusions, rtl ? "rtl" : "ltr", { pages, align: alignName });
       widgets.push(...planned);
+      if ((alignName === "justify" || alignName === "justify-all") && planned.length) justifyBlocks.push({ pos, size: node.nodeSize });
       return false;
     });
-    this.publish(state, widgets);
+    this.publish(state, widgets, justifyBlocks, segmentStyles);
   }
 
-  private publish(state: RunAroundState | undefined, widgets: PlannedWidget[]) {
-    const signature = signatureOf(widgets);
+  private publish(
+    state: RunAroundState | undefined,
+    widgets: PlannedWidget[],
+    justifyBlocks: Array<{ pos: number; size: number }> = [],
+    segments: Array<{ from: number; to: number; style: string }> = [],
+  ) {
+    const signature = `${signatureOf(widgets)}#${justifyBlocks.map(block => block.pos).join(",")}#${segments.map(segment => `${segment.from}:${segment.to}:${segment.style}`).join("|")}`;
     if (!state || signature === state.signature) {
       this.burst = 0;
       return;
@@ -285,7 +336,7 @@ class RunAroundView {
     this.burst += 1;
     const view = this.view;
     view.dispatch(view.state.tr
-      .setMeta(META, { decorations: decorationsFor(view.state.doc, widgets), signature })
+      .setMeta(META, { decorations: decorationsFor(view.state.doc, widgets, justifyBlocks, segments), signature })
       .setMeta("addToHistory", false));
   }
 }
@@ -327,11 +378,35 @@ interface TextPiece {
   font: string;
 }
 
-function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration): string {
+function firstFamily(signature: string): string {
+  return signature.split("\n")[0].replace(/["']/g, "").split(",")[0].trim().toLowerCase();
+}
+
+function fontAtNode(view: EditorView, pos: number, fallback: CSSStyleDeclaration): string {
   const dom = view.nodeDOM(pos);
   const el = dom instanceof Text ? dom.parentElement : dom instanceof HTMLElement ? dom : null;
-  const style = el ? getComputedStyle(el) : fallback;
+  return fontSignature(el ? getComputedStyle(el) : fallback);
+}
+
+function fontSignature(style: CSSStyleDeclaration): string {
   return [style.fontFamily, style.fontSize, style.fontWeight, style.fontStyle, style.letterSpacing, style.wordSpacing, style.fontFeatureSettings].join("\n");
+}
+
+function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration, seen: Map<Element, string>): string {
+  let el: Element | null = null;
+  try {
+    const found = view.domAtPos(pos);
+    const node = found.node;
+    el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node instanceof Element ? node : null;
+  } catch {
+    el = null;
+  }
+  if (!el) return fontSignature(fallback);
+  const cached = seen.get(el);
+  if (cached) return cached;
+  const signature = fontSignature(getComputedStyle(el));
+  seen.set(el, signature);
+  return signature;
 }
 
 function documentPos(pieces: readonly TextPiece[], index: number): number {
