@@ -8,7 +8,11 @@ import { POST } from "../app/api/export-pdf/route";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { PdfExportTestRequest } from "./helpers/pdfExportRequest";
 
-const CHROME = "/home/qalam/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome";
+const CHROME = [
+  process.env.PLAYWRIGHT_CHROMIUM_PATH,
+  "/home/qalam/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+  "/home/box/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+].find(path => path && existsSync(path)) ?? "";
 const PDF_PATH = "/tmp/qalam-run-around.pdf";
 const story = `بِسم اللہ ${"سلام\u200cعلی ".repeat(140)}`;
 

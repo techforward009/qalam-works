@@ -310,7 +310,7 @@ describe("run-around line splitting", () => {
     expect(slices("بندگی" + "،")).toEqual(["بندگی،"]);
   });
 
-  it("pads the leftover on a justified line and leaves the hole width unchanged", () => {
+  it("justifies each wrap segment to its box and keeps the hole at the object", () => {
     const glyphs = [
       { pos: 1, width: 20 },
       { pos: 2, width: 10, space: true },
@@ -320,6 +320,7 @@ describe("run-around line splitting", () => {
       { pos: 6, width: 20 },
       { pos: 7, width: 40 },
     ];
+    const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
     const widgets = planRunAroundWidgets(
       glyphs,
       0,
@@ -327,55 +328,81 @@ describe("run-around line splitting", () => {
       () => ({ left: 0, right: 200 }),
       [{ left: 90, right: 130, top: -2, bottom: 14 }],
       "rtl",
-      { align: "justify" },
+      flow,
     );
     expect(widgets.filter(widget => widget.kind === "space")).toEqual([]);
-    expect(widgets.find(widget => widget.kind === "gap" && widget.side === -1)).toMatchObject({ pos: 4, size: 60 });
-    expect(widgets.find(widget => widget.side === -3)).toMatchObject({ pos: 7, kind: "gap", size: 30 });
-    const plain = planRunAroundWidgets(
+    expect(widgets.find(widget => widget.side === -3)).toBeUndefined();
+    expect(widgets.find(widget => widget.kind === "gap" && widget.side === -4)).toMatchObject({ pos: 4, size: 40 });
+    expect(flow.segments[0]).toMatchObject({ from: 0, to: 3, width: 70, edge: "right" });
+    expect(flow.segments[0].wordSpacing).toBeCloseTo(18);
+    expect(flow.segments[1]).toMatchObject({ from: 3, to: 6, width: 90, edge: "left" });
+    expect(flow.segments[1].wordSpacing).toBeCloseTo(28);
+    const packed = planRunAroundWidgets(
       glyphs,
       0,
       12,
       () => ({ left: 0, right: 200 }),
       [{ left: 90, right: 130, top: -2, bottom: 14 }],
     );
-    expect(plain.some(widget => widget.kind === "space")).toBe(false);
+    expect(packed.some(widget => widget.kind === "space")).toBe(false);
+    expect(packed.find(widget => widget.kind === "gap" && widget.side === -1)?.size).toBeGreaterThan(40);
   });
 
-  it("keeps the same hole when justify locks the leftover slack", () => {
-    const widgets = planRunAroundWidgets(
+  it("does not stretch the last line of a justified paragraph", () => {
+    const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+    planRunAroundWidgets(
       [
-        { pos: 1, width: 10 },
+        { pos: 1, width: 20 },
         { pos: 2, width: 8, space: true },
-        { pos: 3, width: 10 },
-        { pos: 4, width: 40 },
-        { pos: 5, width: 20 },
-        { pos: 6, width: 50 },
+        { pos: 3, width: 20 },
       ],
       0,
       12,
       () => ({ left: 0, right: 200 }),
-      [{ left: 100, right: 140, top: -2, bottom: 14 }],
+      [{ left: 90, right: 130, top: -2, bottom: 14 }],
       "rtl",
-      { align: "justify" },
+      flow,
     );
-    const plain = planRunAroundWidgets(
-      [
-        { pos: 1, width: 10 },
-        { pos: 2, width: 8, space: true },
-        { pos: 3, width: 10 },
-        { pos: 4, width: 40 },
-        { pos: 5, width: 20 },
-        { pos: 6, width: 50 },
-      ],
+    expect(flow.segments).toEqual([]);
+  });
+
+  it("leaves a one-word justified sliver empty", () => {
+    const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+    const glyphs = Array.from({ length: 40 }, (_, index) => (
+      index % 2 === 1 ? { pos: index, width: 8, space: true } : { pos: index, width: 18 }
+    ));
+    planRunAroundWidgets(
+      glyphs,
       0,
       12,
       () => ({ left: 0, right: 200 }),
-      [{ left: 100, right: 140, top: -2, bottom: 14 }],
+      [{ left: 20, right: 40, top: -2, bottom: 14 }],
+      "rtl",
+      flow,
     );
-    const holes = (list: typeof widgets) => list.filter(widget => widget.kind === "gap" && widget.side === -1);
-    expect(holes(widgets)).toEqual(holes(plain));
-    expect(widgets.some(widget => widget.kind === "space")).toBe(false);
+    expect(flow.segments.some(segment => segment.edge === "right")).toBe(true);
+    expect(flow.segments.some(segment => segment.edge === "left")).toBe(false);
+    expect(flow.segments.every(segment => segment.to - segment.from >= 3)).toBe(true);
+  });
+
+  it("still wraps two objects when each gap holds one word", () => {
+    const glyphs = Array.from({ length: 30 }, (_, index) => (
+      index % 2 === 1 ? { pos: index, width: 6, space: true } : { pos: index, width: 22 }
+    ));
+    const widgets = planRunAroundWidgets(
+      glyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [
+        { left: 30, right: 90, top: -2, bottom: 20 },
+        { left: 110, right: 170, top: -2, bottom: 20 },
+      ],
+      "rtl",
+      { align: "justify", segments: [] },
+    );
+    expect(widgets.some(widget => widget.kind === "gap")).toBe(true);
+    expect(widgets.some(widget => widget.kind === "break")).toBe(true);
   });
 
   it("sends the glyphs that remain after page 1 to the page-2 exclusion", () => {

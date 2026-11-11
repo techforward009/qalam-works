@@ -132,13 +132,14 @@ test("justified Urdu keeps word spacing beside image and text boxes", async ({ p
   expect(picture!.justify).toBe("inter-word");
   expect(picture!.justifyMark).toBe("true");
   expect(picture!.spaces).toBe(0);
+  expect(picture!.segments, JSON.stringify(picture)).toBeGreaterThan(0);
   expect(picture!.left && picture!.right, JSON.stringify(picture)).toBe(true);
   expect(textBox!.left && textBox!.right, JSON.stringify(textBox)).toBe(true);
   expect(picture!.fullLine).toBe(true);
-  // The hole stays fixed. Justification must not open word gaps beside the object.
+  // Each side fills its box by widening spaces, without opening a hole-sized gap.
   expect(picture!.maxBeside).toBeGreaterThan(0);
-  expect(picture!.maxBeside).toBeLessThan(36);
-  expect(textBox!.maxBeside).toBeLessThan(36);
+  expect(picture!.maxBeside).toBeLessThan(48);
+  expect(textBox!.maxBeside).toBeLessThan(48);
   expect(picture!.widest).toBeLessThan(picture!.narrowest * 2);
 
   for (const align of ["right", "left", "center"]) {

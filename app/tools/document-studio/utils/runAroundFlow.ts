@@ -141,6 +141,8 @@ interface FlowPlan {
  */
 function runAroundEngineFactory() {
   const RUN_AROUND_MIN_SEGMENT_PX = 8;
+  // A two-word side with more leftover than this looks like a hole of its own.
+  const RUN_AROUND_MAX_JUSTIFY_EXTRA_PX = 40;
 
   function verticalOverlap(a: RunAroundRect, b: RunAroundRect): boolean {
     return a.top < b.bottom && b.top < a.bottom;
@@ -277,7 +279,54 @@ function runAroundEngineFactory() {
     return bottoms.length ? bottoms[bottoms.length - 1] : line.bottom;
   }
 
-  function placeGlyphs(widths: readonly number[], segments: readonly RunAroundSegment[], start: number, direction: "rtl" | "ltr"): { pieces: RunAroundPiece[]; next: number } {
+  function interiorSpaceCount(spaceAt: readonly boolean[], from: number, to: number): number {
+    let count = 0;
+    let spaces = 0;
+    let started = false;
+    for (let i = from; i < to; i++) {
+      if (spaceAt[i]) {
+        if (started) spaces += 1;
+      } else {
+        if (started) count += spaces;
+        spaces = 0;
+        started = true;
+      }
+    }
+    return count;
+  }
+
+  function wordCount(spaceAt: readonly boolean[], from: number, to: number): number {
+    let words = 0;
+    for (let i = from; i < to; i++) if (!spaceAt[i]) words += 1;
+    return words;
+  }
+
+  function tooSparse(fit: { minWords: number; maxExtraPerSpace: number; spaceAt: readonly boolean[] } | null | undefined, from: number, to: number, capacity: number, used: number): boolean {
+    if (!fit) return false;
+    const words = wordCount(fit.spaceAt, from, to);
+    if (words < fit.minWords) return true;
+    const spaces = interiorSpaceCount(fit.spaceAt, from, to);
+    const slack = Math.max(0, capacity - used);
+    if (spaces < 1) return slack > 1;
+    return words <= 2 && slack / spaces > fit.maxExtraPerSpace;
+  }
+
+  function segmentJustify(widths: readonly number[], spaceAt: readonly boolean[], piece: RunAroundPiece): { slack: number; spaces: number; wordSpacing: number } {
+    let used = 0;
+    for (let i = piece.from; i < piece.to; i++) used += widths[i];
+    const spaces = interiorSpaceCount(spaceAt, piece.from, piece.to);
+    const slack = Math.max(0, piece.right - piece.left - used);
+    // Leave a couple of pixels so Nastaliq paint cannot spill into the hole.
+    return { slack, spaces, wordSpacing: spaces > 0 ? Math.max(0, slack - 2) / spaces : 0 };
+  }
+
+  function placeGlyphs(
+    widths: readonly number[],
+    segments: readonly RunAroundSegment[],
+    start: number,
+    direction: "rtl" | "ltr",
+    fit?: { minWords: number; maxExtraPerSpace: number; spaceAt: readonly boolean[] } | null,
+  ): { pieces: RunAroundPiece[]; next: number } {
     const ordered = direction === "ltr"
       ? [...segments].sort((a, b) => a.left - b.left || a.right - b.right)
       : [...segments].sort((a, b) => b.right - a.right || b.left - a.left);
@@ -289,11 +338,14 @@ function runAroundEngineFactory() {
       const capacity = segment.right - segment.left;
       const from = index;
       let used = 0;
-      while (index < widths.length && used + widths[index] <= capacity + 1e-6) {
-        used += widths[index];
-        index += 1;
+      let tryIndex = from;
+      while (tryIndex < widths.length && used + widths[tryIndex] <= capacity + 1e-6) {
+        used += widths[tryIndex];
+        tryIndex += 1;
       }
-      if (index === from) continue;
+      if (tryIndex === from) continue;
+      if (tooSparse(fit, from, tryIndex, capacity, used)) continue;
+      index = tryIndex;
       pieces.push({ from, to: index, left: segment.left, right: segment.right, side: segment.side, gapAfter: 0 });
       usedWidth.push(used);
     }
@@ -315,12 +367,13 @@ function runAroundEngineFactory() {
     minWidth = 0,
     start = 0,
     direction: "rtl" | "ltr" = "rtl",
+    fit?: { minWords: number; maxExtraPerSpace: number; spaceAt: readonly boolean[] } | null,
   ): RtlLineLayout {
     const split = splitLineAroundExclusions(line, exclusions, minWidth);
     if (split.skip) {
       return { skip: true, skipBottom: runAroundSkipBottom(line, exclusions, minWidth), pieces: [], next: start, leadingGap: 0 };
     }
-    const placed = placeGlyphs(glyphWidths, split.segments, start, direction);
+    const placed = placeGlyphs(glyphWidths, split.segments, start, direction, fit);
     if (!placed.pieces.length && start < glyphWidths.length && split.segments.length) {
       const word = glyphWidths[start];
       const full = line.right - line.left;
@@ -438,7 +491,22 @@ function runAroundEngineFactory() {
         widgets.push({ pos: glyphs[index].pos, kind: "break", size: 0, side: -2 });
         continue;
       }
-      const layout = layoutLineAroundExclusions(line, widths, exclusions, RUN_AROUND_MIN_SEGMENT_PX, index, direction);
+      const align = flow?.align || "";
+      const justifyAll = align === "justify-all";
+      const justify = justifyAll || align === "justify";
+      const spaceAt = glyphs.map(glyph => !!glyph.space);
+      const trial = layoutLineAroundExclusions(line, widths, exclusions, RUN_AROUND_MIN_SEGMENT_PX, index, direction);
+      const lastLine = trial.next >= glyphs.length;
+      const fit = justify && !lastLine
+        ? { minWords: 2, maxExtraPerSpace: RUN_AROUND_MAX_JUSTIFY_EXTRA_PX, spaceAt }
+        : null;
+      let layout = fit
+        ? layoutLineAroundExclusions(line, widths, exclusions, RUN_AROUND_MIN_SEGMENT_PX, index, direction, fit)
+        : trial;
+      // Two narrow columns can each hold one word. Skipping every side would
+      // drop the whole band; keep the packed trial so text still wraps.
+      const packedFallback = !!(fit && (!layout.pieces.length || layout.next === index) && trial.pieces.length);
+      if (packedFallback) layout = trial;
       if (layout.skip) {
         const bottom = layout.skipBottom ?? y + lineHeight;
         const height = Math.max(lineHeight, bottom - y);
@@ -459,23 +527,47 @@ function runAroundEngineFactory() {
         }
         break;
       }
-      const align = flow?.align || "";
-      const justifyAll = align === "justify-all";
-      // A justified line that is still short gets its leftover stretched by the
-      // browser, including across the hole. Fill that leftover with a pad so
-      // only the paragraph's own word spacing remains, and not kashida.
+      // Non-last justified wrap lines fill each side to its box. The last line
+      // of the paragraph stays packed. Extra space goes between words only.
       const lock = justifyAll || (align === "justify" && layout.next < glyphs.length);
+      const fill = lock && !packedFallback;
+      if (fill) {
+        for (let i = 0; i < layout.pieces.length - 1; i++) {
+          const a = layout.pieces[i];
+          const b = layout.pieces[i + 1];
+          a.gapAfter = direction === "ltr"
+            ? Math.max(0, b.left - a.right)
+            : Math.max(0, a.left - b.right);
+        }
+        if (flow && flow.segments) {
+          for (const piece of layout.pieces) {
+            const spacing = segmentJustify(widths, spaceAt, piece);
+            let from = piece.from;
+            let to = piece.to;
+            while (from < to && spaceAt[from]) from += 1;
+            while (to > from && spaceAt[to - 1]) to -= 1;
+            if (!(from < to) || !(spacing.wordSpacing > 0.05)) continue;
+            flow.segments.push({
+              from,
+              to,
+              width: piece.right - piece.left,
+              wordSpacing: spacing.wordSpacing,
+              edge: piece.side === "left" ? "left" : "right",
+            });
+          }
+        }
+      }
       if (layout.leadingGap > 0.5) widgets.push({ pos: glyphs[layout.pieces[0].from].pos, kind: "gap", size: layout.leadingGap, side: -1 });
       for (const piece of layout.pieces) {
         if (piece.gapAfter > 0.5 && piece.to < glyphs.length) {
           // A space kept on this side of the hole collapses against the gap widget.
           let size = piece.gapAfter;
           for (let cursor = piece.to - 1; cursor >= piece.from && glyphs[cursor].space; cursor -= 1) size += glyphs[cursor].width;
-          widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size, side: -1 });
+          widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size, side: fill ? -4 : -1 });
         }
       }
       const tailPiece = layout.pieces[layout.pieces.length - 1];
-      const tail = lock && tailPiece ? segmentSlack(widths, tailPiece) : 0;
+      const tail = lock && !fill && tailPiece ? segmentSlack(widths, tailPiece) : 0;
       if (tail > 0.5 && layout.next < glyphs.length) {
         widgets.push({ pos: glyphs[layout.next].pos, kind: "gap", size: tail, side: -3 });
       }
@@ -507,7 +599,7 @@ function runAroundEngineFactory() {
       span.style.cssText = `display:inline;padding-inline-start:${widget.size}px;line-height:inherit;vertical-align:baseline;`;
       return span;
     }
-    const width = widget.side === -3 ? widget.size : widget.size > 2 ? widget.size - 1 : widget.size;
+    const width = widget.side === -3 || widget.side === -4 ? widget.size : widget.size > 2 ? widget.size - 1 : widget.size;
     span.style.cssText = `display:inline-block;width:${width}px;height:0;font-size:0;line-height:0;vertical-align:baseline;unicode-bidi:isolate;direction:ltr;`;
     return span;
   }
@@ -669,7 +761,9 @@ function runAroundEngineFactory() {
       const tagged = block.getAttribute("data-text-align");
       const alignName = tagged || (style.textAlign === "justify" && style.textAlignLast === "justify" ? "justify-all" : style.textAlign);
       if (alignName === "justify" || alignName === "justify-all") block.style.setProperty("text-justify", "inter-word");
-      const planned = planRunAroundWidgets(glyphs, blockTop, lineHeight, () => ({ left: contentLeft, right: contentRight }), exclusions, direction, { align: alignName });
+      const justifySegments: Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> = [];
+      const flow = { align: alignName, segments: justifySegments };
+      const planned = planRunAroundWidgets(glyphs, blockTop, lineHeight, () => ({ left: contentLeft, right: contentRight }), exclusions, direction, flow);
       const ordered = [...planned].sort((a, b) => b.pos - a.pos || b.side - a.side);
       for (const widget of ordered) {
         const glyph = glyphs[widget.pos];
@@ -677,6 +771,27 @@ function runAroundEngineFactory() {
         const host = glyph.node.splitText(Math.min(glyph.offset, glyph.node.data.length));
         host.parentNode?.insertBefore(printSpacer(widget), host);
         inserted += 1;
+      }
+      const segments = justifySegments;
+      for (let s = segments.length - 1; s >= 0; s -= 1) {
+        const seg = segments[s];
+        for (let i = seg.to - 1; i >= seg.from; i -= 1) {
+          const glyph = glyphs[i];
+          if (!glyph?.space || !glyph.node?.parentNode) continue;
+          const end = Math.min(glyph.node.data.length, Math.max(glyph.offset + 1, wordEnd(glyph.node.data, glyph.offset)));
+          try {
+            const range = document.createRange();
+            range.setStart(glyph.node, Math.min(glyph.offset, glyph.node.data.length));
+            range.setEnd(glyph.node, end);
+            const span = document.createElement("span");
+            span.setAttribute("data-print-run-around", "segment");
+            span.style.cssText = `padding-inline-start:${seg.wordSpacing}px`;
+            range.surroundContents(span);
+            inserted += 1;
+          } catch {
+            /* a later widget split this node; the screen path still justifies */
+          }
+        }
       }
     }
     return inserted;
@@ -716,6 +831,7 @@ export const layoutLineAroundExclusions: (
   minWidth?: number,
   start?: number,
   direction?: "rtl" | "ltr",
+  fit?: { minWords: number; maxExtraPerSpace: number; spaceAt: readonly boolean[] } | null,
 ) => RtlLineLayout = runAroundEngine.layoutLineAroundExclusions;
 export const planRunAroundWidgets: (
   glyphs: readonly FlowGlyph[],

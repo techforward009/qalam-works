@@ -81,9 +81,9 @@ function widgetElement(widget: PlannedWidget): HTMLElement {
     return span;
   }
   span.setAttribute("data-run-around-gap", "true");
-  // One pixel under the measured hole so subpixel glyph widths do not wrap the left run.
-  // A trailing pad (side -3) keeps its exact width so justification has nothing left to stretch.
-  const width = widget.side === -3 ? widget.size : widget.size > 2 ? widget.size - 1 : widget.size;
+  // One pixel under an ink-based hole so subpixel glyph widths do not wrap the left run.
+  // A trailing pad (side -3) and a filled geometric hole (side -4) keep their exact width.
+  const width = widget.side === -3 || widget.side === -4 ? widget.size : widget.size > 2 ? widget.size - 1 : widget.size;
   // Isolate the hole so the RTL line keeps a run on each side of it.
   span.style.cssText = `display:inline-block;width:${width}px;height:0;font-size:0;line-height:0;vertical-align:baseline;unicode-bidi:isolate;direction:ltr;pointer-events:none;`;
   return span;
@@ -308,14 +308,25 @@ class RunAroundView {
       if (!glyphs.length) return false;
       const tagged = dom.getAttribute("data-text-align");
       const alignName = tagged || (style.textAlign === "justify" && style.textAlignLast === "justify" ? "justify-all" : style.textAlign);
+      const flow = { pages, align: alignName, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
       const planned = planRunAroundWidgets(glyphs, overlapTop, lineHeight, firstLine => {
         if (!firstLine || !indent) return { left: contentLeft, right: contentRight };
         return rtl
           ? { left: contentLeft, right: contentRight - indent }
           : { left: contentLeft + indent, right: contentRight };
-      }, exclusions, rtl ? "rtl" : "ltr", { pages, align: alignName });
+      }, exclusions, rtl ? "rtl" : "ltr", flow);
       widgets.push(...planned);
       if ((alignName === "justify" || alignName === "justify-all") && planned.length) justifyBlocks.push({ pos, size: node.nodeSize });
+      for (const seg of flow.segments) {
+        const from = glyphs[seg.from]?.pos;
+        const toPos = seg.to < glyphs.length ? glyphs[seg.to].pos : contentEnd;
+        if (from == null || toPos <= from || !(seg.wordSpacing > 0.05)) continue;
+        segmentStyles.push({
+          from,
+          to: toPos,
+          style: `word-spacing:${seg.wordSpacing.toFixed(2)}px;letter-spacing:0`,
+        });
+      }
       return false;
     });
     this.publish(state, widgets, justifyBlocks, segmentStyles);
