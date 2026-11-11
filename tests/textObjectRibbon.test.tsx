@@ -107,7 +107,7 @@ describe("text object ribbon and Modify Object", () => {
     expect((dialog.querySelector("[aria-label='Inset']") as HTMLInputElement).disabled).toBe(false);
     expect((dialog.querySelector("[aria-label='Left to Right']") as HTMLInputElement).disabled).toBe(false);
     expect((dialog.querySelector("[aria-label='Column rule pattern']") as HTMLSelectElement).disabled).toBe(false);
-    expect((dialog.querySelector("[aria-label='Run Around']") as HTMLInputElement | null)?.disabled ?? dialog.querySelector("input[type='checkbox'][disabled]") !== null).toBe(true);
+    expect((dialog.querySelector("[aria-label='Run Around']") as HTMLInputElement).disabled).toBe(false);
     fireEvent.change(dialog.querySelector("[data-object-field='h']")!, { target: { value: "40" } });
     fireEvent.change(dialog.querySelector("[data-object-field='columns']")!, { target: { value: "4" } });
     fireEvent.change(dialog.querySelector("[aria-label='Inset']")!, { target: { value: "1.5mm" } });
@@ -118,5 +118,32 @@ describe("text object ribbon and Modify Object", () => {
     expect(changes[0].columnGutterMm).toBeUndefined();
     expect(changes[0].wMm).toBe(70);
     expect(changes[0].insetMm).toBe(1.5);
+  });
+
+  it("reads and writes Run Around without writing defaults on a legacy box", () => {
+    const unchanged: Array<Record<string, unknown>> = [];
+    renderRibbon(text, (_id, patch) => unchanged.push(patch));
+    const dialog = openDialog(text);
+    expect((dialog.querySelector("[aria-label='Run Around']") as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "OK" }));
+    expect(unchanged[0].runAround).toBeUndefined();
+    expect(unchanged[0].runAroundLeftMm).toBeUndefined();
+    cleanup();
+
+    const on: Array<Record<string, unknown>> = [];
+    render(<StudioObjectRibbon frame={text} onChange={(_id, patch) => on.push(patch)} />);
+    const next = openDialog(text);
+    fireEvent.click(next.querySelector("[aria-label='Run Around']")!);
+    fireEvent.click(screen.getByRole("button", { name: "OK" }));
+    expect(on[0]).toMatchObject({ runAround: true });
+    cleanup();
+
+    const wrapped = { ...text, runAround: true, runAroundLeftMm: 0.71, runAroundRightMm: 0.71, runAroundTopMm: 0.35, runAroundBottomMm: 0.35 };
+    const shown: Array<Record<string, unknown>> = [];
+    render(<StudioObjectRibbon frame={wrapped} onChange={(_id, patch) => shown.push(patch)} />);
+    const again = openDialog(wrapped);
+    expect((again.querySelector("[aria-label='Run Around']") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "OK" }));
+    expect(shown[0].runAround).toBeUndefined();
   });
 });

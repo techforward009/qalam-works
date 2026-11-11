@@ -5,6 +5,7 @@ import type { DocumentViewMode } from "./documentView";
 import { isParagraphAlignList } from "./paragraphAlign";
 import { isParagraphFormatList } from "./paragraphFormats";
 import { normalizeSafeHex } from "./studioColors";
+import { validRunAroundFields } from "./runAround";
 import { validTextColumnFields } from "./textColumns";
 
 export const QPG_FILE_ACCEPT = ".qpg,.inp,.txt,.docx";
@@ -43,7 +44,7 @@ export function serializeQpg(document: QpgDocument): string {
   return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document, frames: document.frames.map(copyQpgFrame) });
 }
 
-const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "paragraphFormats", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch", "columnCount", "columnGutterMm", "columnDirection", "columnRuleColor", "columnRuleSizeMm", "columnRulePattern", "insetMm", "textShape"] as const;
+const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "paragraphFormats", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch", "columnCount", "columnGutterMm", "columnDirection", "columnRuleColor", "columnRuleSizeMm", "columnRulePattern", "insetMm", "textShape", "runAround", "runAroundLeftMm", "runAroundRightMm", "runAroundTopMm", "runAroundBottomMm"] as const;
 function copyQpgFrame(frame: StudioFrame): StudioFrame {
   return Object.fromEntries(QPG_FRAME_KEYS.flatMap(key => frame[key] === undefined ? [] : [[key, frame[key]]])) as unknown as StudioFrame;
 }
@@ -69,6 +70,7 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       (frame.locked === undefined || typeof frame.locked === "boolean") &&
       (frame.dontPrint === undefined || typeof frame.dontPrint === "boolean") &&
       (frame.template === undefined || typeof frame.template === "boolean") &&
+      validRunAroundFields(frame) &&
       (frame.roundnessMm === undefined || typeof frame.roundnessMm === "number" && Number.isFinite(frame.roundnessMm) && frame.roundnessMm >= 0 && frame.roundnessMm <= 2000) &&
       (frame.angle1Deg === undefined || typeof frame.angle1Deg === "number" && Number.isFinite(frame.angle1Deg) && Math.abs(frame.angle1Deg) <= 3600) &&
       (frame.angle2Deg === undefined || typeof frame.angle2Deg === "number" && Number.isFinite(frame.angle2Deg) && Math.abs(frame.angle2Deg) <= 3600) &&

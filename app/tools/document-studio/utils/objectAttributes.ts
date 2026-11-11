@@ -1,10 +1,11 @@
 import { isPictureBox, type FrameKind, type StudioFrame } from "../components/StudioObjectLayer";
 import { isFrameBorderPattern } from "./frameBorder";
 import { normalizeSafeHex } from "./studioColors";
+import { validRunAroundFields } from "./runAround";
 import { TEXT_COLUMN_MAX, validTextColumnFields } from "./textColumns";
 import { PRINT_FRAME_LIMITS } from "./printableFrames";
 
-export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition" | "columnCount" | "columnGutterMm" | "columnDirection" | "columnRuleColor" | "columnRuleSizeMm" | "columnRulePattern" | "insetMm" | "textShape">>;
+export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition" | "columnCount" | "columnGutterMm" | "columnDirection" | "columnRuleColor" | "columnRuleSizeMm" | "columnRulePattern" | "insetMm" | "textShape" | "runAround" | "runAroundLeftMm" | "runAroundRightMm" | "runAroundTopMm" | "runAroundBottomMm">>;
 const pictureKinds: readonly FrameKind[] = ["picture-rect", "picture-round-rect", "picture-ellipse"];
 
 export function parseGeometryLength(raw: string): number {
@@ -68,6 +69,7 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (requested.locked !== undefined && typeof requested.locked !== "boolean") return null;
   if (requested.dontPrint !== undefined && typeof requested.dontPrint !== "boolean") return null;
   if (requested.template !== undefined && typeof requested.template !== "boolean") return null;
+  if (!validRunAroundFields(requested)) return null;
   if (requested.kind !== undefined && (!isPictureBox(frame.kind) || !pictureKinds.includes(requested.kind))) return null;
   if (requested.borderColor !== undefined && !normalizeSafeHex(requested.borderColor)) return null;
   if (requested.backgroundColor !== undefined && requested.backgroundColor !== "" && !normalizeSafeHex(requested.backgroundColor)) return null;

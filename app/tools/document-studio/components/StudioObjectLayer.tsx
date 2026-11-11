@@ -88,6 +88,13 @@ export type StudioFrame = {
   insetMm?: number;
   /** Text-box shape. Absent means rectangular. Pictures use kind instead. */
   textShape?: TextShape;
+  /** Story text flows around this box. Absent means off. */
+  runAround?: boolean;
+  /** Clearance outside the box when runAround is on. Absent uses 0.71 / 0.71 / 0.35 / 0.35 mm. */
+  runAroundLeftMm?: number;
+  runAroundRightMm?: number;
+  runAroundTopMm?: number;
+  runAroundBottomMm?: number;
 };
 
 export function isPictureBox(kind: string): boolean {

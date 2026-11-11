@@ -11,6 +11,7 @@ import { parseLeading } from './leading';
 import { normalizeSafeHex } from './studioColors';
 import { normalizeSingleLineText } from './singleLineFrame';
 import { frameBorderCss, svgStrokeAttributes } from './frameBorder';
+import { validRunAroundFields } from './runAround';
 import { formatInsetMm, measureTextColumns, resolvedInsetMm, textColumnCss, validTextColumnFields } from './textColumns';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
@@ -63,6 +64,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       }
     }
     if (f.locked !== undefined && typeof f.locked !== 'boolean' || f.dontPrint !== undefined && typeof f.dontPrint !== 'boolean' || f.template !== undefined && typeof f.template !== 'boolean') throw new Error('Invalid drawing frame flags; export blocked');
+    if (!validRunAroundFields(f)) throw new Error('Invalid drawing frame run around; export blocked');
     if (f.roundnessMm !== undefined && (typeof f.roundnessMm !== 'number' || !Number.isFinite(f.roundnessMm) || f.roundnessMm < 0 || f.roundnessMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame roundness; export blocked');
     if (f.angle1Deg !== undefined && (typeof f.angle1Deg !== 'number' || !Number.isFinite(f.angle1Deg) || Math.abs(f.angle1Deg) > 3600)) throw new Error('Invalid drawing frame angle; export blocked');
     if (f.angle2Deg !== undefined && (typeof f.angle2Deg !== 'number' || !Number.isFinite(f.angle2Deg) || Math.abs(f.angle2Deg) > 3600)) throw new Error('Invalid drawing frame angle; export blocked');
@@ -104,6 +106,11 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.columnRulePattern !== undefined ? { columnRulePattern: f.columnRulePattern } : {}),
       ...(f.insetMm !== undefined ? { insetMm: f.insetMm } : {}),
       ...(f.textShape !== undefined ? { textShape: f.textShape } : {}),
+      ...(f.runAround !== undefined ? { runAround: f.runAround } : {}),
+      ...(f.runAroundLeftMm !== undefined ? { runAroundLeftMm: f.runAroundLeftMm } : {}),
+      ...(f.runAroundRightMm !== undefined ? { runAroundRightMm: f.runAroundRightMm } : {}),
+      ...(f.runAroundTopMm !== undefined ? { runAroundTopMm: f.runAroundTopMm } : {}),
+      ...(f.runAroundBottomMm !== undefined ? { runAroundBottomMm: f.runAroundBottomMm } : {}),
     };
   });
 }
