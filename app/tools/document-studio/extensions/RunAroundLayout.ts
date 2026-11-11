@@ -166,6 +166,14 @@ class RunAroundView {
     const scale = root.width > 0 ? root.width / geometry.pageWidthPx : 0;
     if (!(scale > 0)) return;
     const stride = geometry.pageHeightPx + geometry.gapPx;
+    // Pagination floats insert the bottom margin, gutter, and next top margin
+    // between sheets. The planner has to jump that band or a page-1 wrap
+    // assigns page-2 holes to the wrong words.
+    const pages = geometry.enabled ? {
+      stride,
+      marginTop: geometry.marginTopPx,
+      contentBottom: geometry.pageHeightPx - geometry.marginBottomPx,
+    } : null;
     const exclusions = frames.flatMap(frame => {
       const exclusion = runAroundExclusionPx(frame, stride);
       return exclusion ? [exclusion] : [];
@@ -220,27 +228,39 @@ class RunAroundView {
           at += Math.max(1, after.nodeSize);
           continue;
         }
-        // Widths come from the plain paragraph text. A gap widget changes
+        // Adjacent text nodes are one run. A bold or italic boundary is not
+        // a word boundary. A hard break or inline atom ends the run.
+        const pieces: TextPiece[] = [];
+        while (at < contentEnd && pieces.length < 400) {
+          const next = view.state.doc.resolve(at).nodeAfter;
+          if (!next?.isText || !next.text) break;
+          pieces.push({ pos: at, text: next.text, font: fontAt(view, at, style) });
+          at += next.nodeSize;
+        }
+        // Widths come from an undecorated probe. A gap widget changes
         // Nastaliq shaping, so measuring the decorated line makes one word
         // jump from side to side on every pass.
-        const widths = intrinsicWordWidths(dom, after.text);
-        let offset = 0;
-        let unit = 0;
-        while (offset < after.text.length && glyphs.length < 8000) {
-          // wordEnd returns the absolute end, not a length.
-          const end = Math.max(offset + 1, wordEnd(after.text, offset));
-          const slice = after.text.slice(offset, end);
-          const blank = !slice.trim();
-          const measured = widths[unit] ?? 0;
-          glyphs.push({
-            pos: at + offset,
-            width: measured > 0 ? Math.round(measured * 100) / 100 : blank ? 0 : fallback,
-            space: blank,
-          });
-          offset = end;
-          unit += 1;
+        if (pieces.length === 1) {
+          const widths = intrinsicWordWidths(dom, pieces[0].text);
+          let offset = 0;
+          let unit = 0;
+          while (offset < pieces[0].text.length && glyphs.length < 8000) {
+            // wordEnd returns the absolute end, not a length.
+            const end = Math.max(offset + 1, wordEnd(pieces[0].text, offset));
+            const slice = pieces[0].text.slice(offset, end);
+            const blank = !slice.trim();
+            const measured = widths[unit] ?? 0;
+            glyphs.push({
+              pos: pieces[0].pos + offset,
+              width: measured > 0 ? Math.round(measured * 100) / 100 : blank ? 0 : fallback,
+              space: blank,
+            });
+            offset = end;
+            unit += 1;
+          }
+        } else {
+          pushShapedWords(glyphs, dom, pieces, fallback);
         }
-        at += after.nodeSize;
       }
       if (!glyphs.length) return false;
       const planned = planRunAroundWidgets(glyphs, overlapTop, lineHeight, firstLine => {
@@ -248,7 +268,7 @@ class RunAroundView {
         return rtl
           ? { left: contentLeft, right: contentRight - indent }
           : { left: contentLeft + indent, right: contentRight };
-      }, exclusions, rtl ? "rtl" : "ltr");
+      }, exclusions, rtl ? "rtl" : "ltr", pages ? { pages } : null);
       widgets.push(...planned);
       return false;
     });
@@ -299,6 +319,106 @@ function shapedWidth(rects: DOMRect[]): number {
   let width = 0;
   for (const band of lines.values()) width = Math.max(width, band.max - band.min);
   return width;
+}
+
+interface TextPiece {
+  pos: number;
+  text: string;
+  font: string;
+}
+
+function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration): string {
+  const dom = view.nodeDOM(pos);
+  const el = dom instanceof Text ? dom.parentElement : dom instanceof HTMLElement ? dom : null;
+  const style = el ? getComputedStyle(el) : fallback;
+  return [style.fontFamily, style.fontSize, style.fontWeight, style.fontStyle, style.letterSpacing, style.wordSpacing, style.fontFeatureSettings].join("\n");
+}
+
+function documentPos(pieces: readonly TextPiece[], index: number): number {
+  let cursor = 0;
+  for (const piece of pieces) {
+    if (index < cursor + piece.text.length) return piece.pos + (index - cursor);
+    cursor += piece.text.length;
+  }
+  const last = pieces[pieces.length - 1];
+  return last.pos + last.text.length;
+}
+
+/** One nowrap probe, with each mark's font kept, so a split word is measured as the browser shapes it. */
+function pushShapedWords(glyphs: Glyph[], source: HTMLElement, pieces: readonly TextPiece[], fallback: number): void {
+  const style = getComputedStyle(source);
+  const joined = pieces.map(piece => piece.text).join("");
+  const key = `${style.direction}\n${pieces.map(piece => `${piece.font}\n${piece.text}`).join("\n")}`;
+  let widths = intrinsicWidthCache.get(key);
+  if (!widths) {
+    widths = [];
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};`;
+    const nodes: Text[] = [];
+    for (const piece of pieces) {
+      const [family, size, weight, fontStyle, spacing, wordSpacing, features] = piece.font.split("\n");
+      const span = document.createElement("span");
+      span.style.fontFamily = family;
+      span.style.fontSize = size;
+      span.style.fontWeight = weight;
+      span.style.fontStyle = fontStyle;
+      span.style.letterSpacing = spacing;
+      span.style.wordSpacing = wordSpacing;
+      if (features) span.style.fontFeatureSettings = features;
+      span.textContent = piece.text;
+      probe.appendChild(span);
+      const text = span.firstChild;
+      if (text && text.nodeType === Node.TEXT_NODE) nodes.push(text as Text);
+    }
+    document.body.appendChild(probe);
+    const locate = (index: number) => {
+      let cursor = 0;
+      for (let i = 0; i < pieces.length; i += 1) {
+        const len = pieces[i].text.length;
+        if (index < cursor + len || i === pieces.length - 1) {
+          return { node: nodes[i], offset: Math.max(0, Math.min(len, index - cursor)) };
+        }
+        cursor += len;
+      }
+      return { node: nodes[0], offset: 0 };
+    };
+    if (nodes.length === pieces.length) {
+      for (let offset = 0; offset < joined.length;) {
+        const end = wordEnd(joined, offset);
+        const start = locate(offset);
+        const finish = locate(end);
+        const range = document.createRange();
+        range.setStart(start.node, start.offset);
+        range.setEnd(finish.node, finish.offset);
+        const startCaret = range.cloneRange();
+        startCaret.collapse(true);
+        const endCaret = range.cloneRange();
+        endCaret.collapse(false);
+        let width = Math.abs(endCaret.getBoundingClientRect().left - startCaret.getBoundingClientRect().left);
+        if (!(width > 0)) width = shapedWidth([...range.getClientRects()]);
+        widths.push(width);
+        offset = end;
+      }
+    }
+    probe.remove();
+    if (intrinsicWidthCache.size > 80) intrinsicWidthCache.clear();
+    intrinsicWidthCache.set(key, widths);
+  }
+  let unit = 0;
+  for (let offset = 0; offset < joined.length && glyphs.length < 8000;) {
+    const end = Math.max(offset + 1, wordEnd(joined, offset));
+    const slice = joined.slice(offset, end);
+    const blank = !slice.trim();
+    const measured = widths[unit] ?? 0;
+    glyphs.push({
+      pos: documentPos(pieces, offset),
+      width: measured > 0 ? Math.round(measured * 100) / 100 : blank ? 0 : fallback,
+      space: blank,
+    });
+    offset = end;
+    unit += 1;
+  }
 }
 
 const intrinsicWidthCache = new Map<string, number[]>();

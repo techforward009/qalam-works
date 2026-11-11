@@ -338,6 +338,54 @@ function runAroundEngineFactory() {
     return { skip: false, skipBottom: null, pieces: placed.pieces, next: placed.next, leadingGap };
   }
 
+  /**
+   * Screen sheets are stacked with a gutter the float breaker inserts.
+   * A line that does not fit the remaining text area continues at the next
+   * sheet's text top. Print coordinates are already one continuous column.
+   */
+  function snapFlowTop(y: number, lineHeight: number, pages: { stride: number; marginTop: number; contentBottom: number } | null | undefined): number {
+    if (!pages || !(pages.stride > 0) || !(lineHeight > 0)) return y;
+    let page = Math.max(0, Math.floor(Math.max(0, y) / pages.stride));
+    let cursor = y;
+    for (let guard = 0; guard < 60; guard += 1) {
+      const origin = page * pages.stride;
+      const top = origin + pages.marginTop;
+      const bottom = origin + pages.contentBottom;
+      if (bottom - top + 0.5 < lineHeight) {
+        page += 1;
+        cursor = page * pages.stride + pages.marginTop;
+        continue;
+      }
+      const lineTop = cursor < top ? top : cursor;
+      if (lineTop + lineHeight <= bottom + 0.5) return lineTop;
+      page += 1;
+      cursor = page * pages.stride + pages.marginTop;
+    }
+    return cursor;
+  }
+
+  function flowPastGlyphs(
+    glyphs: readonly FlowGlyph[],
+    index: number,
+    y: number,
+    lineHeight: number,
+    edges: (firstLine: boolean) => { left: number; right: number },
+    direction: "rtl" | "ltr",
+    pages: { stride: number; marginTop: number; contentBottom: number } | null | undefined,
+  ): number {
+    const widths = glyphs.map(glyph => glyph.width);
+    for (let guard = 0; index < glyphs.length && guard < 400; guard += 1) {
+      y = snapFlowTop(y, lineHeight, pages);
+      const edge = edges(false);
+      const line = { left: edge.left, right: edge.right, top: y, bottom: y + lineHeight };
+      const plain = layoutLineAroundExclusions(line, widths, [], 0, index, direction);
+      if (plain.next === index) break;
+      index = plain.next;
+      y += lineHeight;
+    }
+    return y;
+  }
+
   function planRunAroundWidgets(
     glyphs: readonly FlowGlyph[],
     overlapTop: number,
@@ -345,15 +393,21 @@ function runAroundEngineFactory() {
     edges: (firstLine: boolean) => { left: number; right: number },
     exclusions: readonly RunAroundRect[],
     direction: "rtl" | "ltr" = "rtl",
+    flow?: { pages?: { stride: number; marginTop: number; contentBottom: number } | null; endY?: number } | null,
   ): FlowWidget[] {
     const widgets: FlowWidget[] = [];
-    if (!glyphs.length || !(lineHeight > 0)) return widgets;
+    if (!glyphs.length || !(lineHeight > 0)) {
+      if (flow) flow.endY = overlapTop;
+      return widgets;
+    }
     const lowest = exclusions.reduce((max, exclusion) => Math.max(max, exclusion.bottom), Number.NEGATIVE_INFINITY);
     let index = 0;
     let y = overlapTop;
     let first = true;
     const widths = glyphs.map(glyph => glyph.width);
     for (let guard = 0; index < glyphs.length && guard < 400; guard += 1) {
+      const snapped = snapFlowTop(y, lineHeight, flow?.pages);
+      if (snapped > y + 0.5) y = snapped;
       const edge = edges(first);
       first = false;
       const line = { left: edge.left, right: edge.right, top: y, bottom: y + lineHeight };
@@ -404,6 +458,7 @@ function runAroundEngineFactory() {
       if (index >= glyphs.length) break;
       widgets.push({ pos: glyphs[index].pos, kind: "break", size: 0, side: -2 });
     }
+    if (flow) flow.endY = flowPastGlyphs(glyphs, index, y, lineHeight, edges, direction, flow.pages);
     return widgets;
   }
 
@@ -447,19 +502,115 @@ function runAroundEngineFactory() {
       if (!Number.isFinite(lineHeight) || lineHeight <= 0) lineHeight = parseFloat(style.fontSize) || 16;
       const glyphs: Array<{ pos: number; width: number; node: Text; offset: number; space?: boolean }> = [];
       let painted = 0;
-      const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-      for (let current = walker.nextNode() as Text | null; current; current = walker.nextNode() as Text | null) {
-        const text = current.data;
-        for (let offset = 0; offset < text.length && glyphs.length < 8000;) {
-          const end = wordEnd(text, offset);
+      const inlineTags = " SPAN STRONG EM B I A U S SUB SUP MARK FONT CITE ABBR CODE SMALL BDI BDO Q ";
+      const runs: Text[][] = [];
+      let currentRun: Text[] = [];
+      const flushRun = () => { if (currentRun.length) { runs.push(currentRun); currentRun = []; } };
+      const walkInline = (el: Node) => {
+        const children = el.childNodes;
+        for (let childIndex = 0; childIndex < children.length; childIndex += 1) {
+          const child = children[childIndex];
+          if (child.nodeType === 3) {
+            if ((child as Text).data.length) currentRun.push(child as Text);
+            continue;
+          }
+          if (child.nodeType !== 1) continue;
+          const tag = (child as Element).tagName;
+          if (tag === "BR" || tag === "IMG" || tag === "WBR" || tag === "HR") { flushRun(); continue; }
+          if (inlineTags.indexOf(` ${tag} `) < 0) { flushRun(); walkInline(child); flushRun(); continue; }
+          walkInline(child);
+        }
+      };
+      walkInline(block);
+      flushRun();
+      const fallbackWidth = (parseFloat(style.fontSize) || 16) * 0.5;
+      const measureSlice = (node: Text, offset: number, end: number) => {
+        const range = document.createRange();
+        range.setStart(node, offset);
+        range.setEnd(node, end);
+        const rects = [...range.getClientRects()];
+        let ink = 0;
+        const byLine = new Map<number, { min: number; max: number }>();
+        for (const rect of rects) {
+          painted = Math.max(painted, rect.height);
+          if (rect.width <= 0) continue;
+          const key = Math.round(rect.top);
+          const band = byLine.get(key) ?? { min: rect.left, max: rect.right };
+          band.min = Math.min(band.min, rect.left);
+          band.max = Math.max(band.max, rect.right);
+          byLine.set(key, band);
+        }
+        for (const band of byLine.values()) ink = Math.max(ink, band.max - band.min);
+        const startCaret = range.cloneRange();
+        startCaret.collapse(true);
+        const endCaret = range.cloneRange();
+        endCaret.collapse(false);
+        const advance = Math.abs(endCaret.getBoundingClientRect().left - startCaret.getBoundingClientRect().left);
+        // A caret pair on a wrapped line can report the whole block. Prefer the ink width then.
+        return advance > 0 && (ink <= 0 || advance <= ink + 1) ? advance : ink;
+      };
+      const pointAt = (nodes: Text[], index: number) => {
+        let cursor = 0;
+        for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+          const len = nodes[nodeIndex].data.length;
+          if (index < cursor + len || nodeIndex === nodes.length - 1) {
+            return { node: nodes[nodeIndex], offset: Math.max(0, Math.min(len, index - cursor)) };
+          }
+          cursor += len;
+        }
+        return { node: nodes[0], offset: 0 };
+      };
+      for (const run of runs) {
+        if (glyphs.length >= 8000) break;
+        if (run.length === 1) {
+          const textNode = run[0];
+          const text = textNode.data;
+          for (let offset = 0; offset < text.length && glyphs.length < 8000;) {
+            const end = wordEnd(text, offset);
+            const width = measureSlice(textNode, offset, end);
+            const slice = text.slice(offset, end);
+            const blank = !slice.trim();
+            glyphs.push({ pos: glyphs.length, width: width || (blank ? 0 : fallbackWidth), node: textNode, offset, space: blank });
+            offset = end;
+          }
+          continue;
+        }
+        const joined = run.map(node => node.data).join("");
+        const probe = document.createElement("div");
+        probe.setAttribute("aria-hidden", "true");
+        probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};`;
+        const copies: Text[] = [];
+        for (const node of run) {
+          const font = node.parentElement ? getComputedStyle(node.parentElement) : style;
+          const span = document.createElement("span");
+          span.style.fontFamily = font.fontFamily;
+          span.style.fontSize = font.fontSize;
+          span.style.fontWeight = font.fontWeight;
+          span.style.fontStyle = font.fontStyle;
+          span.style.letterSpacing = font.letterSpacing;
+          span.style.wordSpacing = font.wordSpacing;
+          span.textContent = node.data;
+          probe.appendChild(span);
+          copies.push(span.firstChild as Text);
+        }
+        document.body.appendChild(probe);
+        if (!(painted > 0)) {
+          const sample = document.createRange();
+          sample.setStart(run[0], 0);
+          sample.setEnd(run[0], Math.min(1, run[0].data.length));
+          for (const rect of sample.getClientRects()) painted = Math.max(painted, rect.height);
+        }
+        for (let offset = 0; offset < joined.length && glyphs.length < 8000;) {
+          const end = wordEnd(joined, offset);
+          const start = pointAt(copies, offset);
+          const finish = pointAt(copies, end);
           const range = document.createRange();
-          range.setStart(current, offset);
-          range.setEnd(current, end);
+          range.setStart(start.node, start.offset);
+          range.setEnd(finish.node, finish.offset);
           const rects = [...range.getClientRects()];
           let ink = 0;
           const byLine = new Map<number, { min: number; max: number }>();
           for (const rect of rects) {
-            painted = Math.max(painted, rect.height);
             if (rect.width <= 0) continue;
             const key = Math.round(rect.top);
             const band = byLine.get(key) ?? { min: rect.left, max: rect.right };
@@ -473,13 +624,14 @@ function runAroundEngineFactory() {
           const endCaret = range.cloneRange();
           endCaret.collapse(false);
           const advance = Math.abs(endCaret.getBoundingClientRect().left - startCaret.getBoundingClientRect().left);
-          // A caret pair on a wrapped line can report the whole block. Prefer the ink width then.
-          let width = advance > 0 && (ink <= 0 || advance <= ink + 1) ? advance : ink;
-          const slice = text.slice(offset, end);
+          const shaped = advance > 0 && (ink <= 0 || advance <= ink + 1) ? advance : ink;
+          const live = pointAt(run, offset);
+          const slice = joined.slice(offset, end);
           const blank = !slice.trim();
-          glyphs.push({ pos: glyphs.length, width: width || (blank ? 0 : (parseFloat(style.fontSize) || 16) * 0.5), node: current, offset, space: blank });
+          glyphs.push({ pos: glyphs.length, width: shaped || (blank ? 0 : fallbackWidth), node: live.node, offset: live.offset, space: blank });
           offset = end;
         }
+        probe.remove();
       }
       if (painted > 0) lineHeight = Math.min(lineHeight, painted);
       if (!glyphs.length) continue;
@@ -538,6 +690,7 @@ export const planRunAroundWidgets: (
   edges: (firstLine: boolean) => { left: number; right: number },
   exclusions: readonly RunAroundRect[],
   direction?: "rtl" | "ltr",
+  flow?: { pages?: { stride: number; marginTop: number; contentBottom: number } | null; endY?: number } | null,
 ) => FlowWidget[] = runAroundEngine.planRunAroundWidgets;
 export const applyStoryRunAround: (root: HTMLElement, exclusions: readonly RunAroundRect[], direction?: "rtl" | "ltr") => number = runAroundEngine.applyStoryRunAround;
 

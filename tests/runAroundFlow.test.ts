@@ -284,4 +284,54 @@ describe("run-around line splitting", () => {
     expect(gapCount).toBeGreaterThan(4);
     expect(breakCount).toBeGreaterThan(4);
   });
+
+  it("keeps a word whole when a mark would have split it", () => {
+    const slices = (text: string) => {
+      const parts: string[] = [];
+      for (let offset = 0; offset < text.length;) {
+        const end = wordEnd(text, offset);
+        parts.push(text.slice(offset, end));
+        offset = end;
+      }
+      return parts;
+    };
+    expect(slices("عب" + "ادت")).toEqual(["عبادت"]);
+    expect(slices("انس" + "ان")).toEqual(["انسان"]);
+    expect(slices("معر" + "فت")).toEqual(["معرفت"]);
+    expect(slices("مح" + "بت")).toEqual(["محبت"]);
+    expect(slices("سل" + "ام")).toEqual(["سلام"]);
+    expect(slices("زند" + "گی")).toEqual(["زندگی"]);
+    expect(slices("بند" + "گی")).toEqual(["بندگی"]);
+    expect(slices("عب" + "ادت" + "،")).toEqual(["عبادت،"]);
+    expect(slices("سلام" + "\u200c" + "علی")).toEqual(["سلام\u200cعلی"]);
+    expect(slices("زن" + "\u200d" + "دگی")).toEqual(["زن\u200dدگی"]);
+    const vowel = "مح" + "ب\u064e" + "ت";
+    expect(slices(vowel)).toEqual([vowel]);
+    expect(slices("بندگی" + "،")).toEqual(["بندگی،"]);
+  });
+
+  it("sends the glyphs that remain after page 1 to the page-2 exclusion", () => {
+    const glyphs = Array.from({ length: 30 }, (_, index) => ({ pos: index, width: 40 }));
+    const pages = { stride: 100, marginTop: 10, contentBottom: 40 };
+    const widgets = planRunAroundWidgets(
+      glyphs,
+      10,
+      10,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 80, right: 120, top: 110, bottom: 140 }],
+      "rtl",
+      { pages },
+    );
+    const gaps = widgets.filter(widget => widget.kind === "gap").map(widget => widget.pos);
+    expect(gaps[0]).toBe(17);
+    expect(gaps.every(pos => pos >= 15)).toBe(true);
+    const without = planRunAroundWidgets(
+      glyphs,
+      10,
+      10,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 80, right: 120, top: 110, bottom: 140 }],
+    );
+    expect(without.some(widget => widget.kind === "gap")).toBe(false);
+  });
 });
