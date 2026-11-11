@@ -74,6 +74,10 @@ export type DocumentMenuHandlers = {
   openQalamAi: () => void;
   openHelp: (mode: HelpDialogMode) => void;
   setCanvasTool?: (tool: "select" | "hand" | "text" | "zoom") => void;
+  undo?: () => void;
+  redo?: () => void;
+  sendToBack?: () => void;
+  bringToFront?: () => void;
 };
 
 const STYLE_ACTIONS: Record<string, BlockStyleId> = {
@@ -164,10 +168,18 @@ export function dispatchDocumentMenuAction(
       handlers.openPageSetup();
       return;
     case "edit.undo":
-      if (editor) undo(editor);
+      if (handlers.undo) handlers.undo();
+      else if (editor) undo(editor);
       return;
     case "edit.redo":
-      if (editor) redo(editor);
+      if (handlers.redo) handlers.redo();
+      else if (editor) redo(editor);
+      return;
+    case "edit.sendBack":
+      handlers.sendToBack?.();
+      return;
+    case "edit.bringFront":
+      handlers.bringToFront?.();
       return;
     case "edit.selectAll":
       if (editor) selectAll(editor);

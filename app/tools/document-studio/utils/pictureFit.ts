@@ -44,6 +44,27 @@ export function fitPictureInBox(
   }
 }
 
+/**
+ * Screen pointer delta into picture-content axes, in millimetres.
+ * imageXMm/imageYMm are in the frame's local space. The frame is drawn with
+ * CSS rotate(-angle1Deg), so a positive angle is anticlockwise on a y-down screen.
+ * Unrotated frames pass the delta through. pxPerMm converts pixels to millimetres.
+ */
+export function pictureContentDeltaMm(
+  dxPx: number,
+  dyPx: number,
+  angle1Deg: number,
+  pxPerMm: number,
+): { xMm: number; yMm: number } {
+  const theta = ((angle1Deg || 0) * Math.PI) / 180;
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  return {
+    xMm: (dxPx * cos - dyPx * sin) / pxPerMm,
+    yMm: (dxPx * sin + dyPx * cos) / pxPerMm,
+  };
+}
+
 /** Longest side of a stored picture, in pixels. Larger sources are scaled down. */
 export const PICTURE_MAX_LONG_EDGE = 2000;
 /** JPEG quality used when a picture is re-encoded. */

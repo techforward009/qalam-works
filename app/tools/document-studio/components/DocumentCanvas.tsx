@@ -85,6 +85,9 @@ export default function DocumentCanvas({
   selectedFrameIds,
   onSelectedFramesChange,
   onDoubleClickFrame,
+  onObjectPointerDown,
+  onGestureBegin,
+  onGestureEnd,
   tool: toolProp,
   englishFont = "Arial Unicode MS",
   keyboardLayout = null,
@@ -113,10 +116,13 @@ export default function DocumentCanvas({
   columnGutterMm?: number;
   minimumPages?: number;
   frames?: StudioFrame[];
-  onFramesChange?: (frames: StudioFrame[]) => void;
+  onFramesChange?: (frames: StudioFrame[], source?: "gesture") => void;
   selectedFrameIds?: string[];
   onSelectedFramesChange?: (ids: string[]) => void;
   onDoubleClickFrame?: (frame: StudioFrame) => void;
+  onObjectPointerDown?: () => void;
+  onGestureBegin?: () => void;
+  onGestureEnd?: () => void;
   tool?: StudioToolId;
   englishFont?: string;
   keyboardLayout?: KeyboardLayout | null;
@@ -645,6 +651,9 @@ export default function DocumentCanvas({
                             selectedIds={selectedFrameIds}
                             onSelectedChange={onSelectedFramesChange}
                             onDoubleClickFrame={onDoubleClickFrame}
+                            onObjectPointerDown={onObjectPointerDown}
+                            onGestureBegin={onGestureBegin}
+                            onGestureEnd={onGestureEnd}
                             pageCount={pageCount}
                             pageWidthPx={natural.widthPx}
                             pageHeightPx={natural.heightPx}
