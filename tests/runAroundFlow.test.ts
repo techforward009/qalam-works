@@ -3,6 +3,7 @@ import { planRunAroundWidgets } from "../app/tools/document-studio/extensions/Ru
 import {
   RUN_AROUND_MIN_SEGMENT_PX,
   graphemeEnd,
+  wordEnd,
   layoutLineAroundExclusions,
   layoutRtlLineAroundExclusions,
   runAroundContentExclusionPx,
@@ -134,6 +135,30 @@ describe("run-around line splitting", () => {
       [8, 16, "left", 0],
     ]);
     expect(layout.next).toBe(16);
+    const shortRight = layoutRtlLineAroundExclusions(
+      line({ right: 100 }),
+      [20, 20, 20],
+      [{ left: 40, right: 70, top: 0, bottom: 20 }],
+    );
+    expect(shortRight.pieces.map(piece => [piece.from, piece.to, piece.side, piece.gapAfter])).toEqual([
+      [0, 1, "right", 40],
+      [1, 3, "left", 0],
+    ]);
+  });
+
+  it("gives the hole the width of a space that collapses against it", () => {
+    const widgets = planRunAroundWidgets(
+      [
+        { pos: 1, width: 20 },
+        { pos: 2, width: 16, space: true },
+        { pos: 3, width: 20 },
+      ],
+      0,
+      12,
+      () => ({ left: 0, right: 120 }),
+      [{ left: 50, right: 80, top: -2, bottom: 14 }],
+    );
+    expect(widgets.find(widget => widget.kind === "gap")).toMatchObject({ pos: 3, size: 50 });
   });
 
   it("pads a left-only line and does not pad a right-only line", () => {
@@ -219,6 +244,30 @@ describe("run-around line splitting", () => {
     expect(gaps).toContain(8);
     expect(gaps.some(pos => pos >= 40)).toBe(true);
     expect(widgets.some(widget => widget.kind === "break")).toBe(true);
+  });
+
+  it("keeps a Urdu word and its punctuation on one side of the box", () => {
+    const text = "عبادت، انسان، معرفت، محبت، سلام، زندگی، بندگی";
+    expect(text.slice(0, wordEnd(text, 0))).toBe("عبادت،");
+    expect(text.slice(wordEnd(text, 0), wordEnd(text, wordEnd(text, 0)))).toBe(" ");
+    expect(text.slice(7, wordEnd(text, 7))).toBe("انسان،");
+    expect(wordEnd("سلام\u200cعلی", 0)).toBe("سلام\u200cعلی".length);
+    expect(wordEnd("بِسم", 0)).toBe("بِسم".length);
+    expect("Hello 2026 عبادت،".slice(0, wordEnd("Hello 2026 عبادت،", 0))).toBe("Hello");
+    const narrow = { left: 40, right: 80, top: -2, bottom: 14 };
+    const widgets = planRunAroundWidgets(
+      [{ pos: 4, width: 50 }, { pos: 9, width: 20 }],
+      0,
+      12,
+      () => ({ left: 0, right: 120 }),
+      [narrow],
+    );
+    expect(widgets.some(widget => widget.kind === "gap")).toBe(false);
+    expect(widgets.filter(widget => widget.kind === "break" && widget.pos === 4).length).toBeGreaterThan(0);
+    const overflow = layoutRtlLineAroundExclusions(line({ right: 100 }), [140], [{ left: 40, right: 70, top: 0, bottom: 12 }]);
+    expect(overflow.next).toBe(1);
+    expect(overflow.pieces).toHaveLength(1);
+    expect(overflow.pieces[0]).toMatchObject({ from: 0, to: 1 });
   });
 
   it("keeps wrapping a lower pair of boxes after the first pair", () => {

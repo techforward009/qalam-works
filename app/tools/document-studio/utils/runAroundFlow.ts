@@ -124,7 +124,7 @@ export function runAroundContentExclusionPx(
   };
 }
 
-interface FlowGlyph { pos: number; width: number }
+interface FlowGlyph { pos: number; width: number; space?: boolean }
 interface FlowWidget { pos: number; kind: "gap" | "break" | "skip"; size: number; side: number }
 
 /**
@@ -168,6 +168,50 @@ function runAroundEngineFactory() {
     if (code >= 0x06ea && code <= 0x06ed) return true;
     if (code >= 0x0300 && code <= 0x036f) return true;
     return false;
+  }
+
+  /**
+   * End offset of the indivisible unit that starts at `index`.
+   * A Urdu word, its combining marks, and any punctuation stuck to it move
+   * together. Spaces stay separate so a line can still wrap between words.
+   * ZWJ and ZWNJ stay inside the segment the word breaker already formed.
+   */
+  function wordEnd(text: string, index: number): number {
+    if (index >= text.length) return text.length;
+    const Segmenter = (Intl as { Segmenter?: new (locales?: string, options?: { granularity: "word" }) => { segment: (input: string) => Iterable<{ segment: string; index: number; isWordLike?: boolean }> } }).Segmenter;
+    if (!Segmenter) {
+      const first = text.codePointAt(index) ?? 0;
+      if (first === 0x20 || first === 0x09) {
+        let cursor = index;
+        while (cursor < text.length && (text[cursor] === " " || text[cursor] === "\t")) cursor += 1;
+        return cursor;
+      }
+      let cursor = graphemeEnd(text, index);
+      while (cursor < text.length && text[cursor] !== " " && text[cursor] !== "\t" && text[cursor] !== "\n") cursor = graphemeEnd(text, cursor);
+      return cursor;
+    }
+    const segmenter = new Segmenter("ur", { granularity: "word" });
+    let end = index;
+    let started = false;
+    let attachPunctuation = false;
+    for (const part of segmenter.segment(text)) {
+      const partEnd = part.index + part.segment.length;
+      if (partEnd <= index) continue;
+      if (!started) {
+        end = partEnd;
+        started = true;
+        if (!part.segment.trim()) return Math.max(end, graphemeEnd(text, index));
+        attachPunctuation = true;
+        continue;
+      }
+      const punctuation = part.segment.trim() && !part.isWordLike && !/\s/.test(part.segment);
+      if (attachPunctuation && punctuation) {
+        end = partEnd;
+        continue;
+      }
+      break;
+    }
+    return Math.max(end, graphemeEnd(text, index));
   }
 
   function graphemeEnd(text: string, index: number): number {
@@ -230,6 +274,7 @@ function runAroundEngineFactory() {
       ? [...segments].sort((a, b) => a.left - b.left || a.right - b.right)
       : [...segments].sort((a, b) => b.right - a.right || b.left - a.left);
     const pieces: RunAroundPiece[] = [];
+    const usedWidth: number[] = [];
     let index = start;
     for (const segment of ordered) {
       if (index >= widths.length) break;
@@ -242,17 +287,15 @@ function runAroundEngineFactory() {
       }
       if (index === from) continue;
       pieces.push({ from, to: index, left: segment.left, right: segment.right, side: segment.side, gapAfter: 0 });
+      usedWidth.push(used);
     }
-    if (!pieces.length && index === start && start < widths.length && ordered.length) {
-      let widest = ordered[0];
-      for (const segment of ordered) if (segment.right - segment.left > widest.right - widest.left) widest = segment;
-      pieces.push({ from: start, to: start + 1, left: widest.left, right: widest.right, side: widest.side, gapAfter: 0 });
-      index = start + 1;
-    }
+    // The hole has to start where the ink stops. A gap the width of the box
+    // alone slides toward a short run and the next word lands on the object.
     for (let i = 0; i < pieces.length - 1; i++) {
+      const inkEnd = direction === "ltr" ? pieces[i].left + usedWidth[i] : pieces[i].right - usedWidth[i];
       pieces[i].gapAfter = direction === "ltr"
-        ? Math.max(0, pieces[i + 1].left - pieces[i].right)
-        : Math.max(0, pieces[i].left - pieces[i + 1].right);
+        ? Math.max(0, pieces[i + 1].left - inkEnd)
+        : Math.max(0, inkEnd - pieces[i + 1].right);
     }
     return { pieces, next: index };
   }
@@ -270,6 +313,24 @@ function runAroundEngineFactory() {
       return { skip: true, skipBottom: runAroundSkipBottom(line, exclusions, minWidth), pieces: [], next: start, leadingGap: 0 };
     }
     const placed = placeGlyphs(glyphWidths, split.segments, start, direction);
+    if (!placed.pieces.length && start < glyphWidths.length && split.segments.length) {
+      const word = glyphWidths[start];
+      const full = line.right - line.left;
+      // A token wider than the whole column cannot move to a later line either.
+      // Keep it in one piece on the widest side instead of splitting it.
+      if (word > full + 1e-6) {
+        let widest = split.segments[0];
+        for (const segment of split.segments) if (segment.right - segment.left > widest.right - widest.left) widest = segment;
+        const leadingGap = direction === "ltr" ? Math.max(0, widest.left - line.left) : Math.max(0, line.right - widest.right);
+        return {
+          skip: false,
+          skipBottom: null,
+          pieces: [{ from: start, to: start + 1, left: widest.left, right: widest.right, side: widest.side, gapAfter: 0 }],
+          next: start + 1,
+          leadingGap,
+        };
+      }
+    }
     const first = placed.pieces[0];
     const leadingGap = first
       ? direction === "ltr" ? Math.max(0, first.left - line.left) : Math.max(0, line.right - first.right)
@@ -317,10 +378,26 @@ function runAroundEngineFactory() {
         y += height;
         continue;
       }
-      if (!layout.pieces.length || layout.next === index) break;
+      if (!layout.pieces.length || layout.next === index) {
+        const width = widths[index] ?? 0;
+        const full = edge.right - edge.left;
+        // The whole word fits a clear line, so drop it below this band instead
+        // of leaving one letter beside the box.
+        if (index < glyphs.length && width <= full + 1e-6 && y + lineHeight < lowest + lineHeight) {
+          widgets.push({ pos: glyphs[index].pos, kind: "break", size: 0, side: -2 });
+          y += lineHeight;
+          continue;
+        }
+        break;
+      }
       if (layout.leadingGap > 0.5) widgets.push({ pos: glyphs[layout.pieces[0].from].pos, kind: "gap", size: layout.leadingGap, side: -1 });
       for (const piece of layout.pieces) {
-        if (piece.gapAfter > 0.5 && piece.to < glyphs.length) widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size: piece.gapAfter, side: -1 });
+        if (piece.gapAfter > 0.5 && piece.to < glyphs.length) {
+          // A space kept on this side of the hole collapses against the gap widget.
+          let size = piece.gapAfter;
+          for (let cursor = piece.to - 1; cursor >= piece.from && glyphs[cursor].space; cursor -= 1) size += glyphs[cursor].width;
+          widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size, side: -1 });
+        }
       }
       index = layout.next;
       y += lineHeight;
@@ -368,22 +445,39 @@ function runAroundEngineFactory() {
       if (!exclusions.some(exclusion => exclusion.top < blockBottom && exclusion.bottom > blockTop && exclusion.left < contentRight && exclusion.right > contentLeft)) continue;
       let lineHeight = parseFloat(style.lineHeight);
       if (!Number.isFinite(lineHeight) || lineHeight <= 0) lineHeight = parseFloat(style.fontSize) || 16;
-      const glyphs: Array<{ pos: number; width: number; node: Text; offset: number }> = [];
+      const glyphs: Array<{ pos: number; width: number; node: Text; offset: number; space?: boolean }> = [];
       let painted = 0;
       const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
       for (let current = walker.nextNode() as Text | null; current; current = walker.nextNode() as Text | null) {
         const text = current.data;
         for (let offset = 0; offset < text.length && glyphs.length < 8000;) {
-          const end = graphemeEnd(text, offset);
+          const end = wordEnd(text, offset);
           const range = document.createRange();
           range.setStart(current, offset);
           range.setEnd(current, end);
-          let width = 0;
-          for (const rect of range.getClientRects()) {
-            width = Math.max(width, rect.width);
+          const rects = [...range.getClientRects()];
+          let ink = 0;
+          const byLine = new Map<number, { min: number; max: number }>();
+          for (const rect of rects) {
             painted = Math.max(painted, rect.height);
+            if (rect.width <= 0) continue;
+            const key = Math.round(rect.top);
+            const band = byLine.get(key) ?? { min: rect.left, max: rect.right };
+            band.min = Math.min(band.min, rect.left);
+            band.max = Math.max(band.max, rect.right);
+            byLine.set(key, band);
           }
-          glyphs.push({ pos: glyphs.length, width: width || (parseFloat(style.fontSize) || 16) * 0.5, node: current, offset });
+          for (const band of byLine.values()) ink = Math.max(ink, band.max - band.min);
+          const startCaret = range.cloneRange();
+          startCaret.collapse(true);
+          const endCaret = range.cloneRange();
+          endCaret.collapse(false);
+          const advance = Math.abs(endCaret.getBoundingClientRect().left - startCaret.getBoundingClientRect().left);
+          // A caret pair on a wrapped line can report the whole block. Prefer the ink width then.
+          let width = advance > 0 && (ink <= 0 || advance <= ink + 1) ? advance : ink;
+          const slice = text.slice(offset, end);
+          const blank = !slice.trim();
+          glyphs.push({ pos: glyphs.length, width: width || (blank ? 0 : (parseFloat(style.fontSize) || 16) * 0.5), node: current, offset, space: blank });
           offset = end;
         }
       }
@@ -409,6 +503,7 @@ function runAroundEngineFactory() {
     ["segmentSide"]: segmentSide,
     ["isClusterExtender"]: isClusterExtender,
     ["graphemeEnd"]: graphemeEnd,
+    ["wordEnd"]: wordEnd,
     ["splitLineAroundExclusions"]: splitLineAroundExclusions,
     ["runAroundSkipBottom"]: runAroundSkipBottom,
     ["layoutLineAroundExclusions"]: layoutLineAroundExclusions,
@@ -425,6 +520,7 @@ export const mergeIntervals: (intervals: Array<[number, number]>) => Array<[numb
 export const segmentSide: (left: number, right: number, blocked: Array<[number, number]>) => RunAroundSide = runAroundEngine.segmentSide;
 export const isClusterExtender: (code: number) => boolean = runAroundEngine.isClusterExtender;
 export const graphemeEnd: (text: string, index: number) => number = runAroundEngine.graphemeEnd;
+export const wordEnd: (text: string, index: number) => number = runAroundEngine.wordEnd;
 export const splitLineAroundExclusions: (line: RunAroundRect, exclusions: readonly RunAroundRect[], minWidth?: number) => SplitLine = runAroundEngine.splitLineAroundExclusions;
 export const runAroundSkipBottom: (line: RunAroundRect, exclusions: readonly RunAroundRect[], minWidth?: number) => number = runAroundEngine.runAroundSkipBottom;
 export const layoutLineAroundExclusions: (

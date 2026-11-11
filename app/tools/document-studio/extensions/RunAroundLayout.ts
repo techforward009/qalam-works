@@ -4,13 +4,10 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { cancelCanonicalFrame, requestCanonicalFrame, withCanonicalPages } from "../utils/facingPages";
 import { getQalamPaginationState } from "./QalamPagination";
 import {
-  RUN_AROUND_MIN_SEGMENT_PX,
-  graphemeEnd,
   planRunAroundWidgets,
+  wordEnd,
   runAroundExclusionPx,
-  splitLineAroundExclusions,
   type RunAroundBox,
-  type RunAroundRect,
 } from "../utils/runAroundFlow";
 
 export { applyStoryRunAround, runAroundBrowserProgram } from "../utils/runAroundFlow";
@@ -28,6 +25,7 @@ interface RunAroundState {
 interface Glyph {
   pos: number;
   width: number;
+  space?: boolean;
 }
 
 interface PlannedWidget {
@@ -90,11 +88,6 @@ function decorationsFor(doc: PMNode, widgets: PlannedWidget[]): DecorationSet {
     ignoreSelection: true,
     key: `run-around-${widget.kind}-${widget.pos}-${widget.side}-${widget.size.toFixed(2)}`,
   })));
-}
-
-function bandHits(line: RunAroundRect, exclusions: readonly RunAroundRect[]): boolean {
-  const split = splitLineAroundExclusions(line, exclusions, RUN_AROUND_MIN_SEGMENT_PX);
-  return split.skip || split.segments.some(segment => segment.side !== "full");
 }
 
 function signatureOf(widgets: readonly PlannedWidget[]): string {
@@ -202,72 +195,60 @@ class RunAroundView {
       if (!(contentRight > contentLeft) || !exclusions.some(exclusion => exclusion.top < blockBottom && exclusion.bottom > blockTop && exclusion.left < contentRight && exclusion.right > contentLeft)) return false;
       const contentStart = pos + 1;
       const contentEnd = pos + node.nodeSize - 1;
-      const skipEl = dom.querySelector<HTMLElement>("[data-run-around-skip]");
-      const skipAt = skipEl ? Number(skipEl.getAttribute("data-run-around-at")) : NaN;
-      const skipHeight = skipEl ? skipEl.getBoundingClientRect().height / scale : 0;
-      const sample = view.coordsAtPos(Math.min(contentStart, contentEnd));
+      const sampleAt = Math.min(contentStart, Math.max(contentStart, contentEnd - 1));
+      const sample = view.coordsAtPos(sampleAt);
       // The painted line box, not the CSS line-height. Nastaliq's computed
       // line-height is taller than the line the browser actually wraps, and
       // that stride skipped a second object below the first.
       const painted = Math.max(1, (sample.bottom - sample.top) / scale);
       const cssHeight = parseFloat(style.lineHeight);
       const lineHeight = Number.isFinite(cssHeight) && cssHeight > 0 ? Math.min(cssHeight, painted) : painted;
-      const naturalTop = (at: number) => {
-        const coords = view.coordsAtPos(at);
-        let top = toPageY(coords.top);
-        if (skipEl && Number.isFinite(skipAt) && at >= skipAt) top -= skipHeight;
-        return top;
-      };
-      let overlapPos = -1;
-      let overlapTop = 0;
-      let seenTop = Number.NaN;
-      for (let at = contentStart; at < contentEnd;) {
-        const after = view.state.doc.resolve(at).nodeAfter;
-        if (!after) break;
-        if (!after.isText || !after.text) {
-          at += after.nodeSize;
-          continue;
-        }
-        const top = naturalTop(at);
-        if (Number.isNaN(seenTop) || Math.abs(top - seenTop) > 2) {
-          seenTop = top;
-          const line = { left: contentLeft, right: contentRight, top, bottom: top + lineHeight };
-          if (bandHits(line, exclusions)) {
-            overlapPos = at;
-            overlapTop = top;
-            break;
-          }
-        }
-        at += Math.max(1, graphemeEnd(after.text, 0));
-      }
-      if (overlapPos < 0) return false;
+      // The paragraph border box does not move when gap, break, or skip widgets
+      // are inserted inside it. Reading coordsAtPos here would follow those
+      // widgets and the next measurement would undo the wrap.
+      const borderTop = parseFloat(style.borderTopWidth) || 0;
+      const padTop = parseFloat(style.paddingTop) || 0;
+      const overlapTop = toPageY(bounds.top) + borderTop + padTop;
       const fallback = (parseFloat(style.fontSize) || 16) * 0.5;
-      const indent = overlapPos === contentStart ? parseFloat(style.textIndent) || 0 : 0;
+      const indent = parseFloat(style.textIndent) || 0;
       const rtl = style.direction !== "ltr";
       const glyphs: Glyph[] = [];
-      for (let at = overlapPos; at < contentEnd && glyphs.length < 8000;) {
+      for (let at = contentStart; at < contentEnd && glyphs.length < 8000;) {
         const after = view.state.doc.resolve(at).nodeAfter;
         if (!after) break;
         if (!after.isText || !after.text) {
           at += Math.max(1, after.nodeSize);
           continue;
         }
-        const span = Math.max(1, graphemeEnd(after.text, 0));
-        const next = Math.min(contentEnd, at + span);
-        const measured = glyphWidth(view, at, next, scale);
-        // A collapsed range reports 0. Treating that as a real advance lets one
-        // line swallow the rest of the paragraph, so later boxes never wrap.
-        glyphs.push({ pos: at, width: measured && measured > 0.5 ? measured : fallback });
-        at = next;
+        // Widths come from the plain paragraph text. A gap widget changes
+        // Nastaliq shaping, so measuring the decorated line makes one word
+        // jump from side to side on every pass.
+        const widths = intrinsicWordWidths(dom, after.text);
+        let offset = 0;
+        let unit = 0;
+        while (offset < after.text.length && glyphs.length < 8000) {
+          // wordEnd returns the absolute end, not a length.
+          const end = Math.max(offset + 1, wordEnd(after.text, offset));
+          const slice = after.text.slice(offset, end);
+          const blank = !slice.trim();
+          const measured = widths[unit] ?? 0;
+          glyphs.push({
+            pos: at + offset,
+            width: measured > 0 ? Math.round(measured * 100) / 100 : blank ? 0 : fallback,
+            space: blank,
+          });
+          offset = end;
+          unit += 1;
+        }
+        at += after.nodeSize;
       }
+      if (!glyphs.length) return false;
       const planned = planRunAroundWidgets(glyphs, overlapTop, lineHeight, firstLine => {
         if (!firstLine || !indent) return { left: contentLeft, right: contentRight };
         return rtl
           ? { left: contentLeft, right: contentRight - indent }
           : { left: contentLeft + indent, right: contentRight };
       }, exclusions, rtl ? "rtl" : "ltr");
-      const skipWidget = planned.find(widget => widget.kind === "skip");
-      if (skipWidget && skipEl && Math.abs(skipWidget.size - skipHeight) < 3) skipWidget.size = skipHeight;
       widgets.push(...planned);
       return false;
     });
@@ -289,18 +270,66 @@ class RunAroundView {
   }
 }
 
-function glyphWidth(view: EditorView, pos: number, endPos: number, scale: number): number | null {
-  try {
-    const start = view.domAtPos(pos);
-    const end = view.domAtPos(endPos);
-    if (start.node.nodeType !== Node.TEXT_NODE || start.node !== end.node) return null;
+/** Cursor travel of one word. Ink boxes overlap in Nastaliq, so summing them overstates the run. */
+function advanceWidth(node: Text, start: number, end: number): number {
+  const caret = (offset: number) => {
     const range = document.createRange();
-    range.setStart(start.node, start.offset);
-    range.setEnd(end.node, end.offset);
-    let width = 0;
-    for (const rect of range.getClientRects()) width = Math.max(width, rect.width);
-    return width / scale;
-  } catch {
-    return null;
+    range.setStart(node, offset);
+    range.collapse(true);
+    return range.getBoundingClientRect().left;
+  };
+  const width = Math.abs(caret(end) - caret(start));
+  if (width > 0) return width;
+  const range = document.createRange();
+  range.setStart(node, start);
+  range.setEnd(node, end);
+  return shapedWidth([...range.getClientRects()]);
+}
+
+function shapedWidth(rects: DOMRect[]): number {
+  const lines = new Map<number, { min: number; max: number }>();
+  for (const rect of rects) {
+    if (rect.width <= 0 || rect.height <= 0) continue;
+    const key = Math.round(rect.top);
+    const band = lines.get(key) ?? { min: rect.left, max: rect.right };
+    band.min = Math.min(band.min, rect.left);
+    band.max = Math.max(band.max, rect.right);
+    lines.set(key, band);
   }
+  let width = 0;
+  for (const band of lines.values()) width = Math.max(width, band.max - band.min);
+  return width;
+}
+
+const intrinsicWidthCache = new Map<string, number[]>();
+
+/** Shaped width of each word in `text`, with its real neighbors and no wrap widgets. */
+function intrinsicWordWidths(source: HTMLElement, text: string): number[] {
+  const style = getComputedStyle(source);
+  const key = `${style.fontFamily}\n${style.fontSize}\n${style.fontWeight}\n${style.fontStyle}\n${style.direction}\n${style.letterSpacing}\n${text}`;
+  const cached = intrinsicWidthCache.get(key);
+  if (cached) return cached;
+  const probe = document.createElement("div");
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.cssText = [
+    "position:fixed", "left:-100000px", "top:0", "white-space:nowrap", "opacity:0", "pointer-events:none",
+    `direction:${style.direction}`, `font-family:${style.fontFamily}`, `font-size:${style.fontSize}`,
+    `font-weight:${style.fontWeight}`, `font-style:${style.fontStyle}`, `letter-spacing:${style.letterSpacing}`,
+    `word-spacing:${style.wordSpacing}`, `line-height:${style.lineHeight}`,
+  ].join(";");
+  probe.textContent = text;
+  document.body.appendChild(probe);
+  const node = probe.firstChild;
+  const widths: number[] = [];
+  if (node && node.nodeType === Node.TEXT_NODE) {
+    for (let offset = 0; offset < text.length;) {
+      const end = wordEnd(text, offset);
+      widths.push(advanceWidth(node as Text, offset, end));
+      offset = end;
+    }
+  }
+  probe.remove();
+  if (intrinsicWidthCache.size > 80) intrinsicWidthCache.clear();
+  intrinsicWidthCache.set(key, widths);
+  return widths;
 }
