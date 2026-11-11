@@ -103,6 +103,27 @@ export function runAroundExclusionPx(frame: RunAroundBox, pageStridePx: number):
   };
 }
 
+/**
+ * Exclusion in a continuous content flow. Print and PDF measure the story
+ * without stacked sheet margins, so page 2 begins after one content height.
+ * `leftMarginPx` is 0 when the measured block already includes the left padding.
+ */
+export function runAroundContentExclusionPx(
+  frame: RunAroundBox,
+  contentHeightPx: number,
+  topMarginPx: number,
+  leftMarginPx = 0,
+): RunAroundRect | null {
+  const box = runAroundExclusionPx(frame, contentHeightPx);
+  if (!box || !finite(topMarginPx) || !finite(leftMarginPx)) return null;
+  return {
+    left: box.left - leftMarginPx,
+    right: box.right - leftMarginPx,
+    top: box.top - topMarginPx,
+    bottom: box.bottom - topMarginPx,
+  };
+}
+
 interface FlowGlyph { pos: number; width: number }
 interface FlowWidget { pos: number; kind: "gap" | "break" | "skip"; size: number; side: number }
 

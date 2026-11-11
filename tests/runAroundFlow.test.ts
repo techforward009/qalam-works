@@ -5,6 +5,7 @@ import {
   graphemeEnd,
   layoutLineAroundExclusions,
   layoutRtlLineAroundExclusions,
+  runAroundContentExclusionPx,
   runAroundExclusionMm,
   runAroundExclusionPx,
   splitLineAroundExclusions,
@@ -46,6 +47,32 @@ describe("run-around line splitting", () => {
   it("stacks the exclusion on the frame's page", () => {
     const px = runAroundExclusionPx(box({ runAround: true, page: 2, xMm: 0, yMm: 0, wMm: 25.4, hMm: 25.4, runAroundLeftMm: 0, runAroundRightMm: 0, runAroundTopMm: 0, runAroundBottomMm: 0 }), 1000);
     expect(px).toEqual({ left: 0, right: 96, top: 1000, bottom: 1096 });
+  });
+
+  it("maps a page-2 box into the continuous content flow", () => {
+    const px = (mm: number) => mm * 96 / 25.4;
+    const content = px(297 - 25.4 - 25.4);
+    const frame = box({
+      runAround: true,
+      page: 2,
+      kind: "picture-rect",
+      xMm: 58,
+      yMm: 40,
+      wMm: 34,
+      hMm: 26,
+      runAroundLeftMm: 1,
+      runAroundRightMm: 2,
+      runAroundTopMm: 0.5,
+      runAroundBottomMm: 1,
+    });
+    const flow = runAroundContentExclusionPx(frame, content, px(25.4), px(12.7));
+    const fullSheet = runAroundExclusionPx(frame, px(297));
+    expect(flow).toBeTruthy();
+    expect(flow!.top).toBeCloseTo(content + px(40 - 0.5) - px(25.4), 4);
+    expect(flow!.bottom).toBeCloseTo(content + px(40 + 26 + 1) - px(25.4), 4);
+    expect(flow!.left).toBeCloseTo(px(58 - 1 - 12.7), 4);
+    expect(flow!.top).toBeLessThan(fullSheet!.top - px(25.4));
+    expect(runAroundContentExclusionPx(box({ page: 2 }), content, px(25.4))).toBeNull();
   });
 
   it("leaves a line alone when the box misses it", () => {

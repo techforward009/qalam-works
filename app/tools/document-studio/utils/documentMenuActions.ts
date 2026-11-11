@@ -37,6 +37,7 @@ export type DocumentMenuHandlers = {
   paragraph?: () => void;
   tableLayout?: () => void;
   tableFormat?: () => void;
+  runaround?: () => void;
   tableToText?: () => void;
   textToTable?: () => void;
   splitTable?: () => void;
@@ -136,6 +137,7 @@ export function dispatchDocumentMenuAction(
     case "format.paragraph": handlers.paragraph?.(); return;
     case "text.tableLayout": handlers.tableLayout?.(); return;
     case "text.tableFormat": handlers.tableFormat?.(); return;
+    case "text.runaround": handlers.runaround?.(); return;
     case "edit.cut": handlers.textAction?.("cut"); return;
     case "edit.copy": handlers.textAction?.("copy"); return;
     case "edit.paste": handlers.textAction?.("paste"); return;

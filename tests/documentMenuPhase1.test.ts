@@ -3,7 +3,7 @@ import priorActions from "./fixtures/qalam-menu-working-actions.json";
 import { allMenuActionIds, DOCUMENT_MENU_BAR, MENU_WIDTHS, type MenuNode } from "../app/tools/document-studio/utils/documentMenus";
 
 test("Phase 1 preserves every existing Qalam working command ID", () => {
-  expect([...new Set(allMenuActionIds())].sort()).toEqual([...priorActions, "window.page", "file.close", "file.exit", "preferences.typographic", "file.saveAs"].sort());
+  expect([...new Set(allMenuActionIds())].sort()).toEqual([...priorActions, "window.page", "file.close", "file.exit", "preferences.typographic", "file.saveAs", "edit.bringFront", "edit.sendBack", "file.importPicture", "insert.splitTable", "text.tableFormat", "text.tableLayout", "text.runaround"].sort());
 });
 
 test("main labels/order and reference popup widths remain explicit", () => {
@@ -29,9 +29,11 @@ test("Qalam-only commands have a separate non-interactive section in every menu"
 
 test("reference dialogs remain unavailable rather than aliases for unrelated commands", () => {
   const format = DOCUMENT_MENU_BAR.find(menu => menu.id === "format")!;
-  for (const id of ["text.wrap", "text.tableFormat", "text.styles", "text.colors"]) {
+  for (const id of ["text.wrap", "text.styles", "text.colors"]) {
     expect(format.items.find(item => "id" in item && item.id === id)?.type).toBe("unavailable");
   }
+  expect(format.items.find(item => "id" in item && item.id === "text.runaround")?.type).toBe("action");
+  expect(format.items.find(item => "id" in item && item.id === "text.tableFormat")?.type).toBe("action");
   const actionNodes = (items: MenuNode[]): string[] => items.flatMap(item => item.type === "action" ? [item.id] : item.type === "submenu" ? actionNodes(item.items) : []);
   expect(actionNodes(format.items)).toEqual(expect.arrayContaining(["format.image.wrap", "table.addRowAfter"]));
 });

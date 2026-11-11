@@ -1,6 +1,6 @@
 import { validatePrintFrames, printFramePageMarkup } from "./printableFrames";
 import { applyStoryRunAround } from "../extensions/RunAroundLayout";
-import { runAroundExclusionPx } from "./runAroundFlow";
+import { runAroundContentExclusionPx } from "./runAroundFlow";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 /**
  * Single Pages / Facing Pages / Pageless are VIEW preferences only.
@@ -224,14 +224,15 @@ export async function printDocumentStudioAsync(frames: StudioFrame[] = []): Prom
   const page = portal.querySelector<HTMLElement>("[data-studio-print-page]");
   if (page) {
     const heightMm = Number(portal.getAttribute("data-print-page-height-mm") || 297);
-    const stride = heightMm * (96 / 25.4);
-    // The off-screen clone has no top padding yet. Print media adds the top
-    // margin later, and the in-flow spacers move with the text. Measure in
-    // that content box so page-1 boxes meet the story.
-    const topPx = Number(document.querySelector("[data-studio-print-root]")?.getAttribute("data-print-margin-top-mm") || 0) * (96 / 25.4);
+    const printRoot = document.querySelector("[data-studio-print-root]");
+    const topPx = Number(printRoot?.getAttribute("data-print-margin-top-mm") || 0) * (96 / 25.4);
+    const bottomPx = Number(printRoot?.getAttribute("data-print-margin-bottom-mm") || 0) * (96 / 25.4);
+    // The clone is one continuous story. Each printed sheet then adds top and
+    // bottom padding, so page 2 starts after the content height, not a full sheet.
+    const contentHeightPx = Math.max(1, heightMm * (96 / 25.4) - topPx - bottomPx);
     const exclusions = frames.flatMap(frame => {
-      const box = runAroundExclusionPx(frame, stride);
-      return box ? [{ ...box, top: box.top - topPx, bottom: box.bottom - topPx }] : [];
+      const box = runAroundContentExclusionPx(frame, contentHeightPx, topPx, 0);
+      return box ? [box] : [];
     });
     if (exclusions.length) applyStoryRunAround(page, exclusions, page.getAttribute("dir") === "ltr" ? "ltr" : "rtl");
   }

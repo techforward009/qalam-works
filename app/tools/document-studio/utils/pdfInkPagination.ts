@@ -1,6 +1,6 @@
 import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
 import { runAroundBrowserProgram } from "../extensions/RunAroundLayout";
-import { runAroundExclusionPx, type RunAroundBox, type RunAroundRect } from "./runAroundFlow";
+import { runAroundContentExclusionPx, type RunAroundBox, type RunAroundRect } from "./runAroundFlow";
 import type { Page } from "puppeteer-core";
 export const PDF_TABLE_SELECTOR = "table.qalam-document-table,table[data-pdf-table]";
 export const isPdfTableBlock = (tagName: string) => tagName.toUpperCase() === "TABLE";
@@ -485,14 +485,8 @@ function pdfRunAroundExclusions(
 ): RunAroundRect[] {
   if (!runAround?.frames.length) return [];
   return runAround.frames.flatMap(frame => {
-    const box = runAroundExclusionPx(frame, contentHeightPx);
-    if (!box) return [];
-    return [{
-      left: box.left - leftMarginPx,
-      right: box.right - leftMarginPx,
-      top: box.top - topMarginPx,
-      bottom: box.bottom - topMarginPx,
-    }];
+    const box = runAroundContentExclusionPx(frame, contentHeightPx, topMarginPx, leftMarginPx);
+    return box ? [box] : [];
   });
 }
 
