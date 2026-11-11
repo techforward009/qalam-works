@@ -1,0 +1,160 @@
+import { describe, expect, it } from "vitest";
+import { planRunAroundWidgets } from "../app/tools/document-studio/extensions/RunAroundLayout";
+import {
+  RUN_AROUND_MIN_SEGMENT_PX,
+  layoutRtlLineAroundExclusions,
+  runAroundExclusionMm,
+  runAroundExclusionPx,
+  splitLineAroundExclusions,
+  type RunAroundBox,
+  type RunAroundRect,
+} from "../app/tools/document-studio/utils/runAroundFlow";
+
+const box = (patch: Partial<RunAroundBox> = {}): RunAroundBox => ({
+  page: 1,
+  kind: "rect",
+  xMm: 10,
+  yMm: 20,
+  wMm: 30,
+  hMm: 40,
+  ...patch,
+});
+
+const line = (patch: Partial<RunAroundRect> = {}): RunAroundRect => ({ left: 0, right: 200, top: 0, bottom: 12, ...patch });
+
+describe("run-around line splitting", () => {
+  it("expands a checked rectangular box by its clearances and ignores the rest", () => {
+    expect(runAroundExclusionMm(box())).toBeNull();
+    expect(runAroundExclusionMm(box({ runAround: false }))).toBeNull();
+    expect(runAroundExclusionMm(box({ runAround: true }))).toEqual({
+      page: 1, left: 9.29, right: 40.71, top: 19.65, bottom: 60.35,
+    });
+    expect(runAroundExclusionMm(box({
+      runAround: true, kind: "picture-rect", runAroundLeftMm: 1, runAroundRightMm: 2, runAroundTopMm: 3, runAroundBottomMm: 4,
+    }))).toMatchObject({ left: 9, right: 42, top: 17, bottom: 64 });
+    expect(runAroundExclusionMm(box({ runAround: true, kind: "text" }))).toMatchObject({ left: 9.29, right: 40.71 });
+    for (const kind of ["ellipse", "round-rect", "line", "picture-ellipse", "picture-round-rect"]) {
+      expect(runAroundExclusionMm(box({ runAround: true, kind }))).toBeNull();
+    }
+    expect(runAroundExclusionMm(box({ runAround: true, kind: "text", textShape: "ellipse" }))).toBeNull();
+    expect(runAroundExclusionMm(box({ runAround: true, angle1Deg: 15 }))).toBeNull();
+    expect(runAroundExclusionMm(box({ runAround: true, angle1Deg: 0 }))).not.toBeNull();
+  });
+
+  it("stacks the exclusion on the frame's page", () => {
+    const px = runAroundExclusionPx(box({ runAround: true, page: 2, xMm: 0, yMm: 0, wMm: 25.4, hMm: 25.4, runAroundLeftMm: 0, runAroundRightMm: 0, runAroundTopMm: 0, runAroundBottomMm: 0 }), 1000);
+    expect(px).toEqual({ left: 0, right: 96, top: 1000, bottom: 1096 });
+  });
+
+  it("leaves a line alone when the box misses it", () => {
+    const split = splitLineAroundExclusions(line(), [{ left: 40, right: 80, top: 20, bottom: 40 }]);
+    expect(split).toEqual({ skip: false, segments: [{ left: 0, right: 200, side: "full" }] });
+    const touching = splitLineAroundExclusions(line({ bottom: 20 }), [{ left: 40, right: 80, top: 20, bottom: 40 }]);
+    expect(touching.segments[0].side).toBe("full");
+  });
+
+  it("splits a line onto both sides of a box and skips a band that is too narrow", () => {
+    const exclusion = { left: 80, right: 120, top: -2, bottom: 20 };
+    expect(splitLineAroundExclusions(line(), [exclusion])).toEqual({
+      skip: false,
+      segments: [
+        { left: 0, right: 80, side: "left" },
+        { left: 120, right: 200, side: "right" },
+      ],
+    });
+    expect(splitLineAroundExclusions(line(), [{ left: 0, right: 50, top: 0, bottom: 8 }])).toEqual({
+      skip: false,
+      segments: [{ left: 50, right: 200, side: "right" }],
+    });
+    expect(splitLineAroundExclusions(line(), [{ left: 150, right: 220, top: 0, bottom: 8 }])).toEqual({
+      skip: false,
+      segments: [{ left: 0, right: 150, side: "left" }],
+    });
+    expect(splitLineAroundExclusions(line({ right: 100 }), [{ left: 4, right: 96, top: 0, bottom: 8 }], RUN_AROUND_MIN_SEGMENT_PX)).toEqual({
+      skip: true, segments: [],
+    });
+    expect(splitLineAroundExclusions(line(), [{ left: 0, right: 200, top: 0, bottom: 30 }]).skip).toBe(true);
+  });
+
+  it("merges overlapping boxes and keeps the gap between separate boxes", () => {
+    expect(splitLineAroundExclusions(line(), [
+      { left: 40, right: 70, top: 0, bottom: 10 },
+      { left: 60, right: 90, top: 0, bottom: 10 },
+    ]).segments).toEqual([
+      { left: 0, right: 40, side: "left" },
+      { left: 90, right: 200, side: "right" },
+    ]);
+    expect(splitLineAroundExclusions(line(), [
+      { left: 20, right: 40, top: 0, bottom: 10 },
+      { left: 70, right: 90, top: 0, bottom: 10 },
+    ]).segments).toEqual([
+      { left: 0, right: 20, side: "left" },
+      { left: 40, right: 70, side: "right" },
+      { left: 90, right: 200, side: "right" },
+    ]);
+  });
+
+  it("fills the right side first, then the left side of the same line", () => {
+    const widths = Array.from({ length: 20 }, () => 10);
+    const exclusion = { left: 80, right: 120, top: -2, bottom: 30 };
+    const layout = layoutRtlLineAroundExclusions(line(), widths, [exclusion]);
+    expect(layout.skip).toBe(false);
+    expect(layout.leadingGap).toBe(0);
+    expect(layout.pieces.map(piece => [piece.from, piece.to, piece.side, piece.gapAfter])).toEqual([
+      [0, 8, "right", 40],
+      [8, 16, "left", 0],
+    ]);
+    expect(layout.next).toBe(16);
+  });
+
+  it("pads a left-only line and does not pad a right-only line", () => {
+    const widths = Array.from({ length: 20 }, () => 10);
+    const leftOnly = layoutRtlLineAroundExclusions(line(), widths, [{ left: 150, right: 240, top: 0, bottom: 20 }]);
+    expect(leftOnly.leadingGap).toBe(50);
+    expect(leftOnly.pieces[0]).toMatchObject({ from: 0, to: 15, side: "left", gapAfter: 0 });
+    const rightOnly = layoutRtlLineAroundExclusions(line(), widths, [{ left: -10, right: 50, top: 0, bottom: 20 }]);
+    expect(rightOnly.leadingGap).toBe(0);
+    expect(rightOnly.pieces[0]).toMatchObject({ from: 0, to: 15, side: "right", right: 200 });
+  });
+
+  it("moves a glyph that does not fit the right side onto the left side", () => {
+    const layout = layoutRtlLineAroundExclusions(
+      line({ right: 100 }),
+      [25, 10, 10],
+      [{ left: 50, right: 80, top: 0, bottom: 20 }],
+    );
+    expect(layout.leadingGap).toBe(50);
+    expect(layout.pieces).toEqual([
+      { from: 0, to: 3, left: 0, right: 50, side: "left", gapAfter: 0 },
+    ]);
+    expect(layout.next).toBe(3);
+  });
+
+  it("skips the whole covered band and resumes at the bottom of the box", () => {
+    const layout = layoutRtlLineAroundExclusions(
+      line({ right: 100, bottom: 10 }),
+      [10, 10, 10],
+      [{ left: 0, right: 100, top: 0, bottom: 48 }],
+      RUN_AROUND_MIN_SEGMENT_PX,
+    );
+    expect(layout.skip).toBe(true);
+    expect(layout.pieces).toEqual([]);
+    expect(layout.next).toBe(0);
+    expect(layout.skipBottom).toBe(48);
+  });
+
+  it("plans a hole between the two sides and a break before the leftover", () => {
+    const glyphs = Array.from({ length: 20 }, (_, index) => ({ pos: 5 + index, width: 10 }));
+    const widgets = planRunAroundWidgets(
+      glyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 80, right: 120, top: -2, bottom: 30 }],
+    );
+    expect(widgets).toEqual([
+      { pos: 13, kind: "gap", size: 40, side: -1 },
+      { pos: 21, kind: "break", size: 0, side: -2 },
+    ]);
+  });
+});

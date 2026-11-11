@@ -257,6 +257,7 @@ export function stripViewOnlyPagination(root: HTMLElement): void {
   });
   root.querySelectorAll("[data-qalam-pagination], .qalam-pagination-pages").forEach((node) => node.remove());
   root.querySelectorAll("[data-image-wrap-spacer]").forEach((node) => node.remove());
+  root.querySelectorAll("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]").forEach((node) => node.remove());
   const styled: HTMLElement[] = [];
   if (root.classList.contains("qalam-pagination")) styled.push(root);
   root.querySelectorAll(".qalam-pagination").forEach((node) => styled.push(node as HTMLElement));

@@ -10,6 +10,7 @@ import {StudioFacingLayout} from "./StudioFacingLayout";
 import {useFacingPageInteraction} from "./useFacingPageInteraction";
 import {facingSlot,facingRow,facingPadding,facingExtent,projectPoint,withCanonicalPages,requestCanonicalFrame,cancelCanonicalFrame} from "../utils/facingPages";
 import { StudioLineLayout } from "./StudioLineLayout";
+import { StudioRunAround } from "./StudioRunAround";
 import { useStudioZoomVisibility } from "./useStudioZoomVisibility";
 import { StudioTextSelection } from "./StudioTextSelection";
 import { StudioTextEffects } from "./StudioTextEffects";
@@ -687,7 +688,7 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
-      <StudioFacingLayout editor={editor} geometry={projection??null} zoom={zoomFactor}/><StudioLineLayout editor={editor} />
+      <StudioFacingLayout editor={editor} geometry={projection??null} zoom={zoomFactor}/><StudioLineLayout editor={editor} /><StudioRunAround editor={editor} frames={frames} />
       <StudioTextSelection editor={editor} zoom={zoomFactor} revision={viewMode} />
       <StudioTextEffects editor={editor} zoom={zoomFactor} revision={viewMode} />
       <style jsx global>{`
