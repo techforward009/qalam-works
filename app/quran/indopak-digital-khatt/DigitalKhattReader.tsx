@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import { useLanguage } from "../../lib/language-context";
 import EditionTopBar from "../reader/EditionTopBar";
+import SurahSelector from "../reader/SurahSelector";
 import { QURAN_READER_COPY } from "../reader/copy";
 import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { easternDigits, juzRunningHead, surahRunningHead, SURAH_NAMES } from "../reader/metadata";
@@ -346,20 +347,13 @@ export default function DigitalKhattReader({
             )}
 
             <div className="mt-4 border-t border-[#e2dccd] pt-3">
-              <label className="block text-xs text-[#625d53]">
-                {copy.surah}
-                <select
+                <SurahSelector
+                  label={copy.surah}
                   value={surah}
-                  onChange={(event) => navigate(Number(event.target.value), 1)}
+                  onChange={(nextSurah) => navigate(nextSurah, 1)}
+                  language={language === "ur" ? "ur" : "en"}
                   className="mt-1 w-full rounded-md border border-[#cfc7b7] bg-white px-2 py-2 text-sm"
-                >
-                  {SURAH_NAMES.map((name, index) => (
-                    <option key={name} value={index + 1}>
-                      {index + 1}. {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                />
 
               <label className="mt-2 block text-xs text-[#625d53]">
                 {copy.ayah}
