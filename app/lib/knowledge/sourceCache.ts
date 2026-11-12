@@ -4,7 +4,10 @@ import { loadBookSource, type BookCatalog } from "./store";
 
 const entries = new Map<string, { expires: number; value: Promise<BookRecord[]> }>();
 const MAX_SOURCES = 15;
-const TTL = 5 * 60_000;
+/** Keep immutable SHA-versioned source records for up to 30 minutes per warm instance.
+ * Revision forms part of the key; failures are evicted and only 15 sources are retained.
+ */
+const TTL = 30 * 60_000;
 
 export function clearBookSourceCache(): void {
   entries.clear();
