@@ -63,38 +63,16 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Legal + Contact */}
+        {/* Legal */}
         <div>
           <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
             {t.footer.legalHeading}
           </div>
-          <ul className={`${linkListClass} mb-5`}>
+          <ul className={linkListClass}>
             <li><Link href="/privacy" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
             <li><Link href="/terms" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "شرائط" : "Terms"}</Link></li>
           </ul>
-          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-2`} data-footer-heading="true">
-            {t.footer.contactHeading}
-          </div>
-          {/* Contact block composition (2026-08-12) — the block as a whole
-              must read naturally in RTL for Urdu (right-aligned, right-
-              anchored), while the email address itself stays LTR-ordered
-              characters. Only the email <a> gets dir="ltr"; the wrapping
-              div follows the page's own dir so paragraph flow/alignment is
-              correct instead of dragging the whole unit to the left. */}
-          <div className="flex flex-col items-start">
-            <a
-              href="mailto:info@qalamworks.com?subject=Qalam%20Works%20Inquiry"
-              dir="ltr"
-              className="text-white hover:text-white text-sm transition-colors inline-block mb-2"
-            >
-              info@qalamworks.com
-            </a>
-            <p
-              className="max-w-[220px] text-start text-xs leading-relaxed text-white"
-            >
-              {t.contactPage.responseNote}
-            </p>
-          </div>
+
         </div>
       </div>
 
