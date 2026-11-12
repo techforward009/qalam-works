@@ -1,0 +1,15 @@
+{
+  "name": "qalam-fonts-recovery-pilot",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-16",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "FONT_BUCKET",
+      "bucket_name": "qalam-fonts-private"
+    }
+  ],
+  "vars": {
+    "PUBLICATION_APPROVED": "false"
+  }
+}
