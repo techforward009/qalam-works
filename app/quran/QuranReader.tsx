@@ -11,6 +11,7 @@ import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import EditionTopBar from "./reader/EditionTopBar";
+import SurahSelector from "./reader/SurahSelector";
 import QuranThemeControl from "./QuranThemeControl";
 import {QuranSidebarSection as SidebarSection,QuranPageMeta,QuranPageArrow,QuranPageButtons,QuranCorner,SurahBand} from "./reader/SharedReaderControls";
 import QuranTranslationPage from "./QuranTranslationPage";
@@ -651,46 +652,12 @@ export default function QuranReader({
               defaultOpen
             >
               <div className="space-y-2">
-                <Select
-                  label={
-                    copy.surah
-                  }
-                  value={
-                    surah
-                  }
-                  onChange={(
-                    value,
-                  ) =>
-                    go({
-                      surah:
-                        value,
-                      ayah: 1,
-                    })
-                  }
-                  language={
-                    language
-                  }
-                >
-                  {SURAH_NAMES.map(
-                    (
-                      name,
-                      index,
-                    ) => (
-                      <option
-                        key={name}
-                        value={
-                          index +
-                          1
-                        }
-                      >
-                        {index +
-                          1}
-                        .{" "}
-                        {name}
-                      </option>
-                    ),
-                  )}
-                </Select>
+                <SurahSelector
+                  label={copy.surah}
+                  value={surah}
+                  onChange={(value) => go({ surah: value, ayah: 1 })}
+                  language={language === "ur" ? "ur" : "en"}
+                />
 
                 <Select
                   label={
