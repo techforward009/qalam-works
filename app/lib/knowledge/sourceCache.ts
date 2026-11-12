@@ -4,7 +4,10 @@ import { loadBookSource, type BookCatalog } from "./store";
 
 const entries = new Map<string, { expires: number; value: Promise<BookRecord[]> }>();
 const MAX_SOURCES = 15;
-const TTL = 5 * 60_000;
+/** Immutable version-addressed source content. A new catalog revision uses a new key.
+ * Retain no more than 15 decompressed sources per instance; no global full-book cache.
+ */
+const TTL = 30 * 60_000;
 
 export function clearBookSourceCache(): void {
   entries.clear();

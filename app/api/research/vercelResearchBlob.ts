@@ -34,6 +34,17 @@ export type ResearchBlobSdk = {
 
 const MAX_LIST_PAGES = 50;
 
+/**
+ * A book source is content-addressed by its validated SHA-256 revision.
+ * The active pointer and ordinary research documents are mutable and MUST
+ * continue to bypass provider caches. Only immutable book objects qualify.
+ * This is deliberately narrow to avoid stale reads or cross-store routing.
+ */
+export function isImmutableBookObject(pathname: string): boolean {
+  return /^khateeb-foundational\/v1\/[0-9a-f]{64}\/[a-z0-9-]+\.json$/.test(pathname);
+}
+
+
 function authOptions(auth: BlobAuth): Record<string, unknown> {
   if ("token" in auth) return { token: auth.token };
   return { storeId: auth.storeId, oidcToken: auth.oidcToken };
@@ -101,7 +112,7 @@ export function createVercelResearchBlobClient(
       const result = await sdk.get(pathname, {
         ...authFields,
         access: "private",
-        useCache: false,
+        useCache: isImmutableBookObject(pathname),
       });
       if (!result) return null;
       if (result.statusCode !== 200 || !result.stream) {
