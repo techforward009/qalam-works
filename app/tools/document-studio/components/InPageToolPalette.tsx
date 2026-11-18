@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { INPAGE_TOOLBOX_PX } from "../utils/windowRuler";
 
+export const HAND_CURSOR_ASSET_PATH = "/cursors/hand-cursor.svg";
+
 export type StudioToolId =
   | "select"
   | "text"
@@ -63,22 +65,22 @@ export const PIXEL_ICONS = {
     "...........................",
     "...........................",
     "...........................",
-    "....#...#......##..........",
-    "....##.##..##.#..###.......",
-    ".....###..#..##..#..#......",
-    "......#...#..##..#..###....",
-    "......#....#.##..#..#..#...",
-    "......#.##.#.##..#..#..#...",
-    "......#.#.#.........#..#...",
-    "......#.#..##..........#...",
-    "......#..#.............#...",
-    "......#..##............#...",
-    "......#..##...........#....",
-    "......#...##..........#....",
-    ".....###...#.........#.....",
-    "....##.##..##.......##.....",
-    "....#...#...##......#......",
-    ".............#......#......",
+    "....#...#..................",
+    "....##.##..................",
+    ".....###...................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    "......#....................",
+    ".....###...................",
+    "....##.##..................",
+    "....#...#..................",
+    "...........................",
     "...........................",
     "...........................",
   ],
@@ -156,12 +158,25 @@ export const PIXEL_ICONS = {
   ],
 } as const;
 
+function pixelRects(name: keyof typeof PIXEL_ICONS) {
+  return PIXEL_ICONS[name].flatMap((row, y) => [...row].map((pixel, x) =>
+    pixel === "." ? null : <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" style={{ fill: pixel === "#" ? "#000" : "#fff" }} />,
+  ));
+}
+
 function PixelIcon({ name }: { name: keyof typeof PIXEL_ICONS }) {
   return (
     <svg width="27" height="22" viewBox="0 0 27 22" aria-hidden="true" shapeRendering="crispEdges">
-      {PIXEL_ICONS[name].flatMap((row, y) => [...row].map((pixel, x) =>
-        pixel === "." ? null : <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" style={{ fill: pixel === "#" ? "#000" : "#fff" }} />,
-      ))}
+      {pixelRects(name)}
+    </svg>
+  );
+}
+
+function TextHandIcon() {
+  return (
+    <svg width="27" height="22" viewBox="0 0 27 22" aria-hidden="true">
+      <g shapeRendering="crispEdges">{pixelRects("text")}</g>
+      <image href={HAND_CURSOR_ASSET_PATH} x="9" y="2" width="16" height="18" preserveAspectRatio="xMidYMid meet" />
     </svg>
   );
 }
@@ -180,7 +195,7 @@ const TOOLS: ToolSpec[] = [
     <PixelIcon name="select" />
   ) },
   { id: "text", label: "Text", enabled: true, icon: (
-    <PixelIcon name="text" />
+    <TextHandIcon />
   ) },
   { id: "rotate", label: "Rotate", enabled: false, icon: (
     <PixelIcon name="rotate" />
