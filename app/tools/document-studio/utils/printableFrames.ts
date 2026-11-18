@@ -171,7 +171,7 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
       content = `<g clip-path="url(#${clipId})"><rect x="0" y="0" width="${w}" height="${h}" fill="${escape(frame.backgroundColor ?? "#ffffff")}"/><image href="${escape(frame.imageSrc)}" xlink:href="${escape(frame.imageSrc)}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none"${imageRotation}/></g>`;
     } else {
       const diags = `<line x1="0" y1="0" x2="${w}" y2="${h}" ${stroke}/><line x1="${w}" y1="0" x2="0" y2="${h}" ${stroke}/>`;
-      content = frame.kind === 'picture-ellipse' ? `<g clip-path="url(#${clipId})">${diags}</g>` : diags;
+      content = `<g clip-path="url(#${clipId})">${diags}</g>`;
     }
 
     const background = frame.backgroundColor !== undefined && !frame.imageSrc ? `<g clip-path="url(#${clipId})"><rect x="0" y="0" width="${w}" height="${h}" fill="${escape(frame.backgroundColor)}"/></g>` : '';

@@ -80,6 +80,8 @@ describe("rotation and border position in printable frames", () => {
     expect(outside).toContain('<rect x="-1" y="-1" width="42" height="27"');
     expect(outside).toContain('overflow:visible;');
     expect(outside).not.toContain('<rect x="2" y="2" width="36"');
+    const roundEmpty = renderPrintFrame({ ...picture, kind: "picture-round-rect", imageSrc: undefined });
+    expect(roundEmpty).toContain(`<g clip-path="url(#print-clip-${picture.id}-${picture.page})"><line `);
   });
   it("preserves absent border position and angles through print validation", () => {
     expect(validatePrintFrames([picture])[0]).not.toHaveProperty("borderPosition");

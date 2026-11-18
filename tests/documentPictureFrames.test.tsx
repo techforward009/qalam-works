@@ -1,5 +1,7 @@
 /** @vitest-environment happy-dom */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { useState } from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { getSchema } from "@tiptap/core";
@@ -11,10 +13,10 @@ import { ParagraphWithDir, HeadingWithDir, DocumentImage } from "../app/tools/do
 import { transformPastedSlice } from "../app/tools/document-studio/utils/documentCommands";
 import { serializeQpg, deserializeQpg, type QpgDocument } from "../app/tools/document-studio/utils/qpgFile";
 import { validatePrintFrames, renderPrintFrame } from "../app/tools/document-studio/utils/printableFrames";
-import { isPictureBox, PICTURE_HAND_CURSOR, StudioObjectLayer, pictureMenuDisabledIds, selectedPictureBoxId, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
+import { HAND_CURSOR_PNG_PATH, isPictureBox, PICTURE_HAND_CURSOR, StudioObjectLayer, pictureMenuDisabledIds, selectedPictureBoxId, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import { dispatchDocumentMenuAction } from "../app/tools/document-studio/utils/documentMenuActions";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
-import { InPageToolPalette, PIXEL_ICONS, type StudioToolId } from "../app/tools/document-studio/components/InPageToolPalette";
+import { HAND_CURSOR_ASSET_PATH, InPageToolPalette, PIXEL_ICONS, type StudioToolId } from "../app/tools/document-studio/components/InPageToolPalette";
 import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
 import type { MenuActionId } from "../app/tools/document-studio/utils/documentMenus";
 import { StudioObjectRibbon } from "../app/tools/document-studio/components/StudioObjectRibbon";
@@ -53,44 +55,33 @@ const baseFrame: StudioFrame = {
 };
 
 describe("Picture frames in Qalam Page", () => {
-  it("builds the hand cursor from the hand pixels in the toolbox text glyph", () => {
-    const glyph = PIXEL_ICONS.text;
-    const stem = new Set<string>();
-    const pending: Array<[number, number]> = [[6, 10]];
-    while (pending.length) {
-      const [x, y] = pending.pop()!;
-      const key = `${x},${y}`;
-      if (x < 0 || y < 0 || y >= glyph.length || x >= glyph[y].length || glyph[y][x] === "." || stem.has(key)) continue;
-      stem.add(key);
-      for (let dy = -1; dy <= 1; dy += 1) {
-        for (let dx = -1; dx <= 1; dx += 1) {
-          if (dx !== 0 || dy !== 0) pending.push([x + dx, y + dy]);
-        }
-      }
-    }
-    const totalPixels = glyph.reduce((count, row) => count + [...row].filter((pixel) => pixel !== ".").length, 0);
-    const handPixels = glyph.flatMap((row, y) =>
-      [...row].flatMap((pixel, x) => pixel !== "." && !stem.has(`${x},${y}`)
-        ? [{ x, y, color: pixel === "#" ? "#000" : "#fff" }]
-        : []),
+  it("uses the updated PNG hand cursor for picture boxes and SVG asset for the toolbox icon", () => {
+    expect(HAND_CURSOR_ASSET_PATH).toBe("/cursors/hand-cursor.svg");
+    expect(HAND_CURSOR_PNG_PATH).toBe("/cursors/hand-cursor.png");
+    expect(PICTURE_HAND_CURSOR).toBe(`url("${HAND_CURSOR_PNG_PATH}") 16 2, grab`);
+
+    const assetPath = join(process.cwd(), "public", HAND_CURSOR_ASSET_PATH);
+    const svg = readFileSync(assetPath, "utf8");
+    expect(svg).toContain('viewBox="-2 0 36 36"');
+    expect(svg).toContain('fill="#ffffff"');
+    expect(svg).toContain('stroke="#000000"');
+    expect(svg).not.toContain("<rect");
+
+    const pngBytes = readFileSync(join(process.cwd(), "public", HAND_CURSOR_PNG_PATH));
+    expect(pngBytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+
+    const { container } = render(<InPageToolPalette tool="select" onTool={() => {}} isUr={false} />);
+    const textBtn = container.querySelector('[data-studio-tool-button="text"]');
+    expect(textBtn).toBeTruthy();
+    const expectedBeamRects = PIXEL_ICONS.text.reduce(
+      (count, row) => count + [...row].filter((pixel) => pixel !== ".").length,
+      0,
     );
-    const topmostHandPixel = handPixels.reduce((top, pixel) => pixel.y < top.y || (pixel.y === top.y && pixel.x < top.x) ? pixel : top);
-    const cursorData = PICTURE_HAND_CURSOR.match(/^url\("data:image\/svg\+xml,([^"]+)"\) 15 4, auto$/)?.[1];
-    expect(cursorData).toBeTruthy();
-    const svg = decodeURIComponent(cursorData!);
-    expect(handPixels).toHaveLength(totalPixels - stem.size);
-    expect(svg.match(/<rect /g)).toHaveLength(handPixels.length);
-    expect(topmostHandPixel).toMatchObject({ x: 15, y: 4 });
-    expect(PICTURE_HAND_CURSOR).toContain(`) ${topmostHandPixel.x} ${topmostHandPixel.y}, auto`);
-    expect(svg).toContain('shape-rendering="crispEdges"');
-    const cursorPixels = [...svg.matchAll(/<rect x="(\d+)" y="(\d+)" width="1" height="1" fill="(#[0-9a-f]{3})"\/>/g)]
-      .map((match) => `${match[1]},${match[2]}`);
-    expect(cursorPixels.every((pixel) => !stem.has(pixel))).toBe(true);
-    expect(handPixels.some(({ x, y }) => x <= 7 && y >= 7 && y <= 15)).toBe(false);
-    expect(handPixels.some(({ x, y }) => (x === 8 || x === 9) && y >= 7 && y <= 15)).toBe(true);
-    for (const { x, y, color } of handPixels) {
-      expect(svg).toContain(`<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`);
-    }
+    expect(textBtn?.querySelectorAll("rect")).toHaveLength(expectedBeamRects);
+    const handImage = textBtn?.querySelector("image");
+    expect(handImage).toBeTruthy();
+    expect(handImage?.getAttribute("href")).toBe(HAND_CURSOR_ASSET_PATH);
+    cleanup();
   });
 
   describe("InPage picture tool palette", () => {
@@ -384,7 +375,14 @@ describe("picture box drawing", () => {
     expect(container.querySelector('[data-studio-tool-button="select"]')?.getAttribute("aria-pressed")).toBe("false");
     expect(container.querySelector("[data-selected]")?.getAttribute("data-selected")).toBe(id);
     expect(container.querySelector("[data-import-enabled]")?.getAttribute("data-import-enabled")).toBe("true");
+    expect(frame?.querySelectorAll("[data-studio-frame-handle]")).toHaveLength(0);
+    expect(frame?.querySelector('rect[stroke="#808080"]')).toBeNull();
+    expect((frame as HTMLElement).style.cursor).toBe(PICTURE_HAND_CURSOR);
+
+    fireEvent.click(container.querySelector('[data-studio-tool-button="select"]') as HTMLElement);
+    expect(container.querySelector("[data-tool]")?.getAttribute("data-tool")).toBe("select");
     expect(frame?.querySelectorAll("[data-studio-frame-handle]")).toHaveLength(8);
+    expect(frame?.querySelector('rect[stroke="#808080"]')).toBeTruthy();
   });
 
   it.each(PICTURE_TOOLS)("previews the final %s shape while dragging", (tool, kind) => {
@@ -676,9 +674,10 @@ describe("empty picture box hand targeting", () => {
     const { container } = render(<EmptyPictureHarness kind={kind} tool="text" onOpen={onOpen} onSelectedChange={onSelectedChange} />);
     const frame = container.querySelector(`[data-studio-frame="${kind}"]`) as HTMLElement;
     expect(frame.style.pointerEvents).toBe("auto");
-    expect(frame.style.cursor).toContain("url(");
+    expect(frame.style.cursor).toBe(PICTURE_HAND_CURSOR);
     expect(frame.style.cursor).not.toBe("pointer");
     const hit = container.querySelector(`[data-studio-picture-hit="${kind}"]`) as SVGElement;
+    expect(hit.style.cursor).toBe(PICTURE_HAND_CURSOR);
     fireEvent.pointerDown(hit, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
     fireEvent.pointerUp(hit, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
     fireEvent.click(hit);
@@ -708,6 +707,8 @@ describe("empty picture box hand targeting", () => {
       <EmptyPictureHarness kind="picture-ellipse" tool="text" imageSrc="data:image/png;base64,aaaa" onOpen={onOpen} />,
     );
     const frame = container.querySelector('[data-studio-frame="picture-ellipse"]') as HTMLElement;
+    expect(frame.style.cursor).toBe(PICTURE_HAND_CURSOR);
+    expect((frame.querySelector('[data-studio-picture-clip="picture-ellipse"]') as HTMLElement).style.cursor).toBe("inherit");
     fireEvent.click(frame);
     expect(onOpen).not.toHaveBeenCalled();
     fireEvent.doubleClick(frame);
@@ -969,5 +970,83 @@ describe("Modify Object dialog", () => {
     const sTop = Number.parseInt(shape!.style.top, 10);
     expect(nTop + nHeight).toBeLessThanOrEqual(sTop);
     expect(number!.style.textAlign).toBe("left");
+  });
+});
+
+describe("picture hand panning and placeholder clipping", () => {
+  afterEach(() => cleanup());
+
+  it("pans image content inside a picture box in Hand mode without moving or resizing the box, including rotated and zoomed boxes", () => {
+    function PanHarness({ initialFrame, zoom = 1 }: { initialFrame: StudioFrame; zoom?: number }) {
+      const [frames, setFrames] = useState<StudioFrame[]>([initialFrame]);
+      return (
+        <div data-x={frames[0].xMm} data-y={frames[0].yMm} data-w={frames[0].wMm} data-h={frames[0].hMm} data-ix={frames[0].imageXMm ?? 0} data-iy={frames[0].imageYMm ?? 0}>
+          <StudioObjectLayer
+            editor={null}
+            tool="text"
+            frames={frames}
+            onFramesChange={setFrames}
+            onToolAction={() => {}}
+            zoom={zoom}
+            {...LAYER_BOX}
+          />
+        </div>
+      );
+    }
+
+    const { container, unmount } = render(<PanHarness initialFrame={{ ...baseFrame, angle1Deg: 90 }} zoom={2} />);
+    const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+    const frame = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
+    layer.getBoundingClientRect = () => ({ left: 0, top: 0, width: 794 * 2, height: 1123 * 2, right: 794 * 2, bottom: 1123 * 2, x: 0, y: 0, toJSON: () => ({}) });
+
+    fireEvent.pointerDown(frame, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
+    expect(frame.style.cursor).toContain("grabbing");
+    fireEvent.pointerMove(layer, { clientX: 196, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(layer, { clientX: 196, clientY: 100, pointerId: 1 });
+    expect(frame.style.cursor).toBe(PICTURE_HAND_CURSOR);
+
+    const host = container.firstElementChild as HTMLElement;
+    expect(Number(host.dataset.x)).toBe(baseFrame.xMm);
+    expect(Number(host.dataset.y)).toBe(baseFrame.yMm);
+    expect(Number(host.dataset.w)).toBe(baseFrame.wMm);
+    expect(Number(host.dataset.h)).toBe(baseFrame.hMm);
+    // 96px screen dx at zoom=2 => 48px local => 12.7mm; at 90deg CSS rotate(-90deg), screen +x maps to local +y.
+    expect(Number(host.dataset.ix)).toBeCloseTo(baseFrame.imageXMm ?? 0);
+    expect(Number(host.dataset.iy)).toBeCloseTo((baseFrame.imageYMm ?? 0) + 12.7);
+    unmount();
+  });
+
+  it("clips empty picture-round-rect and picture-rect diagonal lines inside the box border without affecting imported images", () => {
+    const emptyRound: StudioFrame = { ...baseFrame, id: "empty-round", kind: "picture-round-rect", imageSrc: undefined };
+    const emptyRect: StudioFrame = { ...baseFrame, id: "empty-rect", kind: "picture-rect", imageSrc: undefined };
+    const filledRound: StudioFrame = { ...baseFrame, id: "filled-round", kind: "picture-round-rect" };
+    const { container } = render(
+      <StudioObjectLayer
+        editor={null}
+        tool="select"
+        frames={[emptyRound, emptyRect, filledRound]}
+        onFramesChange={() => {}}
+        onToolAction={() => {}}
+        {...LAYER_BOX}
+      />,
+    );
+
+    for (const id of ["empty-round", "empty-rect"]) {
+      const frameEl = container.querySelector(`[data-studio-frame-id="${id}"]`) as HTMLElement;
+      const clipRect = frameEl.querySelector(`clipPath#clip-${id} > rect`);
+      expect(clipRect).toBeTruthy();
+      if (id === "empty-round") {
+        expect(Number(clipRect?.getAttribute("rx"))).toBeGreaterThan(0);
+      }
+      const clippedGroup = frameEl.querySelector(`g[clip-path="url(#clip-${id})"]`);
+      expect(clippedGroup).toBeTruthy();
+      expect(clippedGroup?.querySelectorAll("line")).toHaveLength(2);
+      // Outer border rect sits outside the clipped diagonal group so the border is not clipped.
+      expect(frameEl.querySelectorAll('svg[aria-hidden] > rect')).toHaveLength(1);
+    }
+
+    const filledEl = container.querySelector('[data-studio-frame-id="filled-round"]') as HTMLElement;
+    expect(filledEl.querySelector("g[clip-path]")).toBeNull();
+    expect(filledEl.querySelector("img")).toBeTruthy();
   });
 });

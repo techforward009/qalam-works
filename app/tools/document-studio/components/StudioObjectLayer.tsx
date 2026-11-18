@@ -15,10 +15,11 @@ import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/d
 import { singleLineLeadingPt, singleLineOuterHeightMm, singleLineOuterHeightPx } from "../utils/singleLineFrame";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
 import type { Editor } from "@tiptap/react";
-import { PIXEL_ICONS, type StudioToolId } from "./InPageToolPalette";
+import { type StudioToolId } from "./InPageToolPalette";
 import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
+import { pictureContentDeltaMm } from "../utils/pictureFit";
 
 export type FrameKind =
   | "rect"
@@ -84,29 +85,11 @@ export function pictureMenuDisabledIds(frames: StudioFrame[], selectedIds: reado
     : new Set<MenuActionId>(["file.importPicture"]);
 }
 
-const textGlyph = PIXEL_ICONS.text;
-const iBeamPixels = new Set<string>();
-const pendingBeamPixels: Array<[number, number]> = [[6, 10]];
-while (pendingBeamPixels.length) {
-  const [x, y] = pendingBeamPixels.pop()!;
-  const key = `${x},${y}`;
-  if (x < 0 || y < 0 || y >= textGlyph.length || x >= textGlyph[y].length || textGlyph[y][x] === "." || iBeamPixels.has(key)) continue;
-  iBeamPixels.add(key);
-  for (let dy = -1; dy <= 1; dy += 1) {
-    for (let dx = -1; dx <= 1; dx += 1) {
-      if (dx !== 0 || dy !== 0) pendingBeamPixels.push([x + dx, y + dy]);
-    }
-  }
-}
-const textHandPixels = textGlyph.flatMap((row, y) =>
-  [...row].flatMap((pixel, x) => pixel !== "." && !iBeamPixels.has(`${x},${y}`)
-    ? [{ x, y, color: pixel === "#" ? "#000" : "#fff" }]
-    : []),
-);
-const textHandCursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" shape-rendering="crispEdges">${textHandPixels.map(({ x, y, color }) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`).join("")}</svg>`;
+export const HAND_CURSOR_PNG_PATH = "/cursors/hand-cursor.png";
 
-// Hotspot is the uppermost pixel of the raised fingertip in the toolbox glyph.
-export const PICTURE_HAND_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(textHandCursorSvg)}") 15 4, auto`;
+// 32x32 PNG cursor ensures reliable browser/OS cursor rendering with standard fallbacks.
+export const PICTURE_HAND_CURSOR = `url("${HAND_CURSOR_PNG_PATH}") 16 2, grab`;
+const PICTURE_HAND_CURSOR_DRAGGING = `url("${HAND_CURSOR_PNG_PATH}") 16 2, grabbing`;
 
 const DRAW_TOOLS = new Set<StudioToolId>([
   "textbox",
@@ -163,6 +146,11 @@ export function isFrame(value: unknown): value is StudioFrame {
 
 function newId(): string {
   return `f-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function releaseCapturedPointer(node: EventTarget | null, pointerId: number) {
+  if (!(node instanceof Element) || !node.hasPointerCapture?.(pointerId)) return;
+  node.releasePointerCapture(pointerId);
 }
 
 const PX_PER_MM = 96 / 25.4;
@@ -240,11 +228,13 @@ export function StudioObjectLayer({
     onSelectedChange?.(resolved);
   };
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
+  const [panningFrameId, setPanningFrameId] = useState<string | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
     | { mode: "marquee"; x: number; y: number; pointer: number }
     | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string; peeled?: boolean }
     | { mode: "resize"; id: string; edge: string; pointer: number }
+    | { mode: "pan"; id: string; x: number; y: number; pointer: number; startX: number; startY: number; angle: number }
     | null
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
@@ -548,6 +538,17 @@ export function StudioObjectLayer({
           }));
           return;
         }
+        if (drag.mode === "pan") {
+          const dxPx = point.x - drag.x;
+          const dyPx = point.y - drag.y;
+          if (Math.hypot(dxPx, dyPx) >= 4) {
+            pictureDraggedRef.current = true;
+            if (lastPressRef.current?.id === drag.id) lastPressRef.current.moved = true;
+          }
+          const delta = pictureContentDeltaMm(dxPx, dyPx, drag.angle, PX_PER_MM);
+          updateFrame(drag.id, { imageXMm: drag.startX + delta.xMm, imageYMm: drag.startY + delta.yMm });
+          return;
+        }
         const frame = frames.find((item) => item.id === drag.id);
         if (!frame) return;
         if (frame.singleLine) {
@@ -601,10 +602,17 @@ export function StudioObjectLayer({
         }
         updateFrame(frame.id, patch);
       }}
-      onPointerCancel={() => { dragRef.current = null; setDraft(null); }}
+      onPointerCancel={(event) => {
+        dragRef.current = null;
+        setPanningFrameId(null);
+        setDraft(null);
+        releaseCapturedPointer(event.currentTarget, event.pointerId);
+        releaseCapturedPointer(event.target, event.pointerId);
+      }}
       onPointerUp={(event) => {
         const drag = dragRef.current;
         dragRef.current = null;
+        setPanningFrameId(null);
         if (drag?.mode === "draw") {
           const point = localPoint(event);
           let w = point.x - drag.x;
@@ -624,9 +632,8 @@ export function StudioObjectLayer({
           }).map((frame) => frame.id));
         }
         setDraft(null);
-        if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }
+        releaseCapturedPointer(event.currentTarget, event.pointerId);
+        releaseCapturedPointer(event.target, event.pointerId);
       }}
     >
       {frames.map((frame) => {
@@ -640,8 +647,7 @@ export function StudioObjectLayer({
         const top = snap(slot.y+frame.yMm * PX_PER_MM, rootBox?.top);
         const width = Math.max(1, snap(frame.wMm * PX_PER_MM));
         const height = Math.max(1, snap(frame.hMm * PX_PER_MM));
-        // The Hand tool targets picture boxes; show their selection too.
-        const active = selected.includes(frame.id) && (tool === "select" || (tool === "text" && isPictureBox(frame.kind)));
+        const active = selected.includes(frame.id) && tool === "select";
         const handTarget = tool === "text" && isPictureBox(frame.kind);
         return (
           <div
@@ -667,7 +673,7 @@ export function StudioObjectLayer({
               transformOrigin: "50% 50%",
               overflow: frame.borderPosition === "outside" || frame.angle1Deg !== undefined && Math.abs(frame.angle1Deg) > 1e-9 ? "visible" : undefined,
               pointerEvents: tool === "text" && frame.kind !== "text" && !isPictureBox(frame.kind) ? "none" : "auto",
-              cursor: handTarget ? PICTURE_HAND_CURSOR : tool === "text" ? "text" : drawing ? "crosshair" : tool === "select" ? "move" : "default",
+              cursor: handTarget ? (panningFrameId === frame.id ? PICTURE_HAND_CURSOR_DRAGGING : PICTURE_HAND_CURSOR) : tool === "text" ? "text" : drawing ? "crosshair" : tool === "select" ? "move" : "default",
             }}
             onPointerDown={(event) => {
               if (event.button === 2) return;
@@ -678,6 +684,22 @@ export function StudioObjectLayer({
                 event.preventDefault();
                 setSelected([frame.id]);
                 if (editor?.isFocused) editor.commands.blur();
+                if (frame.imageSrc && !frame.locked) {
+                  const point = localPoint(event);
+                  lastPressRef.current = { id: frame.id, moved: false };
+                  setPanningFrameId(frame.id);
+                  dragRef.current = {
+                    mode: "pan",
+                    id: frame.id,
+                    x: point.x,
+                    y: point.y,
+                    pointer: event.pointerId,
+                    startX: frame.imageXMm ?? 0,
+                    startY: frame.imageYMm ?? 0,
+                    angle: frame.angle1Deg ?? 0,
+                  };
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                }
                 return;
               }
               if (frame.kind === "text" && tool === "text") {
@@ -714,12 +736,12 @@ export function StudioObjectLayer({
                 width={width}
                 height={height}
                 viewBox={`0 0 ${width} ${height}`}
-                style={{ position: "absolute", left: 0, top: 0 }}
+                style={{ position: "absolute", left: 0, top: 0, cursor: handTarget ? (panningFrameId === frame.id ? PICTURE_HAND_CURSOR_DRAGGING : PICTURE_HAND_CURSOR) : "inherit" }}
               >
                 {frame.kind === "picture-ellipse" ? (
-                  <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="transparent" />
+                  <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="transparent" style={{ cursor: handTarget ? (panningFrameId === frame.id ? PICTURE_HAND_CURSOR_DRAGGING : PICTURE_HAND_CURSOR) : "inherit", pointerEvents: "all" }} />
                 ) : (
-                  <rect x={0} y={0} width={width} height={height} rx={frame.kind === "picture-round-rect" ? pictureCornerRadiusPx(frame) : undefined} fill="transparent" />
+                  <rect x={0} y={0} width={width} height={height} rx={frame.kind === "picture-round-rect" ? pictureCornerRadiusPx(frame) : undefined} fill="transparent" style={{ cursor: handTarget ? (panningFrameId === frame.id ? PICTURE_HAND_CURSOR_DRAGGING : PICTURE_HAND_CURSOR) : "inherit", pointerEvents: "all" }} />
                 )}
               </svg>
             ) : null}
@@ -873,8 +895,8 @@ function FrameShape({
     const imgH = (frame.imageHMm ?? frame.hMm) * PX_PER_MM;
 
     return (
-      <div style={{ position: "relative", width, height, overflow: "visible" }}>
-        <div data-studio-picture-clip={frame.kind} style={{ position: "absolute", inset: 0, overflow: "hidden", ...clipStyle, backgroundColor: frame.backgroundColor ?? (frame.imageSrc ? "#fff" : "transparent") }}>
+      <div style={{ position: "relative", width, height, overflow: "visible", cursor: "inherit" }}>
+        <div data-studio-picture-clip={frame.kind} style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: "inherit", ...clipStyle, backgroundColor: frame.backgroundColor ?? (frame.imageSrc ? "#fff" : "transparent") }}>
         {frame.imageSrc ? (
           <img
             src={frame.imageSrc}
@@ -924,8 +946,15 @@ function FrameShape({
             <>
               {!frame.imageSrc ? (
                 <>
-                  <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-                  <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                  <defs>
+                    <clipPath id={`clip-${frame.id}`}>
+                      <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} />
+                    </clipPath>
+                  </defs>
+                  <g clipPath={`url(#clip-${frame.id})`}>
+                    <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
+                    <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                  </g>
                 </>
               ) : null}
               <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} {...stroke} />
