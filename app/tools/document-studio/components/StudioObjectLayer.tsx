@@ -161,6 +161,52 @@ export function isUndraggedShape(w: number, h: number): boolean {
   return Math.abs(w) < 4 && Math.abs(h) < 4;
 }
 
+export function marqueeSelectedFrameIds(
+  frames: readonly StudioFrame[],
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  {
+    stride,
+    projection,
+    shiftKey = false,
+    initialSelected = [],
+  }: {
+    stride: number;
+    projection?: PageProjection;
+    shiftKey?: boolean;
+    initialSelected?: readonly string[];
+  },
+): string[] {
+  if (isUndraggedShape(end.x - start.x, end.y - start.y)) {
+    return shiftKey ? [...initialSelected] : [];
+  }
+  const left = Math.min(start.x, end.x);
+  const right = Math.max(start.x, end.x);
+  const top = Math.min(start.y, end.y);
+  const bottom = Math.max(start.y, end.y);
+  // Left-to-right selects fully enclosed objects; right-to-left selects intersected objects.
+  const requireEnclosed = end.x >= start.x;
+  const matched = frames
+    .filter((frame) => {
+      const slot = projection ? facingSlot(frame.page - 1, projection) : { x: 0, y: (frame.page - 1) * stride };
+      const fx1 = slot.x + frame.xMm * PX_PER_MM;
+      const fy1 = slot.y + frame.yMm * PX_PER_MM;
+      const fx2 = fx1 + frame.wMm * PX_PER_MM;
+      const fy2 = fy1 + frame.hMm * PX_PER_MM;
+      return requireEnclosed
+        ? fx1 >= left && fy1 >= top && fx2 <= right && fy2 <= bottom
+        : fx2 >= left && fx1 <= right && fy2 >= top && fy1 <= bottom;
+    })
+    .map((frame) => frame.id);
+  if (!shiftKey) return matched;
+  const next = new Set(initialSelected);
+  for (const id of matched) {
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+  }
+  return frames.filter((frame) => next.has(frame.id)).map((frame) => frame.id);
+}
+
 function isPictureDrawTool(tool: StudioToolId): boolean {
   return tool === "cross-square" || tool === "cross-circle" || tool === "cross-round";
 }
@@ -231,7 +277,7 @@ export function StudioObjectLayer({
   const [panningFrameId, setPanningFrameId] = useState<string | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
-    | { mode: "marquee"; x: number; y: number; pointer: number }
+    | { mode: "marquee"; x: number; y: number; pointer: number; initialSelected: string[] }
     | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string; peeled?: boolean }
     | { mode: "resize"; id: string; edge: string; pointer: number }
     | { mode: "pan"; id: string; x: number; y: number; pointer: number; startX: number; startY: number; angle: number }
@@ -320,11 +366,12 @@ export function StudioObjectLayer({
     const root = rootRef.current;
     if (!root) return { x: 0, y: 0 };
     const rect = root.getBoundingClientRect();
-    const surface=root.closest<HTMLElement>("[data-studio-zoom-surface]");
-    const scale = surface ? surface.getBoundingClientRect().width/pageWidthPx : zoom;
-    const point={x:(event.clientX-rect.left)/scale,y:(event.clientY-rect.top)/scale};
-    const projection=editor?pageProjection(editor.view.dom):undefined;
-    return projection?unprojectPoint(point.x,point.y,projection):point;
+    const surface = root.closest<HTMLElement>("[data-studio-zoom-surface]");
+    const scale = projectionProp ? zoom : surface ? surface.getBoundingClientRect().width / pageWidthPx : zoom;
+    const point = { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
+    if (projectionProp) return point;
+    const projection = editor ? pageProjection(editor.view.dom) : undefined;
+    return projection ? unprojectPoint(point.x, point.y, projection) : point;
   };
 
   const pageOf = (y: number) => {
@@ -445,11 +492,12 @@ export function StudioObjectLayer({
         if (tool === "select") {
           event.preventDefault();
           event.stopPropagation();
-          setSelected([]);
+          const initialSelected = event.shiftKey ? [...selected] : [];
+          if (!event.shiftKey) setSelected([]);
           const point = localPoint(event);
-          dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId };
+          dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId, initialSelected };
           setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
-          event.currentTarget.setPointerCapture(event.pointerId);
+          event.currentTarget.setPointerCapture?.(event.pointerId);
           return;
         }
         if (!drawing) return;
@@ -609,6 +657,11 @@ export function StudioObjectLayer({
         releaseCapturedPointer(event.currentTarget, event.pointerId);
         releaseCapturedPointer(event.target, event.pointerId);
       }}
+      onLostPointerCapture={() => {
+        dragRef.current = null;
+        setPanningFrameId(null);
+        setDraft(null);
+      }}
       onPointerUp={(event) => {
         const drag = dragRef.current;
         dragRef.current = null;
@@ -622,14 +675,14 @@ export function StudioObjectLayer({
         }
         if (drag?.mode === "marquee") {
           const point = localPoint(event);
-          const left = Math.min(drag.x, point.x), right = Math.max(drag.x, point.x);
-          const top = Math.min(drag.y, point.y), bottom = Math.max(drag.y, point.y);
-          const stride = pageHeightPx + gapPx;
-          setSelected(isUndraggedShape(point.x - drag.x, point.y - drag.y) ? [] : framesRef.current.filter((frame) => {
-            const x = frame.xMm * PX_PER_MM;
-            const y = (frame.page - 1) * stride + frame.yMm * PX_PER_MM;
-            return x >= left && y >= top && x + frame.wMm * PX_PER_MM <= right && y + frame.hMm * PX_PER_MM <= bottom;
-          }).map((frame) => frame.id));
+          setSelected(
+            marqueeSelectedFrameIds(framesRef.current, { x: drag.x, y: drag.y }, point, {
+              stride: pageHeightPx + gapPx,
+              projection: projectionProp,
+              shiftKey: event.shiftKey,
+              initialSelected: drag.initialSelected,
+            }),
+          );
         }
         setDraft(null);
         releaseCapturedPointer(event.currentTarget, event.pointerId);
@@ -657,8 +710,9 @@ export function StudioObjectLayer({
             onContextMenu={(event) => {
               if (!isPictureBox(frame.kind)) return;
               event.preventDefault();
-              setSelected([frame.id]);
-              const detail = { id: frame.id, x: event.clientX, y: event.clientY };
+              event.stopPropagation();
+              if (!selected.includes(frame.id)) setSelected([frame.id]);
+              const detail = { id: frame.id, x: event.clientX, y: event.clientY, tool };
               (window as Window & { __studioPictureContextRequest?: typeof detail }).__studioPictureContextRequest = detail;
               window.dispatchEvent(new CustomEvent("studio-picture-context", { detail }));
             }}

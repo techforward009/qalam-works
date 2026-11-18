@@ -108,6 +108,7 @@ import {
   setEditorContent,
   setAlign,
   setLinkHref,
+  selectAll,
   transformPastedSlice,
   activeBlockStyleId,
 } from "../utils/documentCommands";
@@ -153,13 +154,15 @@ import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { AllahAutoMarks } from "../extensions/AllahAutoMarks";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
-import { StudioObjectRibbon } from "./StudioObjectRibbon";
+import { FormatDialog, StudioObjectRibbon } from "./StudioObjectRibbon";
+import { StudioPictureContextMenu } from "./StudioPictureContextMenu";
 import { applyObjectGeometry } from "../utils/objectAttributes";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
 import { readStoredFrames, writeStoredFrames, isPictureBox, pictureMenuDisabledIds, type StudioFrame } from "./StudioObjectLayer";
 import { fitPictureInBox, PICTURE_SOURCE_HARD_CAP_BYTES } from "../utils/pictureFit";
+import { cloneCopiedFramesForPaste, copyFramesToClipboard, pasteImageFromCopiedFrames } from "../utils/pictureClipboard";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
@@ -443,6 +446,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const pictureInputRef = useRef<HTMLInputElement>(null);
   const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
   const [pictureTargetFrameId, setPictureTargetFrameId] = useState<string | null>(null);
+  const [objectDialogFrameId, setObjectDialogFrameId] = useState<string | null>(null);
+  const objectDialogReturnFocus = useRef<HTMLElement | null>(null);
+  const objectClipboardRef = useRef<StudioFrame[]>([]);
 
   const [preview, setPreview] = useState<{
     document: DocNode;
@@ -2351,6 +2357,97 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
         onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} onTableFormat={()=>setTableFormatOpen(true)} onTableToText={()=>setTableToTextOpen(true)} />
+      <StudioPictureContextMenu
+        toolMode={canvasTool === "select" ? "arrow" : "hand"}
+        onZoom={setZoom}
+        onAction={(id, frameId, mode) => {
+          if (id === "importPicture") {
+            openPictureChooser(frameId);
+            return;
+          }
+          if (id === "selectAll") {
+            if (mode === "arrow") setSelectedFrameIds(framesRef.current.map((f) => f.id));
+            else if (editor) selectAll(editor);
+            return;
+          }
+          if (id === "paste") {
+            const targetFrame = framesRef.current.find((f) => f.id === frameId);
+            if (!targetFrame) return;
+            const copied = objectClipboardRef.current;
+            if (copied.length > 0) {
+              const updated = pasteImageFromCopiedFrames(targetFrame, copied);
+              if (updated) {
+                changeFrames(framesRef.current.map((f) => (f.id === frameId ? updated : f)));
+              } else {
+                const clones = cloneCopiedFramesForPaste(
+                  copied,
+                  () => `f-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+                );
+                changeFrames([...framesRef.current, ...clones]);
+                setSelectedFrameIds(clones.map((f) => f.id));
+              }
+              return;
+            }
+            if (typeof navigator !== "undefined" && navigator.clipboard?.read) {
+              void navigator.clipboard.read().then(async (items) => {
+                for (const item of items) {
+                  const imageType = item.types.find((t) => t.startsWith("image/"));
+                  if (!imageType) continue;
+                  const blob = await item.getType(imageType);
+                  const file = new File([blob], "pasted-image.png", { type: imageType });
+                  const compressed = await compressDocumentImage(file);
+                  const currentTarget = framesRef.current.find((f) => f.id === frameId);
+                  if (!currentTarget) return;
+                  const fit = fitPictureInBox(currentTarget.wMm, currentTarget.hMm, compressed.width, compressed.height);
+                  changeFrames(framesRef.current.map((f) => (f.id === frameId ? {
+                    ...f,
+                    imageSrc: compressed.src,
+                    imageNaturalW: compressed.width,
+                    imageNaturalH: compressed.height,
+                    imageXMm: fit.x,
+                    imageYMm: fit.y,
+                    imageWMm: fit.w,
+                    imageHMm: fit.h,
+                  } : f)));
+                  return;
+                }
+              }).catch(() => {});
+            }
+            return;
+          }
+          const targetIds = selectedFrameIds.includes(frameId) ? selectedFrameIds : [frameId];
+          if (id === "copy" || id === "cut") {
+            objectClipboardRef.current = copyFramesToClipboard(
+              framesRef.current.filter((f) => targetIds.includes(f.id)),
+            );
+          }
+          if (id === "cut" || id === "clear") {
+            const remaining = framesRef.current.filter((f) => !targetIds.includes(f.id) || f.locked);
+            changeFrames(remaining);
+            setSelectedFrameIds(targetIds.filter((tid) => remaining.some((f) => f.id === tid && f.locked)));
+            return;
+          }
+          if (id === "object") {
+            objectDialogReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            setObjectDialogFrameId(frameId);
+          }
+        }}
+      />
+      {(() => {
+        const dialogFrame = objectDialogFrameId ? frames.find((f) => f.id === objectDialogFrameId) : null;
+        return dialogFrame ? (
+          <FormatDialog
+            frame={dialogFrame}
+            returnFocus={objectDialogReturnFocus}
+            onCancel={() => setObjectDialogFrameId(null)}
+            onApply={(patch) => {
+              const updated = applyObjectGeometry(dialogFrame, patch);
+              if (updated) changeFrames(framesRef.current.map((f) => (f.id === dialogFrame.id ? updated : f)));
+              setObjectDialogFrameId(null);
+            }}
+          />
+        ) : null;
+      })()}
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
@@ -2515,7 +2612,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedFrameIds.length === 1 && selectedPictureBox ? <StudioObjectRibbon frame={selectedPictureBox} onChange={(frameId, patch) => {
+          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedFrameIds.length === 1 && selectedPictureBox ? <StudioObjectRibbon disableContextMenu frame={selectedPictureBox} onChange={(frameId, patch) => {
             const target = frames.find(frame => frame.id === frameId);
             const updated = target && applyObjectGeometry(target, patch);
             if (updated) changeFrames(frames.map(frame => frame.id === frameId ? updated : frame));

@@ -18,15 +18,16 @@ type GeometryKey = typeof fields[number][0];
 const PX_PER_MM = 96 / 25.4;
 const parsePercent = (raw: string) => { const match = raw.trim().match(/^([+]?(?:\d+(?:\.\d*)?|\.\d+))\s*%?$/); return match ? Number(match[1]) : Number.NaN; };
 const formatPercent = (value: number) => `${Number.isFinite(value) ? Number(value.toFixed(6)) : 100}%`;
-type Props = { frame: StudioFrame; onChange: (frameId: string, patch: ObjectGeometryPatch) => void };
+type Props = { frame: StudioFrame; onChange: (frameId: string, patch: ObjectGeometryPatch) => void; disableContextMenu?: boolean };
 
-export function StudioObjectRibbon({ frame, onChange }: Props) {
+export function StudioObjectRibbon({ frame, onChange, disableContextMenu = false }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const menuReturnFocus = useRef<HTMLElement | null>(null);
   const dialogReturnFocus = useRef<HTMLElement | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; frame: StudioFrame } | null>(null);
   const [dialogFrame, setDialogFrame] = useState<StudioFrame | null>(null);
   useEffect(() => {
+    if (disableContextMenu) return;
     const open = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       const box = target?.closest<HTMLElement>('[data-studio-frame^="picture-"][data-studio-frame-id]');
@@ -44,7 +45,7 @@ export function StudioObjectRibbon({ frame, onChange }: Props) {
     const pending = (window as Window & { __studioPictureContextRequest?: { id: string; x: number; y: number } }).__studioPictureContextRequest;
     if (pending?.id === frame.id) { menuReturnFocus.current = document.activeElement as HTMLElement; setMenu({ ...pending, frame }); delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest; }
     return () => { document.removeEventListener("contextmenu", open); window.removeEventListener("studio-picture-context", selected); };
-  }, [frame]);
+  }, [disableContextMenu, frame]);
 
   useEffect(() => {
     if (menu) {
@@ -107,7 +108,7 @@ const combo = (left: number, top: number, width: number) => <div title={unsuppor
 const radio = (checked = false) => <span aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-2px", width: 10, height: 10, marginRight: 4, border: "1px solid #777", borderRadius: "50%", background: checked ? "radial-gradient(circle,#111 0 2px,#eee 2.5px)" : "#f0f0f0", boxShadow: "inset 0 1px #fff" }} />;
 const checkbox = (checked = false) => <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", verticalAlign: "-2px", width: 13, height: 13, marginRight: 4, border: "1px solid #777", background: "#f8f8f8", boxShadow: "inset 0 1px #fff", font: "bold 11px Arial" }}>{checked ? "✓" : ""}</span>;
 
-function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: StudioFrame; onCancel: () => void; onApply: (patch: ObjectGeometryPatch) => void; returnFocus: React.MutableRefObject<HTMLElement | null> }) {
+export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: StudioFrame; onCancel: () => void; onApply: (patch: ObjectGeometryPatch) => void; returnFocus: React.MutableRefObject<HTMLElement | null> }) {
   const drag = useMovableStudioDialog<HTMLFormElement>();
   const formRef = useRef<HTMLFormElement>(null);
   const firstField = useRef<HTMLInputElement>(null);
