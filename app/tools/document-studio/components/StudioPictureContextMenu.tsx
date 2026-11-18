@@ -190,7 +190,8 @@ export function StudioPictureContextMenu({
               </button>
             );
           }
-          const disabled = Boolean(disabledIds?.has(item.id));
+          const actionId = item.id;
+          const disabled = Boolean(disabledIds?.has(actionId));
           return (
             <button
               key={item.id}
@@ -206,7 +207,7 @@ export function StudioPictureContextMenu({
                 const targetId = menu.id;
                 const mode = menu.mode;
                 close();
-                onAction(item.id, targetId, mode);
+                onAction(actionId, targetId, mode);
               }}
             >
               {item.label}
