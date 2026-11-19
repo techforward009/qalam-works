@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent as ReactChangeEvent, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type FormEvent as ReactFormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent as ReactChangeEvent, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { FORMATTING_TARGET_CHANGE, isFormattingSurface, readFormattingTarget, registerFrameHistory, registerFrameStyleUpdater } from "../utils/formattingSafety";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { defaultDocumentSettings } from "../utils/documentSettings";
@@ -12,7 +12,14 @@ import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLi
 import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKeyboard";
 import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
 import type { StudioTextAlign } from "../utils/documentCommands";
-import { applyParagraphAlignment, createFrameHistory, paragraphIndexAt, toolbarParagraphAlign, type FrameAlignSnapshot, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
+import { applyParagraphAlignment, createFrameHistory, paragraphIndexAt, toolbarParagraphAlign, type FrameAlignSnapshot, type FrameRememberOptions, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
+
+export type StudioFrameHistoryBridge = {
+  recordFrameEdit: (frameId: string, before: FrameAlignSnapshot, options?: FrameRememberOptions) => void;
+  closeFrameGroup: (frameId: string) => void;
+  runHistoryCommand: (action: "undo" | "redo") => boolean;
+  registerFrameControl: (frameId: string, control: { getSnapshot: () => FrameAlignSnapshot; applySnapshot: (snap: FrameAlignSnapshot) => void }) => () => void;
+};
 
 export function normalizeSingleLineText(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
@@ -32,7 +39,8 @@ function ParagraphColumn({ parts, aligns, textAlign }: { parts: string[]; aligns
 }
 
 /** A natural-size mirror preserves textarea wrapping even inside a zoom transform. */
-export function StudioTextFrame({ text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, keyboardLayout, onFocus, onText, onRestore, onStyle }: {
+export function StudioTextFrame({ frameId, historyBridge, text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, keyboardLayout, onFocus, onText, onRestore, onStyle }: {
+  frameId?: string; historyBridge?: StudioFrameHistoryBridge;
   text: string; singleLine?: boolean; editable: boolean; typography?: DocumentStudioSettings["typography"];
   keyboardLayout?: KeyboardLayout | null;
   textColor?: string; textAlign?: StudioTextAlign; paragraphAligns?: ParagraphAlign[];
@@ -68,21 +76,41 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     const current = model.current;
     return { text: current.text, textAlign: current.textAlign, paragraphAligns: current.paragraphAligns ? [...current.paragraphAligns] : undefined, start: input?.selectionStart ?? 0, end: input?.selectionEnd ?? 0 };
   }, []);
-  const rememberAt = useCallback((text: string, start: number, end: number) => {
-    if (singleLine) return;
+  const rememberAt = useCallback((text: string, start: number, end: number, options?: FrameRememberOptions) => {
     const current = model.current;
-    history.current.remember({ text, textAlign: current.textAlign, paragraphAligns: current.paragraphAligns ? [...current.paragraphAligns] : undefined, start, end });
-  }, [singleLine]);
-  const remember = useCallback(() => {
+    const snap: FrameAlignSnapshot = {
+      text,
+      textAlign: current.textAlign,
+      paragraphAligns: current.paragraphAligns ? [...current.paragraphAligns] : undefined,
+      start,
+      end,
+    };
+    if (historyBridge && frameId) {
+      historyBridge.recordFrameEdit(frameId, snap, options);
+    } else {
+      history.current.remember(snap, options);
+    }
+  }, [frameId, historyBridge]);
+  const remember = useCallback((options?: FrameRememberOptions) => {
     const input = ref.current;
-    rememberAt(model.current.text, input?.selectionStart ?? 0, input?.selectionEnd ?? 0);
+    rememberAt(model.current.text, input?.selectionStart ?? 0, input?.selectionEnd ?? 0, options);
   }, [rememberAt]);
   const applySnapshot = useCallback((next: FrameAlignSnapshot) => {
     restoreSelection.current = [next.start, next.end];
-    onRestoreRef.current({ text: next.text, textAlign: next.textAlign ?? null, paragraphAligns: next.paragraphAligns ?? null });
-  }, []);
-  const undo = useCallback(() => { const next = history.current.undo(snapshot()); if (next) applySnapshot(next); return true; }, [applySnapshot, snapshot]);
-  const redo = useCallback(() => { const next = history.current.redo(snapshot()); if (next) applySnapshot(next); return true; }, [applySnapshot, snapshot]);
+    onRestoreRef.current({ text: singleLine ? normalizeSingleLineText(next.text) : next.text, textAlign: next.textAlign ?? null, paragraphAligns: next.paragraphAligns ?? null });
+  }, [singleLine]);
+  const undo = useCallback(() => {
+    if (historyBridge) return historyBridge.runHistoryCommand("undo");
+    const next = history.current.undo(snapshot());
+    if (next) applySnapshot(next);
+    return true;
+  }, [applySnapshot, historyBridge, snapshot]);
+  const redo = useCallback(() => {
+    if (historyBridge) return historyBridge.runHistoryCommand("redo");
+    const next = history.current.redo(snapshot());
+    if (next) applySnapshot(next);
+    return true;
+  }, [applySnapshot, historyBridge, snapshot]);
   const publishAlign = useCallback((input: HTMLInputElement | HTMLTextAreaElement, start: number, end: number) => {
     const current = model.current;
     const label = singleLine ? current.textAlign ?? "" : toolbarParagraphAlign(input.value, current.textAlign, current.paragraphAligns, start, end);
@@ -245,9 +273,16 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
   }, [onStyle, remember, singleLine]);
   useEffect(() => {
     const input = ref.current;
-    if (!input || singleLine) return;
-    return registerFrameHistory(input, { undo, redo });
-  }, [singleLine, undo, redo]);
+    if (!input) return;
+    const unregisterDoc = registerFrameHistory(input, { undo, redo });
+    const unregisterBridge = historyBridge && frameId
+      ? historyBridge.registerFrameControl(frameId, { getSnapshot: snapshot, applySnapshot })
+      : undefined;
+    return () => {
+      unregisterDoc();
+      unregisterBridge?.();
+    };
+  }, [applySnapshot, frameId, historyBridge, redo, snapshot, undo]);
   useEffect(() => {
     let raf = 0;
     const update = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; measure(); }); };
@@ -272,19 +307,24 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     event.preventDefault();
     const input = event.currentTarget, normalized = normalizeSingleLineText(event.clipboardData.getData("text/plain"));
     const start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
+    rememberAt(input.value, start, end);
     const value = input.value.slice(0, start) + normalized + input.value.slice(end);
     onText(value);
     requestAnimationFrame(() => { input.setSelectionRange(start + normalized.length, start + normalized.length); });
   };
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (singleLine && (event.key === "Enter" || event.key === "NumpadEnter")) event.preventDefault();
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+      if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId);
+      else history.current.closeGroup();
+    }
     if (keyboardLayout) {
       const mapped = resolveKey(keyboardLayout, event);
       if (mapped !== null) {
         event.preventDefault();
         const input = event.currentTarget, start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
         const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
-        rememberAt(input.value, start, end);
+        rememberAt(input.value, start, end, /\s/.test(insertion) ? undefined : { groupKey: "insert" });
         onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
         requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
       }
@@ -309,7 +349,7 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
       measure();
       return;
     }
-    if (singleLine || event.altKey || !(event.ctrlKey || event.metaKey)) return;
+    if (event.altKey || !(event.ctrlKey || event.metaKey)) return;
     const key = event.key.toLowerCase();
     if (key === "z" || (key === "y" && !event.shiftKey)) {
       event.preventDefault();
@@ -328,51 +368,70 @@ export function StudioTextFrame({ text, singleLine = false, editable, typography
     // in that case let beforeinput handle it instead of replacing old text.
     if (input.value.slice(start, end) !== data) return;
     const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
-    rememberAt(input.value, start, end);
+    rememberAt(input.value, start, end, /\s/.test(insertion) ? undefined : { groupKey: "insert" });
     onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
     requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
   };
   useLayoutEffect(() => {
     const input = ref.current;
-    if (!input || !keyboardLayout) return;
+    if (!input) return;
     const beforeInput = (rawEvent: Event) => {
       const event = rawEvent as InputEvent;
-      if (event.inputType !== "insertText" || !event.data || !event.cancelable) return;
-      const mapped = mapLatinText(keyboardLayout, event.data);
-      if (mapped === event.data) return;
-      event.preventDefault();
-      event.stopPropagation();
-      const start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
-      const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
-      rememberAt(input.value, start, end);
-      onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
-      requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
+      if (!editable || event.defaultPrevented) return;
+      const inputType = event.inputType ?? "";
+      const data = event.data ?? "";
+      if (inputType === "historyUndo" || inputType === "historyRedo") {
+        event.preventDefault();
+        pendingEdit.current = null;
+        if (!historyKey.current) {
+          if (inputType === "historyUndo") undo();
+          else redo();
+        }
+        return;
+      }
+      if (keyboardLayout && inputType === "insertText" && data && event.cancelable) {
+        const mapped = mapLatinText(keyboardLayout, data);
+        if (mapped !== data) {
+          event.preventDefault();
+          event.stopPropagation();
+          const start = input.selectionStart ?? input.value.length;
+          const end = input.selectionEnd ?? start;
+          const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+          rememberAt(input.value, start, end, /\s/.test(insertion) ? undefined : { groupKey: "insert" });
+          onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
+          requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
+          return;
+        }
+      }
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? start;
+      if (
+        (inputType === "deleteContentBackward" && start === 0 && end === 0)
+        || (inputType === "deleteContentForward" && start === input.value.length && end === input.value.length)
+      ) {
+        return;
+      }
+      pendingEdit.current = { start, end };
+      const groupKey = inputType.startsWith("delete")
+        ? "delete"
+        : inputType === "insertText" && data.length > 0 && !/\s/.test(data)
+          ? "insert"
+          : undefined;
+      if (!remembered.current) {
+        remembered.current = true;
+        rememberAt(input.value, start, end, groupKey ? { groupKey } : undefined);
+      }
     };
     const compositionEnd = (rawEvent: Event) => handleCompositionEnd(input, (rawEvent as CompositionEvent).data);
     input.addEventListener("beforeinput", beforeInput);
-    input.addEventListener("compositionend", compositionEnd);
+    if (keyboardLayout) input.addEventListener("compositionend", compositionEnd);
     return () => {
       input.removeEventListener("beforeinput", beforeInput);
-      input.removeEventListener("compositionend", compositionEnd);
+      if (keyboardLayout) input.removeEventListener("compositionend", compositionEnd);
     };
-  }, [keyboardLayout, onText, rememberAt, singleLine]);
-  const handleBeforeInput = (event: ReactFormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (singleLine) return;
-    const native = event.nativeEvent as InputEvent;
-    if (native.inputType === "historyUndo" || native.inputType === "historyRedo") {
-      event.preventDefault();
-      pendingEdit.current = null;
-      if (!historyKey.current) { if (native.inputType === "historyUndo") undo(); else redo(); }
-      return;
-    }
-    const input = event.currentTarget;
-    const start = input.selectionStart ?? 0;
-    const end = input.selectionEnd ?? start;
-    pendingEdit.current = { start, end };
-    if (!remembered.current) { remembered.current = true; rememberAt(input.value, start, end); }
-  };
+  }, [editable, keyboardLayout, onText, redo, rememberAt, singleLine, undo]);
   const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} textAlign={textAlign} /></div>;
-  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!singleLine && !remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBeforeInput:handleBeforeInput, onBlur:()=>{setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
+  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBlur:()=>{ remembered.current = false; if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId); else history.current.closeGroup(); setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
   const displayText = singleLine ? normalizeSingleLineText(text) : text;
   const fieldStyle = paragraphPaint ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;
   return <>

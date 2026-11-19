@@ -3,14 +3,14 @@ import {nativeCaretSnapshot} from "../utils/nativeCaretSnapshot";
 import {pageProjection,projectPoint,facingArrowKey,facingTextRect,facingLineTop,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
 import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type Ref } from "react";
 import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
 import { caretGeometry } from "../utils/caretGeometry";
 import { getQalamPaginationState } from "../extensions/QalamPagination";
 import {hardBreakLineTop} from "../utils/hardBreakLineGrid";
 import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
-import { StudioTextFrame } from "./StudioTextFrame";
+import { StudioTextFrame, type StudioFrameHistoryBridge } from "./StudioTextFrame";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
 import { singleLineLeadingPt, singleLineOuterHeightMm, singleLineOuterHeightPx } from "../utils/singleLineFrame";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
@@ -225,6 +225,13 @@ function constrainPictureDrag(w: number, h: number, shift: boolean): { w: number
   return { w: (w < 0 ? -1 : 1) * size, h: (h < 0 ? -1 : 1) * size };
 }
 
+export type StudioObjectLayerHandle = {
+  startMarquee: (event: { clientX: number; clientY: number; pointerId: number; shiftKey: boolean }) => void;
+  moveMarquee: (event: { clientX: number; clientY: number; pointerId: number }) => void;
+  endMarquee: (event: { clientX: number; clientY: number; pointerId: number; shiftKey: boolean }) => void;
+  cancelMarquee: () => void;
+};
+
 export function StudioObjectLayer({
   editor,
   tool,
@@ -233,6 +240,10 @@ export function StudioObjectLayer({
   onToolAction,
   onSelectedChange,
   onDoubleClickFrame,
+  onGestureBegin,
+  onGestureEnd,
+  frameHistoryBridge,
+  layerRef,
   selectedIds: selectedIdsProp,
   pageCount,
   pageWidthPx,
@@ -252,10 +263,14 @@ export function StudioObjectLayer({
   zoom?:number;
   projection?:PageProjection;
   keyboardLayout?: KeyboardLayout | null;
-  onFramesChange: (frames: StudioFrame[]) => void;
+  onFramesChange: (frames: StudioFrame[], source?: "gesture") => void;
   onToolAction: (tool: StudioToolId) => void;
   onSelectedChange?: (selectedIds: string[]) => void;
   onDoubleClickFrame?: (frame: StudioFrame) => void;
+  onGestureBegin?: () => void;
+  onGestureEnd?: () => void;
+  frameHistoryBridge?: StudioFrameHistoryBridge;
+  layerRef?: Ref<StudioObjectLayerHandle>;
   selectedIds?: string[];
   pageCount: number;
   pageWidthPx: number;
@@ -297,6 +312,8 @@ export function StudioObjectLayer({
   framesRef.current = frames;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const toolRef = useRef(tool);
+  toolRef.current = tool;
 
   // Switching to a drawing tool clears the object selection. Switching between
   // the Arrow and Hand tools keeps a targeted picture box, so Insert > Picture
@@ -326,6 +343,7 @@ export function StudioObjectLayer({
 
   useEffect(() => {
     const clearOnEmpty = (event: PointerEvent) => {
+      if (event.shiftKey && toolRef.current === "select") return;
       const target = event.target as HTMLElement | null;
       // Any click in the document/pasteboard away from a frame dismisses the
       // previous object selection, whether the active tool is Arrow or Text.
@@ -381,9 +399,67 @@ export function StudioObjectLayer({
 
   const onChangeRef = useRef(onFramesChange);
   onChangeRef.current = onFramesChange;
+  const onGestureBeginRef = useRef(onGestureBegin);
+  onGestureBeginRef.current = onGestureBegin;
+  const onGestureEndRef = useRef(onGestureEnd);
+  onGestureEndRef.current = onGestureEnd;
+  const gestureOpenRef = useRef(false);
 
-  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => {
-    onChangeRef.current(framesRef.current.map((frame) => {
+  const beginGesture = () => {
+    if (gestureOpenRef.current) return;
+    gestureOpenRef.current = true;
+    onGestureBeginRef.current?.();
+  };
+
+  const endGesture = () => {
+    if (!gestureOpenRef.current) return;
+    gestureOpenRef.current = false;
+    onGestureEndRef.current?.();
+  };
+
+  const emitFrames = (next: StudioFrame[], source?: "gesture") => {
+    onChangeRef.current(next, source);
+  };
+
+  useImperativeHandle(layerRef, () => ({
+    startMarquee(event) {
+      if (tool !== "select") return;
+      const initialSelected = event.shiftKey ? [...selectedRef.current] : [];
+      if (!event.shiftKey) setSelected([]);
+      const point = localPoint(event);
+      dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId, initialSelected };
+      setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
+    },
+    moveMarquee(event) {
+      const drag = dragRef.current;
+      if (!drag || drag.mode !== "marquee" || drag.pointer !== event.pointerId) return;
+      const point = localPoint(event);
+      setDraft({ x: drag.x, y: drag.y, w: point.x - drag.x, h: point.y - drag.y, flip: false });
+    },
+    endMarquee(event) {
+      const drag = dragRef.current;
+      if (!drag || drag.mode !== "marquee" || drag.pointer !== event.pointerId) return;
+      dragRef.current = null;
+      const point = localPoint(event);
+      setSelected(
+        marqueeSelectedFrameIds(framesRef.current, { x: drag.x, y: drag.y }, point, {
+          stride: pageHeightPx + gapPx,
+          projection: projectionProp,
+          shiftKey: event.shiftKey,
+          initialSelected: drag.initialSelected,
+        }),
+      );
+      setDraft(null);
+    },
+    cancelMarquee() {
+      if (dragRef.current?.mode !== "marquee") return;
+      dragRef.current = null;
+      setDraft(null);
+    },
+  }));
+
+  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }, source?: "gesture") => {
+    emitFrames(framesRef.current.map((frame) => {
       if (frame.id !== id) return frame;
       const { paragraphAligns, textAlign, ...rest } = patch;
       const next: StudioFrame = { ...frame, ...rest };
@@ -396,7 +472,7 @@ export function StudioObjectLayer({
         else next.textAlign = textAlign;
       }
       return next;
-    }));
+    }), source);
   };
 
   const commitBox = (box: { x: number; y: number; w: number; h: number; flip: boolean }) => {
@@ -564,7 +640,7 @@ export function StudioObjectLayer({
             }
           }
           const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
-          onChangeRef.current(framesRef.current.map((frame) => {
+          emitFrames(framesRef.current.map((frame) => {
             const original = moved.get(frame.id);
             // Offsets stay box-relative so the picture travels with the box.
             // Top/left resize, below, is what keeps the picture on the page.
@@ -594,7 +670,7 @@ export function StudioObjectLayer({
             if (lastPressRef.current?.id === drag.id) lastPressRef.current.moved = true;
           }
           const delta = pictureContentDeltaMm(dxPx, dyPx, drag.angle, PX_PER_MM);
-          updateFrame(drag.id, { imageXMm: drag.startX + delta.xMm, imageYMm: drag.startY + delta.yMm });
+          updateFrame(drag.id, { imageXMm: drag.startX + delta.xMm, imageYMm: drag.startY + delta.yMm }, "gesture");
           return;
         }
         const frame = frames.find((item) => item.id === drag.id);
@@ -613,7 +689,7 @@ export function StudioObjectLayer({
           updateFrame(frame.id, {
             xMm: x / PX_PER_MM,
             wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
-          });
+          }, "gesture");
           return;
         }
         const stride = pageHeightPx + gapPx;
@@ -648,12 +724,13 @@ export function StudioObjectLayer({
           if (dxMm !== 0) patch.imageXMm = (frame.imageXMm ?? 0) - dxMm;
           if (dyMm !== 0) patch.imageYMm = (frame.imageYMm ?? 0) - dyMm;
         }
-        updateFrame(frame.id, patch);
+        updateFrame(frame.id, patch, "gesture");
       }}
       onPointerCancel={(event) => {
         dragRef.current = null;
         setPanningFrameId(null);
         setDraft(null);
+        endGesture();
         releaseCapturedPointer(event.currentTarget, event.pointerId);
         releaseCapturedPointer(event.target, event.pointerId);
       }}
@@ -661,6 +738,7 @@ export function StudioObjectLayer({
         dragRef.current = null;
         setPanningFrameId(null);
         setDraft(null);
+        endGesture();
       }}
       onPointerUp={(event) => {
         const drag = dragRef.current;
@@ -685,6 +763,7 @@ export function StudioObjectLayer({
           );
         }
         setDraft(null);
+        endGesture();
         releaseCapturedPointer(event.currentTarget, event.pointerId);
         releaseCapturedPointer(event.target, event.pointerId);
       }}
@@ -741,6 +820,7 @@ export function StudioObjectLayer({
                 if (frame.imageSrc && !frame.locked) {
                   const point = localPoint(event);
                   lastPressRef.current = { id: frame.id, moved: false };
+                  beginGesture();
                   setPanningFrameId(frame.id);
                   dragRef.current = {
                     mode: "pan",
@@ -772,6 +852,7 @@ export function StudioObjectLayer({
               if (tool !== "select" || !next.includes(frame.id) || frame.locked) return;
               const point = localPoint(event);
               lastPressRef.current = { id: frame.id, moved: false };
+              beginGesture();
               dragRef.current = {
                 mode: "move",
                 frames: framesRef.current.filter((item) => next.includes(item.id) && !item.locked),
@@ -783,7 +864,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} historyBridge={frameHistoryBridge} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -817,6 +898,7 @@ export function StudioObjectLayer({
                     onPointerDown={(event) => {
                       event.stopPropagation();
                       if (frame.locked) return;
+                      beginGesture();
                       dragRef.current = { mode: "resize", id: frame.id, edge, pointer: event.pointerId };
                       (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
                     }}
@@ -909,6 +991,7 @@ function FrameShape({
   onRestore,
   onStyle,
   keyboardLayout,
+  historyBridge,
 }: {
   frame: StudioFrame;
   active: boolean;
@@ -920,9 +1003,10 @@ function FrameShape({
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   keyboardLayout?: KeyboardLayout | null;
+  historyBridge?: StudioFrameHistoryBridge;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
+    return <StudioTextFrame frameId={frame.id} historyBridge={historyBridge} text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;

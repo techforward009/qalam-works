@@ -148,3 +148,122 @@ describe("Keyboard menu", () => {
     expect(document.querySelector('[data-menu-root="keyboard"]')).toBeNull();
   });
 });
+
+describe("DocumentMenuBar InPage 2009 styling, RTL alignment, and keyboard navigation", () => {
+  it("tracks data-menu-state open/closed transitions and renders shared classic bevel + gutter styling on dropdown and flyout", () => {
+    render(<DocumentMenuBar isUr={false} onAction={vi.fn()} />);
+    const editBtn = document.querySelector<HTMLButtonElement>('[data-menu-root="edit"]')!;
+    expect(editBtn.getAttribute("data-menu-state")).toBe("closed");
+
+    fireEvent.click(editBtn);
+    expect(editBtn.getAttribute("data-menu-state")).toBe("open");
+
+    const dropdown = document.querySelector<HTMLElement>('[data-menu-dropdown="edit"]')!;
+    expect(dropdown.getAttribute("dir")).toBe("ltr");
+    expect(["#f0f0f0", "rgb(240, 240, 240)"]).toContain(dropdown.style.backgroundColor);
+    expect(dropdown.style.backgroundImage).toContain("linear-gradient(to right");
+    expect(dropdown.style.boxShadow).toContain("1px 1px 0");
+    expect(dropdown.style.borderStyle).toBe("solid");
+
+    // Open submenu flyout via mouse/click
+    const prefRow = dropdown.querySelector<HTMLElement>('[data-menu-submenu="edit.preferences"]')!;
+    fireEvent.pointerEnter(prefRow, { pointerType: "mouse" });
+    const flyout = document.querySelector<HTMLElement>('[data-menu-flyout="edit.preferences"]')!;
+    expect(flyout).toBeTruthy();
+    expect(flyout.style.backgroundImage).toContain("linear-gradient(to right");
+
+    fireEvent.click(editBtn);
+    expect(editBtn.getAttribute("data-menu-state")).toBe("closed");
+  });
+
+  it("supports LTR ArrowRight/ArrowLeft submenu entry/exit, top-menu switching, and Tab dismissal", () => {
+    render(<DocumentMenuBar isUr={false} onAction={vi.fn()} />);
+    const editBtn = document.querySelector<HTMLButtonElement>('[data-menu-root="edit"]')!;
+    editBtn.focus();
+    fireEvent.click(editBtn);
+
+    const dropdown = document.querySelector<HTMLElement>('[data-menu-dropdown="edit"]')!;
+    const prefTrigger = dropdown.querySelector<HTMLElement>('[data-menu-submenu="edit.preferences"]')!;
+    prefTrigger.focus();
+
+    // ArrowRight on submenu trigger opens flyout and moves focus to its first enabled item
+    fireEvent.keyDown(dropdown, { key: "ArrowRight" });
+    const flyout = document.querySelector<HTMLElement>('[data-menu-flyout="edit.preferences"]')!;
+    expect(flyout).toBeTruthy();
+    expect(flyout.contains(document.activeElement)).toBe(true);
+
+    // ArrowLeft inside flyout closes flyout and restores focus to parent submenu trigger
+    fireEvent.keyDown(flyout, { key: "ArrowLeft" });
+    expect(document.querySelector('[data-menu-flyout="edit.preferences"]')).toBeNull();
+    expect(document.activeElement).toBe(prefTrigger);
+
+    // ArrowRight on a normal (non-submenu) dropdown item moves to next top-level menu (View)
+    const undoBtn = dropdown.querySelector<HTMLElement>('[data-menu-action="edit.undo"], [data-menu-action="edit.paste"]')!;
+    undoBtn.focus();
+    fireEvent.keyDown(dropdown, { key: "ArrowRight" });
+    expect(document.querySelector('[data-menu-dropdown="view"]')).toBeTruthy();
+
+    // ArrowLeft from View moves back to Edit
+    const viewDropdown = document.querySelector<HTMLElement>('[data-menu-dropdown="view"]')!;
+    fireEvent.keyDown(viewDropdown, { key: "ArrowLeft" });
+    const reopenedEdit = document.querySelector<HTMLElement>('[data-menu-dropdown="edit"]')!;
+    expect(reopenedEdit).toBeTruthy();
+
+    // Tab dismisses open menu
+    fireEvent.keyDown(reopenedEdit, { key: "Tab" });
+    expect(document.querySelector('[data-menu-dropdown]')).toBeNull();
+  });
+
+  it("unpins Urdu RTL menubar for RTL flow, applies RTL dropdown gutter, and reverses ArrowLeft/ArrowRight navigation", () => {
+    // Even if desktop viewport matches (min-width: 721px), isUr disables hardcoded English x-offsets
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === "(min-width: 721px)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    try {
+      render(<DocumentMenuBar isUr={true} onAction={vi.fn()} />);
+      const menubar = document.querySelector<HTMLElement>('[data-studio-menubar]')!;
+      expect(menubar.getAttribute("dir")).toBe("rtl");
+      expect(menubar.getAttribute("data-studio-menu-dir")).toBe("rtl");
+      expect(menubar.getAttribute("data-studio-menu-pinned")).toBe("false");
+
+      const editBtn = document.querySelector<HTMLButtonElement>('[data-menu-root="edit"]')!;
+      fireEvent.click(editBtn);
+
+      const dropdown = document.querySelector<HTMLElement>('[data-menu-dropdown="edit"]')!;
+      expect(dropdown.getAttribute("dir")).toBe("rtl");
+      expect(dropdown.style.backgroundImage).toContain("linear-gradient(to left");
+
+      const prefTrigger = dropdown.querySelector<HTMLElement>('[data-menu-submenu="edit.preferences"]')!;
+      prefTrigger.focus();
+
+      // In RTL, ArrowLeft opens the submenu and focuses inside flyout
+      fireEvent.keyDown(dropdown, { key: "ArrowLeft" });
+      const flyout = document.querySelector<HTMLElement>('[data-menu-flyout="edit.preferences"]')!;
+      expect(flyout).toBeTruthy();
+      expect(flyout.getAttribute("dir")).toBe("rtl");
+      expect(flyout.style.backgroundImage).toContain("linear-gradient(to left");
+      expect(flyout.contains(document.activeElement)).toBe(true);
+
+      // In RTL, ArrowRight closes flyout and returns focus to parent submenu trigger
+      fireEvent.keyDown(flyout, { key: "ArrowRight" });
+      expect(document.querySelector('[data-menu-flyout="edit.preferences"]')).toBeNull();
+      expect(document.activeElement).toBe(prefTrigger);
+
+      // In RTL, ArrowLeft on a regular dropdown item advances to View (forward in RTL menubar)
+      const firstRow = dropdown.querySelector<HTMLElement>('[data-menu-action]')!;
+      firstRow.focus();
+      fireEvent.keyDown(dropdown, { key: "ArrowLeft" });
+      expect(document.querySelector('[data-menu-dropdown="view"]')).toBeTruthy();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+});

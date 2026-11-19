@@ -44,7 +44,8 @@ import type { RulerUnit } from "../utils/rulerLayout";
 import { MarginGuides } from "./MarginGuides";
 import { InPageToolPalette, type StudioToolId } from "./InPageToolPalette";
 import { WindowRuler } from "./WindowRuler";
-import { StudioObjectLayer, type StudioFrame } from "./StudioObjectLayer";
+import { StudioObjectLayer, type StudioFrame, type StudioObjectLayerHandle } from "./StudioObjectLayer";
+import type { StudioFrameHistoryBridge } from "./StudioTextFrame";
 import {
   INPAGE_HSCROLL_PX,
   INPAGE_RULER_BAR_PX,
@@ -84,6 +85,9 @@ export default function DocumentCanvas({
   selectedFrameIds,
   onSelectedFramesChange,
   onDoubleClickFrame,
+  onObjectGestureBegin,
+  onObjectGestureEnd,
+  frameHistoryBridge,
   tool: toolProp,
   englishFont = "Arial Unicode MS",
   keyboardLayout = null,
@@ -111,10 +115,13 @@ export default function DocumentCanvas({
   columnGutterMm?: number;
   minimumPages?: number;
   frames?: StudioFrame[];
-  onFramesChange?: (frames: StudioFrame[]) => void;
+  onFramesChange?: (frames: StudioFrame[], source?: "gesture") => void;
   selectedFrameIds?: string[];
   onSelectedFramesChange?: (ids: string[]) => void;
   onDoubleClickFrame?: (frame: StudioFrame) => void;
+  onObjectGestureBegin?: () => void;
+  onObjectGestureEnd?: () => void;
+  frameHistoryBridge?: StudioFrameHistoryBridge;
   tool?: StudioToolId;
   englishFont?: string;
   keyboardLayout?: KeyboardLayout | null;
@@ -123,6 +130,8 @@ export default function DocumentCanvas({
   const facing=viewMode === "facing";
   useFacingPageInteraction(editor,facing);
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const objectLayerRef = useRef<StudioObjectLayerHandle>(null);
+  const pasteboardMarqueeRef = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const hShiftRef = useRef<HTMLDivElement>(null);
   const vShiftRef = useRef<HTMLDivElement>(null);
@@ -441,22 +450,58 @@ export default function DocumentCanvas({
             ref={scrollerRef}
             className="relative isolate min-h-0 min-w-0 flex-1 overflow-auto"
             data-studio-scroller="true"
-            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined, scrollbarWidth: "none" }}
+            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : undefined, scrollbarWidth: "none" }}
             onPointerDown={(event) => {
-              if (tool !== "hand") return;
-              const el = scrollerRef.current;
-              if (!el) return;
-              panRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, sl: el.scrollLeft, st: el.scrollTop };
-              el.setPointerCapture(event.pointerId);
+              if (tool === "hand") {
+                const el = scrollerRef.current;
+                if (!el) return;
+                panRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, sl: el.scrollLeft, st: el.scrollTop };
+                el.setPointerCapture?.(event.pointerId);
+                return;
+              }
+              if (isPages && tool === "select" && event.button === 0) {
+                const target = event.target instanceof Element ? event.target : null;
+                if (target?.closest("[data-studio-objects]")) return;
+                event.preventDefault();
+                pasteboardMarqueeRef.current = event.pointerId;
+                objectLayerRef.current?.startMarquee(event);
+                event.currentTarget.setPointerCapture?.(event.pointerId);
+              }
             }}
             onPointerMove={(event) => {
+              if (pasteboardMarqueeRef.current === event.pointerId) {
+                objectLayerRef.current?.moveMarquee(event);
+                return;
+              }
               const pan = panRef.current;
               const el = scrollerRef.current;
               if (!pan || !el || pan.id !== event.pointerId) return;
               el.scrollLeft = pan.sl - (event.clientX - pan.x);
               el.scrollTop = pan.st - (event.clientY - pan.y);
             }}
-            onPointerUp={() => {
+            onPointerUp={(event) => {
+              if (pasteboardMarqueeRef.current === event.pointerId) {
+                pasteboardMarqueeRef.current = null;
+                objectLayerRef.current?.endMarquee(event);
+                if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                }
+                return;
+              }
+              panRef.current = null;
+            }}
+            onPointerCancel={() => {
+              if (pasteboardMarqueeRef.current !== null) {
+                pasteboardMarqueeRef.current = null;
+                objectLayerRef.current?.cancelMarquee();
+              }
+              panRef.current = null;
+            }}
+            onLostPointerCapture={() => {
+              if (pasteboardMarqueeRef.current !== null) {
+                pasteboardMarqueeRef.current = null;
+                objectLayerRef.current?.cancelMarquee();
+              }
               panRef.current = null;
             }}
           >
@@ -632,6 +677,10 @@ export default function DocumentCanvas({
                         />
                         {isPages ? (
                           <StudioObjectLayer zoom={zoomFactor} projection={projection}
+                            layerRef={objectLayerRef}
+                            onGestureBegin={onObjectGestureBegin}
+                            onGestureEnd={onObjectGestureEnd}
+                            frameHistoryBridge={frameHistoryBridge}
                             editor={editor} keyboardLayout={keyboardLayout}
                             tool={tool}
                             frames={frames}

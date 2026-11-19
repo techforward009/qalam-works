@@ -6,21 +6,22 @@ import type { DocumentZoom } from "../utils/documentView";
 import { studioOverlayRoot } from "../utils/inpageToolbar";
 import { CONTEXT_ZOOMS, contextMenuPosition } from "../utils/textContextMenu";
 import {
+  INPAGE_MENU_FRAME_STYLE,
+  INPAGE_MENU_HOVER_BG,
+  INPAGE_MENU_HOVER_BORDER,
+  INPAGE_MENU_ITEM_STYLE,
+  INPAGE_MENU_SEPARATOR_CLASS,
+  inpageMenuGutterBackground,
+} from "../utils/inpageMenuStyle";
+import {
   pictureContextItems,
   type PictureContextItemId,
   type PictureContextToolMode,
 } from "../utils/pictureContextMenu";
 
 const itemStyle: React.CSSProperties = {
-  height: 20,
-  minHeight: 20,
-  width: "100%",
-  padding: "0 20px",
+  ...INPAGE_MENU_ITEM_STYLE,
   textAlign: "left",
-  fontFamily: "QalamUITahoma, Tahoma, MS Sans Serif, sans-serif",
-  fontSize: 11,
-  color: "#000",
-  whiteSpace: "nowrap",
 };
 
 function enabledItems(menu: HTMLElement | null) {
@@ -148,16 +149,34 @@ export function StudioPictureContextMenu({
 
   return createPortal(
     <>
+      <style>{`
+        [data-studio-picture-menu] [role="menuitem"]:not(:disabled):hover,
+        [data-studio-picture-menu] [role="menuitem"]:not(:disabled):focus-visible,
+        [data-studio-picture-menu] [role="menuitem"][aria-expanded="true"],
+        [data-studio-picture-context-zoom] [role="menuitem"]:not(:disabled):hover,
+        [data-studio-picture-context-zoom] [role="menuitem"]:not(:disabled):focus-visible {
+          background: ${INPAGE_MENU_HOVER_BG} !important;
+          box-shadow: inset 0 0 0 1px ${INPAGE_MENU_HOVER_BORDER};
+          outline: none;
+        }
+        [data-studio-picture-menu] [role="menuitem"]:disabled,
+        [data-studio-picture-context-zoom] [role="menuitem"]:disabled {
+          color: #808080 !important;
+          text-shadow: 1px 1px 0 #fff;
+        }
+      `}</style>
       <div
         ref={root}
         role="menu"
         aria-label={menu.mode === "hand" ? "Picture hand context menu" : "Picture object context menu"}
         data-studio-picture-menu={menu.mode}
         dir="ltr"
-        className="fixed z-[120] border border-[#808080] bg-[#f0f0f0] py-1 shadow-md"
+        className="fixed z-[120] py-0.5"
         style={{
           ...position,
-          width: 180,
+          ...INPAGE_MENU_FRAME_STYLE,
+          backgroundImage: inpageMenuGutterBackground(false),
+          width: 190,
           maxWidth: "calc(100vw - 8px)",
           maxHeight: "calc(100vh - 8px)",
           overflowY: "auto",
@@ -169,49 +188,54 @@ export function StudioPictureContextMenu({
         {items.map((item) => {
           if (item.id === "zoom") {
             return (
-              <button
-                ref={zoomTrigger}
-                key={item.id}
-                type="button"
-                role="menuitem"
-                data-picture-menu="zoom"
-                aria-haspopup="menu"
-                aria-expanded={zoomOpen}
-                style={itemStyle}
-                className="flex items-center justify-between hover:bg-[#d6dff2] focus:bg-[#d6dff2]"
-                onPointerEnter={() => setZoomOpen(true)}
-                onClick={() => {
-                  setZoomOpen(true);
-                  requestAnimationFrame(() => enabledItems(submenu.current)[0]?.focus({ preventScroll: true }));
-                }}
-              >
-                {item.label}
-                <span aria-hidden>▸</span>
-              </button>
+              <div key={item.id}>
+                <button
+                  ref={zoomTrigger}
+                  type="button"
+                  role="menuitem"
+                  data-picture-menu="zoom"
+                  aria-haspopup="menu"
+                  aria-expanded={zoomOpen}
+                  style={{ ...itemStyle, paddingRight: 26 }}
+                  className="flex w-full items-center text-left"
+                  onPointerEnter={() => setZoomOpen(true)}
+                  onClick={() => {
+                    setZoomOpen(true);
+                    requestAnimationFrame(() => enabledItems(submenu.current)[0]?.focus({ preventScroll: true }));
+                  }}
+                >
+                  <span>{item.label}</span>
+                  <span aria-hidden style={{ position: "absolute", right: 11, top: 7, width: 0, height: 0, borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderLeft: "5px solid #000" }} />
+                </button>
+                <div role="separator" className={INPAGE_MENU_SEPARATOR_CLASS} />
+              </div>
             );
           }
           const actionId = item.id;
           const disabled = Boolean(disabledIds?.has(actionId));
+          const separatorAfter = actionId === "importPicture" || (menu.mode === "arrow" && actionId === "selectAll") || actionId === "clear";
           return (
-            <button
-              key={item.id}
-              type="button"
-              role="menuitem"
-              data-picture-menu={item.id}
-              disabled={disabled}
-              aria-disabled={disabled || undefined}
-              style={{ ...itemStyle, color: disabled ? "#808080" : "#000" }}
-              className="block enabled:hover:bg-[#d6dff2] enabled:focus:bg-[#d6dff2]"
-              onPointerEnter={() => setZoomOpen(false)}
-              onClick={() => {
-                const targetId = menu.id;
-                const mode = menu.mode;
-                close();
-                onAction(actionId, targetId, mode);
-              }}
-            >
-              {item.label}
-            </button>
+            <div key={actionId}>
+              <button
+                type="button"
+                role="menuitem"
+                data-picture-menu={actionId}
+                disabled={disabled}
+                aria-disabled={disabled || undefined}
+                style={{ ...itemStyle, color: disabled ? "#808080" : "#000" }}
+                className={`block w-full text-left ${disabled ? "cursor-default" : ""}`}
+                onPointerEnter={() => setZoomOpen(false)}
+                onClick={() => {
+                  const targetId = menu.id;
+                  const mode = menu.mode;
+                  close();
+                  onAction(actionId, targetId, mode);
+                }}
+              >
+                {item.label}
+              </button>
+              {separatorAfter ? <div role="separator" className={INPAGE_MENU_SEPARATOR_CLASS} /> : null}
+            </div>
           );
         })}
       </div>
@@ -222,9 +246,11 @@ export function StudioPictureContextMenu({
           aria-label="Zoom"
           data-studio-picture-context-zoom
           dir="ltr"
-          className="fixed z-[121] border border-[#808080] bg-[#f0f0f0] py-1 shadow-md"
+          className="fixed z-[121] py-0.5"
           style={{
             ...subPosition,
+            ...INPAGE_MENU_FRAME_STYLE,
+            backgroundImage: inpageMenuGutterBackground(false),
             width: 150,
             maxWidth: "calc(100vw - 8px)",
             maxHeight: "calc(100vh - 8px)",
@@ -239,7 +265,7 @@ export function StudioPictureContextMenu({
               type="button"
               role="menuitem"
               style={itemStyle}
-              className="block hover:bg-[#d6dff2] focus:bg-[#d6dff2]"
+              className="block w-full text-left"
               onClick={() => {
                 close(true);
                 onZoom(item.value);

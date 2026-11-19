@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { isHistoryTransaction } from '@tiptap/pm/history';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { isPictureBox } from '../components/StudioObjectLayer';
 import type { DocumentStudioSettings } from './documentSettings';
@@ -46,6 +47,8 @@ export function hasEditableFormattingFrame(element: HTMLElement): boolean {
 export const CONTENT_REPLACEMENT = 'studio-content-replacement';
 /** Explicit table-dialog transactions are valid in a document with no active formatting target. */
 export const TABLE_DIALOG_CHANGE = 'studio-table-dialog-change';
+/** Coordinated cross-surface story Undo/Redo transactions bypass stale frame/object formatting guards. */
+export const STORY_HISTORY_CHANGE = 'studio-story-history-change';
 export const formattingSafetyMessage = (urdu: boolean) => urdu
   ? 'ٹیکسٹ باکس میں منتخب عبارت کی فارمیٹنگ ابھی دستیاب نہیں۔'
   : 'Formatting selected text inside a text box is not yet available.';
@@ -99,6 +102,7 @@ export function installFormattingSafety(editor: Editor, reject: () => void, clea
     filterTransaction(tr) {
       if (tr.getMeta(CONTENT_REPLACEMENT)) { documentChanged(); return true; }
       if (tr.docChanged && tr.getMeta(TABLE_DIALOG_CHANGE) === true && owner === 'none') return true;
+      if (tr.getMeta(STORY_HISTORY_CHANGE) === true && isHistoryTransaction(tr)) return true;
       // Includes collapsed-selection stored marks and direct dialog/shortcut
       // transactions. Layout-only and selection-only transactions still work.
       return !(tr.docChanged || tr.storedMarksSet) || canFormat();

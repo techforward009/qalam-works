@@ -168,26 +168,66 @@ export interface FrameAlignSnapshot {
   end: number;
 }
 
-export function createFrameHistory() {
+export interface FrameRememberOptions {
+  groupKey?: string;
+  now?: number;
+  groupWindowMs?: number;
+}
+
+export function createFrameHistory(limit = 100) {
   const past: FrameAlignSnapshot[] = [];
   const future: FrameAlignSnapshot[] = [];
+  let lastGroupKey: string | null = null;
+  let lastGroupTime = 0;
   const clone = (snap: FrameAlignSnapshot): FrameAlignSnapshot => ({
     ...snap,
     paragraphAligns: snap.paragraphAligns ? [...snap.paragraphAligns] : snap.paragraphAligns,
   });
+  const closeGroup = () => {
+    lastGroupKey = null;
+    lastGroupTime = 0;
+  };
   return {
-    remember(current: FrameAlignSnapshot) {
+    remember(current: FrameAlignSnapshot, options?: FrameRememberOptions): boolean {
+      future.length = 0;
+      const key = options?.groupKey;
+      const now = options?.now ?? Date.now();
+      const windowMs = options?.groupWindowMs ?? 500;
+      if (key && lastGroupKey === key && past.length > 0 && now - lastGroupTime <= windowMs) {
+        lastGroupTime = now;
+        return false;
+      }
       past.push(clone(current));
-      if (past.length > 100) past.shift();
+      if (past.length > limit) past.shift();
+      lastGroupKey = key ?? null;
+      lastGroupTime = key ? now : 0;
+      return true;
+    },
+    closeGroup,
+    clearFuture() {
       future.length = 0;
     },
+    canUndo() {
+      return past.length > 0;
+    },
+    canRedo() {
+      return future.length > 0;
+    },
+    pastLength() {
+      return past.length;
+    },
+    futureLength() {
+      return future.length;
+    },
     undo(current: FrameAlignSnapshot): FrameAlignSnapshot | null {
+      closeGroup();
       const previous = past.pop();
       if (!previous) return null;
       future.push(clone(current));
       return previous;
     },
     redo(current: FrameAlignSnapshot): FrameAlignSnapshot | null {
+      closeGroup();
       const next = future.pop();
       if (!next) return null;
       past.push(clone(current));
@@ -195,3 +235,5 @@ export function createFrameHistory() {
     },
   };
 }
+
+export type FrameHistory = ReturnType<typeof createFrameHistory>;
