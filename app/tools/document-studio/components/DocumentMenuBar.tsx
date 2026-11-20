@@ -228,9 +228,11 @@ export default function DocumentMenuBar({
       const key = event.key.toLowerCase();
       let id: MenuActionId | undefined;
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && key === "y") {
-        // A selected picture box takes Ctrl+Y for import. Otherwise dispatch
-        // editor Redo explicitly — the same command as Edit > Redo on main.
-        id = disabledIds?.has("file.importPicture") ? "edit.redo" : "file.importPicture";
+        // InPage uses Ctrl+Y for Import Picture when a picture box is selected.
+        // Redo is restricted strictly to Ctrl/Cmd+Shift+Z (never Ctrl+Y).
+        if (!disabledIds?.has("file.importPicture")) {
+          id = "file.importPicture";
+        }
       } else if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
         id = ({ n: "file.new", o: "file.open", s: "file.save", h: "format.character", g: "format.paragraph" } as Record<string, MenuActionId>)[key];
       }

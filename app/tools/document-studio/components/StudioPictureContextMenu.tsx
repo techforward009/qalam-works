@@ -38,11 +38,13 @@ export type PictureContextRequest = {
 export function StudioPictureContextMenu({
   toolMode,
   disabledIds,
+  getDisabledIds,
   onZoom,
   onAction,
 }: {
   toolMode: PictureContextToolMode;
   disabledIds?: ReadonlySet<PictureContextItemId>;
+  getDisabledIds?: (mode: PictureContextToolMode, frameId: string) => ReadonlySet<PictureContextItemId>;
   onZoom: (zoom: DocumentZoom) => void;
   onAction: (id: Exclude<PictureContextItemId, "zoom">, frameId: string, mode: PictureContextToolMode) => void;
 }) {
@@ -62,24 +64,28 @@ export function StudioPictureContextMenu({
   };
 
   useEffect(() => {
-    const open = (event: Event) => {
-      const detail = (event as CustomEvent<{ id: string; x: number; y: number; tool?: string }>).detail;
-      if (!detail?.id) return;
+    const openDetail = (detail?: { id?: string; x: number; y: number; tool?: string }) => {
+      if (!detail) return;
+      const mode: PictureContextToolMode =
+        detail.tool === "select-empty"
+          ? "arrow-empty"
+          : detail.tool === "select"
+            ? "arrow"
+            : detail.tool === "text"
+              ? "hand"
+              : toolMode;
+      if (!detail.id && mode !== "arrow-empty") return;
       returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const mode: PictureContextToolMode = detail.tool === "select" ? "arrow" : detail.tool === "text" ? "hand" : toolMode;
-      setMenu({ id: detail.id, x: detail.x, y: detail.y, mode });
+      setMenu({ id: detail.id ?? "", x: detail.x, y: detail.y, mode });
       setZoomOpen(false);
       delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest;
     };
+    const open = (event: Event) => {
+      openDetail((event as CustomEvent<{ id?: string; x: number; y: number; tool?: string }>).detail);
+    };
     window.addEventListener("studio-picture-context", open);
-    const pending = (window as Window & { __studioPictureContextRequest?: { id: string; x: number; y: number; tool?: string } }).__studioPictureContextRequest;
-    if (pending?.id) {
-      returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const mode: PictureContextToolMode = pending.tool === "select" ? "arrow" : pending.tool === "text" ? "hand" : toolMode;
-      setMenu({ id: pending.id, x: pending.x, y: pending.y, mode });
-      setZoomOpen(false);
-      delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest;
-    }
+    const pending = (window as Window & { __studioPictureContextRequest?: { id?: string; x: number; y: number; tool?: string } }).__studioPictureContextRequest;
+    openDetail(pending);
     return () => window.removeEventListener("studio-picture-context", open);
   }, [toolMode]);
 
@@ -168,7 +174,13 @@ export function StudioPictureContextMenu({
       <div
         ref={root}
         role="menu"
-        aria-label={menu.mode === "hand" ? "Picture hand context menu" : "Picture object context menu"}
+        aria-label={
+          menu.mode === "hand"
+            ? "Picture hand context menu"
+            : menu.mode === "arrow-empty"
+              ? "Canvas object context menu"
+              : "Picture object context menu"
+        }
         data-studio-picture-menu={menu.mode}
         dir="ltr"
         className="fixed z-[120] py-0.5"
@@ -212,8 +224,13 @@ export function StudioPictureContextMenu({
             );
           }
           const actionId = item.id;
-          const disabled = Boolean(disabledIds?.has(actionId));
-          const separatorAfter = actionId === "importPicture" || (menu.mode === "arrow" && actionId === "selectAll") || actionId === "clear";
+          const disabled = Boolean(
+            disabledIds?.has(actionId) || getDisabledIds?.(menu.mode, menu.id).has(actionId),
+          );
+          const separatorAfter =
+            actionId === "importPicture"
+            || (menu.mode === "arrow" && actionId === "selectAll")
+            || actionId === "clear";
           return (
             <div key={actionId}>
               <button

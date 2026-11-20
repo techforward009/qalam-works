@@ -4,6 +4,7 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 import type { DocumentViewMode } from "./documentView";
 import { isParagraphAlignList } from "./paragraphAlign";
 import { normalizeSafeHex } from "./studioColors";
+import { isValidBorderPattern } from "./borderPatterns";
 
 export const QPG_FILE_ACCEPT = ".qpg,.inp,.txt,.docx";
 export const QPG_MIME_TYPE = "application/octet-stream";
@@ -73,7 +74,7 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       (frame.borderPosition === undefined || frame.borderPosition === "inside" || frame.borderPosition === "outside") &&
       (frame.borderColor === undefined || normalizeSafeHex(frame.borderColor) !== null) &&
       (frame.borderWidthMm === undefined || typeof frame.borderWidthMm === "number" && Number.isFinite(frame.borderWidthMm) && frame.borderWidthMm > 0 && frame.borderWidthMm <= 2000) &&
-      (frame.borderPattern === undefined || frame.borderPattern === "none") &&
+      (frame.borderPattern === undefined || isValidBorderPattern(frame.borderPattern)) &&
       (frame.backgroundColor === undefined || normalizeSafeHex(frame.backgroundColor) !== null) &&
       (frame.textColor === undefined || normalizeSafeHex(frame.textColor) !== null) &&
       (frame.textAlign === undefined || ["left", "center", "right", "justify", "justify-all"].includes(String(frame.textAlign))) &&

@@ -20,6 +20,8 @@ import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
 import { pictureContentDeltaMm } from "../utils/pictureFit";
+import { DEFAULT_INPAGE_BORDER_WIDTH_MM } from "../utils/objectAttributes";
+import { resolveBorderStrokes, type BorderPatternId } from "../utils/borderPatterns";
 
 export type FrameKind =
   | "rect"
@@ -64,7 +66,7 @@ export type StudioFrame = {
   borderPosition?: "inside" | "outside";
   borderColor?: string;
   borderWidthMm?: number;
-  borderPattern?: "none";
+  borderPattern?: BorderPatternId;
   backgroundColor?: string;
   backgroundHatch?: "none";
 };
@@ -351,6 +353,13 @@ export function StudioObjectLayer({
     };
     const clearOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (
+          document.querySelector(
+            '[data-studio-picture-menu], [data-studio-picture-context-zoom], [data-studio-text-menu], [data-menu-dropdown], [role="dialog"], [role="listbox"]',
+          )
+        ) {
+          return;
+        }
         setSelected([]);
         setDraft(null);
         dragRef.current = null;
@@ -521,6 +530,14 @@ export function StudioObjectLayer({
       text: "",
       typography,
       ...(singleLine ? { singleLine: true } : {}),
+      ...(isPictureBox(kind)
+        ? {
+            borderColor: "#000000",
+            borderWidthMm: DEFAULT_INPAGE_BORDER_WIDTH_MM,
+            borderPattern: "none" as const,
+            borderPosition: "inside" as const,
+          }
+        : {}),
     };
     if (textTool) pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
@@ -547,6 +564,16 @@ export function StudioObjectLayer({
       data-studio-objects="true"
       style={{ width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => {
+        if (tool !== "select") return;
+        const target = event.target instanceof HTMLElement ? event.target : null;
+        if (target?.closest?.("[data-studio-frame-id]")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const detail = { id: "", x: event.clientX, y: event.clientY, tool: "select-empty" };
+        (window as Window & { __studioPictureContextRequest?: typeof detail }).__studioPictureContextRequest = detail;
+        window.dispatchEvent(new CustomEvent("studio-picture-context", { detail }));
+      }}
       onDoubleClick={(event) => {
         if (tool !== "select" && tool !== "text") return;
         const target = event.target as HTMLElement | null;
@@ -787,7 +814,8 @@ export function StudioObjectLayer({
             data-studio-frame={frame.kind}
             data-studio-frame-id={frame.id}
             onContextMenu={(event) => {
-              if (!isPictureBox(frame.kind)) return;
+              const isPicture = isPictureBox(frame.kind);
+              if (tool !== "select" && !isPicture) return;
               event.preventDefault();
               event.stopPropagation();
               if (!selected.includes(frame.id)) setSelected([frame.id]);
@@ -1009,20 +1037,32 @@ function FrameShape({
     return <StudioTextFrame frameId={frame.id} historyBridge={historyBridge} text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
+  const hasExplicitNonePattern = frame.borderPattern === "none";
+  const hasExplicitPattern = frame.borderPattern !== undefined && !hasExplicitNonePattern;
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;
-  const inset = frame.borderPosition === "outside" ? -strokeWidth / 2 : strokeWidth / 2;
+  const inset = hasExplicitNonePattern ? 0 : frame.borderPosition === "outside" ? -strokeWidth / 2 : strokeWidth / 2;
   const innerWidth = Math.max(0, width - 2 * inset);
   const innerHeight = Math.max(0, height - 2 * inset);
-  const clipInset = frame.borderPosition === "inside" ? strokeWidth : 0;
+  const clipInset = !hasExplicitNonePattern && frame.borderPosition === "inside" ? strokeWidth : 0;
+  const borderColor = frame.borderColor ?? "#000";
   const stroke = frame.borderWidthMm === undefined
-    ? { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
-    : { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: frame.borderWidthMm * PX_PER_MM };
+    ? { fill: "none" as const, stroke: borderColor, strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
+    : { fill: "none" as const, stroke: borderColor, strokeWidth: frame.borderWidthMm * PX_PER_MM };
+  const hairlineGuideStroke = {
+    fill: "none" as const,
+    stroke: "#a0a0a0",
+    strokeWidth: 0.5,
+    vectorEffect: "non-scaling-stroke" as const,
+  };
+  const patternParts = hasExplicitPattern ? resolveBorderStrokes(frame.borderPattern, strokeWidth) : null;
 
   if (isPictureBox(frame.kind)) {
     const rx = frame.kind === "picture-round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined;
     const clipStyle: CSSProperties =
       frame.kind === "picture-ellipse"
-        ? frame.borderPosition === "inside" ? { clipPath: `ellipse(calc(50% - ${clipInset}px) calc(50% - ${clipInset}px) at 50% 50%)` } : { clipPath: "ellipse(50% 50% at 50% 50%)", borderRadius: "50%" }
+        ? !hasExplicitNonePattern && frame.borderPosition === "inside"
+          ? { clipPath: `ellipse(calc(50% - ${clipInset}px) calc(50% - ${clipInset}px) at 50% 50%)` }
+          : { clipPath: "ellipse(50% 50% at 50% 50%)", borderRadius: "50%" }
         : frame.kind === "picture-round-rect"
           ? { clipPath: `inset(${clipInset}px round ${Math.max(0, pictureCornerRadiusPx(frame) - clipInset)}px)`, borderRadius: pictureCornerRadiusPx(frame) }
           : { clipPath: `inset(${clipInset}px)`, borderRadius: 0 };
@@ -1031,6 +1071,11 @@ function FrameShape({
     const imgY = (frame.imageYMm ?? 0) * PX_PER_MM;
     const imgW = (frame.imageWMm ?? frame.wMm) * PX_PER_MM;
     const imgH = (frame.imageHMm ?? frame.hMm) * PX_PER_MM;
+    const diagStroke = hasExplicitNonePattern
+      ? hairlineGuideStroke
+      : hasExplicitPattern
+        ? { fill: "none" as const, stroke: borderColor, strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
+        : stroke;
 
     return (
       <div style={{ position: "relative", width, height, overflow: "visible", cursor: "inherit" }}>
@@ -1047,6 +1092,8 @@ function FrameShape({
               width: imgW,
               height: imgH,
               maxWidth: "none",
+              maxHeight: "none",
+              objectFit: "fill",
               userSelect: "none",
               pointerEvents: "none",
               transform: frame.angle2Deg !== undefined && Math.abs(frame.angle2Deg) > 1e-9 ? `rotate(${-frame.angle2Deg}deg)` : undefined,
@@ -1061,7 +1108,7 @@ function FrameShape({
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="none"
           aria-hidden
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: frame.borderPosition === "outside" ? "visible" : undefined }}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: !hasExplicitNonePattern && frame.borderPosition === "outside" ? "visible" : undefined }}
         >
           {frame.kind === "picture-ellipse" ? (
             <>
@@ -1073,12 +1120,40 @@ function FrameShape({
                     </clipPath>
                   </defs>
                   <g clipPath={`url(#clip-${frame.id})`}>
-                    <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-                    <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                    <line x1={0} y1={0} x2={width} y2={height} {...diagStroke} />
+                    <line x1={width} y1={0} x2={0} y2={height} {...diagStroke} />
                   </g>
                 </>
               ) : null}
-              <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} />
+              {hasExplicitNonePattern ? (
+                <ellipse
+                  cx={width / 2}
+                  cy={height / 2}
+                  rx={width / 2}
+                  ry={height / 2}
+                  data-studio-hairline-guide="true"
+                  {...hairlineGuideStroke}
+                />
+              ) : patternParts ? (
+                patternParts.map((part, idx) => {
+                  const pi = inset + part.insetDelta;
+                  return (
+                    <ellipse
+                      key={idx}
+                      cx={width / 2}
+                      cy={height / 2}
+                      rx={Math.max(0, width / 2 - pi)}
+                      ry={Math.max(0, height / 2 - pi)}
+                      fill="none"
+                      stroke={borderColor}
+                      strokeWidth={part.strokeWidth}
+                      strokeDasharray={part.dashArray}
+                    />
+                  );
+                })
+              ) : (
+                <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} />
+              )}
             </>
           ) : (
             <>
@@ -1090,12 +1165,45 @@ function FrameShape({
                     </clipPath>
                   </defs>
                   <g clipPath={`url(#clip-${frame.id})`}>
-                    <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-                    <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                    <line x1={0} y1={0} x2={width} y2={height} {...diagStroke} />
+                    <line x1={width} y1={0} x2={0} y2={height} {...diagStroke} />
                   </g>
                 </>
               ) : null}
-              <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} {...stroke} />
+              {hasExplicitNonePattern ? (
+                <rect
+                  x={0}
+                  y={0}
+                  width={width}
+                  height={height}
+                  rx={frame.kind === "picture-round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+                  data-studio-hairline-guide="true"
+                  {...hairlineGuideStroke}
+                />
+              ) : patternParts ? (
+                patternParts.map((part, idx) => {
+                  const pi = inset + part.insetDelta;
+                  const pw = Math.max(0, width - 2 * pi);
+                  const ph = Math.max(0, height - 2 * pi);
+                  const prx = frame.kind === "picture-round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - pi) : undefined;
+                  return (
+                    <rect
+                      key={idx}
+                      x={pi}
+                      y={pi}
+                      width={pw}
+                      height={ph}
+                      rx={prx}
+                      fill="none"
+                      stroke={borderColor}
+                      strokeWidth={part.strokeWidth}
+                      strokeDasharray={part.dashArray}
+                    />
+                  );
+                })
+              ) : (
+                <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} {...stroke} />
+              )}
             </>
           )}
           {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#808080" strokeWidth={1} vectorEffect="non-scaling-stroke" /> : null}
@@ -1105,13 +1213,127 @@ function FrameShape({
   }
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden style={{ overflow: frame.borderPosition === "outside" ? "visible" : undefined }}>
-      {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} fill={frame.backgroundColor ?? "none"} /> : null}
-        {frame.kind === "rect" || frame.kind === "round-rect" ? (
-        <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined} {...stroke} fill={frame.backgroundColor ?? "none"} />
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden style={{ overflow: !hasExplicitNonePattern && frame.borderPosition === "outside" ? "visible" : undefined }}>
+      {frame.kind === "ellipse" ? (
+        hasExplicitNonePattern ? (
+          <>
+            {frame.backgroundColor ? <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill={frame.backgroundColor} stroke="none" /> : null}
+            <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} data-studio-hairline-guide="true" {...hairlineGuideStroke} />
+          </>
+        ) : patternParts ? (
+          <>
+            {frame.backgroundColor ? <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill={frame.backgroundColor} stroke="none" /> : null}
+            {patternParts.map((part, idx) => {
+              const pi = inset + part.insetDelta;
+              return (
+                <ellipse
+                  key={idx}
+                  cx={width / 2}
+                  cy={height / 2}
+                  rx={Math.max(0, width / 2 - pi)}
+                  ry={Math.max(0, height / 2 - pi)}
+                  fill="none"
+                  stroke={borderColor}
+                  strokeWidth={part.strokeWidth}
+                  strokeDasharray={part.dashArray}
+                />
+              );
+            })}
+          </>
+        ) : (
+          <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} fill={frame.backgroundColor ?? "none"} />
+        )
+      ) : null}
+      {frame.kind === "rect" || frame.kind === "round-rect" ? (
+        hasExplicitNonePattern ? (
+          <>
+            {frame.backgroundColor ? (
+              <rect
+                x={0}
+                y={0}
+                width={width}
+                height={height}
+                rx={frame.kind === "round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+                fill={frame.backgroundColor}
+                stroke="none"
+              />
+            ) : null}
+            <rect
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              rx={frame.kind === "round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+              data-studio-hairline-guide="true"
+              {...hairlineGuideStroke}
+            />
+          </>
+        ) : patternParts ? (
+          <>
+            {frame.backgroundColor ? (
+              <rect
+                x={0}
+                y={0}
+                width={width}
+                height={height}
+                rx={frame.kind === "round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+                fill={frame.backgroundColor}
+                stroke="none"
+              />
+            ) : null}
+            {patternParts.map((part, idx) => {
+              const pi = inset + part.insetDelta;
+              return (
+                <rect
+                  key={idx}
+                  x={pi}
+                  y={pi}
+                  width={Math.max(0, width - 2 * pi)}
+                  height={Math.max(0, height - 2 * pi)}
+                  rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - pi) : undefined}
+                  fill="none"
+                  stroke={borderColor}
+                  strokeWidth={part.strokeWidth}
+                  strokeDasharray={part.dashArray}
+                />
+              );
+            })}
+          </>
+        ) : (
+          <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined} {...stroke} fill={frame.backgroundColor ?? "none"} />
+        )
       ) : null}
       {frame.kind === "line" ? (
-        <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
+        hasExplicitNonePattern ? (
+          <line x1={frame.flip ? width : 0} y1={0} x2={frame.flip ? 0 : width} y2={height} data-studio-hairline-guide="true" {...hairlineGuideStroke} />
+        ) : patternParts ? (
+          patternParts.map((part, idx) => {
+            const tx = frame.flip ? -width : width;
+            const ty = height;
+            const len = Math.hypot(tx, ty) || 1;
+            const nx = -ty / len;
+            const ny = tx / len;
+            const x1 = (frame.flip ? width - inset : inset) + nx * part.insetDelta;
+            const y1 = inset + ny * part.insetDelta;
+            const x2 = (frame.flip ? inset : width - inset) + nx * part.insetDelta;
+            const y2 = (height - inset) + ny * part.insetDelta;
+            return (
+              <line
+                key={idx}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                fill="none"
+                stroke={borderColor}
+                strokeWidth={part.strokeWidth}
+                strokeDasharray={part.dashArray}
+              />
+            );
+          })
+        ) : (
+          <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
+        )
       ) : null}
       {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#808080" strokeWidth={1} vectorEffect="non-scaling-stroke" /> : null}
     </svg>

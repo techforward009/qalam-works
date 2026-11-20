@@ -350,12 +350,12 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       return;
     }
     if (event.altKey || !(event.ctrlKey || event.metaKey)) return;
-    const key = event.key.toLowerCase();
-    if (key === "z" || (key === "y" && !event.shiftKey)) {
+    const isZKey = event.code === "KeyZ" || event.key.toLowerCase() === "z";
+    if (isZKey) {
       event.preventDefault();
       event.stopPropagation();
       historyKey.current = true;
-      if (key === "y" || event.shiftKey) redo(); else undo();
+      if (event.shiftKey) redo(); else undo();
     }
   };
   const handleCompositionEnd = (input: HTMLInputElement | HTMLTextAreaElement, data: string) => {

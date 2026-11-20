@@ -277,14 +277,11 @@ export function createStudioHistoryCoordinator() {
 export type StudioHistoryShortcutAction = "undo" | "redo";
 
 export function resolveStudioHistoryShortcut(
-  event: Pick<KeyboardEvent, "defaultPrevented" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey" | "key" | "target">,
+  event: Pick<KeyboardEvent, "defaultPrevented" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey" | "key" | "target"> & { code?: string },
 ): StudioHistoryShortcutAction | null {
   if (event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.altKey) return null;
-  const key = event.key.toLowerCase();
-  const action: StudioHistoryShortcutAction | null =
-    key === "z" ? (event.shiftKey ? "redo" : "undo")
-    : key === "y" && !event.shiftKey ? "redo"
-    : null;
+  const isZKey = event.code === "KeyZ" || event.key.toLowerCase() === "z";
+  const action: StudioHistoryShortcutAction | null = isZKey ? (event.shiftKey ? "redo" : "undo") : null;
   if (!action) return null;
   const target = event.target instanceof Element ? event.target : null;
   if (target?.closest("[role='dialog'], [role='alertdialog']")) return null;

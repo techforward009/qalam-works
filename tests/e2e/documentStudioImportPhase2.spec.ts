@@ -47,7 +47,7 @@ test("File Import opens the existing real InPage fixture with Urdu and A5 page s
   await page.reload();
   await expect(page.locator(".ProseMirror")).toContainText("تعقیبات نماز پنجگانہ");
   await expect(page.locator("[data-studio-page-label]")).toHaveText(/^77\//);
-  await expect(page.locator("#document-studio-upload-input")).toHaveAttribute("accept", ".inp,.txt,.docx");
+  await expect(page.locator("#document-studio-upload-input")).toHaveAttribute("accept", ".qpg,.inp,.txt,.docx");
 });
 
 test("TXT import preserves Urdu and meaningful blank lines through the old handler", async ({ page }) => {
@@ -88,12 +88,15 @@ for (const [name, data, error] of [
   });
 }
 
-test("Ctrl+Y stays Redo and the Phase 1 menu labels remain unchanged", async ({ page }) => {
+test("Ctrl+Shift+Z executes Redo while Ctrl+Y does not redo, and the Phase 1 menu labels remain unchanged", async ({ page }) => {
   await page.locator('[data-studio-tool-button="text"]').click(); await page.locator(".ProseMirror").focus();
   await page.keyboard.insertText("اصل متن"); await page.keyboard.press("Control+z");
   await expect(page.locator(".ProseMirror")).toHaveText("");
   let picker = false; page.on("filechooser", () => { picker = true; });
-  await page.keyboard.press("Control+y"); await expect(page.locator(".ProseMirror")).toHaveText("اصل متن");
+  await page.keyboard.press("Control+y");
+  await expect(page.locator(".ProseMirror")).toHaveText("");
   expect(picker).toBe(false);
-  await expect(page.locator("[data-menu-root]")).toHaveText(["File", "Edit", "View", "Format", "Insert", "Utilities", "Window", "Help"]);
+  await page.keyboard.press("Control+Shift+z");
+  await expect(page.locator(".ProseMirror")).toHaveText("اصل متن");
+  await expect(page.locator("[data-menu-root]")).toHaveText(["File", "Edit", "View", "Format", "Insert", "Utilities", "Keyboard", "Window", "Help"]);
 });

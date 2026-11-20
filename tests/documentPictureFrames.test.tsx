@@ -12,7 +12,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { ParagraphWithDir, HeadingWithDir, DocumentImage } from "../app/tools/document-studio/utils/documentSchema";
 import { transformPastedSlice } from "../app/tools/document-studio/utils/documentCommands";
 import { serializeQpg, deserializeQpg, type QpgDocument } from "../app/tools/document-studio/utils/qpgFile";
-import { validatePrintFrames, renderPrintFrame } from "../app/tools/document-studio/utils/printableFrames";
+import { validatePrintFrames, renderPrintFrame, printFramePageMarkup } from "../app/tools/document-studio/utils/printableFrames";
 import { HAND_CURSOR_PNG_PATH, isPictureBox, PICTURE_HAND_CURSOR, StudioObjectLayer, pictureMenuDisabledIds, selectedPictureBoxId, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import { dispatchDocumentMenuAction } from "../app/tools/document-studio/utils/documentMenuActions";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
@@ -21,7 +21,8 @@ import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMen
 import type { MenuActionId } from "../app/tools/document-studio/utils/documentMenus";
 import { StudioObjectRibbon } from "../app/tools/document-studio/components/StudioObjectRibbon";
 import type { ObjectGeometryPatch } from "../app/tools/document-studio/utils/objectAttributes";
-import { applyObjectGeometry } from "../app/tools/document-studio/utils/objectAttributes";
+import { applyObjectGeometry, DEFAULT_INPAGE_BORDER_WIDTH_MM, formatBorderWidth, formatScalePercent } from "../app/tools/document-studio/utils/objectAttributes";
+import { BORDER_PATTERN_IDS } from "../app/tools/document-studio/utils/borderPatterns";
 
 const extensions = [
   StarterKit.configure({ paragraph: false, heading: false }),
@@ -774,11 +775,10 @@ describe("Ctrl+Y picture import and redo", () => {
     expect(onAction).toHaveBeenCalledWith("file.importPicture");
   });
 
-  it("dispatches editor Redo when no picture box is selected", () => {
+  it("does NOT dispatch editor Redo on Ctrl+Y when no picture box is selected", () => {
     const { onAction, handled } = pressY(["file.importPicture"]);
-    expect(handled).toBe(false);
-    expect(onAction).toHaveBeenCalledTimes(1);
-    expect(onAction).toHaveBeenCalledWith("edit.redo");
+    expect(handled).toBe(true);
+    expect(onAction).not.toHaveBeenCalled();
   });
 
   it("keeps Ctrl+Alt+Y as Export All Text", () => {
@@ -912,7 +912,10 @@ describe("Modify Object dialog", () => {
   it("persists a color-only edit while keeping the legacy non-scaling / print stroke width", () => {
     const changes: Array<Record<string, unknown>> = [];
     const dialog = openModifyDialog((_id, patch) => changes.push(patch));
-    fireEvent.change(screen.getByLabelText("Border Color"), { target: { value: "#B91C1C" } });
+    fireEvent.click(screen.getByLabelText("Border Color"));
+    const crimsonBtn = document.querySelector('[data-object-combo-popup="true"] [data-color-swatch="#B91C1C"]')?.closest("button") as HTMLElement;
+    expect(crimsonBtn).toBeTruthy();
+    fireEvent.click(crimsonBtn);
     fireEvent.click(screen.getByRole("button", { name: "OK" }));
     expect(changes[0].borderColor).toBe("#B91C1C");
     expect(changes[0].borderWidthMm).toBeUndefined();
@@ -1048,5 +1051,203 @@ describe("picture hand panning and placeholder clipping", () => {
     const filledEl = container.querySelector('[data-studio-frame-id="filled-round"]') as HTMLElement;
     expect(filledEl.querySelector("g[clip-path]")).toBeNull();
     expect(filledEl.querySelector("img")).toBeTruthy();
+  });
+});
+
+describe("InPage Modify Object, Border Patterns, Scaling, and Pattern None parity", () => {
+  afterEach(() => cleanup());
+
+  it("initializes new drag-drawn picture boxes with InPage defaults (Black, 1pt, Pattern None, Inside)", () => {
+    const committed: StudioFrame[][] = [];
+    const { container } = render(
+      <StudioObjectLayer
+        editor={null}
+        tool="cross-square"
+        frames={[]}
+        onFramesChange={(next) => committed.push(next)}
+        onToolAction={() => {}}
+        pageCount={1}
+        pageWidthPx={794}
+        pageHeightPx={1123}
+        gapPx={24}
+        marginTopPx={72}
+        marginRightPx={72}
+      />,
+    );
+    const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+    layer.getBoundingClientRect = () => ({ left: 0, top: 0, width: 794, height: 1123, right: 794, bottom: 1123, x: 0, y: 0, toJSON: () => ({}) });
+
+    fireEvent.pointerDown(layer, { clientX: 40, clientY: 50, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(layer, { clientX: 160, clientY: 130, pointerId: 1 });
+    fireEvent.pointerUp(layer, { clientX: 160, clientY: 130, pointerId: 1 });
+
+    expect(committed).toHaveLength(1);
+    const frame = committed[0][0];
+    expect(frame.kind).toBe("picture-rect");
+    expect(frame.borderColor).toBe("#000000");
+    expect(frame.borderWidthMm).toBeCloseTo(DEFAULT_INPAGE_BORDER_WIDTH_MM);
+    expect(formatBorderWidth(frame.borderWidthMm!)).toBe("1pt");
+    expect(frame.borderPattern).toBe("none");
+    expect(frame.borderPosition).toBe("inside");
+  });
+
+  it("renders Pattern=None as an editor-only hairline guide on screen and emits ZERO outline or empty cross lines in PDF/Print", () => {
+    const noneEmpty: StudioFrame = {
+      ...baseFrame,
+      id: "none-empty",
+      borderColor: "#000000",
+      borderWidthMm: DEFAULT_INPAGE_BORDER_WIDTH_MM,
+      borderPattern: "none",
+      borderPosition: "inside",
+    };
+    const noneImage: StudioFrame = {
+      ...noneEmpty,
+      id: "none-image",
+      imageSrc: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    };
+    const noneText: StudioFrame = {
+      ...baseFrame,
+      id: "none-text",
+      kind: "text",
+      borderPattern: "none",
+      text: "Hello",
+    };
+
+    const { container } = render(
+      <StudioObjectLayer
+        editor={null}
+        tool="select"
+        frames={[noneEmpty, noneImage]}
+        onFramesChange={() => {}}
+        onToolAction={() => {}}
+        pageCount={1}
+        pageWidthPx={794}
+        pageHeightPx={1123}
+        gapPx={24}
+        marginTopPx={72}
+        marginRightPx={72}
+      />,
+    );
+
+    // Screen: hairline guide is present on empty & filled frames
+    expect(container.querySelectorAll('[data-studio-hairline-guide="true"]').length).toBeGreaterThanOrEqual(2);
+    const guide = container.querySelector('[data-studio-frame-id="none-image"] [data-studio-hairline-guide="true"]') as SVGElement;
+    expect(guide.getAttribute("stroke")).toBe("#a0a0a0");
+
+    // PDF/Print: zero border outline and zero placeholder cross lines when borderPattern === "none"
+    const emptyMarkup = renderPrintFrame(noneEmpty);
+    expect(emptyMarkup).not.toContain('stroke="#000000"');
+    expect(emptyMarkup).not.toContain("<line");
+    const filledMarkup = renderPrintFrame(noneImage);
+    expect(filledMarkup).not.toContain('stroke="#000000"');
+    expect(printFramePageMarkup([noneText], 210, 297)).toContain("border:none;");
+  });
+
+  it("supports quarter-point border width formatting, 2-decimal scaling noise cleanup, independent scaling/origin vs bounds, and Pattern/Color combos with Escape safety", () => {
+    expect(formatBorderWidth(25.4 / 96)).toBe("0.75pt");
+    expect(formatBorderWidth(25.4 / 72)).toBe("1pt");
+    expect(formatBorderWidth((1.25 * 25.4) / 72)).toBe("1.25pt");
+    expect(formatBorderWidth((1.5 * 25.4) / 72)).toBe("1.5pt");
+    expect(formatScalePercent(8.600144)).toBe("8.6%");
+
+    // Independent Across/Down scaling & Origin leave Bounds unchanged; untouched OK avoids scaling noise rewrite
+    const changes: Array<Record<string, unknown>> = [];
+    const imgSrc = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const noisyFrame: StudioFrame = {
+      ...baseFrame,
+      borderColor: "#000000",
+      borderWidthMm: DEFAULT_INPAGE_BORDER_WIDTH_MM,
+      borderPattern: "none",
+      borderPosition: "inside",
+      imageSrc: imgSrc,
+      imageNaturalW: 2000,
+      imageNaturalH: 1000,
+      imageWMm: (0.08600144 * 2000) / (96 / 25.4),
+      imageHMm: (0.25 * 1000) / (96 / 25.4),
+    };
+
+    const onCancel = vi.fn();
+    render(
+      <StudioObjectRibbon
+        frame={noisyFrame}
+        onChange={(_id, patch) => changes.push(patch)}
+      />,
+    );
+    const target = document.createElement("div");
+    target.dataset.studioFrame = "picture-rect";
+    target.dataset.studioFrameId = noisyFrame.id;
+    document.body.append(target);
+    fireEvent.contextMenu(target, { clientX: 20, clientY: 30 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Format Object..." }));
+
+    const scaleAcross = screen.getByLabelText("Scaling Across") as HTMLInputElement;
+    const scaleDown = screen.getByLabelText("Scaling Down") as HTMLInputElement;
+    expect(scaleAcross.value).toBe("8.6%");
+    expect(scaleDown.value).toBe("25%");
+    expect((screen.getByLabelText("Border Width") as HTMLInputElement).value).toBe("1pt");
+
+    // Open Border Pattern combo, press Escape -> closes dropdown ONLY (dialog stays mounted!), then reopen & select Dashed
+    const patternCombo = screen.getByLabelText("Border Pattern");
+    fireEvent.click(patternCombo);
+    const patternListbox = screen.getByRole("listbox", { name: "Border Pattern options" });
+    expect(patternListbox.querySelectorAll('[role="option"]')).toHaveLength(BORDER_PATTERN_IDS.length);
+    fireEvent.keyDown(patternListbox, { key: "Escape" });
+    expect(screen.queryByRole("listbox", { name: "Border Pattern options" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Modify Object" })).toBeTruthy();
+
+    fireEvent.click(patternCombo);
+    fireEvent.click(screen.getByRole("option", { name: "Dashed" }));
+
+    // Open Background Color combo -> select Blue
+    fireEvent.click(screen.getByLabelText("Background Color"));
+    const blueBtn = document.querySelector('[data-object-combo-popup="true"] [data-color-swatch="#1D4ED8"]')?.closest("button") as HTMLElement;
+    expect(blueBtn).toBeTruthy();
+    fireEvent.click(blueBtn);
+
+    // Edit Origin + only Scaling Across -> Bounds stay equal to frame geometry
+    fireEvent.change(screen.getByLabelText("Origin Across"), { target: { value: "5mm" } });
+    fireEvent.change(scaleAcross, { target: { value: "50%" } });
+    fireEvent.click(screen.getByRole("button", { name: "OK" }));
+
+    expect(changes).toHaveLength(1);
+    const applied = applyObjectGeometry(noisyFrame, changes[0] as ObjectGeometryPatch)!;
+    expect(applied.xMm).toBe(noisyFrame.xMm);
+    expect(applied.yMm).toBe(noisyFrame.yMm);
+    expect(applied.wMm).toBe(noisyFrame.wMm);
+    expect(applied.hMm).toBe(noisyFrame.hMm);
+    expect(applied.imageXMm).toBe(5);
+    expect(applied.imageWMm).toBeCloseTo(0.5 * (2000 / (96 / 25.4)));
+    expect(applied.imageHMm).toBe(noisyFrame.imageHMm);
+    expect(applied.borderPattern).toBe("dashed");
+    expect(applied.backgroundColor).toBe("#1D4ED8");
+
+    // Validate all active border patterns round-trip through .qpg and render in SVG / Print / Screen
+    for (const pattern of BORDER_PATTERN_IDS) {
+      const candidate: StudioFrame = {
+        ...applied,
+        id: `pat-${pattern}`,
+        borderPattern: pattern,
+      };
+      expect(() => validatePrintFrames([candidate])).not.toThrow();
+      const doc: QpgDocument = {
+        title: "Pattern Check",
+        content: { type: "doc", content: [{ type: "paragraph", content: [] }] },
+        documentSettings: defaultDocumentSettings(),
+        frames: [candidate],
+        minimumPages: 1,
+        columns: { count: 1, gutterMm: 4.23 },
+        viewMode: "pages",
+      };
+      const parsed = deserializeQpg(serializeQpg(doc));
+      expect(parsed.frames?.[0]?.borderPattern).toBe(pattern);
+      const printSvg = renderPrintFrame(candidate);
+      if (pattern === "dashed" || pattern === "dotted" || pattern === "dash-dot" || pattern === "dash-dot-dot") {
+        expect(printSvg).toContain("stroke-dasharray=");
+      }
+      if (pattern === "double" || pattern === "thick-thin" || pattern === "thin-thick") {
+        expect((printSvg.match(/<rect /g) ?? []).length).toBeGreaterThanOrEqual(4); // clip + bg + 2 strokes
+      }
+    }
+    expect(onCancel).not.toHaveBeenCalled();
   });
 });

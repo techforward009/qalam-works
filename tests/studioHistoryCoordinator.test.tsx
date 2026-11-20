@@ -16,6 +16,7 @@ import type { StudioFrame } from "../app/tools/document-studio/components/Studio
 import { StudioTextFrame, type StudioFrameHistoryBridge } from "../app/tools/document-studio/components/StudioTextFrame";
 import { QalamPagination, applyQalamPagination, getQalamPaginationState, paginationGeometryFromLayout } from "../app/tools/document-studio/extensions/QalamPagination";
 import { resetEditorHistory, setEditorContent } from "../app/tools/document-studio/utils/documentCommands";
+import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 import {
   STORY_HISTORY_CHANGE,
   installFormattingSafety,
@@ -61,6 +62,15 @@ function createHarness(initialStory = "<p>Initial</p>", initialFrames: StudioFra
     element: host,
     extensions: [StarterKit],
     content: initialStory,
+    editorProps: {
+      handleKeyDown: (_view, event) => {
+        if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "y") {
+          event.preventDefault();
+          return true;
+        }
+        return false;
+      },
+    },
   });
   const safety = installFormattingSafety(editor, rejectSpy, clearNoticeSpy);
 
@@ -527,13 +537,14 @@ function stubDocumentFontsForTest(cleanupsList: Array<() => void>) {
   });
 }
 
-describe("Global Ctrl+Y / Meta+Y / Ctrl+Z / Ctrl+Shift+Z shortcut routing", () => {
+describe("Global Ctrl+Z / Ctrl+Shift+Z shortcut routing and Ctrl+Y non-redo parity", () => {
   function attachWindowShortcut(run: (action: "undo" | "redo") => boolean) {
     const handler = (event: KeyboardEvent) => {
       const action = resolveStudioHistoryShortcut(event);
       if (!action) return;
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation?.();
       run(action);
     };
     window.addEventListener("keydown", handler, true);
@@ -548,7 +559,7 @@ describe("Global Ctrl+Y / Meta+Y / Ctrl+Z / Ctrl+Shift+Z shortcut routing", () =
     return event;
   }
 
-  it("routes Ctrl+Y and Meta+Y through coordinator when story is focused and blocks native TipTap Mod-y bypass", () => {
+  it("routes Ctrl+Z and Ctrl/Meta+Shift+Z (including physical KeyZ) through coordinator and blocks Ctrl+Y / Meta+Y from executing native TipTap Redo", () => {
     const h = createHarness("<p>Lead:</p>", [makeFrame("pic-1", { xMm: 10 })]);
     cleanups.push(h.cleanup);
     attachWindowShortcut((action) => (action === "undo" ? h.undo() : h.redo()));
@@ -556,38 +567,71 @@ describe("Global Ctrl+Y / Meta+Y / Ctrl+Z / Ctrl+Shift+Z shortcut routing", () =
     h.typeStory("Word");
     (h.editor.view.dom as HTMLElement).focus();
 
-    const undoEv = pressWindowKey(h.editor.view.dom, { key: "z", ctrlKey: true });
+    const undoEv = pressWindowKey(h.editor.view.dom, { key: "z", code: "KeyZ", ctrlKey: true });
     expect(undoEv.defaultPrevented).toBe(true);
     expect(h.editor.getText()).toBe("Lead:");
 
-    const redoCtrlY = pressWindowKey(h.editor.view.dom, { key: "y", ctrlKey: true });
-    expect(redoCtrlY.defaultPrevented).toBe(true);
-    expect(h.editor.getText()).toBe("Lead:Word");
-
-    pressWindowKey(h.editor.view.dom, { key: "z", ctrlKey: true });
+    // Ctrl+Y / Meta+Y must NEVER trigger Redo
+    const blockedCtrlY = pressWindowKey(h.editor.view.dom, { key: "y", code: "KeyY", ctrlKey: true });
+    expect(blockedCtrlY.defaultPrevented).toBe(true);
     expect(h.editor.getText()).toBe("Lead:");
 
-    const redoMetaY = pressWindowKey(h.editor.view.dom, { key: "y", metaKey: true });
-    expect(redoMetaY.defaultPrevented).toBe(true);
+    pressWindowKey(h.editor.view.dom, { key: "y", code: "KeyY", metaKey: true });
+    expect(h.editor.getText()).toBe("Lead:");
+
+    // Ctrl+Shift+Z and Meta+Shift+Z execute coordinated Redo cleanly
+    const redoCtrlShiftZ = pressWindowKey(h.editor.view.dom, { key: "Z", code: "KeyZ", ctrlKey: true, shiftKey: true });
+    expect(redoCtrlShiftZ.defaultPrevented).toBe(true);
     expect(h.editor.getText()).toBe("Lead:Word");
 
-    // Branch after undo: TipTap retains internal redoDepth > 0, yet coordinator invalidates redo.
-    // Pressing Ctrl+Y / Meta+Y inside .ProseMirror must NOT let TipTap native Mod-y bypass coordinator.
+    // Non-Latin keyboard layout (e.g., Urdu key="ذ" on physical KeyZ) still routes via code
+    pressWindowKey(h.editor.view.dom, { key: "ذ", code: "KeyZ", ctrlKey: true });
+    expect(h.editor.getText()).toBe("Lead:");
+    pressWindowKey(h.editor.view.dom, { key: "ذ", code: "KeyZ", metaKey: true, shiftKey: true });
+    expect(h.editor.getText()).toBe("Lead:Word");
+
+    // Branch after undo: coordinator invalidates redo, and neither Ctrl+Y nor Ctrl+Shift+Z restores stale redo
     pressWindowKey(h.editor.view.dom, { key: "z", ctrlKey: true });
     expect(redoDepth(h.editor.state)).toBeGreaterThan(0);
     h.commitObjects([makeFrame("pic-1", { xMm: 45 })]);
     expect(h.canRedo()).toBe(false);
 
-    const blockedCtrlY = pressWindowKey(h.editor.view.dom, { key: "y", ctrlKey: true });
-    expect(blockedCtrlY.defaultPrevented).toBe(true);
+    pressWindowKey(h.editor.view.dom, { key: "y", ctrlKey: true });
     expect(h.editor.getText()).toBe("Lead:");
-
-    const blockedMetaY = pressWindowKey(h.editor.view.dom, { key: "y", metaKey: true });
-    expect(blockedMetaY.defaultPrevented).toBe(true);
+    pressWindowKey(h.editor.view.dom, { key: "z", ctrlKey: true, shiftKey: true });
     expect(h.editor.getText()).toBe("Lead:");
   });
 
-  it("handles Ctrl+Z, Ctrl+Y, and Meta+Y when objects are selected and when a StudioTextFrame has focus without double-executing", () => {
+  it("blocks TipTap native Mod-y Redo via createDocumentStudioExtensions DisableModYRedo even without editorProps.handleKeyDown", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const studioEditor = new Editor({
+      element: host,
+      extensions: createDocumentStudioExtensions(),
+      content: "<p>Base</p>",
+    });
+    cleanups.push(() => {
+      studioEditor.destroy();
+      host.remove();
+    });
+
+    act(() => {
+      studioEditor.chain().focus().insertContent(" Next").run();
+    });
+    expect(studioEditor.getText()).toContain("Next");
+
+    act(() => {
+      studioEditor.commands.undo();
+    });
+    expect(studioEditor.getText()).toBe("Base");
+    expect(redoDepth(studioEditor.state)).toBeGreaterThan(0);
+
+    const modY = pressWindowKey(studioEditor.view.dom, { key: "y", ctrlKey: true });
+    expect(modY.defaultPrevented).toBe(true);
+    expect(studioEditor.getText()).toBe("Base");
+  });
+
+  it("handles Ctrl+Z and Ctrl/Meta+Shift+Z across objects and StudioTextFrame while ignoring Ctrl+Y", () => {
     stubDocumentFontsForTest(cleanups);
     const h = createHarness("<p>Story:</p>", [
       makeFrame("tf-1", { kind: "text", xMm: 10, text: "" }),
@@ -649,13 +693,16 @@ describe("Global Ctrl+Y / Meta+Y / Ctrl+Z / Ctrl+Shift+Z shortcut routing", () =
     h.commitObjects([makeFrame("tf-1", { kind: "text", xMm: 10, text: "A" })]);
     h.setSelectedIds([]);
 
-    // Undo and redo deleted object while object container / body is focused
+    // Undo and redo deleted object using Ctrl+Z / Ctrl+Shift+Z; Ctrl+Y does nothing
     objEl.focus();
     pressWindowKey(objEl, { key: "z", ctrlKey: true });
     expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1", "pic-1"]);
     expect(h.getSelectedIds()).toEqual(["pic-1"]);
 
     pressWindowKey(objEl, { key: "y", ctrlKey: true });
+    expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1", "pic-1"]);
+
+    pressWindowKey(objEl, { key: "Z", ctrlKey: true, shiftKey: true });
     expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1"]);
     expect(h.getSelectedIds()).toEqual([]);
 
@@ -663,10 +710,10 @@ describe("Global Ctrl+Y / Meta+Y / Ctrl+Z / Ctrl+Shift+Z shortcut routing", () =
     expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1", "pic-1"]);
     expect(h.getSelectedIds()).toEqual(["pic-1"]);
 
-    pressWindowKey(objEl, { key: "y", metaKey: true });
+    pressWindowKey(objEl, { key: "Z", metaKey: true, shiftKey: true });
     expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1"]);
 
-    // Focus inside StudioTextFrame: step-by-step undo strictly reverses 1 entry per keypress (object -> frame -> story)
+    // Focus inside StudioTextFrame: step-by-step undo reverses 1 entry per keypress (object -> frame -> story)
     frameBox.focus();
     pressWindowKey(frameBox, { key: "z", ctrlKey: true });
     expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1", "pic-1"]);
@@ -680,12 +727,16 @@ describe("Global Ctrl+Y / Meta+Y / Ctrl+Z / Ctrl+Shift+Z shortcut routing", () =
     pressWindowKey(frameBox, { key: "z", ctrlKey: true });
     expect(h.editor.getText()).toBe("Story:");
 
-    // Redo back step-by-step while frame retains focus using Ctrl+Y, Meta+Y, and Ctrl+Shift+Z
+    // Ctrl+Y inside focused StudioTextFrame must NOT redo
     pressWindowKey(frameBox, { key: "y", ctrlKey: true });
+    expect(h.editor.getText()).toBe("Story:");
+
+    // Redo back step-by-step while frame retains focus using Ctrl+Shift+Z and Meta+Shift+Z
+    pressWindowKey(frameBox, { key: "z", ctrlKey: true, shiftKey: true });
     expect(h.editor.getText()).toBe("Story:First");
     expect(frameBox.value).toBe("");
 
-    pressWindowKey(frameBox, { key: "y", metaKey: true });
+    pressWindowKey(frameBox, { key: "z", metaKey: true, shiftKey: true });
     expect(frameBox.value).toBe("A");
     expect(h.getFrames().map((f) => f.id)).toEqual(["tf-1", "pic-1"]);
 

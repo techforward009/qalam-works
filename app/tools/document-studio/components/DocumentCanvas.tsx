@@ -238,7 +238,7 @@ export default function DocumentCanvas({
     scrollerWidth,
     Math.max(0, scrollerHeight - PASTEBOARD_TOP_PX - bottomPad),
   );
-  useStudioZoomVisibility(editor,zoomFactor,scrollerRef,viewMode);
+  useStudioZoomVisibility(editor,zoomFactor,scrollerRef,viewMode,selectedFrameIds);
   useStudioPageAnchor(editor,scrollerRef,viewMode,viewAnchor);
   const visualWidth = (spread?.width ?? baseWidth) * zoomFactor;
   const visualPageHeight = natural.heightPx * zoomFactor;
@@ -451,6 +451,16 @@ export default function DocumentCanvas({
             className="relative isolate min-h-0 min-w-0 flex-1 overflow-auto"
             data-studio-scroller="true"
             style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : undefined, scrollbarWidth: "none" }}
+            onContextMenu={(event) => {
+              if (!isPages || tool !== "select") return;
+              const target = event.target instanceof Element ? event.target : null;
+              if (target?.closest("[data-studio-objects]")) return;
+              event.preventDefault();
+              event.stopPropagation();
+              const detail = { id: "", x: event.clientX, y: event.clientY, tool: "select-empty" };
+              (window as Window & { __studioPictureContextRequest?: typeof detail }).__studioPictureContextRequest = detail;
+              window.dispatchEvent(new CustomEvent("studio-picture-context", { detail }));
+            }}
             onPointerDown={(event) => {
               if (tool === "hand") {
                 const el = scrollerRef.current;

@@ -1,6 +1,57 @@
 import { isPictureBox, type FrameKind, type StudioFrame } from "../components/StudioObjectLayer";
 import { normalizeSafeHex } from "./studioColors";
 import { PRINT_FRAME_LIMITS } from "./printableFrames";
+import { isValidBorderPattern } from "./borderPatterns";
+
+export const DEFAULT_INPAGE_BORDER_WIDTH_MM = 25.4 / 72;
+export const STUDIO_PX_PER_MM = 96 / 25.4;
+
+export function pictureReferenceSizeMm(
+  frame: Pick<StudioFrame, "wMm" | "hMm" | "imageNaturalW" | "imageNaturalH">,
+): { wMm: number; hMm: number } {
+  if (
+    typeof frame.imageNaturalW === "number" && Number.isFinite(frame.imageNaturalW) && frame.imageNaturalW > 0 &&
+    typeof frame.imageNaturalH === "number" && Number.isFinite(frame.imageNaturalH) && frame.imageNaturalH > 0
+  ) {
+    return {
+      wMm: frame.imageNaturalW / STUDIO_PX_PER_MM,
+      hMm: frame.imageNaturalH / STUDIO_PX_PER_MM,
+    };
+  }
+  return {
+    wMm: Math.max(0.1, frame.wMm),
+    hMm: Math.max(0.1, frame.hMm),
+  };
+}
+
+export function pictureScalePercent(
+  frame: Pick<StudioFrame, "wMm" | "hMm" | "imageWMm" | "imageHMm" | "imageNaturalW" | "imageNaturalH">,
+): { x: number; y: number } {
+  const ref = pictureReferenceSizeMm(frame);
+  const effectiveW = frame.imageWMm ?? frame.wMm;
+  const effectiveH = frame.imageHMm ?? frame.hMm;
+  return {
+    x: ref.wMm > 0 ? (effectiveW / ref.wMm) * 100 : 100,
+    y: ref.hMm > 0 ? (effectiveH / ref.hMm) * 100 : 100,
+  };
+}
+
+export function formatScalePercent(value: number): string {
+  if (!Number.isFinite(value)) return "100%";
+  const rounded = Math.round(value * 100) / 100;
+  return `${Number(rounded.toFixed(2))}%`;
+}
+
+export function parseScalePercent(raw: string): number {
+  const match = raw.trim().match(/^([+]?(?:\d+(?:\.\d*)?|\.\d+))\s*%?$/);
+  return match ? Number(match[1]) : Number.NaN;
+}
+
+export function pictureDimensionMmFromScale(scalePct: number, refMm: number): number {
+  return Number.isFinite(scalePct) && scalePct > 0 && Number.isFinite(refMm) && refMm > 0
+    ? (scalePct / 100) * refMm
+    : refMm;
+}
 
 export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition">>;
 const pictureKinds: readonly FrameKind[] = ["picture-rect", "picture-round-rect", "picture-ellipse"];
@@ -31,11 +82,11 @@ export function parseBorderWidth(raw: string): number {
 
 export function formatBorderWidth(mm: number): string {
   if (!Number.isFinite(mm)) return "";
-  const legacy = 25.4 / 96;
-  if (Math.abs(mm - legacy) < 0.005) return "0.75pt";
-  const points = mm * 72 / 25.4;
-  const rounded = Math.round(points);
-  if (rounded >= 1 && rounded <= 12 && Math.abs(points - rounded) < 0.005) return `${rounded}pt`;
+  const points = (mm * 72) / 25.4;
+  const quarterPoints = Math.round(points * 4) / 4;
+  if (quarterPoints >= 0.25 && quarterPoints <= 120 && Math.abs(points - quarterPoints) < 0.01) {
+    return `${Number(quarterPoints.toFixed(2))}pt`;
+  }
   return `${mm.toFixed(2)}mm`;
 }
 
@@ -64,7 +115,7 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (patch.borderColor !== undefined && !normalizeSafeHex(patch.borderColor)) return null;
   if (patch.backgroundColor !== undefined && patch.backgroundColor !== "" && !normalizeSafeHex(patch.backgroundColor)) return null;
   if (patch.borderWidthMm !== undefined && (typeof patch.borderWidthMm !== "number" || !Number.isFinite(patch.borderWidthMm) || patch.borderWidthMm <= 0 || patch.borderWidthMm > PRINT_FRAME_LIMITS.mm)) return null;
-  if (patch.borderPattern !== undefined && patch.borderPattern !== "none") return null;
+  if (patch.borderPattern !== undefined && !isValidBorderPattern(patch.borderPattern)) return null;
   if (patch.backgroundHatch !== undefined && patch.backgroundHatch !== "none") return null;
   const next: StudioFrame = { ...frame, ...patch, ...(patch.borderColor !== undefined ? { borderColor: normalizeSafeHex(patch.borderColor)! } : {}) };
   if (patch.backgroundColor !== undefined) {

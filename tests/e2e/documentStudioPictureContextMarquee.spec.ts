@@ -53,7 +53,9 @@ test.describe("Picture Context Menus, Clipboard Integration, and Marquee Selecti
     const consoleErrors: string[] = [];
     const pageErrors: string[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrors.push(msg.text());
+      if (msg.type() === "error" && !(msg.location()?.url ?? "").includes("/_vercel/")) {
+        consoleErrors.push(msg.text());
+      }
     });
     page.on("pageerror", (err) => pageErrors.push(err.message));
 
@@ -75,7 +77,7 @@ test.describe("Picture Context Menus, Clipboard Integration, and Marquee Selecti
     const handMenu = page.locator('[data-studio-picture-menu="hand"]');
     await expect(handMenu).toBeVisible();
     const handLabels = await handMenu.locator('[role="menuitem"]').allInnerTexts();
-    expect(handLabels.map((t) => t.replace("▸", "").trim())).toEqual(["Zoom", "Import Picture…", "Select All", "Paste"]);
+    expect(handLabels.map((t) => t.replace("▸", "").trim())).toEqual(["Zoom", "Import Picture…", "Select All", "Cut", "Copy", "Clear", "Paste"]);
 
     // Verify positioning near pointer
     const handMenuBox = await handMenu.boundingBox();
@@ -94,7 +96,9 @@ test.describe("Picture Context Menus, Clipboard Integration, and Marquee Selecti
     await page.mouse.click(box0.x + 20, box0.y + 20, { button: "right" });
     await handMenu.getByRole("menuitem", { name: /Zoom/ }).click();
     await page.locator('[data-studio-picture-context-zoom]').getByRole("menuitem", { name: "200%" }).click();
-    await page.mouse.click(box0.x + 20, box0.y + 20, { button: "right" });
+    const box0Zoomed = await frames.nth(0).boundingBox();
+    if (!box0Zoomed) throw new Error("Missing first picture box at 200% zoom.");
+    await page.mouse.click(box0Zoomed.x + 20, box0Zoomed.y + 20, { button: "right" });
     await handMenu.getByRole("menuitem", { name: /Zoom/ }).click();
     await page.locator('[data-studio-picture-context-zoom]').getByRole("menuitem", { name: "100%" }).click();
 
@@ -146,10 +150,114 @@ test.describe("Picture Context Menus, Clipboard Integration, and Marquee Selecti
     await expect(page.getByRole("dialog", { name: "Modify Object" })).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
 
-    // Clear frame 1 via Arrow context menu
-    await page.mouse.click(f1Box!.x + 20, f1Box!.y + 20, { button: "right" });
+    // Deselect multi-selection, select only frame 1, then Clear frame 1 via Arrow context menu
+    await page.mouse.click(sBox.x + 15, sBox.y + 15);
+    await frames.nth(1).click();
+    const f1ClearBox = await frames.nth(1).boundingBox();
+    await page.mouse.click(f1ClearBox!.x + 20, f1ClearBox!.y + 20, { button: "right" });
     await page.locator('[data-studio-picture-menu="arrow"]').getByRole("menuitem", { name: "Clear" }).click();
     await expect(frames).toHaveCount(1);
+
+    expect(consoleErrors).toEqual([]);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test("opens Hand and Arrow picture context menus reliably across 100%, 150%, 200%, and 300% zoom on edge and lower frames", async ({ page }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error" && !(msg.location()?.url ?? "").includes("/_vercel/")) {
+        consoleErrors.push(msg.text());
+      }
+    });
+    page.on("pageerror", (err) => pageErrors.push(err.message));
+
+    await page.addInitScript(() => localStorage.setItem("qalam-site-language", "en"));
+    page.on("dialog", (dialog) => dialog.accept());
+    await page.goto("/tools/document-studio");
+    await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready");
+
+    // Draw frames near left edge, right edge, and lower canvas position
+    await drawPictureBox(page, 24, 60, 100, 80);
+    await drawPictureBox(page, 630, 60, 100, 80);
+    await drawPictureBox(page, 240, 420, 120, 80);
+    const frames = page.locator('[data-studio-frame="picture-rect"]');
+    await expect(frames).toHaveCount(3);
+
+    const scroller = page.locator('[data-studio-scroller="true"]');
+    const handMenu = page.locator('[data-studio-picture-menu="hand"]');
+    const arrowMenu = page.locator('[data-studio-picture-menu="arrow"]');
+
+    for (const step of [
+      { frameIndex: 0, zoomValue: "100", source: "control" as const },
+      { frameIndex: 0, zoomValue: "150", source: "control" as const },
+      { frameIndex: 0, zoomLabel: "200%", source: "menu" as const },
+      { frameIndex: 1, zoomLabel: "300%", source: "menu" as const },
+      { frameIndex: 2, zoomLabel: "100%", source: "menu" as const },
+    ]) {
+      // Hand mode: select/target the frame, zoom via control or context menu, then right-click its visible zoomed box
+      await page.locator('[data-studio-tool-button="text"]').click();
+      const target = frames.nth(step.frameIndex);
+      await target.scrollIntoViewIfNeeded();
+      await target.click({ position: { x: 25, y: 25 }, button: "right" });
+      await expect(handMenu).toBeVisible();
+      if (step.source === "menu") {
+        await handMenu.getByRole("menuitem", { name: /Zoom/ }).click();
+        await page.locator('[data-studio-picture-context-zoom]').getByRole("menuitem", { name: step.zoomLabel }).click();
+      } else {
+        await page.keyboard.press("Escape");
+        await page.locator('[data-studio-zoom-control]').selectOption(step.zoomValue);
+      }
+
+      const zoomedBox = await target.boundingBox();
+      const scBox = await scroller.boundingBox();
+      expect(zoomedBox).toBeTruthy();
+      expect(scBox).toBeTruthy();
+      // Zoom visibility keeps the selected frame inside the scroller horizontally
+      expect(zoomedBox!.x).toBeGreaterThanOrEqual(scBox!.x);
+      expect(zoomedBox!.x + zoomedBox!.width).toBeLessThanOrEqual(scBox!.x + scBox!.width + 2);
+
+      await page.mouse.click(zoomedBox!.x + 25, zoomedBox!.y + 25, { button: "right" });
+      await expect(handMenu).toBeVisible();
+      const handLabels = await handMenu.locator('[role="menuitem"]').allInnerTexts();
+      expect(handLabels.map((t) => t.replace("▸", "").trim())).toEqual([
+        "Zoom",
+        "Import Picture…",
+        "Select All",
+        "Cut",
+        "Copy",
+        "Clear",
+        "Paste",
+      ]);
+      const hmBox = await handMenu.boundingBox();
+      expect(hmBox!.x + hmBox!.width).toBeLessThanOrEqual(1280);
+      expect(hmBox!.y + hmBox!.height).toBeLessThanOrEqual(800);
+      await page.keyboard.press("Escape");
+
+      // Arrow mode at the exact same zoom level: verify Arrow object menu & empty-canvas menu
+      await page.locator('[data-studio-tool-button="select"]').click();
+      const arrowBox = await target.boundingBox();
+      await page.mouse.click(arrowBox!.x + 25, arrowBox!.y + 25, { button: "right" });
+      await expect(arrowMenu).toBeVisible();
+      const arrowLabels = await arrowMenu.locator('[role="menuitem"]').allInnerTexts();
+      expect(arrowLabels.map((t) => t.replace("▸", "").trim())).toEqual([
+        "Zoom",
+        "Select All",
+        "Cut",
+        "Copy",
+        "Clear",
+        "Object…",
+      ]);
+      await page.keyboard.press("Escape");
+    }
+
+    // Also verify empty canvas right-click at 200% zoom opens arrow-empty menu
+    await page.locator('[data-studio-zoom-control]').selectOption("200");
+    await page.locator('[data-studio-tool-button="select"]').click();
+    const scEmpty = await scroller.boundingBox();
+    await page.mouse.click(scEmpty!.x + 10, scEmpty!.y + 20, { button: "right" });
+    await expect(page.locator('[data-studio-picture-menu="arrow-empty"]')).toBeVisible();
+    await page.keyboard.press("Escape");
 
     expect(consoleErrors).toEqual([]);
     expect(pageErrors).toEqual([]);

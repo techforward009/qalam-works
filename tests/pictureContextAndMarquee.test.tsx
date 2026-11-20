@@ -10,7 +10,9 @@ import { marqueeSelectedFrameIds, StudioObjectLayer, type StudioFrame } from "..
 import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
 import { pageProjection } from "../app/tools/document-studio/utils/facingPages";
 import { pictureContextItems } from "../app/tools/document-studio/utils/pictureContextMenu";
-import { cloneCopiedFramesForPaste, copyFramesToClipboard, pasteImageFromCopiedFrames } from "../app/tools/document-studio/utils/pictureClipboard";
+import { cloneCopiedFramesForPaste, copyFramesToClipboard, clearPictureFromFrame, pasteImageFromCopiedFrames } from "../app/tools/document-studio/utils/pictureClipboard";
+import { useStudioZoomVisibility } from "../app/tools/document-studio/components/useStudioZoomVisibility";
+import { useRef } from "react";
 
 const LAYER_BOX = {
   pageCount: 1,
@@ -71,7 +73,7 @@ describe("Picture context menus (Hand and Arrow)", () => {
     expect(menu).toBeTruthy();
     const labels = [...menu.querySelectorAll('[role="menuitem"]')].map((el) => el.textContent?.replace("▸", "").trim());
     expect(labels).toEqual(pictureContextItems("hand").map((item) => item.label));
-    expect(labels).toEqual(["Zoom", "Import Picture…", "Select All", "Paste"]);
+    expect(labels).toEqual(["Zoom", "Import Picture…", "Select All", "Cut", "Copy", "Clear", "Paste"]);
 
     // Zoom submenu
     fireEvent.click(screen.getByRole("menuitem", { name: /Zoom/ }));
@@ -485,5 +487,162 @@ describe("Pasteboard marquee, facing-page selection, InPage menu visuals, and to
     }
     fireEvent.click(document.querySelector('[data-menu-action="edit.undo"]') as HTMLElement);
     expect(onAction).toHaveBeenCalledWith("edit.undo");
+  });
+
+  it("opens Arrow-empty context menu on empty canvas and pasteboard with native menu prevented and supports Hand Cut/Clear vs Arrow Cut/Clear", () => {
+    const srcImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
+    const settings = defaultDocumentSettings();
+    const initial: StudioFrame[] = [
+      { ...makeFrame("pic-1", 10, 10, 20, 20), imageSrc: srcImg, imageNaturalW: 100, imageNaturalH: 100 },
+      makeFrame("pic-2", 50, 10, 20, 20),
+    ];
+
+    function EmptyContextHost() {
+      const [frames, setFrames] = useState<StudioFrame[]>(initial);
+      const [selected, setSelected] = useState<string[]>([]);
+      const [clipboard, setClipboard] = useState<StudioFrame[]>([]);
+      const [clipSource, setClipSource] = useState<"copy" | "cut">("copy");
+      return (
+        <div>
+          <DocumentCanvas
+            editor={null}
+            dir="ltr"
+            isUr={false}
+            isEditorEmpty={false}
+            documentSettings={settings}
+            pageLayout={layout}
+            viewMode="pages"
+            minimumPages={1}
+            zoom={100}
+            tool="select"
+            frames={frames}
+            onFramesChange={setFrames}
+            selectedFrameIds={selected}
+            onSelectedFramesChange={setSelected}
+            onLoadExample={() => {}}
+            onWrapperClick={() => {}}
+          />
+          <StudioPictureContextMenu
+            toolMode="arrow"
+            getDisabledIds={(mode) => {
+              const set = new Set<ReturnType<typeof pictureContextItems>[number]["id"]>();
+              if (mode === "arrow-empty" && clipboard.length === 0) set.add("paste");
+              if (mode === "arrow-empty" && frames.length === 0) set.add("selectAll");
+              return set;
+            }}
+            onZoom={() => {}}
+            onAction={(id, frameId, mode) => {
+              if (id === "selectAll" && (mode === "arrow" || mode === "arrow-empty")) {
+                setSelected(frames.map((f) => f.id));
+                return;
+              }
+              if (id === "cut") {
+                setClipboard(copyFramesToClipboard(frames.filter((f) => f.id === frameId)));
+                setClipSource("cut");
+                setFrames((prev) => prev.filter((f) => f.id !== frameId));
+                setSelected([]);
+                return;
+              }
+              if (id === "paste" && clipboard.length > 0) {
+                const offset = clipSource === "cut" ? 0 : 5;
+                const clones = cloneCopiedFramesForPaste(clipboard, () => `pasted-${offset}-${frames.length}`, offset);
+                if (clipSource === "cut") setClipSource("copy");
+                setFrames((prev) => [...prev, ...clones]);
+              }
+            }}
+          />
+        </div>
+      );
+    }
+
+    const { container } = render(<EmptyContextHost />);
+    const scroller = container.querySelector('[data-studio-scroller="true"]') as HTMLElement;
+    const objects = container.querySelector("[data-studio-objects]") as HTMLElement;
+
+    // 1. Right-click empty pasteboard scroller -> opens arrow-empty menu with Paste disabled initially
+    const pasteboardEvt = new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 25, clientY: 25 });
+    fireEvent(scroller, pasteboardEvt);
+    expect(pasteboardEvt.defaultPrevented).toBe(true);
+    let emptyMenu = document.querySelector('[data-studio-picture-menu="arrow-empty"]') as HTMLElement;
+    expect(emptyMenu).toBeTruthy();
+    expect([...emptyMenu.querySelectorAll('[role="menuitem"]')].map((el) => el.textContent?.replace("▸", "").trim())).toEqual([
+      "Zoom",
+      "Select All",
+      "Paste",
+    ]);
+    expect((screen.getByRole("menuitem", { name: "Paste" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.keyDown(emptyMenu, { key: "Escape" });
+
+    // 2. Arrow Cut pic-1, then right-click empty canvas -> arrow-empty Paste enabled and restores at exact (10, 10)
+    fireEvent.contextMenu(container.querySelector('[data-studio-frame-id="pic-1"]') as HTMLElement, { clientX: 60, clientY: 60 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Cut" }));
+    expect(container.querySelector('[data-studio-frame-id="pic-1"]')).toBeNull();
+
+    const canvasEvt = new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 120, clientY: 120 });
+    fireEvent(objects, canvasEvt);
+    expect(canvasEvt.defaultPrevented).toBe(true);
+    emptyMenu = document.querySelector('[data-studio-picture-menu="arrow-empty"]') as HTMLElement;
+    expect(emptyMenu).toBeTruthy();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Paste" }));
+    const restored = container.querySelector('[data-studio-frame-id="pasted-0-1"]') as HTMLElement;
+    expect(restored).toBeTruthy();
+    expect(restored.style.left).toBe(`${Math.round(10 * PX_PER_MM)}px`);
+    expect(restored.style.top).toBe(`${Math.round(10 * PX_PER_MM)}px`);
+
+    // 3. Subsequent Paste uses +5mm offset
+    fireEvent(objects, new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 120, clientY: 120 }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Paste" }));
+    const second = container.querySelector('[data-studio-frame-id="pasted-5-2"]') as HTMLElement;
+    expect(second).toBeTruthy();
+    expect(second.style.left).toBe(`${Math.round(15 * PX_PER_MM)}px`);
+
+    // 4. clearPictureFromFrame strips only picture data while keeping box geometry and Clear leaves prior clipboard intact
+    const cleared = clearPictureFromFrame({ ...initial[0], angle2Deg: 15 });
+    expect(cleared.id).toBe("pic-1");
+    expect(cleared.xMm).toBe(10);
+    expect(cleared.wMm).toBe(20);
+    expect(cleared.imageSrc).toBeUndefined();
+    expect(cleared.angle2Deg).toBeUndefined();
+    expect(pasteImageFromCopiedFrames(cleared, [initial[0]])?.imageSrc).toBe(srcImg);
+  });
+
+  it("keeps selected frames visible inside scroller when zooming instead of panning away to an unfocused story caret", () => {
+    function ZoomAlignHost({ zoom, selectedIds, mockEditor }: { zoom: number; selectedIds: string[]; mockEditor: unknown }) {
+      const scrollerRef = useRef<HTMLDivElement>(null);
+      useStudioZoomVisibility(mockEditor as never, zoom, scrollerRef, "pages", selectedIds);
+      return (
+        <div ref={scrollerRef} data-studio-scroller="true">
+          <div data-studio-frame-id="pic-left" />
+        </div>
+      );
+    }
+
+    const fakeEditor = {
+      isDestroyed: false,
+      state: { selection: { empty: true, head: 1, anchor: 1 } },
+      view: { coordsAtPos: () => ({ left: 1450, right: 1460, top: 200, bottom: 220 }) },
+    };
+
+    const { container, rerender } = render(<ZoomAlignHost zoom={1} selectedIds={["pic-left"]} mockEditor={fakeEditor} />);
+    const scroller = container.querySelector('[data-studio-scroller="true"]') as HTMLDivElement;
+    const frameNode = container.querySelector('[data-studio-frame-id="pic-left"]') as HTMLDivElement;
+
+    Object.defineProperty(scroller, "clientWidth", { configurable: true, value: 1215 });
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 670 });
+    Object.defineProperty(scroller, "clientLeft", { configurable: true, value: 0 });
+    Object.defineProperty(scroller, "clientTop", { configurable: true, value: 0 });
+    scroller.scrollLeft = 287;
+    scroller.scrollTop = 0;
+    scroller.getBoundingClientRect = () => ({ left: 48, top: 93, right: 1263, bottom: 763, width: 1215, height: 670, x: 48, y: 93, toJSON: () => ({}) });
+    frameNode.getBoundingClientRect = () => {
+      const x = 168 - scroller.scrollLeft;
+      return { left: x, top: 301, right: x + 240, bottom: 481, width: 240, height: 180, x, y: 301, toJSON: () => ({}) };
+    };
+
+    // At scrollLeft=287, pic-left is at x=-119 (left of scroller edge 48+12=60). Zooming to 2x brings it back in view immediately.
+    rerender(<ZoomAlignHost zoom={2} selectedIds={["pic-left"]} mockEditor={fakeEditor} />);
+    expect(scroller.scrollLeft).toBe(108);
+    expect(frameNode.getBoundingClientRect().left).toBe(60);
   });
 });

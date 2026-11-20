@@ -2,8 +2,28 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot } from "../utils/inpageToolbar";
-import { applyObjectGeometry, formatGeometryLength, parseGeometryLength, parseBorderWidth, formatBorderWidth, parseDegrees, formatDegrees, type ObjectGeometryPatch } from "../utils/objectAttributes";
+import {
+  applyObjectGeometry,
+  formatGeometryLength,
+  parseGeometryLength,
+  parseBorderWidth,
+  formatBorderWidth,
+  parseDegrees,
+  formatDegrees,
+  pictureReferenceSizeMm,
+  pictureScalePercent,
+  formatScalePercent,
+  parseScalePercent,
+  pictureDimensionMmFromScale,
+  type ObjectGeometryPatch,
+} from "../utils/objectAttributes";
 import { normalizeSafeHex, STUDIO_TEXT_COLORS } from "../utils/studioColors";
+import {
+  BORDER_PATTERN_OPTIONS,
+  borderPatternLabel,
+  resolveBorderStrokes,
+  type BorderPatternId,
+} from "../utils/borderPatterns";
 import type { StudioFrame } from "./StudioObjectLayer";
 import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import { contextMenuPosition } from "../utils/textContextMenu";
@@ -15,9 +35,6 @@ const kinds = [
 ] as const;
 const fields = [["xMm", "X", "x"], ["yMm", "Y", "y"], ["wMm", "Width", "w"], ["hMm", "Height", "h"]] as const;
 type GeometryKey = typeof fields[number][0];
-const PX_PER_MM = 96 / 25.4;
-const parsePercent = (raw: string) => { const match = raw.trim().match(/^([+]?(?:\d+(?:\.\d*)?|\.\d+))\s*%?$/); return match ? Number(match[1]) : Number.NaN; };
-const formatPercent = (value: number) => `${Number.isFinite(value) ? Number(value.toFixed(6)) : 100}%`;
 type Props = { frame: StudioFrame; onChange: (frameId: string, patch: ObjectGeometryPatch) => void; disableContextMenu?: boolean };
 
 export function StudioObjectRibbon({ frame, onChange, disableContextMenu = false }: Props) {
@@ -108,6 +125,434 @@ const combo = (left: number, top: number, width: number) => <div title={unsuppor
 const radio = (checked = false) => <span aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-2px", width: 10, height: 10, marginRight: 4, border: "1px solid #777", borderRadius: "50%", background: checked ? "radial-gradient(circle,#111 0 2px,#eee 2.5px)" : "#f0f0f0", boxShadow: "inset 0 1px #fff" }} />;
 const checkbox = (checked = false) => <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", verticalAlign: "-2px", width: 13, height: 13, marginRight: 4, border: "1px solid #777", background: "#f8f8f8", boxShadow: "inset 0 1px #fff", font: "bold 11px Arial" }}>{checked ? "✓" : ""}</span>;
 
+type ColorOption = {
+  id: string;
+  label: string;
+  hex: string;
+};
+
+const BORDER_COLOR_OPTIONS: ReadonlyArray<ColorOption> = STUDIO_TEXT_COLORS
+  .filter((c) => c.hex)
+  .map((c) => ({ id: c.id, label: c.label, hex: c.hex }));
+
+const BACKGROUND_COLOR_OPTIONS: ReadonlyArray<ColorOption> = [
+  { id: "none", label: "None", hex: "" },
+  { id: "white", label: "White", hex: "#FFFFFF" },
+  ...STUDIO_TEXT_COLORS
+    .filter((c) => c.hex && c.hex.toUpperCase() !== "#FFFFFF")
+    .map((c) => ({ id: c.id, label: c.label, hex: c.hex })),
+];
+
+function ColorSwatch({ hex }: { hex: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-color-swatch={hex || "none"}
+      style={{
+        display: "inline-block",
+        width: 14,
+        height: 10,
+        flexShrink: 0,
+        border: "1px solid #555",
+        background: hex
+          ? hex
+          : "repeating-linear-gradient(135deg, #fff 0 3px, #d8d8d8 3px 6px)",
+      }}
+    />
+  );
+}
+
+function PatternPreview({ pattern }: { pattern: BorderPatternId }) {
+  if (pattern === "none") {
+    return (
+      <span style={{ flex: 1, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        None
+      </span>
+    );
+  }
+  const parts = resolveBorderStrokes(pattern, 3);
+  return (
+    <svg width="100%" height="12" viewBox="0 0 44 12" preserveAspectRatio="none" aria-hidden="true" style={{ display: "block", flex: 1 }}>
+      {parts.map((part, idx) => (
+        <line
+          key={idx}
+          x1={1}
+          y1={6 + part.insetDelta}
+          x2={43}
+          y2={6 + part.insetDelta}
+          stroke="#111"
+          strokeWidth={part.strokeWidth}
+          strokeDasharray={part.dashArray}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function useComboPopupPosition(open: boolean, anchorRef: React.RefObject<HTMLButtonElement | null>, width: number) {
+  const [pos, setPos] = useState<{ left: number; top: number; width: number }>({ left: 0, top: 0, width });
+  useEffect(() => {
+    if (!open || !anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const popupWidth = Math.max(width, rect.width || width);
+    const maxLeft = typeof window !== "undefined" ? Math.max(4, window.innerWidth - popupWidth - 4) : 1024;
+    const left = Math.max(4, Math.min(rect.left, maxLeft));
+    const top = Math.max(4, rect.bottom + 1);
+    setPos({ left, top, width: popupWidth });
+  }, [open, anchorRef, width]);
+  return pos;
+}
+
+function ObjectColorCombo({
+  ariaLabel,
+  value,
+  options,
+  onChange,
+  style,
+}: {
+  ariaLabel: string;
+  value: string;
+  options: ReadonlyArray<ColorOption>;
+  onChange: (hex: string) => void;
+  style: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const normalizedValue = (normalizeSafeHex(value) ?? value).toLowerCase();
+  const currentIndex = Math.max(
+    0,
+    options.findIndex((opt) => (normalizeSafeHex(opt.hex) ?? opt.hex).toLowerCase() === normalizedValue),
+  );
+  const selected = options[currentIndex] ?? options[0];
+  const [activeIndex, setActiveIndex] = useState(currentIndex);
+  const pos = useComboPopupPosition(open, buttonRef, 128);
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveIndex(currentIndex);
+    const onDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (buttonRef.current?.contains(target) || popupRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [open, currentIndex]);
+
+  const commitIndex = (idx: number) => {
+    const chosen = options[idx];
+    if (chosen) onChange(chosen.hex);
+    setOpen(false);
+    buttonRef.current?.focus({ preventScroll: true });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.nativeEvent?.stopImmediatePropagation?.();
+      setOpen(false);
+      buttonRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActiveIndex(currentIndex);
+      } else {
+        setActiveIndex((idx) => (idx + 1) % options.length);
+      }
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActiveIndex(currentIndex);
+      } else {
+        setActiveIndex((idx) => (idx - 1 + options.length) % options.length);
+      }
+      return;
+    }
+    if (event.key === "Home" && open) {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+    if (event.key === "End" && open) {
+      event.preventDefault();
+      setActiveIndex(options.length - 1);
+      return;
+    }
+    if ((event.key === "Enter" || event.key === " ") && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      commitIndex(activeIndex);
+    }
+  };
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        data-object-color-combo={ariaLabel}
+        data-value={selected.hex}
+        onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={handleKeyDown}
+        style={{
+          ...control,
+          ...style,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "0 2px 0 3px",
+          textAlign: "left",
+        }}
+      >
+        <ColorSwatch hex={selected.hex} />
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selected.label}
+        </span>
+        <span aria-hidden="true" style={{ fontSize: 8, lineHeight: "10px", marginLeft: "auto" }}>▼</span>
+      </button>
+      {open
+        ? createPortal(
+            <div
+              ref={popupRef}
+              role="listbox"
+              aria-label={`${ariaLabel} options`}
+              data-object-combo-popup="true"
+              onKeyDown={handleKeyDown}
+              style={{
+                position: "fixed",
+                left: pos.left,
+                top: pos.top,
+                width: pos.width,
+                maxHeight: 220,
+                overflowY: "auto",
+                zIndex: 145,
+                boxSizing: "border-box",
+                border: "1px solid #7f9db9",
+                background: "#fff",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.22)",
+                font: '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif',
+              }}
+            >
+              {options.map((opt, idx) => {
+                const isSelected = idx === currentIndex;
+                const isActive = idx === activeIndex;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onClick={() => commitIndex(idx)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      width: "100%",
+                      border: 0,
+                      padding: "3px 6px",
+                      background: isActive ? "#316ac5" : isSelected ? "#e5f1fb" : "transparent",
+                      color: isActive ? "#fff" : "#000",
+                      textAlign: "left",
+                      cursor: "default",
+                    }}
+                  >
+                    <ColorSwatch hex={opt.hex} />
+                    <span style={{ whiteSpace: "nowrap" }}>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>,
+            studioOverlayRoot(),
+          )
+        : null}
+    </>
+  );
+}
+
+function ObjectPatternCombo({
+  ariaLabel,
+  value,
+  onChange,
+  style,
+}: {
+  ariaLabel: string;
+  value: BorderPatternId;
+  onChange: (pattern: BorderPatternId) => void;
+  style: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const currentIndex = Math.max(0, BORDER_PATTERN_OPTIONS.findIndex((opt) => opt.id === value));
+  const [activeIndex, setActiveIndex] = useState(currentIndex);
+  const pos = useComboPopupPosition(open, buttonRef, 138);
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveIndex(currentIndex);
+    const onDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (buttonRef.current?.contains(target) || popupRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [open, currentIndex]);
+
+  const commitIndex = (idx: number) => {
+    const chosen = BORDER_PATTERN_OPTIONS[idx];
+    if (chosen) onChange(chosen.id);
+    setOpen(false);
+    buttonRef.current?.focus({ preventScroll: true });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.nativeEvent?.stopImmediatePropagation?.();
+      setOpen(false);
+      buttonRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActiveIndex(currentIndex);
+      } else {
+        setActiveIndex((idx) => (idx + 1) % BORDER_PATTERN_OPTIONS.length);
+      }
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActiveIndex(currentIndex);
+      } else {
+        setActiveIndex((idx) => (idx - 1 + BORDER_PATTERN_OPTIONS.length) % BORDER_PATTERN_OPTIONS.length);
+      }
+      return;
+    }
+    if (event.key === "Home" && open) {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+    if (event.key === "End" && open) {
+      event.preventDefault();
+      setActiveIndex(BORDER_PATTERN_OPTIONS.length - 1);
+      return;
+    }
+    if ((event.key === "Enter" || event.key === " ") && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      commitIndex(activeIndex);
+    }
+  };
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        data-object-pattern-combo="true"
+        data-value={value}
+        onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={handleKeyDown}
+        style={{
+          ...control,
+          ...style,
+          display: "flex",
+          alignItems: "center",
+          gap: 3,
+          padding: "0 2px 0 3px",
+          textAlign: "left",
+        }}
+      >
+        <PatternPreview pattern={value} />
+        {value !== "none" ? <span className="sr-only">{borderPatternLabel(value)}</span> : null}
+        <span aria-hidden="true" style={{ fontSize: 8, lineHeight: "10px", marginLeft: "auto" }}>▼</span>
+      </button>
+      {open
+        ? createPortal(
+            <div
+              ref={popupRef}
+              role="listbox"
+              aria-label={`${ariaLabel} options`}
+              data-object-combo-popup="true"
+              onKeyDown={handleKeyDown}
+              style={{
+                position: "fixed",
+                left: pos.left,
+                top: pos.top,
+                width: pos.width,
+                maxHeight: 240,
+                overflowY: "auto",
+                zIndex: 145,
+                boxSizing: "border-box",
+                border: "1px solid #7f9db9",
+                background: "#fff",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.22)",
+                font: '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif',
+              }}
+            >
+              {BORDER_PATTERN_OPTIONS.map((opt, idx) => {
+                const isSelected = idx === currentIndex;
+                const isActive = idx === activeIndex;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="option"
+                    aria-label={opt.label}
+                    aria-selected={isSelected}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onClick={() => commitIndex(idx)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      width: "100%",
+                      border: 0,
+                      padding: "3px 6px",
+                      background: isActive ? "#316ac5" : isSelected ? "#e5f1fb" : "transparent",
+                      color: isActive ? "#fff" : "#000",
+                      textAlign: "left",
+                      cursor: "default",
+                    }}
+                  >
+                    <span style={{ width: 46, display: "flex", alignItems: "center", flexShrink: 0, background: isActive ? "#fff" : "transparent", padding: "1px 2px" }}>
+                      {opt.id === "none" ? <span style={{ fontSize: 10 }}>None</span> : <PatternPreview pattern={opt.id} />}
+                    </span>
+                    <span style={{ whiteSpace: "nowrap" }}>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>,
+            studioOverlayRoot(),
+          )
+        : null}
+    </>
+  );
+}
+
 export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: StudioFrame; onCancel: () => void; onApply: (patch: ObjectGeometryPatch) => void; returnFocus: React.MutableRefObject<HTMLElement | null> }) {
   const drag = useMovableStudioDialog<HTMLFormElement>();
   const formRef = useRef<HTMLFormElement>(null);
@@ -116,9 +561,11 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
   const [helpOpen, setHelpOpen] = useState(false);
   const [borderWidth, setBorderWidth] = useState(() => formatBorderWidth(frame.borderWidthMm ?? 25.4 / 96));
   const [borderColor, setBorderColor] = useState(frame.borderColor ?? "#000000");
+  const [borderPattern, setBorderPattern] = useState<BorderPatternId>(frame.borderPattern ?? "none");
   const [backgroundColor, setBackgroundColor] = useState(frame.backgroundColor ?? "");
   const [origin, setOrigin] = useState({ x: formatGeometryLength(frame.imageXMm ?? 0), y: formatGeometryLength(frame.imageYMm ?? 0) });
-  const [scale, setScale] = useState({ x: formatPercent(frame.imageNaturalW ? ((frame.imageWMm ?? frame.wMm) / (frame.imageNaturalW / PX_PER_MM)) * 100 : 100), y: formatPercent(frame.imageNaturalH ? ((frame.imageHMm ?? frame.hMm) / (frame.imageNaturalH / PX_PER_MM)) * 100 : 100) });
+  const initialScale = pictureScalePercent(frame);
+  const [scale, setScale] = useState({ x: formatScalePercent(initialScale.x), y: formatScalePercent(initialScale.y) });
   const [roundness, setRoundness] = useState(formatGeometryLength(frame.roundnessMm ?? 6.35));
   const [angle1, setAngle1] = useState(formatDegrees(frame.angle1Deg ?? 0));
   const [angle2, setAngle2] = useState(formatDegrees(frame.angle2Deg ?? 0));
@@ -126,16 +573,20 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
   const [draft, setDraft] = useState<Record<GeometryKey, string>>(() => Object.fromEntries(fields.map(([key]) => [key, formatGeometryLength(frame[key])])) as Record<GeometryKey, string>);
   const preview = { ...frame, ...patch };
   useEffect(() => { firstField.current?.focus({ preventScroll: true }); return () => returnFocus.current?.focus({ preventScroll: true }); }, [returnFocus]);
-  useEffect(() => { const escape = (event: KeyboardEvent) => { if (event.key === "Escape") onCancel(); }; document.addEventListener("keydown", escape); return () => document.removeEventListener("keydown", escape); }, [onCancel]);
+  useEffect(() => { const escape = (event: KeyboardEvent) => { if (event.defaultPrevented) return; if (event.key === "Escape") onCancel(); }; document.addEventListener("keydown", escape); return () => document.removeEventListener("keydown", escape); }, [onCancel]);
   return createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 130, display: "grid", placeItems: "center", background: "rgba(0,0,0,.25)", padding: 12 }}><form ref={node => { drag.dialogRef.current = node; formRef.current = node; }} role="dialog" aria-modal="true" aria-label="Modify Object" data-studio-format-object-dialog="true" data-inpage2009-dialog="true" data-modify-object-window="true" dir="ltr" onSubmit={e => { e.preventDefault(); const current = Object.fromEntries(fields.map(([key]) => [key, parseGeometryLength(draft[key])] )) as ObjectGeometryPatch; const style: ObjectGeometryPatch = {};
       const originX = parseGeometryLength(origin.x), originY = parseGeometryLength(origin.y);
       if (Number.isFinite(originX) && Math.abs(originX - (frame.imageXMm ?? 0)) > 1e-6) current.imageXMm = originX;
       if (Number.isFinite(originY) && Math.abs(originY - (frame.imageYMm ?? 0)) > 1e-6) current.imageYMm = originY;
-      const scaleX = parsePercent(scale.x), scaleY = parsePercent(scale.y);
-      const shownScaleX = frame.imageNaturalW ? ((frame.imageWMm ?? frame.wMm) / (frame.imageNaturalW / PX_PER_MM)) * 100 : 100;
-      const shownScaleY = frame.imageNaturalH ? ((frame.imageHMm ?? frame.hMm) / (frame.imageNaturalH / PX_PER_MM)) * 100 : 100;
-      if (Number.isFinite(scaleX) && Math.abs(scaleX - parsePercent(formatPercent(shownScaleX))) > 1e-6) current.imageWMm = (scaleX / 100) * (frame.imageNaturalW ? frame.imageNaturalW / PX_PER_MM : (frame.imageWMm ?? frame.wMm));
-      if (Number.isFinite(scaleY) && Math.abs(scaleY - parsePercent(formatPercent(shownScaleY))) > 1e-6) current.imageHMm = (scaleY / 100) * (frame.imageNaturalH ? frame.imageNaturalH / PX_PER_MM : (frame.imageHMm ?? frame.hMm));
+      const scaleX = parseScalePercent(scale.x), scaleY = parseScalePercent(scale.y);
+      const shownScale = pictureScalePercent(frame);
+      const refSize = pictureReferenceSizeMm(frame);
+      if (Number.isFinite(scaleX) && Math.abs(scaleX - parseScalePercent(formatScalePercent(shownScale.x))) > 1e-6) {
+        current.imageWMm = pictureDimensionMmFromScale(scaleX, refSize.wMm);
+      }
+      if (Number.isFinite(scaleY) && Math.abs(scaleY - parseScalePercent(formatScalePercent(shownScale.y))) > 1e-6) {
+        current.imageHMm = pictureDimensionMmFromScale(scaleY, refSize.hMm);
+      }
       const roundMm = parseGeometryLength(roundness);
       if (Number.isFinite(roundMm) && Math.abs(roundMm - (frame.roundnessMm ?? 6.35)) > 1e-6) current.roundnessMm = roundMm;
       const parsedAngle1 = parseDegrees(angle1), parsedAngle2 = parseDegrees(angle2);
@@ -145,7 +596,13 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       if (patch.locked !== undefined && patch.locked !== (frame.locked ?? false)) current.locked = patch.locked;
       if (patch.dontPrint !== undefined && patch.dontPrint !== (frame.dontPrint ?? false)) current.dontPrint = patch.dontPrint;
       if (patch.template !== undefined && patch.template !== (frame.template ?? false)) current.template = patch.template;
-      const parsedWidth = parseBorderWidth(borderWidth); if (Number.isFinite(parsedWidth) && Math.abs(parsedWidth - (frame.borderWidthMm ?? 25.4 / 96)) > 1e-6) style.borderWidthMm = parsedWidth; if ((normalizeSafeHex(borderColor) ?? borderColor).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) style.borderColor = borderColor; if (backgroundColor !== (frame.backgroundColor ?? "")) style.backgroundColor = backgroundColor; if (frame.borderPattern !== undefined) style.borderPattern = frame.borderPattern; if (frame.backgroundHatch !== undefined) style.backgroundHatch = frame.backgroundHatch; const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
+      const parsedWidth = parseBorderWidth(borderWidth);
+      if (Number.isFinite(parsedWidth) && Math.abs(parsedWidth - (frame.borderWidthMm ?? 25.4 / 96)) > 1e-6) style.borderWidthMm = parsedWidth;
+      if ((normalizeSafeHex(borderColor) ?? borderColor).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) style.borderColor = borderColor;
+      if ((normalizeSafeHex(backgroundColor) ?? backgroundColor).toLowerCase() !== (normalizeSafeHex(frame.backgroundColor ?? "") ?? (frame.backgroundColor ?? "")).toLowerCase()) style.backgroundColor = backgroundColor;
+      if (borderPattern !== (frame.borderPattern ?? "none") || frame.borderPattern !== undefined) style.borderPattern = borderPattern;
+      if (frame.backgroundHatch !== undefined) style.backgroundHatch = frame.backgroundHatch;
+      const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
     <div {...drag.handleProps} style={{ ...drag.handleProps.style, position: "absolute", left: 0, top: 0, right: 0, height: 29, boxSizing: "border-box", paddingLeft: 7, display: "flex", alignItems: "center", fontWeight: "normal", fontSize: 11, borderBottom: "1px solid #5d6c7a", background: "linear-gradient(#e9f5ff,#c6e2fc 70%,#b8dbfd)" }}>Modify Object</div>
     <button type="button" aria-label="Close" onClick={onCancel} style={{ position: "absolute", right: 3, top: 2, width: 43, height: 18, padding: 0, border: "1px solid #9e382d", borderRadius: "0 0 4px 4px", color: "white", font: 'bold 13px QalamUIArial, Arial, sans-serif', lineHeight: "15px", textShadow: "0 1px #6b1915", background: "linear-gradient(#f7a08f,#ce392c 55%,#a51d18)", zIndex: 2 }}>×</button>
     <div style={{ position: "absolute", left: 7, top: 29, width: 336, height: 284, boxSizing: "border-box", border: "1px solid #5d6c7a", background: "#f0f0f0" }}>
@@ -156,19 +613,19 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       </>)}
       {group(123, 6, 122, 126, "Border", <>
         {caption(5, 14, "Color:")}{caption(5, 37, "Width:")}{caption(5, 60, "Pattern:")}
-        <select aria-label="Border Color" value={borderColor} onChange={e => setBorderColor(e.target.value)} style={{ ...control, position: "absolute", left: 44, top: 14, width: 70, height: 20 }}>{STUDIO_TEXT_COLORS.filter(c => c.hex).map(c => <option key={c.id} value={c.hex}>{c.label}</option>)}</select>
+        <ObjectColorCombo ariaLabel="Border Color" value={borderColor} options={BORDER_COLOR_OPTIONS} onChange={setBorderColor} style={{ position: "absolute", left: 44, top: 14, width: 70, height: 20 }} />
         <input aria-label="Border Width" value={borderWidth} onChange={e => setBorderWidth(e.target.value)} style={{ ...control, position: "absolute", left: 44, top: 37, width: 52 }} />
         <span style={{ position: "absolute", left: 98, top: 37, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Border Width" onClick={() => setBorderWidth(formatBorderWidth(parseBorderWidth(borderWidth) + 25.4 / 288))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Border Width" onClick={() => setBorderWidth(formatBorderWidth(Math.max(0.01, parseBorderWidth(borderWidth) - 25.4 / 288)))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span>
-        <select aria-label="Border Pattern" defaultValue="none" style={{ ...control, position: "absolute", left: 44, top: 60, width: 70, height: 20 }}><option value="none">None</option></select>
+        <ObjectPatternCombo ariaLabel="Border Pattern" value={borderPattern} onChange={setBorderPattern} style={{ position: "absolute", left: 44, top: 60, width: 70, height: 20 }} />
         <label style={{ position: "absolute", left: 5, top: 83 }}>{radio(borderPosition === "inside")}Inside<input type="radio" name="border-position" aria-label="Inside" checked={borderPosition === "inside"} onChange={() => setBorderPosition("inside")} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label><label style={{ position: "absolute", left: 58, top: 83 }}>{radio(borderPosition === "outside")}Outside<input type="radio" name="border-position" aria-label="Outside" checked={borderPosition === "outside"} onChange={() => setBorderPosition("outside")} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>
         {caption(5, 102, "Roundness:")}<input aria-label="Roundness" value={roundness} onChange={e => setRoundness(e.target.value)} style={{ ...control, position: "absolute", left: 62, top: 102, width: 52 }} />
       </>)}
       {group(3, 139, 242, 99, "Picture", <>
         {group(3, 12, 113, 58, "Origin", <>{caption(4, 14, "Across:")}{caption(4, 34, "Down:")}<input aria-label="Origin Across" value={origin.x} onChange={e => setOrigin(v => ({ ...v, x: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 14, width: 62 }} /><input aria-label="Origin Down" value={origin.y} onChange={e => setOrigin(v => ({ ...v, y: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 34, width: 62 }} /></>)}
-        {group(120, 12, 119, 58, "Scaling", <>{caption(4, 14, "Across:")}{caption(4, 34, "Down:")}<input aria-label="Scaling Across" value={scale.x} onChange={e => setScale(v => ({ ...v, x: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 14, width: 58 }} /><input aria-label="Scaling Down" value={scale.y} onChange={e => setScale(v => ({ ...v, y: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 34, width: 58 }} /><span style={{ position: "absolute", left: 103, top: 14, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Scaling Across" onClick={() => setScale(v => ({ ...v, x: formatPercent(parsePercent(v.x) + 1) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Scaling Across" onClick={() => setScale(v => ({ ...v, x: formatPercent(Math.max(0.01, parsePercent(v.x) - 1)) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span><span style={{ position: "absolute", left: 103, top: 34, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Scaling Down" onClick={() => setScale(v => ({ ...v, y: formatPercent(parsePercent(v.y) + 1) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Scaling Down" onClick={() => setScale(v => ({ ...v, y: formatPercent(Math.max(0.01, parsePercent(v.y) - 1)) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span></>)}
+        {group(120, 12, 119, 58, "Scaling", <>{caption(4, 14, "Across:")}{caption(4, 34, "Down:")}<input aria-label="Scaling Across" value={scale.x} onChange={e => setScale(v => ({ ...v, x: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 14, width: 58 }} /><input aria-label="Scaling Down" value={scale.y} onChange={e => setScale(v => ({ ...v, y: e.target.value }))} style={{ ...control, position: "absolute", left: 45, top: 34, width: 58 }} /><span style={{ position: "absolute", left: 103, top: 14, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Scaling Across" onClick={() => setScale(v => ({ ...v, x: formatScalePercent((Number.isFinite(parseScalePercent(v.x)) ? parseScalePercent(v.x) : initialScale.x) + 1) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Scaling Across" onClick={() => setScale(v => ({ ...v, x: formatScalePercent(Math.max(0.01, (Number.isFinite(parseScalePercent(v.x)) ? parseScalePercent(v.x) : initialScale.x) - 1)) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span><span style={{ position: "absolute", left: 103, top: 34, width: 16, height: 20, display: "flex", flexDirection: "column" }}><button type="button" aria-label="Increase Scaling Down" onClick={() => setScale(v => ({ ...v, y: formatScalePercent((Number.isFinite(parseScalePercent(v.y)) ? parseScalePercent(v.y) : initialScale.y) + 1) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▲</button><button type="button" aria-label="Decrease Scaling Down" onClick={() => setScale(v => ({ ...v, y: formatScalePercent(Math.max(0.01, (Number.isFinite(parseScalePercent(v.y)) ? parseScalePercent(v.y) : initialScale.y) - 1)) }))} style={{height:10,padding:0,lineHeight:"8px"}}>▼</button></span></>)}
         {caption(4, 76, "Angle2:")}<input aria-label="Angle2" value={angle2} onChange={e => setAngle2(e.target.value)} style={{ ...control, position: "absolute", left: 45, top: 76, width: 62 }} /><label style={{ position: "absolute", left: 121, top: 76, whiteSpace: "nowrap" }}>{checkbox()}White Transparent(q)<input type="checkbox" aria-label="Not supported" {...unsupported} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>
       </>)}
-      {group(3, 245, 242, 35, "Background", <>{caption(5, 13, "Color(z):")}<select aria-label="Background Color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} style={{ ...control, position: "absolute", left: 47, top: 13, width: 74, height: 20 }}><option value="">None</option><option value="#FFFFFF">White</option>{STUDIO_TEXT_COLORS.filter(c => c.hex).map(c => <option key={c.id} value={c.hex}>{c.label}</option>)}</select>{caption(126, 13, "Hatch:")}<select aria-label="Background Hatch" defaultValue="none" style={{ ...control, position: "absolute", left: 164, top: 13, width: 72, height: 20 }}><option value="none">None</option></select></>)}
+      {group(3, 245, 242, 35, "Background", <>{caption(5, 13, "Color(z):")}<ObjectColorCombo ariaLabel="Background Color" value={backgroundColor} options={BACKGROUND_COLOR_OPTIONS} onChange={setBackgroundColor} style={{ position: "absolute", left: 47, top: 13, width: 74, height: 20 }} />{caption(126, 13, "Hatch:")}<select aria-label="Background Hatch" defaultValue="none" style={{ ...control, position: "absolute", left: 164, top: 13, width: 72, height: 20 }}><option value="none">None</option></select></>)}
       <div data-object-shape-group="true" style={{ position: "absolute", left: 250, top: 140, width: 83, height: 65, boxSizing: "border-box", border: "1px solid #a0a0a0", boxShadow: "inset 0 1px #fff" }}><span style={{ position: "absolute", left: 7, top: -6, padding: "0 3px", lineHeight: "12px", background: "#f0f0f0", whiteSpace: "nowrap" }}>Shape</span>{kinds.map(([kind, label, short], i) => <label key={kind} style={{ position: "absolute", left: 4, top: 17 + i * 16, width: 77, maxWidth: 77, height: 10, display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "default" }}>{radio(preview.kind === kind)}{short}<input type="radio" name="object-shape" aria-label={label} checked={preview.kind === kind} onChange={() => setPatch(prev => ({ ...prev, kind }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} /></label>)}</div>
       {caption(250, 115, "Number:", 19)}<input data-object-number-field="true" aria-label="Not supported" {...unsupported} value="" readOnly style={{ ...control, position: "absolute", left: 295, top: 115, width: 38, height: 19, textAlign: "left", lineHeight: "17px" }} />
       <button type="submit" style={{ ...classicButton, position: "absolute", left: 257, top: 7, width: 75, height: 22, outline: "1px solid #59636b", outlineOffset: 1 }}>OK</button>

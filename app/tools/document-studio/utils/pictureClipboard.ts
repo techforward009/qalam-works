@@ -35,6 +35,21 @@ export function pasteImageFromCopiedFrames(
   };
 }
 
+export function clearPictureFromFrame(target: StudioFrame): StudioFrame {
+  const {
+    imageSrc: _imageSrc,
+    imageNaturalW: _imageNaturalW,
+    imageNaturalH: _imageNaturalH,
+    imageXMm: _imageXMm,
+    imageYMm: _imageYMm,
+    imageWMm: _imageWMm,
+    imageHMm: _imageHMm,
+    angle2Deg: _angle2Deg,
+    ...rest
+  } = target;
+  return rest;
+}
+
 export function cloneCopiedFramesForPaste(
   copied: readonly StudioFrame[],
   createId: () => string,
