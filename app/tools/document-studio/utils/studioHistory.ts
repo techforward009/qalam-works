@@ -2,6 +2,7 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 import {
   beginObjectGesture,
   clearObjectFuture,
+  closeObjectHistoryGroup,
   createObjectFrameHistory,
   endObjectGesture,
   nextSelectionAfterObjectHistory,
@@ -9,6 +10,7 @@ import {
   redoObjectFrames,
   undoObjectFrames,
   type ObjectFrameHistory,
+  type ObjectHistoryGroupOptions,
 } from "./objectFrameHistory";
 import {
   createFrameHistory,
@@ -93,14 +95,17 @@ export function createStudioHistoryCoordinator() {
     next: ObjectFrameHistory,
     closeStoryHistoryGroup: () => void,
   ): boolean => {
+    const merged = next !== objectHistory && next.revision === objectHistory.revision;
     const recorded = next.revision !== objectHistory.revision;
     objectHistory = next;
-    if (!recorded) return false;
+    if (!recorded && !merged) return false;
     closeAllFrameGroups();
     closeStoryHistoryGroup();
     clearOtherFutures("objects");
-    past.push({ surface: "objects" });
-    trimSurfacePast((e) => e.surface === "objects", objectHistory.past.length);
+    if (recorded) {
+      past.push({ surface: "objects" });
+      trimSurfacePast((e) => e.surface === "objects", objectHistory.past.length);
+    }
     return true;
   };
 
@@ -108,6 +113,7 @@ export function createStudioHistoryCoordinator() {
     getFrameHistory,
 
     recordStoryEdit(storyUndoDepth: number): boolean {
+      objectHistory = closeObjectHistoryGroup(objectHistory);
       closeAllFrameGroups();
       clearOtherFutures("story");
       storyRedoInvalidated = false;
@@ -126,6 +132,7 @@ export function createStudioHistoryCoordinator() {
       options: FrameRememberOptions | undefined,
       closeStoryHistoryGroup: () => void,
     ): boolean {
+      objectHistory = closeObjectHistoryGroup(objectHistory);
       const fh = getFrameHistory(frameId);
       const pushed = fh.remember(before, options);
       if (!pushed) return false;
@@ -141,8 +148,10 @@ export function createStudioHistoryCoordinator() {
       before: readonly StudioFrame[],
       after: readonly StudioFrame[],
       closeStoryHistoryGroup: () => void,
+      options?: ObjectHistoryGroupOptions,
     ): boolean {
-      const next = recordObjectFrames(objectHistory, before, after);
+      const allowMerge = past.at(-1)?.surface === "objects";
+      const next = recordObjectFrames(objectHistory, before, after, options, allowMerge);
       return recordObjectSnapshot(next, closeStoryHistoryGroup);
     },
 
@@ -288,6 +297,7 @@ export function resolveStudioHistoryShortcut(
   if (
     target?.closest("input, textarea, select, [contenteditable='true']")
     && !target.closest(".ProseMirror, [data-studio-text-frame]")
+    && !(target.closest("[data-studio-object-ribbon]") && !target.closest('[data-ribbon-dirty="true"]'))
   ) {
     return null;
   }

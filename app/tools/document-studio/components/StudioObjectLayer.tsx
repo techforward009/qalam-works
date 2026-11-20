@@ -51,6 +51,7 @@ export type StudioFrame = {
   paragraphAligns?: ParagraphAlign[];
   singleLine?: boolean;
   imageSrc?: string;
+  imageName?: string;
   imageNaturalW?: number;
   imageNaturalH?: number;
   imageXMm?: number;
@@ -353,6 +354,9 @@ export function StudioObjectLayer({
     };
     const clearOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (event.target instanceof Element && event.target.closest("[data-studio-object-ribbon]")) {
+          return;
+        }
         if (
           document.querySelector(
             '[data-studio-picture-menu], [data-studio-picture-context-zoom], [data-studio-text-menu], [data-menu-dropdown], [role="dialog"], [role="listbox"]',

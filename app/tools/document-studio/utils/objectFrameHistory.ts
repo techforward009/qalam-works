@@ -2,6 +2,13 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 
 /** Oldest entries fall off after this many object undo steps. */
 export const OBJECT_FRAME_HISTORY_LIMIT = 100;
+export const DEFAULT_OBJECT_GROUP_WINDOW_MS = 1500;
+
+export type ObjectHistoryGroupOptions = {
+  groupKey: string;
+  now?: number;
+  windowMs?: number;
+};
 
 /**
  * Text fields stay with the per-frame text history. Object undo restores
@@ -17,10 +24,13 @@ export type ObjectFrameHistory = {
   gesture: StudioFrame[] | null;
   /** Monotonically increments whenever a new past snapshot is recorded, even at the limit. */
   revision: number;
+  /** Grouping metadata for coalescing repeated adjustments to the same field. */
+  lastGroupKey?: string | null;
+  lastGroupAt?: number;
 };
 
 export function createObjectFrameHistory(): ObjectFrameHistory {
-  return { past: [], future: [], gesture: null, revision: 0 };
+  return { past: [], future: [], gesture: null, revision: 0, lastGroupKey: null, lastGroupAt: 0 };
 }
 
 function copyFrames(frames: readonly StudioFrame[]): StudioFrame[] {
@@ -56,15 +66,25 @@ export function restoreObjectFrames(snapshot: readonly StudioFrame[], current: r
   });
 }
 
-function pushPast(state: ObjectFrameHistory, snapshot: StudioFrame[]): ObjectFrameHistory {
+function pushPast(
+  state: ObjectFrameHistory,
+  snapshot: StudioFrame[],
+  lastGroupKey: string | null = null,
+  lastGroupAt = 0,
+): ObjectFrameHistory {
   const past = [...state.past, snapshot];
   if (past.length > OBJECT_FRAME_HISTORY_LIMIT) past.splice(0, past.length - OBJECT_FRAME_HISTORY_LIMIT);
-  return { past, future: [], gesture: null, revision: state.revision + 1 };
+  return { past, future: [], gesture: null, revision: state.revision + 1, lastGroupKey, lastGroupAt };
 }
 
 export function clearObjectFuture(state: ObjectFrameHistory): ObjectFrameHistory {
-  if (!state.future.length) return state;
-  return { ...state, future: [] };
+  if (!state.future.length && !state.lastGroupKey) return state;
+  return { ...state, future: [], lastGroupKey: null, lastGroupAt: 0 };
+}
+
+export function closeObjectHistoryGroup(state: ObjectFrameHistory): ObjectFrameHistory {
+  if (!state.lastGroupKey) return state;
+  return { ...state, lastGroupKey: null, lastGroupAt: 0 };
 }
 
 /**
@@ -97,21 +117,40 @@ export function recordObjectFrames(
   state: ObjectFrameHistory,
   before: readonly StudioFrame[],
   after: readonly StudioFrame[],
+  group?: ObjectHistoryGroupOptions,
+  allowMerge = true,
 ): ObjectFrameHistory {
   if (state.gesture || sameObjectFrames(before, after)) return state;
-  return pushPast(state, copyFrames(before));
+  const groupKey = group?.groupKey ?? null;
+  const now = group?.now ?? Date.now();
+  const windowMs = group?.windowMs ?? DEFAULT_OBJECT_GROUP_WINDOW_MS;
+  if (
+    allowMerge &&
+    groupKey &&
+    state.lastGroupKey === groupKey &&
+    state.past.length > 0 &&
+    now - (state.lastGroupAt ?? 0) <= windowMs
+  ) {
+    return {
+      ...state,
+      future: [],
+      lastGroupKey: groupKey,
+      lastGroupAt: now,
+    };
+  }
+  return pushPast(state, copyFrames(before), groupKey, groupKey ? now : 0);
 }
 
 export function beginObjectGesture(state: ObjectFrameHistory, frames: readonly StudioFrame[]): ObjectFrameHistory {
   if (state.gesture) return state;
-  return { ...state, gesture: copyFrames(frames) };
+  return { ...state, gesture: copyFrames(frames), lastGroupKey: null, lastGroupAt: 0 };
 }
 
 /** Push the pre-gesture snapshot once, and only when object fields changed. */
 export function endObjectGesture(state: ObjectFrameHistory, frames: readonly StudioFrame[]): ObjectFrameHistory {
   if (!state.gesture) return state;
   const before = state.gesture;
-  if (sameObjectFrames(before, frames)) return { ...state, gesture: null };
+  if (sameObjectFrames(before, frames)) return { ...state, gesture: null, lastGroupKey: null, lastGroupAt: 0 };
   return pushPast(state, before);
 }
 
@@ -122,7 +161,14 @@ export function undoObjectFrames(
   if (!state.past.length) return null;
   const snapshot = state.past[state.past.length - 1];
   return {
-    state: { past: state.past.slice(0, -1), future: [copyFrames(current), ...state.future], gesture: null, revision: state.revision },
+    state: {
+      past: state.past.slice(0, -1),
+      future: [copyFrames(current), ...state.future],
+      gesture: null,
+      revision: state.revision,
+      lastGroupKey: null,
+      lastGroupAt: 0,
+    },
     frames: restoreObjectFrames(snapshot, current),
   };
 }
@@ -136,7 +182,14 @@ export function redoObjectFrames(
   const past = [...state.past, copyFrames(current)];
   if (past.length > OBJECT_FRAME_HISTORY_LIMIT) past.splice(0, past.length - OBJECT_FRAME_HISTORY_LIMIT);
   return {
-    state: { past, future: state.future.slice(1), gesture: null, revision: state.revision },
+    state: {
+      past,
+      future: state.future.slice(1),
+      gesture: null,
+      revision: state.revision,
+      lastGroupKey: null,
+      lastGroupAt: 0,
+    },
     frames: restoreObjectFrames(snapshot, current),
   };
 }

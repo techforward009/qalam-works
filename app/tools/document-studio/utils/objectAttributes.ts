@@ -55,6 +55,26 @@ export function pictureDimensionMmFromScale(scalePct: number, refMm: number): nu
 
 export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition">>;
 const pictureKinds: readonly FrameKind[] = ["picture-rect", "picture-round-rect", "picture-ellipse"];
+const shapeKinds: readonly FrameKind[] = ["rect", "round-rect", "ellipse"];
+
+export type ShapeVariant = "rect" | "ellipse" | "round-rect";
+
+export function shapeVariantOf(kind: FrameKind): ShapeVariant | null {
+  if (kind === "picture-rect" || kind === "rect") return "rect";
+  if (kind === "picture-ellipse" || kind === "ellipse") return "ellipse";
+  if (kind === "picture-round-rect" || kind === "round-rect") return "round-rect";
+  return null;
+}
+
+export function frameKindForShape(current: FrameKind, variant: ShapeVariant): FrameKind | null {
+  if (isPictureBox(current)) {
+    return variant === "rect" ? "picture-rect" : variant === "ellipse" ? "picture-ellipse" : "picture-round-rect";
+  }
+  if (shapeKinds.includes(current)) {
+    return variant;
+  }
+  return null;
+}
 
 export function parseGeometryLength(raw: string): number {
   const value = raw.trim();
@@ -111,7 +131,13 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (patch.locked !== undefined && typeof patch.locked !== "boolean") return null;
   if (patch.dontPrint !== undefined && typeof patch.dontPrint !== "boolean") return null;
   if (patch.template !== undefined && typeof patch.template !== "boolean") return null;
-  if (patch.kind !== undefined && (!isPictureBox(frame.kind) || !pictureKinds.includes(patch.kind))) return null;
+  if (
+    patch.kind !== undefined &&
+    !(
+      (isPictureBox(frame.kind) && pictureKinds.includes(patch.kind)) ||
+      (shapeKinds.includes(frame.kind) && shapeKinds.includes(patch.kind))
+    )
+  ) return null;
   if (patch.borderColor !== undefined && !normalizeSafeHex(patch.borderColor)) return null;
   if (patch.backgroundColor !== undefined && patch.backgroundColor !== "" && !normalizeSafeHex(patch.backgroundColor)) return null;
   if (patch.borderWidthMm !== undefined && (typeof patch.borderWidthMm !== "number" || !Number.isFinite(patch.borderWidthMm) || patch.borderWidthMm <= 0 || patch.borderWidthMm > PRINT_FRAME_LIMITS.mm)) return null;

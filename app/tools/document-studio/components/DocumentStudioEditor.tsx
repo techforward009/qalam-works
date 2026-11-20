@@ -155,10 +155,11 @@ import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { AllahAutoMarks } from "../extensions/AllahAutoMarks";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
-import { FormatDialog, StudioObjectRibbon } from "./StudioObjectRibbon";
+import { FormatDialog, StudioObjectRibbon, resolvePropertyToolbarMode } from "./StudioObjectRibbon";
 import { StudioPictureContextMenu } from "./StudioPictureContextMenu";
 import type { PictureContextItemId, PictureContextToolMode } from "../utils/pictureContextMenu";
-import { applyObjectGeometry } from "../utils/objectAttributes";
+import { applyObjectGeometry, type ObjectGeometryPatch } from "../utils/objectAttributes";
+import type { ObjectHistoryGroupOptions } from "../utils/objectFrameHistory";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
@@ -2083,9 +2084,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     editor.view.dispatch(closeHistory(editor.state.tr));
   };
 
-  const changeFrames = (next: StudioFrame[], source?: "gesture" | "restore") => {
+  const changeFrames = (next: StudioFrame[], source?: "gesture" | "restore", historyOptions?: ObjectHistoryGroupOptions) => {
     if (source !== "restore" && source !== "gesture") {
-      if (historyCoordinatorRef.current.recordObjectChange(framesRef.current, next, closeStoryHistoryGroup)) {
+      if (historyCoordinatorRef.current.recordObjectChange(framesRef.current, next, closeStoryHistoryGroup, historyOptions)) {
         setObjectHistoryVersion((version) => version + 1);
       }
     }
@@ -2229,6 +2230,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       changeFrames(frames.map((f) => f.id === targetId ? {
         ...f,
         imageSrc: compressed.src,
+        imageName: file.name,
         imageNaturalW: compressed.width,
         imageNaturalH: compressed.height,
         imageXMm: fit.x,
@@ -2665,6 +2667,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                   changeFrames(framesRef.current.map((f) => (f.id === frameId ? {
                     ...f,
                     imageSrc: compressed.src,
+                    imageName: file.name,
                     imageNaturalW: compressed.width,
                     imageNaturalH: compressed.height,
                     imageXMm: fit.x,
@@ -2901,23 +2904,69 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedFrameIds.length === 1 && selectedPictureBox ? <StudioObjectRibbon disableContextMenu frame={selectedPictureBox} onChange={(frameId, patch) => {
-            const target = frames.find(frame => frame.id === frameId);
-            const updated = target && applyObjectGeometry(target, patch);
-            if (updated) changeFrames(frames.map(frame => frame.id === frameId ? updated : frame));
-          }} /> : <DocumentToolbar
-            editor={editor}
-            dir={dir}
-            setDir={setDir}
-            processingLanguage={processingLanguage}
-            setProcessingLanguage={setProcessingLanguage}
-            isUr={isUr}
-            zoom={zoom}
-            onZoomChange={setZoom}
-            documentSettings={documentSettings}
-            englishFont={englishFont}
-            onEnglishFontChange={setEnglishFont}
-          />}</div>
+          (() => {
+            const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
+            const propertyToolbarMode = resolvePropertyToolbarMode(canvasTool, selectedFrames);
+            const applyRibbonPatch = (frameId: string, patch: ObjectGeometryPatch, historyOptions?: ObjectHistoryGroupOptions) => {
+              const currentFrames = framesRef.current;
+              let changed = false;
+              const nextFrames = currentFrames.map((frame) => {
+                if (frame.id !== frameId || frame.locked) return frame;
+                const updated = applyObjectGeometry(frame, patch);
+                if (!updated) return frame;
+                changed = true;
+                return updated;
+              });
+              if (changed) changeFrames(nextFrames, undefined, historyOptions);
+            };
+            const applyRibbonBatch = (
+              targetIds: string[],
+              buildPatch: (frame: StudioFrame) => ObjectGeometryPatch | null,
+              historyOptions?: ObjectHistoryGroupOptions,
+            ) => {
+              const idSet = new Set(targetIds);
+              const currentFrames = framesRef.current;
+              let changed = false;
+              const nextFrames = currentFrames.map((frame) => {
+                if (!idSet.has(frame.id) || frame.locked) return frame;
+                const patch = buildPatch(frame);
+                if (!patch) return frame;
+                const updated = applyObjectGeometry(frame, patch);
+                if (!updated) return frame;
+                changed = true;
+                return updated;
+              });
+              if (changed) changeFrames(nextFrames, undefined, historyOptions);
+            };
+            return (
+              <div inert={noDocumentOpen || undefined} style={noDocumentOpen ? { opacity: 0.5 } : undefined}>
+                {propertyToolbarMode !== "none" && selectedFrames.length > 0 ? (
+                  <StudioObjectRibbon
+                    disableContextMenu
+                    mode={propertyToolbarMode}
+                    frame={selectedFrames[0]}
+                    frames={selectedFrames}
+                    onChange={applyRibbonPatch}
+                    onApplyBatch={applyRibbonBatch}
+                  />
+                ) : (
+                  <DocumentToolbar
+                    editor={editor}
+                    dir={dir}
+                    setDir={setDir}
+                    processingLanguage={processingLanguage}
+                    setProcessingLanguage={setProcessingLanguage}
+                    isUr={isUr}
+                    zoom={zoom}
+                    onZoomChange={setZoom}
+                    documentSettings={documentSettings}
+                    englishFont={englishFont}
+                    onEnglishFontChange={setEnglishFont}
+                  />
+                )}
+              </div>
+            );
+          })()
         }
         findBar={
           findOpen ? (

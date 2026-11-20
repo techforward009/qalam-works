@@ -51,6 +51,9 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
         throw new Error('Drawing image exceeds supported limit; export blocked');
       }
     }
+    if (f.imageName !== undefined && (typeof f.imageName !== 'string' || f.imageName.length > 512)) {
+      throw new Error('Invalid drawing frame image name; export blocked');
+    }
     for (const key of ['imageXMm', 'imageYMm', 'imageWMm', 'imageHMm', 'imageNaturalW', 'imageNaturalH'] as const) {
       if (f[key] !== undefined && (typeof f[key] !== 'number' || !Number.isFinite(f[key]))) {
         throw new Error('Invalid drawing frame picture geometry; export blocked');
@@ -71,6 +74,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.paragraphAligns !== undefined ? { paragraphAligns: f.paragraphAligns } : {}),
       ...(f.singleLine !== undefined ? { singleLine: f.singleLine } : {}),
       ...(f.imageSrc !== undefined ? { imageSrc: f.imageSrc } : {}),
+      ...(f.imageName !== undefined ? { imageName: f.imageName } : {}),
       ...(f.imageNaturalW !== undefined ? { imageNaturalW: f.imageNaturalW } : {}),
       ...(f.imageNaturalH !== undefined ? { imageNaturalH: f.imageNaturalH } : {}),
       ...(f.imageXMm !== undefined ? { imageXMm: f.imageXMm } : {}),
@@ -242,7 +246,13 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
         : `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" ${frame.kind === 'round-rect' ? `rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - inset)}"` : ''} ${stroke}/>`;
     }
   }
-  const bg = frame.backgroundColor ? `<rect x="0" y="0" width="${w}" height="${h}" fill="${escape(frame.backgroundColor)}"/>` : '';
+  const bg = frame.backgroundColor
+    ? frame.kind === 'line'
+      ? ''
+      : frame.kind === 'ellipse'
+        ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${escape(frame.backgroundColor)}"/>`
+        : `<rect x="0" y="0" width="${w}" height="${h}" ${frame.kind === 'round-rect' ? `rx="${frame.roundnessMm ?? 6.35}"` : ''} fill="${escape(frame.backgroundColor)}"/>`
+    : '';
   return `<svg ${attr} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="${geometry}overflow:${rotated || frame.borderPosition === 'outside' ? 'visible' : 'hidden'};" aria-hidden="true">${bg}${shape}</svg>`;
 }
 export function printFramePageMarkup(frames: StudioFrame[], width: number, height: number): string {

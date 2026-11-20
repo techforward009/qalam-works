@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { studioOverlayRoot } from "../utils/inpageToolbar";
 import {
@@ -15,8 +15,13 @@ import {
   formatScalePercent,
   parseScalePercent,
   pictureDimensionMmFromScale,
+  shapeVariantOf,
+  frameKindForShape,
   type ObjectGeometryPatch,
+  type ShapeVariant,
 } from "../utils/objectAttributes";
+import { fitPictureInBox } from "../utils/pictureFit";
+import type { ObjectHistoryGroupOptions } from "../utils/objectFrameHistory";
 import { normalizeSafeHex, STUDIO_TEXT_COLORS } from "../utils/studioColors";
 import {
   BORDER_PATTERN_OPTIONS,
@@ -24,9 +29,26 @@ import {
   resolveBorderStrokes,
   type BorderPatternId,
 } from "../utils/borderPatterns";
-import type { StudioFrame } from "./StudioObjectLayer";
+import { isPictureBox, type FrameKind, type StudioFrame } from "./StudioObjectLayer";
+import type { StudioToolId } from "./InPageToolPalette";
 import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import { contextMenuPosition } from "../utils/textContextMenu";
+
+export type PropertyToolbarMode = "picture" | "object" | "none";
+
+export function resolvePropertyToolbarMode(
+  canvasTool: StudioToolId,
+  selectedFrames: readonly StudioFrame[],
+): PropertyToolbarMode {
+  if (selectedFrames.length === 0) return "none";
+  if (canvasTool === "text") {
+    return selectedFrames.length === 1 && isPictureBox(selectedFrames[0].kind) ? "picture" : "none";
+  }
+  return "object";
+}
+
+const RIBBON_FONT = '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif';
+const PIXEL_UNIT_BORDER_MM = 25.4 / 96;
 
 const kinds = [
   ["picture-rect", "Rectangular Picture Box", "Rectangular", "▱"],
@@ -35,95 +57,519 @@ const kinds = [
 ] as const;
 const fields = [["xMm", "X", "x"], ["yMm", "Y", "y"], ["wMm", "Width", "w"], ["hMm", "Height", "h"]] as const;
 type GeometryKey = typeof fields[number][0];
-type Props = { frame: StudioFrame; onChange: (frameId: string, patch: ObjectGeometryPatch) => void; disableContextMenu?: boolean };
 
-export function StudioObjectRibbon({ frame, onChange, disableContextMenu = false }: Props) {
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuReturnFocus = useRef<HTMLElement | null>(null);
-  const dialogReturnFocus = useRef<HTMLElement | null>(null);
-  const [menu, setMenu] = useState<{ x: number; y: number; frame: StudioFrame } | null>(null);
-  const [dialogFrame, setDialogFrame] = useState<StudioFrame | null>(null);
-  useEffect(() => {
-    if (disableContextMenu) return;
-    const open = (event: MouseEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      const box = target?.closest<HTMLElement>('[data-studio-frame^="picture-"][data-studio-frame-id]');
-      if (!box) return;
-      event.preventDefault();
-      const current = box.dataset.studioFrameId === frame.id ? frame : null;
-      if (current) { menuReturnFocus.current = document.activeElement as HTMLElement; setMenu({ x: event.clientX, y: event.clientY, frame: current }); }
-    };
-    const selected = (event: Event) => {
-      const detail = (event as CustomEvent<{ id: string; x: number; y: number }>).detail;
-      if (detail.id === frame.id) { menuReturnFocus.current = document.activeElement as HTMLElement; setMenu({ x: detail.x, y: detail.y, frame }); delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest; }
-    };
-    document.addEventListener("contextmenu", open);
-    window.addEventListener("studio-picture-context", selected);
-    const pending = (window as Window & { __studioPictureContextRequest?: { id: string; x: number; y: number } }).__studioPictureContextRequest;
-    if (pending?.id === frame.id) { menuReturnFocus.current = document.activeElement as HTMLElement; setMenu({ ...pending, frame }); delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest; }
-    return () => { document.removeEventListener("contextmenu", open); window.removeEventListener("studio-picture-context", selected); };
-  }, [disableContextMenu, frame]);
+type BatchBuilder = (frame: StudioFrame) => ObjectGeometryPatch | null;
+
+type Props = {
+  frame: StudioFrame;
+  frames?: StudioFrame[];
+  mode?: "picture" | "object";
+  onChange: (frameId: string, patch: ObjectGeometryPatch, historyOptions?: ObjectHistoryGroupOptions) => void;
+  onApplyBatch?: (
+    frameIds: string[],
+    buildPatch: BatchBuilder,
+    historyOptions?: ObjectHistoryGroupOptions,
+  ) => void;
+  disableContextMenu?: boolean;
+};
+
+type SharedResult<T> = { mixed: false; value: T } | { mixed: true };
+
+function resolveShared<T>(
+  frames: readonly StudioFrame[],
+  getter: (frame: StudioFrame) => T,
+  equals: (a: T, b: T) => boolean = (a, b) => a === b,
+): SharedResult<T> {
+  const first = getter(frames[0]);
+  for (let i = 1; i < frames.length; i += 1) {
+    if (!equals(first, getter(frames[i]))) return { mixed: true };
+  }
+  return { mixed: false, value: first };
+}
+
+function nearNumber(a: number, b: number, eps = 1e-4): boolean {
+  return Math.abs(a - b) <= eps;
+}
+
+function effectiveBorderColor(frame: StudioFrame): string {
+  return (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toUpperCase();
+}
+
+function effectiveBackgroundColor(frame: StudioFrame): string {
+  return frame.backgroundColor ? (normalizeSafeHex(frame.backgroundColor) ?? "").toUpperCase() : "";
+}
+
+function effectiveBorderPattern(frame: StudioFrame): BorderPatternId {
+  return frame.borderPattern ?? (isPictureBox(frame.kind) ? "none" : "solid");
+}
+
+function effectiveBorderWidthMm(frame: StudioFrame): number {
+  return frame.borderWidthMm ?? PIXEL_UNIT_BORDER_MM;
+}
+
+function effectiveBorderPosition(frame: StudioFrame): "inside" | "outside" {
+  return frame.borderPosition ?? "inside";
+}
+
+function effectiveRoundnessMm(frame: StudioFrame): number {
+  return frame.roundnessMm ?? 6.35;
+}
+
+function effectiveAngle1Deg(frame: StudioFrame): number {
+  return frame.angle1Deg ?? 0;
+}
+
+function effectiveAngle2Deg(frame: StudioFrame): number {
+  return frame.angle2Deg ?? 0;
+}
+
+function effectiveHatch(frame: StudioFrame): "none" {
+  return frame.backgroundHatch ?? "none";
+}
+
+const control: CSSProperties = {
+  boxSizing: "border-box",
+  height: 20,
+  border: "1px solid #7f9db9",
+  background: "#fff",
+  padding: "1px 3px",
+  color: "#000",
+  font: RIBBON_FONT,
+};
+
+const ribbonFieldBox: CSSProperties = {
+  boxSizing: "border-box",
+  height: 19,
+  border: "1px solid #7f9db9",
+  borderRadius: 0,
+  background: "#fff",
+  padding: "0 3px",
+  color: "#000",
+  font: RIBBON_FONT,
+  lineHeight: "17px",
+  outline: "none",
+};
+
+const ribbonBevelButton = (active = false, disabled = false): CSSProperties => ({
+  boxSizing: "border-box",
+  width: 19,
+  height: 19,
+  minWidth: 19,
+  minHeight: 19,
+  padding: 0,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1px solid",
+  borderColor: active ? "#646464 #ffffff #ffffff #646464" : "#ffffff #646464 #646464 #ffffff",
+  background: active ? "#e2e7ee" : "#f0f0f0",
+  boxShadow: active ? "inset 1px 1px 0 #a0a0a0" : "inset -1px -1px 0 #d0d0d0",
+  color: disabled ? "#808080" : "#111",
+  cursor: disabled ? "default" : "pointer",
+  opacity: disabled ? 0.65 : 1,
+  flexShrink: 0,
+});
+
+const iconTileStyle: CSSProperties = {
+  width: 18,
+  height: 19,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  userSelect: "none",
+};
+
+const unsupported = {
+  title: "Not supported yet in Qalam Page",
+  "aria-description": "Not supported yet in Qalam Page",
+  disabled: true,
+} as const;
+
+const caption = (left: number, top: number, text: string, height = 20) => (
+  <span style={{ position: "absolute", left, top, height, display: "flex", alignItems: "center", lineHeight: "normal", whiteSpace: "nowrap" }}>
+    {text}
+  </span>
+);
+const group = (left: number, top: number, width: number, height: number, title: string, children: React.ReactNode) => (
+  <div style={{ position: "absolute", left, top, width, height, boxSizing: "border-box", border: "1px solid #a0a0a0", boxShadow: "inset 0 1px #fff" }}>
+    <span style={{ position: "absolute", left: 7, top: -8, padding: "0 3px", lineHeight: "14px", background: "#f0f0f0", whiteSpace: "nowrap" }}>
+      {title}
+    </span>
+    {children}
+  </div>
+);
+const radio = (checked = false) => (
+  <span
+    aria-hidden="true"
+    style={{
+      display: "inline-block",
+      verticalAlign: "-2px",
+      width: 10,
+      height: 10,
+      marginRight: 4,
+      border: "1px solid #777",
+      borderRadius: "50%",
+      background: checked ? "radial-gradient(circle,#111 0 2px,#eee 2.5px)" : "#f0f0f0",
+      boxShadow: "inset 0 1px #fff",
+    }}
+  />
+);
+const checkbox = (checked = false) => (
+  <span
+    aria-hidden="true"
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      verticalAlign: "-2px",
+      width: 13,
+      height: 13,
+      marginRight: 4,
+      border: "1px solid #777",
+      background: "#f8f8f8",
+      boxShadow: "inset 0 1px #fff",
+      font: "bold 11px Arial",
+    }}
+  >
+    {checked ? "✓" : ""}
+  </span>
+);
+
+function RibbonNumericInput({
+  ariaLabel,
+  dataField,
+  dataObjectField,
+  value,
+  mixed = false,
+  disabled = false,
+  width,
+  selectionKey,
+  title,
+  onCommit,
+  onStep,
+}: {
+  ariaLabel: string;
+  dataField: string;
+  dataObjectField?: string;
+  value: string;
+  mixed?: boolean;
+  disabled?: boolean;
+  width: number;
+  selectionKey: string;
+  title?: string;
+  onCommit: (raw: string) => boolean;
+  onStep?: (delta: 1 | -1) => void;
+}) {
+  const displayValue = mixed ? "" : value;
+  const [draft, setDraft] = useState(displayValue);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    if (menu) {
-      const closeOutside = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setMenu(null); };
-      const close = () => setMenu(null);
-      const key = (event: KeyboardEvent) => { if (event.key === "Escape") { setMenu(null); menuReturnFocus.current?.focus({ preventScroll: true }); } };
-      document.addEventListener("pointerdown", closeOutside, true);
-      document.addEventListener("keydown", key, true);
-      window.addEventListener("scroll", close, true);
-      window.addEventListener("resize", close);
-      window.addEventListener("blur", close);
-      return () => { document.removeEventListener("pointerdown", closeOutside, true); document.removeEventListener("keydown", key, true); window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); window.removeEventListener("blur", close); };
+    setDraft(displayValue);
+    setDirty(false);
+  }, [selectionKey]);
+
+  useEffect(() => {
+    if (!dirty) setDraft(displayValue);
+  }, [displayValue, dirty]);
+
+  const attemptCommit = (raw: string): boolean => {
+    if (disabled) return false;
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setDraft(displayValue);
+      setDirty(false);
+      return false;
     }
-  }, [menu]);
-  useEffect(() => {
-    if (!menu || !menuRef.current) return;
-    const rect = menuRef.current.getBoundingClientRect();
-    const pos = contextMenuPosition(menu.x, menu.y, rect.width, rect.height, window.innerWidth, window.innerHeight);
-    menuRef.current.style.left = `${pos.left}px`;
-    menuRef.current.style.top = `${pos.top}px`;
-    menuRef.current.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
-  }, [menu]);
-  useEffect(() => {
-    if (dialogFrame && dialogFrame.id !== frame.id) setDialogFrame(null);
-  }, [dialogFrame, frame.id]);
-
-  const ribbonFields = <GeometryFields key={frame.id} frame={frame} onApply={patch => onChange(frame.id, patch)} />;
-  return <>
-    <div data-studio-object-ribbon="true" className="flex min-h-[34px] flex-wrap items-center gap-2 border-b border-[#b8b8b8] bg-[#f0f0f0] px-2 py-1 text-[11px] text-black" dir="ltr">
-      {ribbonFields}
-      <span className="mx-1 h-5 border-l border-[#c0c0c0]" />
-      {kinds.map(([kind, label, , glyph]) => <button key={kind} type="button" aria-label={label} aria-pressed={frame.kind === kind} title={label} onClick={() => onChange(frame.id, { kind })} className="h-6 min-w-7 border border-[#aaa] bg-gradient-to-b from-white to-[#e5e5e5] px-1 aria-pressed:border-[#567b9e] aria-pressed:bg-[#d7e8f8]">{glyph}</button>)}
-    </div>
-    {menu ? createPortal(<div ref={menuRef} role="menu" aria-label="Object context menu" data-object-menu-root="true" className="fixed z-[120] border border-[#808080] bg-[#f0f0f0] p-1 shadow-md" style={{ left: menu.x, top: menu.y }} onPointerDown={e => e.stopPropagation()}><button type="button" role="menuitem" data-object-menu="format" className="px-4 py-1 text-left text-[11px] hover:bg-[#d6dff2]" onClick={() => { dialogReturnFocus.current = menuReturnFocus.current; setDialogFrame(menu.frame); setMenu(null); }}>Format Object...</button></div>, studioOverlayRoot()) : null}
-    {dialogFrame ? <FormatDialog frame={dialogFrame} returnFocus={dialogReturnFocus} onCancel={() => setDialogFrame(null)} onApply={patch => { onChange(dialogFrame.id, patch); setDialogFrame(null); }} /> : null}
-  </>;
-}
-
-function GeometryFields({ frame, onApply, firstFieldRef }: { frame: StudioFrame; onApply: (patch: ObjectGeometryPatch) => void; firstFieldRef?: React.RefObject<HTMLInputElement | null> }) {
-  const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(fields.map(([key]) => [key, formatGeometryLength(frame[key])])));
-  const skipBlur = useRef<string | null>(null);
-  useEffect(() => setValues(Object.fromEntries(fields.map(([key]) => [key, formatGeometryLength(frame[key])]))), [frame.xMm, frame.yMm, frame.wMm, frame.hMm]);
-  const revert = (key: GeometryKey) => setValues(prev => ({ ...prev, [key]: formatGeometryLength(frame[key]) }));
-  const commit = (key: GeometryKey) => {
-    const value = parseGeometryLength(values[key]);
-    const patch = { [key]: value } as ObjectGeometryPatch;
-    const updated = applyObjectGeometry(frame, patch);
-    if (updated) onApply(patch); else revert(key);
+    const ok = onCommit(trimmed);
+    setDirty(false);
+    if (!ok) setDraft(displayValue);
+    return ok;
   };
-  return <>{fields.map(([key, label, data], index) => <label key={key} className="flex items-center gap-1">{label}<input ref={index === 0 ? firstFieldRef : undefined} aria-label={label} data-object-field={data} value={values[key]} onChange={e => setValues(prev => ({ ...prev, [key]: e.target.value }))} onKeyDown={e => { if (e.key === "Enter") { if (e.currentTarget.form?.getAttribute("role") !== "dialog") { commit(key); e.currentTarget.blur(); } } if (e.key === "Escape") { skipBlur.current = key; revert(key); e.currentTarget.blur(); } }} onBlur={() => { if (skipBlur.current === key) { skipBlur.current = null; return; } commit(key); }} className="h-6 w-[62px] border border-[#999] bg-white px-1 text-[11px]" /></label>)}</>;
+
+  return (
+    <input
+      type="text"
+      aria-label={ariaLabel}
+      data-ribbon-field={dataField}
+      data-object-field={dataObjectField}
+      data-ribbon-dirty={dirty ? "true" : "false"}
+      data-mixed={mixed && !dirty ? "true" : undefined}
+      title={title ?? ariaLabel}
+      aria-description={disabled && title === unsupported.title ? unsupported["aria-description"] : undefined}
+      disabled={disabled}
+      value={draft}
+      onChange={(event) => {
+        setDirty(true);
+        setDraft(event.target.value);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.stopPropagation();
+          attemptCommit(event.currentTarget.value);
+          event.currentTarget.select();
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          setDraft(displayValue);
+          setDirty(false);
+          return;
+        }
+        if ((event.key === "ArrowUp" || event.key === "ArrowDown") && onStep && !disabled) {
+          event.preventDefault();
+          if (dirty) attemptCommit(event.currentTarget.value);
+          onStep(event.key === "ArrowUp" ? 1 : -1);
+        }
+      }}
+      onBlur={(event) => {
+        if (dirty) attemptCommit(event.currentTarget.value);
+      }}
+      style={{
+        ...ribbonFieldBox,
+        width,
+        background: disabled ? "#f0f0f0" : "#fff",
+        color: disabled ? "#787878" : "#000",
+        cursor: disabled ? "default" : "text",
+      }}
+    />
+  );
 }
 
-const unsupported = { title: "Not supported yet in Qalam Page", "aria-description": "Not supported yet in Qalam Page", disabled: true } as const;
-const control: React.CSSProperties = { boxSizing: "border-box", height: 20, border: "1px solid #7f9db9", background: "#fff", padding: "1px 3px", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif' };
-const unsupportedField = (left: number, top: number, width: number) => <input aria-label="Not supported" {...unsupported} value="" readOnly style={{ ...control, position: "absolute", left, top, width }} />;
-const caption = (left: number, top: number, text: string, height = 20) => <span style={{ position: "absolute", left, top, height, display: "flex", alignItems: "center", lineHeight: "normal", whiteSpace: "nowrap" }}>{text}</span>;
-const group = (left: number, top: number, width: number, height: number, title: string, children: React.ReactNode) => <div style={{ position: "absolute", left, top, width, height, boxSizing: "border-box", border: "1px solid #a0a0a0", boxShadow: "inset 0 1px #fff" }}><span style={{ position: "absolute", left: 7, top: -8, padding: "0 3px", lineHeight: "14px", background: "#f0f0f0", whiteSpace: "nowrap" }}>{title}</span>{children}</div>;
-const spinner = (left: number, top: number, label = "Not supported") => <button type="button" aria-label={label} {...unsupported} style={{ position: "absolute", left, top, width: 16, height: 20, padding: 0, border: "1px solid #7f9db9", background: "#f0f0f0", color: "#111", font: "8px Arial", lineHeight: "8px" }}><span style={{ display: "block", height: 9, borderBottom: "1px solid #aaa" }}>▲</span><span style={{ display: "block", height: 8 }}>▼</span></button>;
-const combo = (left: number, top: number, width: number) => <div title={unsupported.title} style={{ position: "absolute", left, top, width, height: 20, display: "flex", boxSizing: "border-box", border: "1px solid #7f9db9", background: "#fff" }}><input aria-label="Not supported" {...unsupported} value="" readOnly style={{ ...control, minWidth: 0, height: 18, flex: 1, border: 0, background: "transparent" }} /><button type="button" aria-label="Not supported" {...unsupported} style={{ width: 16, height: 18, padding: 0, border: "1px solid #aaa", background: "#eee", fontSize: 9 }}>▼</button></div>;
-const radio = (checked = false) => <span aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-2px", width: 10, height: 10, marginRight: 4, border: "1px solid #777", borderRadius: "50%", background: checked ? "radial-gradient(circle,#111 0 2px,#eee 2.5px)" : "#f0f0f0", boxShadow: "inset 0 1px #fff" }} />;
-const checkbox = (checked = false) => <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", verticalAlign: "-2px", width: 13, height: 13, marginRight: 4, border: "1px solid #777", background: "#f8f8f8", boxShadow: "inset 0 1px #fff", font: "bold 11px Arial" }}>{checked ? "✓" : ""}</span>;
+/* Classic 16x16 desktop glyphs matching InPage 2009 upper ribbons */
+function ObjectXIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="2" y1="2" x2="2" y2="14" stroke="#111" strokeWidth="1.2" />
+      <rect x="7" y="4" width="7" height="8" fill="#fff" stroke="#111" strokeWidth="1" />
+      <path d="M2.5 8H6.5M5 6.2L6.8 8L5 9.8" fill="none" stroke="#111" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+function ObjectYIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="2" y1="2" x2="14" y2="2" stroke="#111" strokeWidth="1.2" />
+      <rect x="4" y="7" width="8" height="7" fill="#fff" stroke="#111" strokeWidth="1" />
+      <path d="M8 2.5V6.5M6.2 5L8 6.8L9.8 5" fill="none" stroke="#111" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+function ObjectWIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="3" y1="2" x2="3" y2="6" stroke="#111" strokeWidth="1" />
+      <line x1="13" y1="2" x2="13" y2="6" stroke="#111" strokeWidth="1" />
+      <path d="M3.5 4H12.5" stroke="#111" strokeWidth="1" />
+      <rect x="3" y="7" width="10" height="7" fill="#fff" stroke="#111" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+function ObjectHIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="2" y1="3" x2="6" y2="3" stroke="#111" strokeWidth="1" />
+      <line x1="2" y1="13" x2="6" y2="13" stroke="#111" strokeWidth="1" />
+      <path d="M4 3.5V12.5" stroke="#111" strokeWidth="1" />
+      <rect x="7" y="3" width="7" height="10" fill="#fff" stroke="#111" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+function BorderOutsideIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <rect x="2" y="2" width="10" height="10" fill="none" stroke="#111" strokeWidth="1.8" />
+      <rect x="4.5" y="4.5" width="5" height="5" fill="#fff" stroke="#666" strokeWidth="0.9" strokeDasharray="1.2 1.2" />
+    </svg>
+  );
+}
+
+function BorderInsideIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <rect x="2" y="2" width="10" height="10" fill="#fff" stroke="#666" strokeWidth="0.9" strokeDasharray="1.2 1.2" />
+      <rect x="4" y="4" width="6" height="6" fill="none" stroke="#111" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function RunAroundIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <line x1="1.5" y1="2.5" x2="12.5" y2="2.5" stroke="#555" strokeWidth="1" />
+      <line x1="1.5" y1="5.5" x2="4" y2="5.5" stroke="#555" strokeWidth="1" />
+      <line x1="10" y1="5.5" x2="12.5" y2="5.5" stroke="#555" strokeWidth="1" />
+      <rect x="4.8" y="4.5" width="4.4" height="4.4" fill="#999" stroke="#555" strokeWidth="0.9" />
+      <line x1="1.5" y1="8.5" x2="4" y2="8.5" stroke="#555" strokeWidth="1" />
+      <line x1="10" y1="8.5" x2="12.5" y2="8.5" stroke="#555" strokeWidth="1" />
+      <line x1="1.5" y1="11.5" x2="12.5" y2="11.5" stroke="#555" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function InsetIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <rect x="2" y="2" width="10" height="10" fill="none" stroke="#555" strokeWidth="1" />
+      <rect x="4.5" y="4.5" width="5" height="5" fill="#fff" stroke="#777" strokeWidth="0.8" />
+      <path d="M7 1V3.5M7 13V10.5M1 7H3.5M13 7H10.5" stroke="#555" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function BorderWidthIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="2" y1="4" x2="14" y2="4" stroke="#111" strokeWidth="1" />
+      <line x1="2" y1="7" x2="14" y2="7" stroke="#111" strokeWidth="1.8" />
+      <line x1="2" y1="11" x2="14" y2="11" stroke="#111" strokeWidth="3" />
+    </svg>
+  );
+}
+
+function ShapeButtonIcon({ variant }: { variant: ShapeVariant }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
+      {variant === "rect" ? (
+        <rect x="2" y="2" width="9" height="9" fill="#fff" stroke="#111" strokeWidth="1.2" />
+      ) : variant === "ellipse" ? (
+        <ellipse cx="6.5" cy="6.5" rx="4.7" ry="4.7" fill="#fff" stroke="#111" strokeWidth="1.2" />
+      ) : (
+        <rect x="2" y="2" width="9" height="9" rx="2.5" fill="#fff" stroke="#111" strokeWidth="1.2" />
+      )}
+    </svg>
+  );
+}
+
+function RoundnessIcon({ disabled }: { disabled: boolean }) {
+  const stroke = disabled ? "#787878" : "#111";
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M13 4H7.5C5.2 4 4 5.2 4 7.5V13" fill="none" stroke={stroke} strokeWidth="1.4" />
+      <path d="M6.5 6.5L10.5 10.5" stroke={stroke} strokeWidth="1" />
+    </svg>
+  );
+}
+
+function AngleWedgeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M2 13L13 13M2 13L11.5 3.5" fill="none" stroke="#111" strokeWidth="1.3" />
+      <path d="M7.5 13A5.5 5.5 0 0 0 5.9 9.1" fill="none" stroke="#111" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function PictureHouseGlyph({ children }: { children?: React.ReactNode }) {
+  return (
+    <g>
+      <path d="M3 13V7.5L8 3.5L13 7.5V13H9.5V9.5H6.5V13Z" fill="#f6e06e" stroke="#6c5611" strokeWidth="0.9" />
+      {children}
+    </g>
+  );
+}
+
+function PictureOriginXIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="1.5" y1="2" x2="1.5" y2="14" stroke="#111" strokeWidth="1.2" />
+      <PictureHouseGlyph />
+      <path d="M2.5 8H6" stroke="#111" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function PictureOriginYIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <line x1="2" y1="1.5" x2="14" y2="1.5" stroke="#111" strokeWidth="1.2" />
+      <PictureHouseGlyph />
+      <path d="M8 2V5.5" stroke="#111" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function PictureScaleXIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <PictureHouseGlyph />
+      <path d="M2 14.2H14M3.5 12.8L2 14.2L3.5 15.3M12.5 12.8L14 14.2L12.5 15.3" fill="none" stroke="#111" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function PictureScaleYIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <PictureHouseGlyph />
+      <path d="M14.5 2V14M13.2 3.5L14.5 2L15.6 3.5M13.2 12.5L14.5 14L15.6 12.5" fill="none" stroke="#111" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function PictureBrightnessIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <PictureHouseGlyph />
+      <circle cx="12.2" cy="4.2" r="1.7" fill="#fff" stroke="#666" strokeWidth="0.9" />
+    </svg>
+  );
+}
+
+function PictureContrastIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <PictureHouseGlyph />
+      <circle cx="12.2" cy="4.2" r="1.8" fill="#fff" stroke="#666" strokeWidth="0.9" />
+      <path d="M12.2 2.4A1.8 1.8 0 0 1 12.2 6Z" fill="#666" />
+    </svg>
+  );
+}
+
+function PictureAngleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <g transform="rotate(-18 8 9)">
+        <PictureHouseGlyph />
+      </g>
+      <path d="M2 13.5H14" stroke="#111" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function PictureFitIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="2" y="2" width="12" height="12" fill="none" stroke="#444" strokeWidth="1" />
+      <PictureHouseGlyph />
+    </svg>
+  );
+}
+
+function PictureMirrorHIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <PictureHouseGlyph />
+      <path d="M3 13.5H13M5 12L3 13.5L5 15M11 12L13 13.5L11 15" fill="none" stroke="#666" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
+function PictureMirrorVIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <PictureHouseGlyph />
+      <path d="M13.5 3V13M12 5L13.5 3L15 5M12 11L13.5 13L15 11" fill="none" stroke="#666" strokeWidth="1.1" />
+    </svg>
+  );
+}
 
 type ColorOption = {
   id: string;
@@ -143,26 +589,31 @@ const BACKGROUND_COLOR_OPTIONS: ReadonlyArray<ColorOption> = [
     .map((c) => ({ id: c.id, label: c.label, hex: c.hex })),
 ];
 
-function ColorSwatch({ hex }: { hex: string }) {
+function ColorSwatch({ hex, mixed = false }: { hex: string; mixed?: boolean }) {
   return (
     <span
       aria-hidden="true"
-      data-color-swatch={hex || "none"}
+      data-color-swatch={mixed ? "mixed" : hex || "none"}
       style={{
         display: "inline-block",
-        width: 14,
+        width: 12,
         height: 10,
         flexShrink: 0,
-        border: "1px solid #555",
-        background: hex
-          ? hex
-          : "repeating-linear-gradient(135deg, #fff 0 3px, #d8d8d8 3px 6px)",
+        border: mixed ? "1px dashed #666" : "1px solid #555",
+        background: mixed
+          ? "#e5e5e5"
+          : hex
+            ? hex
+            : "repeating-linear-gradient(135deg, #fff 0 3px, #d8d8d8 3px 6px)",
       }}
     />
   );
 }
 
-function PatternPreview({ pattern }: { pattern: BorderPatternId }) {
+function PatternPreview({ pattern, mixed = false }: { pattern: BorderPatternId; mixed?: boolean }) {
+  if (mixed) {
+    return <span style={{ flex: 1, textAlign: "left" }} />;
+  }
   if (pattern === "none") {
     return (
       <span style={{ flex: 1, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -209,12 +660,18 @@ function ObjectColorCombo({
   options,
   onChange,
   style,
+  mixed = false,
+  disabled = false,
+  dataRibbonField,
 }: {
   ariaLabel: string;
   value: string;
   options: ReadonlyArray<ColorOption>;
   onChange: (hex: string) => void;
-  style: React.CSSProperties;
+  style: CSSProperties;
+  mixed?: boolean;
+  disabled?: boolean;
+  dataRibbonField?: string;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -227,6 +684,10 @@ function ObjectColorCombo({
   const selected = options[currentIndex] ?? options[0];
   const [activeIndex, setActiveIndex] = useState(currentIndex);
   const pos = useComboPopupPosition(open, buttonRef, 128);
+
+  useEffect(() => {
+    if (disabled && open) setOpen(false);
+  }, [disabled, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -248,6 +709,7 @@ function ObjectColorCombo({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (disabled) return;
     if (event.key === "Escape" && open) {
       event.preventDefault();
       event.stopPropagation();
@@ -301,9 +763,12 @@ function ObjectColorCombo({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
+        disabled={disabled}
         data-object-color-combo={ariaLabel}
-        data-value={selected.hex}
-        onClick={() => setOpen((prev) => !prev)}
+        data-ribbon-field={dataRibbonField}
+        data-mixed={mixed ? "true" : undefined}
+        data-value={mixed ? "" : selected.hex}
+        onClick={() => { if (!disabled) setOpen((prev) => !prev); }}
         onKeyDown={handleKeyDown}
         style={{
           ...control,
@@ -313,11 +778,13 @@ function ObjectColorCombo({
           gap: 4,
           padding: "0 2px 0 3px",
           textAlign: "left",
+          background: disabled ? "#f0f0f0" : "#fff",
+          color: disabled ? "#787878" : "#000",
         }}
       >
-        <ColorSwatch hex={selected.hex} />
+        <ColorSwatch hex={selected.hex} mixed={mixed} />
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {selected.label}
+          {mixed ? "" : selected.label}
         </span>
         <span aria-hidden="true" style={{ fontSize: 8, lineHeight: "10px", marginLeft: "auto" }}>▼</span>
       </button>
@@ -341,11 +808,11 @@ function ObjectColorCombo({
                 border: "1px solid #7f9db9",
                 background: "#fff",
                 boxShadow: "0 2px 6px rgba(0,0,0,0.22)",
-                font: '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif',
+                font: RIBBON_FONT,
               }}
             >
               {options.map((opt, idx) => {
-                const isSelected = idx === currentIndex;
+                const isSelected = !mixed && idx === currentIndex;
                 const isActive = idx === activeIndex;
                 return (
                   <button
@@ -386,11 +853,17 @@ function ObjectPatternCombo({
   value,
   onChange,
   style,
+  mixed = false,
+  disabled = false,
+  dataRibbonField,
 }: {
   ariaLabel: string;
   value: BorderPatternId;
   onChange: (pattern: BorderPatternId) => void;
-  style: React.CSSProperties;
+  style: CSSProperties;
+  mixed?: boolean;
+  disabled?: boolean;
+  dataRibbonField?: string;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -398,6 +871,10 @@ function ObjectPatternCombo({
   const currentIndex = Math.max(0, BORDER_PATTERN_OPTIONS.findIndex((opt) => opt.id === value));
   const [activeIndex, setActiveIndex] = useState(currentIndex);
   const pos = useComboPopupPosition(open, buttonRef, 138);
+
+  useEffect(() => {
+    if (disabled && open) setOpen(false);
+  }, [disabled, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -419,6 +896,7 @@ function ObjectPatternCombo({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (disabled) return;
     if (event.key === "Escape" && open) {
       event.preventDefault();
       event.stopPropagation();
@@ -472,9 +950,12 @@ function ObjectPatternCombo({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
+        disabled={disabled}
         data-object-pattern-combo="true"
-        data-value={value}
-        onClick={() => setOpen((prev) => !prev)}
+        data-ribbon-field={dataRibbonField}
+        data-mixed={mixed ? "true" : undefined}
+        data-value={mixed ? "" : value}
+        onClick={() => { if (!disabled) setOpen((prev) => !prev); }}
         onKeyDown={handleKeyDown}
         style={{
           ...control,
@@ -484,10 +965,12 @@ function ObjectPatternCombo({
           gap: 3,
           padding: "0 2px 0 3px",
           textAlign: "left",
+          background: disabled ? "#f0f0f0" : "#fff",
+          color: disabled ? "#787878" : "#000",
         }}
       >
-        <PatternPreview pattern={value} />
-        {value !== "none" ? <span className="sr-only">{borderPatternLabel(value)}</span> : null}
+        <PatternPreview pattern={value} mixed={mixed} />
+        {!mixed && value !== "none" ? <span className="sr-only">{borderPatternLabel(value)}</span> : null}
         <span aria-hidden="true" style={{ fontSize: 8, lineHeight: "10px", marginLeft: "auto" }}>▼</span>
       </button>
       {open
@@ -510,11 +993,11 @@ function ObjectPatternCombo({
                 border: "1px solid #7f9db9",
                 background: "#fff",
                 boxShadow: "0 2px 6px rgba(0,0,0,0.22)",
-                font: '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif',
+                font: RIBBON_FONT,
               }}
             >
               {BORDER_PATTERN_OPTIONS.map((opt, idx) => {
-                const isSelected = idx === currentIndex;
+                const isSelected = !mixed && idx === currentIndex;
                 const isActive = idx === activeIndex;
                 return (
                   <button
@@ -553,6 +1036,855 @@ function ObjectPatternCombo({
   );
 }
 
+function RibbonShell({
+  mode,
+  selectionCount,
+  children,
+}: {
+  mode: "picture" | "object";
+  selectionCount: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      data-studio-object-ribbon="true"
+      data-ribbon-mode={mode}
+      data-ribbon-selection-count={selectionCount}
+      role="toolbar"
+      aria-label={mode === "picture" ? "Picture Properties" : "Object Properties"}
+      dir="ltr"
+      className="flex flex-col"
+      style={{
+        background: "#f0f0f0",
+        color: "#000",
+        font: RIBBON_FONT,
+        height: 47,
+        minHeight: 47,
+        maxHeight: 47,
+        width: "100%",
+        boxSizing: "border-box",
+        position: "relative",
+        overflowX: "auto",
+        overflowY: "hidden",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        data-studio-toolbar-etched="true"
+        style={{ height: 3, flexShrink: 0, background: "linear-gradient(to bottom, #f0f0f0 0 1px, #a0a0a0 1px 2px, #ffffff 2px 3px)" }}
+      />
+      <div
+        style={{
+          height: 42,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "0 4px",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {children}
+      </div>
+      <div aria-hidden="true" data-studio-toolbar-edge="true" style={{ height: 2, flexShrink: 0, background: "#a0a0a0" }} />
+    </div>
+  );
+}
+
+function PicturePropertyRibbon({
+  frame,
+  applyToSelected,
+}: {
+  frame: StudioFrame;
+  applyToSelected: (buildPatch: BatchBuilder, groupField?: string) => void;
+}) {
+  const locked = Boolean(frame.locked);
+  const hasImage = Boolean(frame.imageSrc);
+  const editable = hasImage && !locked;
+  const scale = pictureScalePercent(frame);
+  const refSize = pictureReferenceSizeMm(frame);
+  const filename = frame.imageSrc ? frame.imageName || "Embedded picture" : "No picture";
+
+  const commitOrigin = (axis: "imageXMm" | "imageYMm", raw: string): boolean => {
+    const parsed = parseGeometryLength(raw);
+    if (!Number.isFinite(parsed)) return false;
+    const patch: ObjectGeometryPatch = { [axis]: parsed };
+    if (!applyObjectGeometry(frame, patch)) return false;
+    applyToSelected(() => patch, axis);
+    return true;
+  };
+
+  const stepOrigin = (axis: "imageXMm" | "imageYMm", delta: 1 | -1) => {
+    const current = axis === "imageXMm" ? (frame.imageXMm ?? 0) : (frame.imageYMm ?? 0);
+    const next = Math.round((current + delta) * 100) / 100;
+    const patch: ObjectGeometryPatch = { [axis]: next };
+    if (applyObjectGeometry(frame, patch)) applyToSelected(() => patch, axis);
+  };
+
+  const commitScale = (axis: "x" | "y", raw: string): boolean => {
+    const parsed = parseScalePercent(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) return false;
+    const dimMm = pictureDimensionMmFromScale(parsed, axis === "x" ? refSize.wMm : refSize.hMm);
+    const patch: ObjectGeometryPatch = axis === "x" ? { imageWMm: dimMm } : { imageHMm: dimMm };
+    if (!applyObjectGeometry(frame, patch)) return false;
+    applyToSelected(() => patch, axis === "x" ? "imageWMm" : "imageHMm");
+    return true;
+  };
+
+  const stepScale = (axis: "x" | "y", delta: 1 | -1) => {
+    const nextPct = Math.max(1, Math.round((axis === "x" ? scale.x : scale.y) + delta));
+    const dimMm = pictureDimensionMmFromScale(nextPct, axis === "x" ? refSize.wMm : refSize.hMm);
+    const patch: ObjectGeometryPatch = axis === "x" ? { imageWMm: dimMm } : { imageHMm: dimMm };
+    if (applyObjectGeometry(frame, patch)) applyToSelected(() => patch, axis === "x" ? "imageWMm" : "imageHMm");
+  };
+
+  const commitAngle2 = (raw: string): boolean => {
+    const parsed = parseDegrees(raw);
+    if (!Number.isFinite(parsed) || Math.abs(parsed) > 3600) return false;
+    const patch: ObjectGeometryPatch = { angle2Deg: parsed };
+    if (!applyObjectGeometry(frame, patch)) return false;
+    applyToSelected(() => patch, "angle2Deg");
+    return true;
+  };
+
+  const stepAngle2 = (delta: 1 | -1) => {
+    const next = Math.max(-3600, Math.min(3600, effectiveAngle2Deg(frame) + delta));
+    const patch: ObjectGeometryPatch = { angle2Deg: next };
+    if (applyObjectGeometry(frame, patch)) applyToSelected(() => patch, "angle2Deg");
+  };
+
+  const fitPicture = () => {
+    if (!editable) return;
+    const fit =
+      frame.imageNaturalW && frame.imageNaturalH
+        ? fitPictureInBox(frame.wMm, frame.hMm, frame.imageNaturalW, frame.imageNaturalH)
+        : { x: 0, y: 0, w: frame.wMm, h: frame.hMm };
+    applyToSelected(() => ({
+      imageXMm: fit.x,
+      imageYMm: fit.y,
+      imageWMm: fit.w,
+      imageHMm: fit.h,
+      angle2Deg: 0,
+    }));
+  };
+
+  const colStyle: CSSProperties = { display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 };
+  const rowPairStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 2, height: 19 };
+
+  return (
+    <RibbonShell mode="picture" selectionCount={1}>
+      {/* Col 1: Picture Origin X / Y */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><PictureOriginXIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Origin Across"
+            dataField="image-x"
+            selectionKey={frame.id}
+            value={formatGeometryLength(frame.imageXMm ?? 0)}
+            disabled={!editable}
+            width={68}
+            onCommit={(raw) => commitOrigin("imageXMm", raw)}
+            onStep={(delta) => stepOrigin("imageXMm", delta)}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><PictureOriginYIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Origin Down"
+            dataField="image-y"
+            selectionKey={frame.id}
+            value={formatGeometryLength(frame.imageYMm ?? 0)}
+            disabled={!editable}
+            width={68}
+            onCommit={(raw) => commitOrigin("imageYMm", raw)}
+            onStep={(delta) => stepOrigin("imageYMm", delta)}
+          />
+        </div>
+      </div>
+
+      {/* Col 2: Scaling Across / Down */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><PictureScaleXIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Scaling Across"
+            dataField="scale-x"
+            selectionKey={frame.id}
+            value={formatScalePercent(scale.x)}
+            disabled={!editable}
+            width={58}
+            onCommit={(raw) => commitScale("x", raw)}
+            onStep={(delta) => stepScale("x", delta)}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><PictureScaleYIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Scaling Down"
+            dataField="scale-y"
+            selectionKey={frame.id}
+            value={formatScalePercent(scale.y)}
+            disabled={!editable}
+            width={58}
+            onCommit={(raw) => commitScale("y", raw)}
+            onStep={(delta) => stepScale("y", delta)}
+          />
+        </div>
+      </div>
+
+      {/* Col 3: Brightness / Contrast (matches InPage 2009 layout; cleanly disabled/unsupported) */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><PictureBrightnessIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Brightness"
+            dataField="brightness"
+            selectionKey={frame.id}
+            value="0%"
+            disabled={true}
+            title={unsupported.title}
+            width={54}
+            onCommit={() => false}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><PictureContrastIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Contrast"
+            dataField="contrast"
+            selectionKey={frame.id}
+            value="0%"
+            disabled={true}
+            title={unsupported.title}
+            width={54}
+            onCommit={() => false}
+          />
+        </div>
+      </div>
+
+      {/* Col 4: Angle2, Picture Actions & Filename Path Readout */}
+      <div style={colStyle}>
+        <div style={{ ...rowPairStyle, gap: 3 }}>
+          <span style={iconTileStyle}><PictureAngleIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Picture Angle"
+            dataField="angle2"
+            selectionKey={frame.id}
+            value={formatDegrees(effectiveAngle2Deg(frame))}
+            disabled={!editable}
+            width={62}
+            onCommit={commitAngle2}
+            onStep={stepAngle2}
+          />
+          <button
+            type="button"
+            aria-label="Fit Picture to Box"
+            title="Fit Picture to Box"
+            data-ribbon-field="fit-picture"
+            disabled={!editable}
+            onClick={fitPicture}
+            style={ribbonBevelButton(false, !editable)}
+          >
+            <PictureFitIcon />
+          </button>
+          <button
+            type="button"
+            aria-label="Mirror Picture Horizontally"
+            data-ribbon-field="mirror-h"
+            {...unsupported}
+            style={ribbonBevelButton(false, true)}
+          >
+            <PictureMirrorHIcon />
+          </button>
+          <button
+            type="button"
+            aria-label="Mirror Picture Vertically"
+            data-ribbon-field="mirror-v"
+            {...unsupported}
+            style={ribbonBevelButton(false, true)}
+          >
+            <PictureMirrorVIcon />
+          </button>
+        </div>
+        <div style={rowPairStyle}>
+          <span
+            data-ribbon-field="picture-filename"
+            title={filename}
+            style={{
+              paddingLeft: 4,
+              maxWidth: 360,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              color: hasImage ? "#111" : "#666",
+              font: RIBBON_FONT,
+              lineHeight: "19px",
+            }}
+          >
+            {filename}
+          </span>
+        </div>
+      </div>
+    </RibbonShell>
+  );
+}
+
+function ObjectPropertyRibbon({
+  selectedFrames,
+  applyToSelected,
+}: {
+  selectedFrames: readonly StudioFrame[];
+  applyToSelected: (buildPatch: BatchBuilder, groupField?: string) => void;
+}) {
+  const selectionKey = selectedFrames.map((f) => f.id).join(",");
+  const unlockedFrames = selectedFrames.filter((f) => !f.locked);
+  const allLocked = unlockedFrames.length === 0;
+  const editable = !allLocked;
+
+  const sharedX = resolveShared(selectedFrames, (f) => f.xMm, nearNumber);
+  const sharedY = resolveShared(selectedFrames, (f) => f.yMm, nearNumber);
+  const sharedW = resolveShared(selectedFrames, (f) => f.wMm, nearNumber);
+  const sharedH = resolveShared(selectedFrames, (f) => f.hMm, nearNumber);
+  const sharedBorderPos = resolveShared(selectedFrames, effectiveBorderPosition);
+  const sharedBorderColor = resolveShared(selectedFrames, effectiveBorderColor);
+  const sharedBgColor = resolveShared(selectedFrames, effectiveBackgroundColor);
+  const sharedBorderPattern = resolveShared(selectedFrames, effectiveBorderPattern);
+  const sharedBorderWidth = resolveShared(selectedFrames, effectiveBorderWidthMm, nearNumber);
+  const sharedRoundness = resolveShared(selectedFrames, effectiveRoundnessMm, nearNumber);
+  const sharedAngle1 = resolveShared(selectedFrames, effectiveAngle1Deg, nearNumber);
+  const sharedHatch = resolveShared(selectedFrames, effectiveHatch);
+
+  const allPictureFamily = selectedFrames.every((f) => isPictureBox(f.kind));
+  const allDrawingShapes = selectedFrames.every((f) => !isPictureBox(f.kind) && shapeVariantOf(f.kind) !== null);
+  const shapeGroupEnabled = editable && (allPictureFamily || allDrawingShapes);
+  const sharedVariant = resolveShared<ShapeVariant | null>(selectedFrames, (f) => shapeVariantOf(f.kind));
+  const roundnessEnabled = editable && selectedFrames.some((f) => shapeVariantOf(f.kind) === "round-rect");
+
+  const commitGeometry = (key: "xMm" | "yMm" | "wMm" | "hMm", raw: string): boolean => {
+    const parsed = parseGeometryLength(raw);
+    if (!Number.isFinite(parsed) || ((key === "wMm" || key === "hMm") && parsed < 1)) return false;
+    const patch: ObjectGeometryPatch = { [key]: parsed };
+    if (!unlockedFrames.some((f) => applyObjectGeometry(f, patch) !== null)) return false;
+    applyToSelected(() => patch, key);
+    return true;
+  };
+
+  const stepGeometry = (key: "xMm" | "yMm" | "wMm" | "hMm", delta: 1 | -1) => {
+    const base =
+      key === "xMm" ? sharedX : key === "yMm" ? sharedY : key === "wMm" ? sharedW : sharedH;
+    const fallback = !base.mixed ? base.value : unlockedFrames[0]?.[key] ?? selectedFrames[0][key];
+    const next = Math.round((fallback + delta) * 100) / 100;
+    if ((key === "wMm" || key === "hMm") && next < 1) return;
+    applyToSelected(() => ({ [key]: next }), key);
+  };
+
+  const commitBorderWidth = (raw: string): boolean => {
+    const parsed = parseBorderWidth(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) return false;
+    const patch: ObjectGeometryPatch = { borderWidthMm: parsed };
+    if (!unlockedFrames.some((f) => applyObjectGeometry(f, patch) !== null)) return false;
+    applyToSelected(() => patch, "borderWidthMm");
+    return true;
+  };
+
+  const stepBorderWidth = (delta: 1 | -1) => {
+    const current = !sharedBorderWidth.mixed
+      ? sharedBorderWidth.value
+      : effectiveBorderWidthMm(unlockedFrames[0] ?? selectedFrames[0]);
+    const next = Math.max(25.4 / 288, current + delta * (25.4 / 288));
+    applyToSelected(() => ({ borderWidthMm: next }), "borderWidthMm");
+  };
+
+  const commitRoundness = (raw: string): boolean => {
+    const parsed = parseGeometryLength(raw);
+    if (!Number.isFinite(parsed) || parsed < 0) return false;
+    const patch: ObjectGeometryPatch = { roundnessMm: parsed };
+    if (!unlockedFrames.some((f) => applyObjectGeometry(f, patch) !== null)) return false;
+    applyToSelected(() => patch, "roundnessMm");
+    return true;
+  };
+
+  const stepRoundness = (delta: 1 | -1) => {
+    const current = !sharedRoundness.mixed
+      ? sharedRoundness.value
+      : effectiveRoundnessMm(unlockedFrames[0] ?? selectedFrames[0]);
+    const next = Math.max(0, Math.round((current + delta * 0.5) * 100) / 100);
+    applyToSelected(() => ({ roundnessMm: next }), "roundnessMm");
+  };
+
+  const commitAngle1 = (raw: string): boolean => {
+    const parsed = parseDegrees(raw);
+    if (!Number.isFinite(parsed) || Math.abs(parsed) > 3600) return false;
+    const patch: ObjectGeometryPatch = { angle1Deg: parsed };
+    if (!unlockedFrames.some((f) => applyObjectGeometry(f, patch) !== null)) return false;
+    applyToSelected(() => patch, "angle1Deg");
+    return true;
+  };
+
+  const stepAngle1 = (delta: 1 | -1) => {
+    const current = !sharedAngle1.mixed
+      ? sharedAngle1.value
+      : effectiveAngle1Deg(unlockedFrames[0] ?? selectedFrames[0]);
+    const next = Math.max(-3600, Math.min(3600, current + delta));
+    applyToSelected(() => ({ angle1Deg: next }), "angle1Deg");
+  };
+
+  const shapeLabels: Record<ShapeVariant, string> = allPictureFamily
+    ? {
+        rect: "Rectangular Picture Box",
+        ellipse: "Elliptical Picture Box",
+        "round-rect": "Rounded Rectangular Picture Box",
+      }
+    : {
+        rect: "Rectangular Shape",
+        ellipse: "Elliptical Shape",
+        "round-rect": "Rounded Rectangular Shape",
+      };
+
+  const colStyle: CSSProperties = { display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 };
+  const rowPairStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 2, height: 19 };
+
+  return (
+    <RibbonShell mode="object" selectionCount={selectedFrames.length}>
+      {/* Col 1: Position X / Y */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><ObjectXIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Across (X)"
+            dataField="x"
+            dataObjectField="x"
+            selectionKey={selectionKey}
+            mixed={sharedX.mixed}
+            value={sharedX.mixed ? "" : formatGeometryLength(sharedX.value)}
+            disabled={!editable}
+            width={68}
+            onCommit={(raw) => commitGeometry("xMm", raw)}
+            onStep={(delta) => stepGeometry("xMm", delta)}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><ObjectYIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Down (Y)"
+            dataField="y"
+            dataObjectField="y"
+            selectionKey={selectionKey}
+            mixed={sharedY.mixed}
+            value={sharedY.mixed ? "" : formatGeometryLength(sharedY.value)}
+            disabled={!editable}
+            width={68}
+            onCommit={(raw) => commitGeometry("yMm", raw)}
+            onStep={(delta) => stepGeometry("yMm", delta)}
+          />
+        </div>
+      </div>
+
+      {/* Col 2: Size Width / Height */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><ObjectWIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Width"
+            dataField="w"
+            dataObjectField="w"
+            selectionKey={selectionKey}
+            mixed={sharedW.mixed}
+            value={sharedW.mixed ? "" : formatGeometryLength(sharedW.value)}
+            disabled={!editable}
+            width={68}
+            onCommit={(raw) => commitGeometry("wMm", raw)}
+            onStep={(delta) => stepGeometry("wMm", delta)}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><ObjectHIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Height"
+            dataField="h"
+            dataObjectField="h"
+            selectionKey={selectionKey}
+            mixed={sharedH.mixed}
+            value={sharedH.mixed ? "" : formatGeometryLength(sharedH.value)}
+            disabled={!editable}
+            width={68}
+            onCommit={(raw) => commitGeometry("hMm", raw)}
+            onStep={(delta) => stepGeometry("hMm", delta)}
+          />
+        </div>
+      </div>
+
+      {/* Col 3: 2x2 Border Position & Layout Buttons */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <button
+            type="button"
+            aria-label="Object Border Outside"
+            title="Border Outside"
+            data-ribbon-field="border-outside"
+            aria-pressed={!sharedBorderPos.mixed && sharedBorderPos.value === "outside"}
+            disabled={!editable}
+            onClick={() => applyToSelected(() => ({ borderPosition: "outside" }))}
+            style={ribbonBevelButton(!sharedBorderPos.mixed && sharedBorderPos.value === "outside", !editable)}
+          >
+            <BorderOutsideIcon />
+          </button>
+          <button
+            type="button"
+            aria-label="Object Border Inside"
+            title="Border Inside"
+            data-ribbon-field="border-inside"
+            aria-pressed={!sharedBorderPos.mixed && sharedBorderPos.value === "inside"}
+            disabled={!editable}
+            onClick={() => applyToSelected(() => ({ borderPosition: "inside" }))}
+            style={ribbonBevelButton(!sharedBorderPos.mixed && sharedBorderPos.value === "inside", !editable)}
+          >
+            <BorderInsideIcon />
+          </button>
+        </div>
+        <div style={rowPairStyle}>
+          <button
+            type="button"
+            aria-label="Object Run Around"
+            data-ribbon-field="run-around"
+            {...unsupported}
+            style={ribbonBevelButton(false, true)}
+          >
+            <RunAroundIcon />
+          </button>
+          <button
+            type="button"
+            aria-label="Object Inset"
+            data-ribbon-field="inset"
+            {...unsupported}
+            style={ribbonBevelButton(false, true)}
+          >
+            <InsetIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Col 4: Border Color / Background Color */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <ObjectColorCombo
+            ariaLabel="Object Border Color"
+            dataRibbonField="border-color"
+            value={sharedBorderColor.mixed ? "#000000" : sharedBorderColor.value}
+            mixed={sharedBorderColor.mixed}
+            disabled={!editable}
+            options={BORDER_COLOR_OPTIONS}
+            onChange={(hex) => applyToSelected(() => ({ borderColor: hex }))}
+            style={{ width: 78, height: 19 }}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <ObjectColorCombo
+            ariaLabel="Object Background Color"
+            dataRibbonField="background-color"
+            value={sharedBgColor.mixed ? "" : sharedBgColor.value}
+            mixed={sharedBgColor.mixed}
+            disabled={!editable}
+            options={BACKGROUND_COLOR_OPTIONS}
+            onChange={(hex) => applyToSelected(() => ({ backgroundColor: hex }))}
+            style={{ width: 78, height: 19 }}
+          />
+        </div>
+      </div>
+
+      {/* Col 5: Border Pattern / Border Width */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <ObjectPatternCombo
+            ariaLabel="Object Border Pattern"
+            dataRibbonField="border-pattern"
+            value={sharedBorderPattern.mixed ? "none" : sharedBorderPattern.value}
+            mixed={sharedBorderPattern.mixed}
+            disabled={!editable}
+            onChange={(pattern) => applyToSelected(() => ({ borderPattern: pattern }))}
+            style={{ width: 90, height: 19 }}
+          />
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><BorderWidthIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Border Width"
+            dataField="border-width"
+            selectionKey={selectionKey}
+            mixed={sharedBorderWidth.mixed}
+            value={sharedBorderWidth.mixed ? "" : formatBorderWidth(sharedBorderWidth.value)}
+            disabled={!editable}
+            width={60}
+            onCommit={commitBorderWidth}
+            onStep={stepBorderWidth}
+          />
+        </div>
+      </div>
+
+      {/* Col 6: Shape Buttons / Roundness */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          {(["rect", "ellipse", "round-rect"] as const).map((variant) => {
+            const pressed = !sharedVariant.mixed && sharedVariant.value === variant;
+            const kindLabel = shapeLabels[variant];
+            return (
+              <button
+                key={variant}
+                type="button"
+                aria-label={kindLabel}
+                title={kindLabel}
+                data-ribbon-field={`shape-${variant}`}
+                aria-pressed={pressed}
+                disabled={!shapeGroupEnabled}
+                onClick={() =>
+                  applyToSelected((target) => {
+                    const nextKind = frameKindForShape(target.kind, variant);
+                    return nextKind ? { kind: nextKind } : null;
+                  })
+                }
+                style={ribbonBevelButton(pressed, !shapeGroupEnabled)}
+              >
+                <ShapeButtonIcon variant={variant} />
+              </button>
+            );
+          })}
+        </div>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><RoundnessIcon disabled={!roundnessEnabled} /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Corner Roundness"
+            dataField="roundness"
+            selectionKey={selectionKey}
+            mixed={sharedRoundness.mixed}
+            value={sharedRoundness.mixed ? "" : formatGeometryLength(sharedRoundness.value)}
+            disabled={!roundnessEnabled}
+            width={54}
+            onCommit={commitRoundness}
+            onStep={stepRoundness}
+          />
+        </div>
+      </div>
+
+      {/* Col 7: Object Angle / Background Hatch */}
+      <div style={colStyle}>
+        <div style={rowPairStyle}>
+          <span style={iconTileStyle}><AngleWedgeIcon /></span>
+          <RibbonNumericInput
+            ariaLabel="Object Angle"
+            dataField="angle1"
+            selectionKey={selectionKey}
+            mixed={sharedAngle1.mixed}
+            value={sharedAngle1.mixed ? "" : formatDegrees(sharedAngle1.value)}
+            disabled={!editable}
+            width={50}
+            onCommit={commitAngle1}
+            onStep={stepAngle1}
+          />
+        </div>
+        <div style={{ ...rowPairStyle, position: "relative" }}>
+          <select
+            aria-label="Object Background Hatch"
+            data-ribbon-field="background-hatch"
+            data-mixed={sharedHatch.mixed ? "true" : undefined}
+            disabled={!editable}
+            value={sharedHatch.mixed ? "" : sharedHatch.value}
+            onChange={(event) => {
+              if (event.target.value === "none") applyToSelected(() => ({ backgroundHatch: "none" }));
+            }}
+            style={{
+              ...ribbonFieldBox,
+              appearance: "none",
+              WebkitAppearance: "none",
+              width: 70,
+              padding: "0 16px 0 3px",
+              background: !editable ? "#f0f0f0" : "#fff",
+              color: !editable ? "#787878" : "#000",
+            }}
+          >
+            {sharedHatch.mixed ? <option value="" /> : null}
+            <option value="none">None</option>
+          </select>
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              right: 2,
+              top: 2,
+              width: 13,
+              height: 15,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+              borderLeft: "1px solid #d0d0d0",
+              background: "#efefef",
+              fontSize: 8,
+              color: !editable ? "#787878" : "#111",
+            }}
+          >
+            ▼
+          </span>
+        </div>
+      </div>
+    </RibbonShell>
+  );
+}
+
+export function StudioObjectRibbon({
+  frame,
+  frames,
+  mode = "object",
+  onChange,
+  onApplyBatch,
+  disableContextMenu = false,
+}: Props) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuReturnFocus = useRef<HTMLElement | null>(null);
+  const dialogReturnFocus = useRef<HTMLElement | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; frame: StudioFrame } | null>(null);
+  const [dialogFrame, setDialogFrame] = useState<StudioFrame | null>(null);
+  const selectedFrames = frames && frames.length > 0 ? frames : [frame];
+
+  useEffect(() => {
+    if (disableContextMenu) return;
+    const open = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const box = target?.closest<HTMLElement>('[data-studio-frame^="picture-"][data-studio-frame-id]');
+      if (!box) return;
+      event.preventDefault();
+      const current = box.dataset.studioFrameId === frame.id ? frame : null;
+      if (current) {
+        menuReturnFocus.current = document.activeElement as HTMLElement;
+        setMenu({ x: event.clientX, y: event.clientY, frame: current });
+      }
+    };
+    const selected = (event: Event) => {
+      const detail = (event as CustomEvent<{ id: string; x: number; y: number }>).detail;
+      if (detail.id === frame.id) {
+        menuReturnFocus.current = document.activeElement as HTMLElement;
+        setMenu({ x: detail.x, y: detail.y, frame });
+        delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest;
+      }
+    };
+    document.addEventListener("contextmenu", open);
+    window.addEventListener("studio-picture-context", selected);
+    const pending = (window as Window & { __studioPictureContextRequest?: { id: string; x: number; y: number } }).__studioPictureContextRequest;
+    if (pending?.id === frame.id) {
+      menuReturnFocus.current = document.activeElement as HTMLElement;
+      setMenu({ ...pending, frame });
+      delete (window as Window & { __studioPictureContextRequest?: unknown }).__studioPictureContextRequest;
+    }
+    return () => {
+      document.removeEventListener("contextmenu", open);
+      window.removeEventListener("studio-picture-context", selected);
+    };
+  }, [disableContextMenu, frame]);
+
+  useEffect(() => {
+    if (!menu) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenu(null);
+    };
+    const close = () => setMenu(null);
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenu(null);
+        menuReturnFocus.current?.focus({ preventScroll: true });
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside, true);
+    document.addEventListener("keydown", key, true);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("blur", close);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside, true);
+      document.removeEventListener("keydown", key, true);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("blur", close);
+    };
+  }, [menu]);
+
+  useEffect(() => {
+    if (!menu || !menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    const pos = contextMenuPosition(menu.x, menu.y, rect.width, rect.height, window.innerWidth, window.innerHeight);
+    menuRef.current.style.left = `${pos.left}px`;
+    menuRef.current.style.top = `${pos.top}px`;
+    menuRef.current.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+  }, [menu]);
+
+  useEffect(() => {
+    if (dialogFrame && dialogFrame.id !== frame.id) setDialogFrame(null);
+  }, [dialogFrame, frame.id]);
+
+  const applyToSelected = (buildPatch: BatchBuilder, groupField?: string) => {
+    const unlocked = selectedFrames.filter((item) => !item.locked);
+    if (!unlocked.length) return;
+    const ids = unlocked.map((item) => item.id);
+    const historyOptions: ObjectHistoryGroupOptions | undefined = groupField
+      ? { groupKey: `ribbon:${ids.join(",")}:${groupField}` }
+      : undefined;
+    if (onApplyBatch) {
+      onApplyBatch(ids, buildPatch, historyOptions);
+      return;
+    }
+    const patch = buildPatch(frame);
+    if (patch) onChange(frame.id, patch, historyOptions);
+  };
+
+  return (
+    <>
+      {mode === "picture" ? (
+        <PicturePropertyRibbon frame={selectedFrames[0]} applyToSelected={applyToSelected} />
+      ) : (
+        <ObjectPropertyRibbon selectedFrames={selectedFrames} applyToSelected={applyToSelected} />
+      )}
+      {menu
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              aria-label="Object context menu"
+              data-object-menu-root="true"
+              className="fixed z-[120] border border-[#808080] bg-[#f0f0f0] p-1 shadow-md"
+              style={{ left: menu.x, top: menu.y }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                data-object-menu="format"
+                className="px-4 py-1 text-left text-[11px] hover:bg-[#d6dff2]"
+                onClick={() => {
+                  dialogReturnFocus.current = menuReturnFocus.current;
+                  setDialogFrame(menu.frame);
+                  setMenu(null);
+                }}
+              >
+                Format Object...
+              </button>
+            </div>,
+            studioOverlayRoot(),
+          )
+        : null}
+      {dialogFrame ? (
+        <FormatDialog
+          frame={dialogFrame}
+          returnFocus={dialogReturnFocus}
+          onCancel={() => setDialogFrame(null)}
+          onApply={(patch) => {
+            onChange(dialogFrame.id, patch);
+            setDialogFrame(null);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame: StudioFrame; onCancel: () => void; onApply: (patch: ObjectGeometryPatch) => void; returnFocus: React.MutableRefObject<HTMLElement | null> }) {
   const drag = useMovableStudioDialog<HTMLFormElement>();
   const formRef = useRef<HTMLFormElement>(null);
@@ -561,7 +1893,7 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
   const [helpOpen, setHelpOpen] = useState(false);
   const [borderWidth, setBorderWidth] = useState(() => formatBorderWidth(frame.borderWidthMm ?? 25.4 / 96));
   const [borderColor, setBorderColor] = useState(frame.borderColor ?? "#000000");
-  const [borderPattern, setBorderPattern] = useState<BorderPatternId>(frame.borderPattern ?? "none");
+  const [borderPattern, setBorderPattern] = useState<BorderPatternId>(effectiveBorderPattern(frame));
   const [backgroundColor, setBackgroundColor] = useState(frame.backgroundColor ?? "");
   const [origin, setOrigin] = useState({ x: formatGeometryLength(frame.imageXMm ?? 0), y: formatGeometryLength(frame.imageYMm ?? 0) });
   const initialScale = pictureScalePercent(frame);
@@ -600,7 +1932,7 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       if (Number.isFinite(parsedWidth) && Math.abs(parsedWidth - (frame.borderWidthMm ?? 25.4 / 96)) > 1e-6) style.borderWidthMm = parsedWidth;
       if ((normalizeSafeHex(borderColor) ?? borderColor).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) style.borderColor = borderColor;
       if ((normalizeSafeHex(backgroundColor) ?? backgroundColor).toLowerCase() !== (normalizeSafeHex(frame.backgroundColor ?? "") ?? (frame.backgroundColor ?? "")).toLowerCase()) style.backgroundColor = backgroundColor;
-      if (borderPattern !== (frame.borderPattern ?? "none") || frame.borderPattern !== undefined) style.borderPattern = borderPattern;
+      if (borderPattern !== effectiveBorderPattern(frame) || frame.borderPattern !== undefined) style.borderPattern = borderPattern;
       if (frame.backgroundHatch !== undefined) style.backgroundHatch = frame.backgroundHatch;
       const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
     <div {...drag.handleProps} style={{ ...drag.handleProps.style, position: "absolute", left: 0, top: 0, right: 0, height: 29, boxSizing: "border-box", paddingLeft: 7, display: "flex", alignItems: "center", fontWeight: "normal", fontSize: 11, borderBottom: "1px solid #5d6c7a", background: "linear-gradient(#e9f5ff,#c6e2fc 70%,#b8dbfd)" }}>Modify Object</div>
@@ -631,7 +1963,6 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       <button type="submit" style={{ ...classicButton, position: "absolute", left: 257, top: 7, width: 75, height: 22, outline: "1px solid #59636b", outlineOffset: 1 }}>OK</button>
       <button type="button" onClick={onCancel} style={{ ...classicButton, position: "absolute", left: 257, top: 34, width: 75, height: 22 }}>Cancel</button>
       <button type="button" onClick={() => setHelpOpen(true)} style={{ ...classicButton, position: "absolute", left: 257, top: 60, width: 75, height: 22 }}>Help</button>
-      {/* Run Around wrap is not wired: both-side flow around a free-XY box needs a line-splitting engine (CSS float/shape-outside is one-sided). Verified user Offset dialog for the shown box — not a proven universal fresh default: checked, L/R 0.71mm, T/B 0.35mm. */}
       <label title={unsupported.title} aria-description={unsupported["aria-description"]} style={{ position: "absolute", left: 250, top: 213, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input type="checkbox" {...unsupported} checked={false} readOnly style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(false)}Run Around</label>
       <label style={{ position: "absolute", left: 250, top: 230, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input aria-label="Template" type="checkbox" checked={patch.template ?? frame.template ?? false} onChange={e => setPatch(v => ({ ...v, template: e.target.checked }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(patch.template ?? frame.template ?? false)}Template</label>
       <label style={{ position: "absolute", left: 250, top: 246, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input aria-label="Lock" type="checkbox" checked={patch.locked ?? frame.locked ?? false} onChange={e => setPatch(v => ({ ...v, locked: e.target.checked }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(patch.locked ?? frame.locked ?? false)}Lock</label>
@@ -641,4 +1972,20 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
   </form></div>, studioOverlayRoot());
 }
 
-const classicButton: React.CSSProperties = { boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, lineHeight: "normal", border: "1px solid #70777d", borderTopColor: "#fff", borderLeftColor: "#fff", borderRadius: 0, background: "#efefef", color: "#111", font: '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif', boxShadow: "inset -1px -1px #b5b5b5", textAlign: "center" };
+const classicButton: CSSProperties = {
+  boxSizing: "border-box",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 0,
+  lineHeight: "normal",
+  border: "1px solid #70777d",
+  borderTopColor: "#fff",
+  borderLeftColor: "#fff",
+  borderRadius: 0,
+  background: "#efefef",
+  color: "#111",
+  font: RIBBON_FONT,
+  boxShadow: "inset -1px -1px #b5b5b5",
+  textAlign: "center",
+};

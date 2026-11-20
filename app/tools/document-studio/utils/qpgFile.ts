@@ -42,7 +42,7 @@ export function serializeQpg(document: QpgDocument): string {
   return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document, frames: document.frames.map(copyQpgFrame) });
 }
 
-const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
+const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "singleLine", "imageSrc", "imageName", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
 function copyQpgFrame(frame: StudioFrame): StudioFrame {
   return Object.fromEntries(QPG_FRAME_KEYS.flatMap(key => frame[key] === undefined ? [] : [[key, frame[key]]])) as unknown as StudioFrame;
 }
@@ -59,6 +59,7 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       typeof frame.wMm === "number" && typeof frame.hMm === "number" &&
       typeof frame.text === "string" &&
       (frame.imageSrc === undefined || typeof frame.imageSrc === "string") &&
+      (frame.imageName === undefined || (typeof frame.imageName === "string" && frame.imageName.length <= 512)) &&
       (frame.imageNaturalW === undefined || typeof frame.imageNaturalW === "number") &&
       (frame.imageNaturalH === undefined || typeof frame.imageNaturalH === "number") &&
       (frame.imageXMm === undefined || typeof frame.imageXMm === "number") &&

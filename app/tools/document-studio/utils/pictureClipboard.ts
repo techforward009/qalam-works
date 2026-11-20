@@ -26,6 +26,7 @@ export function pasteImageFromCopiedFrames(
   return {
     ...target,
     imageSrc: source.imageSrc,
+    ...(source.imageName !== undefined ? { imageName: source.imageName } : {}),
     imageNaturalW: source.imageNaturalW,
     imageNaturalH: source.imageNaturalH,
     imageXMm: fit.x,
@@ -38,6 +39,7 @@ export function pasteImageFromCopiedFrames(
 export function clearPictureFromFrame(target: StudioFrame): StudioFrame {
   const {
     imageSrc: _imageSrc,
+    imageName: _imageName,
     imageNaturalW: _imageNaturalW,
     imageNaturalH: _imageNaturalH,
     imageXMm: _imageXMm,
