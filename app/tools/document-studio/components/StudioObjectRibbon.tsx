@@ -17,6 +17,9 @@ import {
   pictureDimensionMmFromScale,
   shapeVariantOf,
   frameKindForShape,
+  DEFAULT_PICTURE_TOOL_DEFAULTS,
+  applyPictureToolDefaultsPatch,
+  type PictureToolDefaults,
   type ObjectGeometryPatch,
   type ShapeVariant,
 } from "../utils/objectAttributes";
@@ -29,22 +32,48 @@ import {
   resolveBorderStrokes,
   type BorderPatternId,
 } from "../utils/borderPatterns";
-import { isPictureBox, type FrameKind, type StudioFrame } from "./StudioObjectLayer";
+import { isPictureBox, isPictureDrawTool, pictureKindForTool, type FrameKind, type StudioFrame } from "./StudioObjectLayer";
 import type { StudioToolId } from "./InPageToolPalette";
 import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import { contextMenuPosition } from "../utils/textContextMenu";
 
-export type PropertyToolbarMode = "picture" | "object" | "none";
+export type PropertyToolbarMode = "picture-tool" | "picture" | "object" | "none";
 
 export function resolvePropertyToolbarMode(
   canvasTool: StudioToolId,
   selectedFrames: readonly StudioFrame[],
 ): PropertyToolbarMode {
+  if (isPictureDrawTool(canvasTool)) return "picture-tool";
   if (selectedFrames.length === 0) return "none";
   if (canvasTool === "text") {
     return selectedFrames.length === 1 && isPictureBox(selectedFrames[0].kind) ? "picture" : "none";
   }
   return "object";
+}
+
+function buildPictureToolPreviewFrame(
+  defaults: PictureToolDefaults,
+  creationTool: StudioToolId,
+): StudioFrame {
+  return {
+    id: "__picture-tool-preview__",
+    kind: pictureKindForTool(creationTool) ?? "picture-rect",
+    page: 1,
+    xMm: 0,
+    yMm: 0,
+    wMm: 10,
+    hMm: 10,
+    flip: false,
+    text: "",
+    borderColor: defaults.borderColor,
+    borderWidthMm: defaults.borderWidthMm,
+    borderPattern: defaults.borderPattern,
+    borderPosition: defaults.borderPosition,
+    ...(defaults.backgroundColor ? { backgroundColor: defaults.backgroundColor } : {}),
+    backgroundHatch: defaults.backgroundHatch,
+    roundnessMm: defaults.roundnessMm,
+    angle1Deg: defaults.angle1Deg,
+  };
 }
 
 const RIBBON_FONT = '11px QalamUITahoma, Tahoma, "Segoe UI", "MS Sans Serif", sans-serif';
@@ -61,9 +90,13 @@ type GeometryKey = typeof fields[number][0];
 type BatchBuilder = (frame: StudioFrame) => ObjectGeometryPatch | null;
 
 type Props = {
-  frame: StudioFrame;
+  frame?: StudioFrame;
   frames?: StudioFrame[];
-  mode?: "picture" | "object";
+  mode?: "picture-tool" | "picture" | "object";
+  creationTool?: StudioToolId;
+  pictureDefaults?: PictureToolDefaults;
+  onPictureDefaultsChange?: (next: PictureToolDefaults) => void;
+  onSelectCreationTool?: (tool: StudioToolId) => void;
   onChange: (frameId: string, patch: ObjectGeometryPatch, historyOptions?: ObjectHistoryGroupOptions) => void;
   onApplyBatch?: (
     frameIds: string[],
@@ -1039,19 +1072,22 @@ function ObjectPatternCombo({
 function RibbonShell({
   mode,
   selectionCount,
+  creationTool,
   children,
 }: {
-  mode: "picture" | "object";
+  mode: "picture-tool" | "picture" | "object";
   selectionCount: number;
+  creationTool?: StudioToolId;
   children: React.ReactNode;
 }) {
   return (
     <div
       data-studio-object-ribbon="true"
       data-ribbon-mode={mode}
+      data-ribbon-tool={creationTool}
       data-ribbon-selection-count={selectionCount}
       role="toolbar"
-      aria-label={mode === "picture" ? "Picture Properties" : "Object Properties"}
+      aria-label={mode === "picture" ? "Picture Properties" : mode === "picture-tool" ? "Picture Box Tool Properties" : "Object Properties"}
       dir="ltr"
       className="flex flex-col"
       style={{
@@ -1333,14 +1369,23 @@ function PicturePropertyRibbon({
 function ObjectPropertyRibbon({
   selectedFrames,
   applyToSelected,
+  creationMode = false,
+  creationTool,
+  onSelectCreationTool,
 }: {
   selectedFrames: readonly StudioFrame[];
   applyToSelected: (buildPatch: BatchBuilder, groupField?: string) => void;
+  creationMode?: boolean;
+  creationTool?: StudioToolId;
+  onSelectCreationTool?: (tool: StudioToolId) => void;
 }) {
-  const selectionKey = selectedFrames.map((f) => f.id).join(",");
+  const selectionKey = creationMode
+    ? `__picture-tool__:${creationTool ?? "cross-square"}`
+    : selectedFrames.map((f) => f.id).join(",");
   const unlockedFrames = selectedFrames.filter((f) => !f.locked);
   const allLocked = unlockedFrames.length === 0;
-  const editable = !allLocked;
+  const editable = creationMode || !allLocked;
+  const boundsEditable = !creationMode && editable;
 
   const sharedX = resolveShared(selectedFrames, (f) => f.xMm, nearNumber);
   const sharedY = resolveShared(selectedFrames, (f) => f.yMm, nearNumber);
@@ -1446,7 +1491,11 @@ function ObjectPropertyRibbon({
   const rowPairStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 2, height: 19 };
 
   return (
-    <RibbonShell mode="object" selectionCount={selectedFrames.length}>
+    <RibbonShell
+      mode={creationMode ? "picture-tool" : "object"}
+      selectionCount={creationMode ? 0 : selectedFrames.length}
+      creationTool={creationMode ? creationTool : undefined}
+    >
       {/* Col 1: Position X / Y */}
       <div style={colStyle}>
         <div style={rowPairStyle}>
@@ -1456,9 +1505,9 @@ function ObjectPropertyRibbon({
             dataField="x"
             dataObjectField="x"
             selectionKey={selectionKey}
-            mixed={sharedX.mixed}
-            value={sharedX.mixed ? "" : formatGeometryLength(sharedX.value)}
-            disabled={!editable}
+            mixed={!creationMode && sharedX.mixed}
+            value={creationMode || sharedX.mixed ? "" : formatGeometryLength(sharedX.value)}
+            disabled={!boundsEditable}
             width={68}
             onCommit={(raw) => commitGeometry("xMm", raw)}
             onStep={(delta) => stepGeometry("xMm", delta)}
@@ -1471,9 +1520,9 @@ function ObjectPropertyRibbon({
             dataField="y"
             dataObjectField="y"
             selectionKey={selectionKey}
-            mixed={sharedY.mixed}
-            value={sharedY.mixed ? "" : formatGeometryLength(sharedY.value)}
-            disabled={!editable}
+            mixed={!creationMode && sharedY.mixed}
+            value={creationMode || sharedY.mixed ? "" : formatGeometryLength(sharedY.value)}
+            disabled={!boundsEditable}
             width={68}
             onCommit={(raw) => commitGeometry("yMm", raw)}
             onStep={(delta) => stepGeometry("yMm", delta)}
@@ -1490,9 +1539,9 @@ function ObjectPropertyRibbon({
             dataField="w"
             dataObjectField="w"
             selectionKey={selectionKey}
-            mixed={sharedW.mixed}
-            value={sharedW.mixed ? "" : formatGeometryLength(sharedW.value)}
-            disabled={!editable}
+            mixed={!creationMode && sharedW.mixed}
+            value={creationMode || sharedW.mixed ? "" : formatGeometryLength(sharedW.value)}
+            disabled={!boundsEditable}
             width={68}
             onCommit={(raw) => commitGeometry("wMm", raw)}
             onStep={(delta) => stepGeometry("wMm", delta)}
@@ -1505,9 +1554,9 @@ function ObjectPropertyRibbon({
             dataField="h"
             dataObjectField="h"
             selectionKey={selectionKey}
-            mixed={sharedH.mixed}
-            value={sharedH.mixed ? "" : formatGeometryLength(sharedH.value)}
-            disabled={!editable}
+            mixed={!creationMode && sharedH.mixed}
+            value={creationMode || sharedH.mixed ? "" : formatGeometryLength(sharedH.value)}
+            disabled={!boundsEditable}
             width={68}
             onCommit={(raw) => commitGeometry("hMm", raw)}
             onStep={(delta) => stepGeometry("hMm", delta)}
@@ -1637,12 +1686,21 @@ function ObjectPropertyRibbon({
                 data-ribbon-field={`shape-${variant}`}
                 aria-pressed={pressed}
                 disabled={!shapeGroupEnabled}
-                onClick={() =>
+                onClick={() => {
+                  if (creationMode) {
+                    const toolMap: Record<ShapeVariant, StudioToolId> = {
+                      rect: "cross-square",
+                      ellipse: "cross-circle",
+                      "round-rect": "cross-round",
+                    };
+                    onSelectCreationTool?.(toolMap[variant]);
+                    return;
+                  }
                   applyToSelected((target) => {
                     const nextKind = frameKindForShape(target.kind, variant);
                     return nextKind ? { kind: nextKind } : null;
-                  })
-                }
+                  });
+                }}
                 style={ribbonBevelButton(pressed, !shapeGroupEnabled)}
               >
                 <ShapeButtonIcon variant={variant} />
@@ -1735,6 +1793,10 @@ export function StudioObjectRibbon({
   frame,
   frames,
   mode = "object",
+  creationTool = "cross-square",
+  pictureDefaults = DEFAULT_PICTURE_TOOL_DEFAULTS,
+  onPictureDefaultsChange,
+  onSelectCreationTool,
   onChange,
   onApplyBatch,
   disableContextMenu = false,
@@ -1744,10 +1806,18 @@ export function StudioObjectRibbon({
   const dialogReturnFocus = useRef<HTMLElement | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; frame: StudioFrame } | null>(null);
   const [dialogFrame, setDialogFrame] = useState<StudioFrame | null>(null);
-  const selectedFrames = frames && frames.length > 0 ? frames : [frame];
+  const resolvedPreview = mode === "picture-tool" ? buildPictureToolPreviewFrame(pictureDefaults, creationTool) : null;
+  const selectedFrames =
+    mode === "picture-tool"
+      ? [resolvedPreview!]
+      : frames && frames.length > 0
+        ? frames
+        : frame
+          ? [frame]
+          : [];
 
   useEffect(() => {
-    if (disableContextMenu) return;
+    if (disableContextMenu || mode === "picture-tool" || !frame) return;
     const open = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       const box = target?.closest<HTMLElement>('[data-studio-frame^="picture-"][data-studio-frame-id]');
@@ -1779,7 +1849,7 @@ export function StudioObjectRibbon({
       document.removeEventListener("contextmenu", open);
       window.removeEventListener("studio-picture-context", selected);
     };
-  }, [disableContextMenu, frame]);
+  }, [disableContextMenu, frame, mode]);
 
   useEffect(() => {
     if (!menu) return;
@@ -1817,10 +1887,19 @@ export function StudioObjectRibbon({
   }, [menu]);
 
   useEffect(() => {
-    if (dialogFrame && dialogFrame.id !== frame.id) setDialogFrame(null);
-  }, [dialogFrame, frame.id]);
+    if (dialogFrame && (!frame || dialogFrame.id !== frame.id)) setDialogFrame(null);
+  }, [dialogFrame, frame]);
+
+  if (selectedFrames.length === 0) return null;
 
   const applyToSelected = (buildPatch: BatchBuilder, groupField?: string) => {
+    if (mode === "picture-tool") {
+      const patch = buildPatch(selectedFrames[0]);
+      if (!patch || !onPictureDefaultsChange) return;
+      const next = applyPictureToolDefaultsPatch(pictureDefaults, patch);
+      if (next) onPictureDefaultsChange(next);
+      return;
+    }
     const unlocked = selectedFrames.filter((item) => !item.locked);
     if (!unlocked.length) return;
     const ids = unlocked.map((item) => item.id);
@@ -1831,8 +1910,9 @@ export function StudioObjectRibbon({
       onApplyBatch(ids, buildPatch, historyOptions);
       return;
     }
-    const patch = buildPatch(frame);
-    if (patch) onChange(frame.id, patch, historyOptions);
+    const targetFrame = frame ?? selectedFrames[0];
+    const patch = buildPatch(targetFrame);
+    if (patch) onChange(targetFrame.id, patch, historyOptions);
   };
 
   return (
@@ -1840,7 +1920,13 @@ export function StudioObjectRibbon({
       {mode === "picture" ? (
         <PicturePropertyRibbon frame={selectedFrames[0]} applyToSelected={applyToSelected} />
       ) : (
-        <ObjectPropertyRibbon selectedFrames={selectedFrames} applyToSelected={applyToSelected} />
+        <ObjectPropertyRibbon
+          selectedFrames={selectedFrames}
+          applyToSelected={applyToSelected}
+          creationMode={mode === "picture-tool"}
+          creationTool={creationTool}
+          onSelectCreationTool={onSelectCreationTool}
+        />
       )}
       {menu
         ? createPortal(

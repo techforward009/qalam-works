@@ -20,7 +20,7 @@ import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
 import { pictureContentDeltaMm } from "../utils/pictureFit";
-import { DEFAULT_INPAGE_BORDER_WIDTH_MM } from "../utils/objectAttributes";
+import { DEFAULT_PICTURE_TOOL_DEFAULTS, type PictureToolDefaults } from "../utils/objectAttributes";
 import { resolveBorderStrokes, type BorderPatternId } from "../utils/borderPatterns";
 
 export type FrameKind =
@@ -210,11 +210,11 @@ export function marqueeSelectedFrameIds(
   return frames.filter((frame) => next.has(frame.id)).map((frame) => frame.id);
 }
 
-function isPictureDrawTool(tool: StudioToolId): boolean {
+export function isPictureDrawTool(tool: StudioToolId): boolean {
   return tool === "cross-square" || tool === "cross-circle" || tool === "cross-round";
 }
 
-function pictureKindForTool(tool: StudioToolId): "picture-rect" | "picture-ellipse" | "picture-round-rect" | null {
+export function pictureKindForTool(tool: StudioToolId): "picture-rect" | "picture-ellipse" | "picture-round-rect" | null {
   if (tool === "cross-square") return "picture-rect";
   if (tool === "cross-circle") return "picture-ellipse";
   if (tool === "cross-round") return "picture-round-rect";
@@ -258,6 +258,7 @@ export function StudioObjectLayer({
   zoom = 1,
   projection: projectionProp,
   keyboardLayout,
+  pictureBoxDefaults,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
@@ -266,6 +267,7 @@ export function StudioObjectLayer({
   zoom?:number;
   projection?:PageProjection;
   keyboardLayout?: KeyboardLayout | null;
+  pictureBoxDefaults?: PictureToolDefaults;
   onFramesChange: (frames: StudioFrame[], source?: "gesture") => void;
   onToolAction: (tool: StudioToolId) => void;
   onSelectedChange?: (selectedIds: string[]) => void;
@@ -318,20 +320,19 @@ export function StudioObjectLayer({
   const toolRef = useRef(tool);
   toolRef.current = tool;
 
-  // Switching to a drawing tool clears the object selection. Switching between
-  // the Arrow and Hand tools keeps a targeted picture box, so Insert > Picture
-  // and Import Picture still fill it.
+  // Preserve existing selection across tool switches so returning to the Arrow tool
+  // restores the selected object state; only select a freshly committed picture box
+  // or drop IDs that no longer exist.
   useEffect(() => {
-    const pictureIds = new Set(framesRef.current.filter((frame) => isPictureBox(frame.kind)).map((frame) => frame.id));
+    const existingIds = new Set(framesRef.current.map((frame) => frame.id));
     const fresh = pictureSelectionRef.current;
     pictureSelectionRef.current = null;
-    if (tool === "select" || tool === "text") {
-      const keep = selectedRef.current.filter((id) => pictureIds.has(id));
-      if (fresh && !keep.includes(fresh)) keep.push(fresh);
-      setSelected(keep);
+    if (fresh) {
+      setSelected(existingIds.has(fresh) ? [fresh] : []);
       return;
     }
-    setSelected([]);
+    const keep = selectedRef.current.filter((id) => existingIds.has(id));
+    if (keep.length !== selectedRef.current.length) setSelected(keep);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool]);
 
@@ -522,6 +523,7 @@ export function StudioObjectLayer({
     const page = pageOf(y);
     const yOnPage = y - (page - 1) * stride;
     const frameTypography = typography ?? defaultDocumentSettings().typography;
+    const defaults = pictureBoxDefaults ?? DEFAULT_PICTURE_TOOL_DEFAULTS;
     const frame: StudioFrame = {
       id: newId(),
       kind,
@@ -536,10 +538,14 @@ export function StudioObjectLayer({
       ...(singleLine ? { singleLine: true } : {}),
       ...(isPictureBox(kind)
         ? {
-            borderColor: "#000000",
-            borderWidthMm: DEFAULT_INPAGE_BORDER_WIDTH_MM,
-            borderPattern: "none" as const,
-            borderPosition: "inside" as const,
+            borderColor: defaults.borderColor,
+            borderWidthMm: defaults.borderWidthMm,
+            borderPattern: defaults.borderPattern,
+            borderPosition: defaults.borderPosition,
+            ...(defaults.backgroundColor ? { backgroundColor: defaults.backgroundColor } : {}),
+            backgroundHatch: defaults.backgroundHatch,
+            ...(kind === "picture-round-rect" || defaults.roundnessMm !== 6.35 ? { roundnessMm: defaults.roundnessMm } : {}),
+            ...(defaults.angle1Deg !== 0 ? { angle1Deg: defaults.angle1Deg } : {}),
           }
         : {}),
     };

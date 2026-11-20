@@ -158,7 +158,12 @@ import DocumentToolbar from "./DocumentToolbar";
 import { FormatDialog, StudioObjectRibbon, resolvePropertyToolbarMode } from "./StudioObjectRibbon";
 import { StudioPictureContextMenu } from "./StudioPictureContextMenu";
 import type { PictureContextItemId, PictureContextToolMode } from "../utils/pictureContextMenu";
-import { applyObjectGeometry, type ObjectGeometryPatch } from "../utils/objectAttributes";
+import {
+  applyObjectGeometry,
+  DEFAULT_PICTURE_TOOL_DEFAULTS,
+  type ObjectGeometryPatch,
+  type PictureToolDefaults,
+} from "../utils/objectAttributes";
 import type { ObjectHistoryGroupOptions } from "../utils/objectFrameHistory";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
@@ -455,6 +460,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
   const selectedFrameIdsRef = useRef(selectedFrameIds);
   selectedFrameIdsRef.current = selectedFrameIds;
+  const [pictureBoxDefaults, setPictureBoxDefaults] = useState<PictureToolDefaults>(DEFAULT_PICTURE_TOOL_DEFAULTS);
   const [pictureTargetFrameId, setPictureTargetFrameId] = useState<string | null>(null);
   const [objectDialogFrameId, setObjectDialogFrameId] = useState<string | null>(null);
   const objectDialogReturnFocus = useRef<HTMLElement | null>(null);
@@ -2940,12 +2946,16 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             };
             return (
               <div inert={noDocumentOpen || undefined} style={noDocumentOpen ? { opacity: 0.5 } : undefined}>
-                {propertyToolbarMode !== "none" && selectedFrames.length > 0 ? (
+                {propertyToolbarMode !== "none" ? (
                   <StudioObjectRibbon
                     disableContextMenu
                     mode={propertyToolbarMode}
                     frame={selectedFrames[0]}
                     frames={selectedFrames}
+                    creationTool={canvasTool}
+                    pictureDefaults={pictureBoxDefaults}
+                    onPictureDefaultsChange={setPictureBoxDefaults}
+                    onSelectCreationTool={onCanvasTool}
                     onChange={applyRibbonPatch}
                     onApplyBatch={applyRibbonBatch}
                   />
@@ -3111,6 +3121,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             keyboardLayout={getKeyboardLayout()}
             tool={canvasTool}
             onToolAction={onCanvasTool}
+            pictureBoxDefaults={pictureBoxDefaults}
           />}
             </div>
           </div>

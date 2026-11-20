@@ -8,12 +8,15 @@ import {
   resolvePropertyToolbarMode,
 } from "../app/tools/document-studio/components/StudioObjectRibbon";
 import { StudioObjectLayer, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
+import { InPageToolPalette, type StudioToolId } from "../app/tools/document-studio/components/InPageToolPalette";
 import {
   applyObjectGeometry,
   DEFAULT_INPAGE_BORDER_WIDTH_MM,
+  DEFAULT_PICTURE_TOOL_DEFAULTS,
   formatScalePercent,
   pictureScalePercent,
   type ObjectGeometryPatch,
+  type PictureToolDefaults,
 } from "../app/tools/document-studio/utils/objectAttributes";
 import type { ObjectHistoryGroupOptions } from "../app/tools/document-studio/utils/objectFrameHistory";
 import { BORDER_PATTERN_OPTIONS } from "../app/tools/document-studio/utils/borderPatterns";
@@ -208,10 +211,16 @@ function readFramesFromHarness(): StudioFrame[] {
 }
 
 describe("resolvePropertyToolbarMode (context sensitivity & no-selection state)", () => {
-  it("switches cleanly between picture, object, and none states", () => {
+  it("prioritizes active Picture Tool and switches cleanly between picture-tool, picture, object, and none states", () => {
     const pic = makePictureFrame();
     const shape = makeShapeFrame();
     const text = makeShapeFrame({ id: "txt-1", kind: "text" });
+
+    expect(resolvePropertyToolbarMode("cross-square", [])).toBe("picture-tool");
+    expect(resolvePropertyToolbarMode("cross-circle", [])).toBe("picture-tool");
+    expect(resolvePropertyToolbarMode("cross-round", [])).toBe("picture-tool");
+    // Active Picture Tool takes precedence even if an object was previously selected
+    expect(resolvePropertyToolbarMode("cross-square", [shape])).toBe("picture-tool");
 
     expect(resolvePropertyToolbarMode("text", [])).toBe("none");
     expect(resolvePropertyToolbarMode("select", [])).toBe("none");
@@ -221,6 +230,178 @@ describe("resolvePropertyToolbarMode (context sensitivity & no-selection state)"
     expect(resolvePropertyToolbarMode("select", [pic, shape])).toBe("object");
     expect(resolvePropertyToolbarMode("text", [text])).toBe("none");
     expect(resolvePropertyToolbarMode("select", [text])).toBe("object");
+  });
+});
+
+describe("Immediate Picture Tool activation before frame creation", () => {
+  function PictureToolFlowHarness({
+    initialFrames = [],
+    initialSelected = [],
+    initialTool = "select",
+  }: {
+    initialFrames?: StudioFrame[];
+    initialSelected?: string[];
+    initialTool?: StudioToolId;
+  }) {
+    const [tool, setTool] = useState<StudioToolId>(initialTool);
+    const [frames, setFrames] = useState<StudioFrame[]>(initialFrames);
+    const [selectedIds, setSelectedIds] = useState<string[]>(initialSelected);
+    const [defaults, setDefaults] = useState<PictureToolDefaults>(DEFAULT_PICTURE_TOOL_DEFAULTS);
+    const selectedFrames = frames.filter((f) => selectedIds.includes(f.id));
+    const mode = resolvePropertyToolbarMode(tool, selectedFrames);
+
+    return (
+      <div data-testid="pic-flow" data-tool={tool} data-mode={mode} data-frames={JSON.stringify(frames)} data-selected={JSON.stringify(selectedIds)}>
+        {mode !== "none" ? (
+          <StudioObjectRibbon
+            disableContextMenu
+            mode={mode}
+            frame={selectedFrames[0]}
+            frames={selectedFrames}
+            creationTool={tool}
+            pictureDefaults={defaults}
+            onPictureDefaultsChange={setDefaults}
+            onSelectCreationTool={setTool}
+            onChange={(id, patch) => {
+              setFrames((prev) => prev.map((f) => (f.id === id ? applyObjectGeometry(f, patch) ?? f : f)));
+            }}
+          />
+        ) : (
+          <div data-testid="general-toolbar-placeholder">General Toolbar</div>
+        )}
+        <InPageToolPalette tool={tool} onTool={setTool} />
+        <div data-studio-scroller="true">
+          <StudioObjectLayer
+            editor={null}
+            tool={tool}
+            frames={frames}
+            onFramesChange={setFrames}
+            onToolAction={setTool}
+            selectedIds={selectedIds}
+            onSelectedChange={setSelectedIds}
+            pictureBoxDefaults={defaults}
+            pageCount={1}
+            pageWidthPx={794}
+            pageHeightPx={1123}
+            gapPx={24}
+            marginTopPx={40}
+            marginRightPx={40}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  it("activates Picture Tool property controls immediately on tool click before any frame exists", () => {
+    render(<PictureToolFlowHarness />);
+    expect(screen.getByTestId("general-toolbar-placeholder")).toBeTruthy();
+
+    // Activate Rectangular Picture Box tool from left vertical palette with zero frames created
+    fireEvent.click(document.querySelector('[data-studio-tool-button="cross-square"]')!);
+    expect(screen.getByTestId("pic-flow").getAttribute("data-mode")).toBe("picture-tool");
+    const ribbon = document.querySelector<HTMLElement>('[data-studio-object-ribbon="true"]')!;
+    expect(ribbon.dataset.ribbonMode).toBe("picture-tool");
+    expect(ribbon.dataset.ribbonTool).toBe("cross-square");
+
+    // X/Y/W/H blank & disabled; default insertion values shown (InPage 2009 parity)
+    for (const field of ["x", "y", "w", "h"] as const) {
+      const input = ribbon.querySelector<HTMLInputElement>(`[data-ribbon-field="${field}"]`)!;
+      expect(input.value).toBe("");
+      expect(input.disabled).toBe(true);
+    }
+    expect(ribbon.querySelector('[data-ribbon-field="border-inside"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(ribbon.querySelector('[data-ribbon-field="border-color"]')?.getAttribute("data-value")).toBe("#000000");
+    expect(ribbon.querySelector('[data-ribbon-field="background-color"]')?.getAttribute("data-value")).toBe("#FFFFFF");
+    expect(ribbon.querySelector('[data-ribbon-field="border-pattern"]')?.getAttribute("data-value")).toBe("none");
+    expect((ribbon.querySelector('[data-ribbon-field="border-width"]') as HTMLInputElement).value).toBe("1pt");
+    expect((ribbon.querySelector('[data-ribbon-field="roundness"]') as HTMLInputElement).value).toBe("6.35mm");
+    expect((ribbon.querySelector('[data-ribbon-field="roundness"]') as HTMLInputElement).disabled).toBe(true);
+    expect((ribbon.querySelector('[data-ribbon-field="angle1"]') as HTMLInputElement).value).toBe("0°");
+    expect(ribbon.querySelector('[data-ribbon-field="shape-rect"]')?.getAttribute("aria-pressed")).toBe("true");
+
+    // Clicking Rounded shape in creation mode switches tool to cross-round and enables Roundness
+    fireEvent.click(ribbon.querySelector('[data-ribbon-field="shape-round-rect"]')!);
+    expect(screen.getByTestId("pic-flow").getAttribute("data-tool")).toBe("cross-round");
+    expect(ribbon.dataset.ribbonTool).toBe("cross-round");
+    expect((ribbon.querySelector('[data-ribbon-field="roundness"]') as HTMLInputElement).disabled).toBe(false);
+
+    // Switching back to Arrow Tool with no selection restores general toolbar
+    fireEvent.click(document.querySelector('[data-studio-tool-button="select"]')!);
+    expect(screen.getByTestId("pic-flow").getAttribute("data-mode")).toBe("none");
+    expect(screen.getByTestId("general-toolbar-placeholder")).toBeTruthy();
+  });
+
+  it("applies pre-draw defaults onto newly drawn picture frames and updates toolbar to actual object properties", () => {
+    render(<PictureToolFlowHarness />);
+    fireEvent.click(document.querySelector('[data-studio-tool-button="cross-round"]')!);
+
+    const ribbon = document.querySelector<HTMLElement>('[data-studio-object-ribbon="true"]')!;
+    // Customize defaults before drawing: Border Color Red, Pattern Dashed, Roundness 9mm
+    fireEvent.click(ribbon.querySelector('[data-ribbon-field="border-color"]')!);
+    fireEvent.click(within(screen.getByRole("listbox", { name: "Object Border Color options" })).getByRole("option", { name: "Red" }));
+    fireEvent.click(ribbon.querySelector('[data-ribbon-field="border-pattern"]')!);
+    fireEvent.click(within(screen.getByRole("listbox", { name: "Object Border Pattern options" })).getByRole("option", { name: "Dashed" }));
+    const roundInput = ribbon.querySelector<HTMLInputElement>('[data-ribbon-field="roundness"]')!;
+    fireEvent.change(roundInput, { target: { value: "9mm" } });
+    fireEvent.keyDown(roundInput, { key: "Enter" });
+
+    // No frame created yet
+    expect(JSON.parse(screen.getByTestId("pic-flow").getAttribute("data-frames")!)).toHaveLength(0);
+
+    // Draw picture frame on layer
+    const layer = document.querySelector<HTMLElement>("[data-studio-objects]")!;
+    layer.getBoundingClientRect = () => ({ left: 0, top: 0, width: 794, height: 1123, right: 794, bottom: 1123, x: 0, y: 0, toJSON: () => ({}) });
+    fireEvent.pointerDown(layer, { clientX: 50, clientY: 60, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(layer, { clientX: 210, clientY: 160, pointerId: 1, buttons: 1 });
+    fireEvent.pointerUp(layer, { clientX: 210, clientY: 160, pointerId: 1, button: 0 });
+
+    const frames = JSON.parse(screen.getByTestId("pic-flow").getAttribute("data-frames")!) as StudioFrame[];
+    expect(frames).toHaveLength(1);
+    expect(frames[0]).toMatchObject({
+      kind: "picture-round-rect",
+      borderColor: "#B91C1C",
+      borderPattern: "dashed",
+      roundnessMm: 9,
+    });
+    // Post-draw switches to Hand tool & Picture Ribbon with actual properties
+    expect(screen.getByTestId("pic-flow").getAttribute("data-mode")).toBe("picture");
+
+    // Switching to Arrow Tool shows Object Ribbon with real X/Y/W/H & inherited defaults
+    fireEvent.click(document.querySelector('[data-studio-tool-button="select"]')!);
+    expect(screen.getByTestId("pic-flow").getAttribute("data-mode")).toBe("object");
+    const objRibbon = document.querySelector<HTMLElement>('[data-studio-object-ribbon="true"]')!;
+    const xAfter = objRibbon.querySelector<HTMLInputElement>('[data-ribbon-field="x"]')!;
+    expect(xAfter.disabled).toBe(false);
+    expect(parseFloat(xAfter.value)).toBeGreaterThan(10);
+    expect(objRibbon.querySelector('[data-ribbon-field="border-color"]')?.getAttribute("data-value")).toBe("#B91C1C");
+    expect(objRibbon.querySelector('[data-ribbon-field="border-pattern"]')?.getAttribute("data-value")).toBe("dashed");
+  });
+
+  it("preserves existing selected picture across tool switches without modifying or deleting it", () => {
+    const existing = makePictureFrame({ id: "keep-pic", xMm: 44, yMm: 55, wMm: 70, hMm: 50, borderColor: "#1D4ED8" });
+    render(<PictureToolFlowHarness initialFrames={[existing]} initialSelected={[existing.id]} initialTool="select" />);
+
+    const ribbon = () => document.querySelector<HTMLElement>('[data-studio-object-ribbon="true"]')!;
+    expect((ribbon().querySelector('[data-ribbon-field="x"]') as HTMLInputElement).value).toBe("44.00mm");
+
+    // Click Picture Tool -> immediately shows blank X/Y/W/H creation mode, while existing object stays untouched
+    fireEvent.click(document.querySelector('[data-studio-tool-button="cross-circle"]')!);
+    expect(ribbon().dataset.ribbonMode).toBe("picture-tool");
+    expect((ribbon().querySelector('[data-ribbon-field="x"]') as HTMLInputElement).value).toBe("");
+
+    // Change a default while Picture Tool is active -> must NOT mutate existing object
+    fireEvent.click(ribbon().querySelector('[data-ribbon-field="border-color"]')!);
+    fireEvent.click(within(screen.getByRole("listbox", { name: "Object Border Color options" })).getByRole("option", { name: "Green" }));
+
+    // Return to Arrow Tool -> restores previously selected picture & its untouched actual properties
+    fireEvent.click(document.querySelector('[data-studio-tool-button="select"]')!);
+    expect(ribbon().dataset.ribbonMode).toBe("object");
+    expect((ribbon().querySelector('[data-ribbon-field="x"]') as HTMLInputElement).value).toBe("44.00mm");
+    expect(ribbon().querySelector('[data-ribbon-field="border-color"]')?.getAttribute("data-value")).toBe("#1D4ED8");
+    const frames = JSON.parse(screen.getByTestId("pic-flow").getAttribute("data-frames")!) as StudioFrame[];
+    expect(frames).toHaveLength(1);
+    expect(frames[0].borderColor).toBe("#1D4ED8");
+    expect(JSON.parse(screen.getByTestId("pic-flow").getAttribute("data-selected")!)).toEqual([existing.id]);
   });
 });
 

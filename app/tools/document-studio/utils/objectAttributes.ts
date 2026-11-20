@@ -1,7 +1,7 @@
 import { isPictureBox, type FrameKind, type StudioFrame } from "../components/StudioObjectLayer";
 import { normalizeSafeHex } from "./studioColors";
 import { PRINT_FRAME_LIMITS } from "./printableFrames";
-import { isValidBorderPattern } from "./borderPatterns";
+import { isValidBorderPattern, type BorderPatternId } from "./borderPatterns";
 
 export const DEFAULT_INPAGE_BORDER_WIDTH_MM = 25.4 / 72;
 export const STUDIO_PX_PER_MM = 96 / 25.4;
@@ -149,4 +149,63 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
     else next.backgroundColor = normalizeSafeHex(patch.backgroundColor)!;
   }
   return next;
+}
+
+export type PictureToolDefaults = {
+  borderColor: string;
+  borderWidthMm: number;
+  borderPattern: BorderPatternId;
+  borderPosition: "inside" | "outside";
+  backgroundColor: string;
+  backgroundHatch: "none";
+  roundnessMm: number;
+  angle1Deg: number;
+};
+
+export const DEFAULT_PICTURE_TOOL_DEFAULTS: PictureToolDefaults = {
+  borderColor: "#000000",
+  borderWidthMm: DEFAULT_INPAGE_BORDER_WIDTH_MM,
+  borderPattern: "none",
+  borderPosition: "inside",
+  backgroundColor: "#FFFFFF",
+  backgroundHatch: "none",
+  roundnessMm: 6.35,
+  angle1Deg: 0,
+};
+
+export function applyPictureToolDefaultsPatch(
+  current: PictureToolDefaults,
+  patch: ObjectGeometryPatch,
+): PictureToolDefaults | null {
+  const synthetic: StudioFrame = {
+    id: "__picture-tool-defaults__",
+    kind: "picture-rect",
+    page: 1,
+    xMm: 0,
+    yMm: 0,
+    wMm: 10,
+    hMm: 10,
+    flip: false,
+    text: "",
+    borderColor: current.borderColor,
+    borderWidthMm: current.borderWidthMm,
+    borderPattern: current.borderPattern,
+    borderPosition: current.borderPosition,
+    ...(current.backgroundColor ? { backgroundColor: current.backgroundColor } : {}),
+    backgroundHatch: current.backgroundHatch,
+    roundnessMm: current.roundnessMm,
+    angle1Deg: current.angle1Deg,
+  };
+  const updated = applyObjectGeometry(synthetic, patch);
+  if (!updated) return null;
+  return {
+    borderColor: updated.borderColor ?? current.borderColor,
+    borderWidthMm: updated.borderWidthMm ?? current.borderWidthMm,
+    borderPattern: updated.borderPattern ?? current.borderPattern,
+    borderPosition: updated.borderPosition ?? current.borderPosition,
+    backgroundColor: updated.backgroundColor ?? "",
+    backgroundHatch: updated.backgroundHatch ?? "none",
+    roundnessMm: updated.roundnessMm ?? current.roundnessMm,
+    angle1Deg: updated.angle1Deg ?? current.angle1Deg,
+  };
 }

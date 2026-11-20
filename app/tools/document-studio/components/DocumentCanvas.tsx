@@ -23,6 +23,7 @@ import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
+import type { PictureToolDefaults } from "../utils/objectAttributes";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
   DOCUMENT_ZOOM_PRESETS,
@@ -91,6 +92,7 @@ export default function DocumentCanvas({
   tool: toolProp,
   englishFont = "Arial Unicode MS",
   keyboardLayout = null,
+  pictureBoxDefaults,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -125,6 +127,7 @@ export default function DocumentCanvas({
   tool?: StudioToolId;
   englishFont?: string;
   keyboardLayout?: KeyboardLayout | null;
+  pictureBoxDefaults?: PictureToolDefaults;
 }) {
   const isPages = viewMode !== "pageless";
   const facing=viewMode === "facing";
@@ -700,6 +703,7 @@ export default function DocumentCanvas({
                             selectedIds={selectedFrameIds}
                             onSelectedChange={onSelectedFramesChange}
                             onDoubleClickFrame={onDoubleClickFrame}
+                            pictureBoxDefaults={pictureBoxDefaults}
                             pageCount={pageCount}
                             pageWidthPx={natural.widthPx}
                             pageHeightPx={natural.heightPx}
