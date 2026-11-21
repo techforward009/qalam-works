@@ -31,12 +31,12 @@ describe("run-around line splitting", () => {
     expect(runAroundExclusionMm(box())).toBeNull();
     expect(runAroundExclusionMm(box({ runAround: false }))).toBeNull();
     expect(runAroundExclusionMm(box({ runAround: true }))).toEqual({
-      page: 1, left: 9.29, right: 40.71, top: 19.65, bottom: 60.35,
+      page: 1, left: 7.5, right: 42.5, top: 18.5, bottom: 61.5,
     });
     expect(runAroundExclusionMm(box({
       runAround: true, kind: "picture-rect", runAroundLeftMm: 1, runAroundRightMm: 2, runAroundTopMm: 3, runAroundBottomMm: 4,
     }))).toMatchObject({ left: 9, right: 42, top: 17, bottom: 64 });
-    expect(runAroundExclusionMm(box({ runAround: true, kind: "text" }))).toMatchObject({ left: 9.29, right: 40.71 });
+    expect(runAroundExclusionMm(box({ runAround: true, kind: "text" }))).toMatchObject({ left: 7.5, right: 42.5 });
     for (const kind of ["ellipse", "round-rect", "line", "picture-ellipse", "picture-round-rect"]) {
       expect(runAroundExclusionMm(box({ runAround: true, kind }))).toBeNull();
     }
@@ -410,6 +410,66 @@ describe("run-around line splitting", () => {
     );
     expect(packed.some(widget => widget.kind === "space")).toBe(false);
     expect(packed.find(widget => widget.kind === "gap" && widget.side === -1)?.size).toBeGreaterThan(40);
+  });
+
+  it("accounts for trailing spaces and capped word spacing when sizing justified Run Around gaps", () => {
+    // RTL line [0, 220], exclusion [80, 140] -> right lane [140, 220] (80px), left lane [0, 80] (80px).
+    // Right lane has two 25px words separated by a 5px space (used = 55px) plus a 5px trailing space before the gap.
+    const trailingGlyphs = [
+      { pos: 1, width: 25 },
+      { pos: 2, width: 5, space: true },
+      { pos: 3, width: 25 },
+      { pos: 4, width: 5, space: true },
+      { pos: 5, width: 25 },
+      { pos: 6, width: 5, space: true },
+      { pos: 7, width: 25 },
+      { pos: 8, width: 5, space: true },
+      { pos: 9, width: 40 },
+    ];
+    const trailingFlow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+    const trailingWidgets = planRunAroundWidgets(
+      trailingGlyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 220 }),
+      [{ left: 80, right: 140, top: -2, bottom: 14 }],
+      "rtl",
+      trailingFlow,
+    );
+    // Piece 0 trimmed used = 55, slack = 25, wordSpacing = 23 -> rendered = 55 + 23 + 5 (trailing space) = 83.
+    // Exact gap from (220 - 83 = 137) to b.right (80) = 57, placing Piece 1 cleanly at x = 80.
+    expect(trailingFlow.segments[0]).toMatchObject({ from: 0, to: 3, edge: "right" });
+    expect(trailingFlow.segments[0].wordSpacing).toBeCloseTo(23);
+    expect(trailingWidgets.find(w => w.kind === "gap" && w.side === -4)).toMatchObject({ pos: 5, size: 57 });
+
+    // Capped spacing: right lane [240, 440] (200px) holds 3 words (20+5+20+5+20 = 70px; raw (130-2)/2 = 64px, capped at 40px)
+    // because the next word (135px) won't fit alongside them, while left lane [0, 180] holds 2 words (135+5+25 = 165px).
+    const cappedGlyphs = [
+      { pos: 1, width: 20 },
+      { pos: 2, width: 5, space: true },
+      { pos: 3, width: 20 },
+      { pos: 4, width: 5, space: true },
+      { pos: 5, width: 20 },
+      { pos: 6, width: 5, space: true },
+      { pos: 7, width: 135 },
+      { pos: 8, width: 5, space: true },
+      { pos: 9, width: 25 },
+      { pos: 10, width: 5, space: true },
+      { pos: 11, width: 40 },
+    ];
+    const cappedFlow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+    const cappedWidgets = planRunAroundWidgets(
+      cappedGlyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 440 }),
+      [{ left: 180, right: 240, top: -2, bottom: 14 }],
+      "rtl",
+      cappedFlow,
+    );
+    expect(cappedFlow.segments[0].wordSpacing).toBe(40);
+    // Piece 0 rendered = 70 + 2*40 + 5 = 155; starts at 440 -> ends at 285 -> exactGap to b.right (180) = 105!
+    expect(cappedWidgets.find(w => w.kind === "gap" && w.side === -4)?.size).toBeCloseTo(105);
   });
 
   it("does not stretch the last line of a justified paragraph", () => {

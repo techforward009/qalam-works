@@ -22,6 +22,7 @@ import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../
 import { pictureContentDeltaMm } from "../utils/pictureFit";
 import { DEFAULT_PICTURE_TOOL_DEFAULTS, type PictureToolDefaults } from "../utils/objectAttributes";
 import { resolveBorderStrokes, type BorderPatternId } from "../utils/borderPatterns";
+import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
 
 export type FrameKind =
   | "rect"
@@ -72,7 +73,7 @@ export type StudioFrame = {
   backgroundHatch?: "none";
   /** Story text flows around this box. Absent means off. */
   runAround?: boolean;
-  /** Clearance outside the box when runAround is on. Absent uses 0.71 / 0.71 / 0.35 / 0.35 mm. */
+  /** Clearance outside the box when runAround is on. Absent uses 2.5 / 2.5 / 1.5 / 1.5 mm. */
   runAroundLeftMm?: number;
   runAroundRightMm?: number;
   runAroundTopMm?: number;
@@ -676,6 +677,7 @@ export function StudioObjectLayer({
       ...(singleLine ? { singleLine: true } : {}),
       ...(isPictureBox(kind)
         ? {
+            ...(isRectangularRunAroundBox({ kind, angle1Deg: defaults.angle1Deg }) ? { runAround: true } : {}),
             borderColor: defaults.borderColor,
             borderWidthMm: defaults.borderWidthMm,
             borderPattern: defaults.borderPattern,

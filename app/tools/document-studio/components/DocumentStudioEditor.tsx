@@ -938,7 +938,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setLibraryItems(await library.listDocuments());
   };
 
-  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number; focusAtStart?: boolean }) => {
     noDocumentOpenRef.current = false;
     setNoDocumentOpen(false);
     formattingSafety.current?.documentChanged();
@@ -989,10 +989,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setIsAuditStale(false);
     setVisiblePage(1);
     if (editor) {
+      const wantTextFocus = Boolean(options?.focusAtStart);
+      let remaining = 6;
       const place = () => {
         try {
-          if (canvasToolRef.current === "text") placeStoryCaretAtStart(editor);
-          else editor.commands.blur();
+          if (editor.isDestroyed) return;
+          if (wantTextFocus || canvasToolRef.current === "text") {
+            if ((!editor.isEditable || editor.view.dom.getAttribute("contenteditable") !== "true") && remaining > 0) {
+              remaining -= 1;
+              if (typeof requestAnimationFrame === "function") requestAnimationFrame(place);
+              return;
+            }
+            placeStoryCaretAtStart(editor);
+          } else {
+            editor.commands.blur();
+          }
         } catch {
           /* view not mounted yet */
         }
@@ -1064,7 +1075,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       });
       setCanvasTool("text");
       canvasToolRef.current = "text";
-      applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
+      applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages, focusAtStart: true });
       void refreshLibraryList(library);
     });
   };

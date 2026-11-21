@@ -319,13 +319,19 @@ function runAroundEngineFactory() {
     return words <= 2 && slack / spaces > fit.maxExtraPerSpace;
   }
 
-  function segmentJustify(widths: readonly number[], spaceAt: readonly boolean[], piece: RunAroundPiece): { slack: number; spaces: number; wordSpacing: number } {
+  function segmentJustify(widths: readonly number[], spaceAt: readonly boolean[], piece: RunAroundPiece): { slack: number; spaces: number; wordSpacing: number; used: number } {
+    let from = piece.from;
+    let to = piece.to;
+    while (from < to && spaceAt[from]) from += 1;
+    while (to > from && spaceAt[to - 1]) to -= 1;
     let used = 0;
-    for (let i = piece.from; i < piece.to; i++) used += widths[i];
-    const spaces = interiorSpaceCount(spaceAt, piece.from, piece.to);
+    for (let i = from; i < to; i++) used += widths[i];
+    const spaces = interiorSpaceCount(spaceAt, from, to);
     const slack = Math.max(0, piece.right - piece.left - used);
-    // Leave a couple of pixels so Nastaliq paint cannot spill into the hole.
-    return { slack, spaces, wordSpacing: spaces > 0 ? Math.max(0, slack - 2) / spaces : 0 };
+    // Leave a 2px safety margin so Nastaliq ink cannot spill into the hole or wrap a full lane.
+    const raw = spaces > 0 ? Math.max(0, slack - 2) / spaces : 0;
+    const wordSpacing = Math.min(RUN_AROUND_MAX_JUSTIFY_EXTRA_PX, raw);
+    return { slack, spaces, wordSpacing, used };
   }
 
   function placeGlyphs(
@@ -540,16 +546,42 @@ function runAroundEngineFactory() {
       const lock = justifyAll || (align === "justify" && layout.next < glyphs.length);
       const fill = lock && !packedFallback;
       if (fill) {
+        const pieceSpacings = layout.pieces.map(piece => segmentJustify(widths, spaceAt, piece));
         for (let i = 0; i < layout.pieces.length - 1; i++) {
           const a = layout.pieces[i];
           const b = layout.pieces[i + 1];
-          a.gapAfter = direction === "ltr"
+          const spacing = pieceSpacings[i];
+          const appliedExtra = spacing.wordSpacing > 0.05 ? spacing.spaces * spacing.wordSpacing : 0;
+          let edgeSpaces = 0;
+          let firstNonSpace = a.from;
+          while (firstNonSpace < a.to && spaceAt[firstNonSpace]) {
+            edgeSpaces += widths[firstNonSpace];
+            firstNonSpace += 1;
+          }
+          for (let cursor = a.to - 1; cursor >= firstNonSpace && spaceAt[cursor]; cursor -= 1) {
+            edgeSpaces += widths[cursor];
+          }
+          const capacity = a.right - a.left;
+          const rendered = spacing.used + appliedExtra + edgeSpaces;
+          // Keep the 2px Nastaliq safety allowance absorbed when justified, while
+          // still absorbing any unspent slack (e.g. single-word or capped lanes)
+          // and subtracting edge spaces that already render before the gap widget.
+          const unspent = spacing.wordSpacing > 0.05
+            ? Math.max(0, capacity - (spacing.used + appliedExtra) - 2)
+            : Math.max(0, capacity - spacing.used);
+          const boxGap = direction === "ltr"
             ? Math.max(0, b.left - a.right)
             : Math.max(0, a.left - b.right);
+          const renderedAdjustment = unspent - edgeSpaces;
+          const exactGap = direction === "ltr"
+            ? Math.max(0, b.left - (a.left + rendered))
+            : Math.max(0, (a.right - rendered) - b.right);
+          a.gapAfter = edgeSpaces > 0 || unspent > 0.01 ? exactGap : Math.max(0, boxGap + renderedAdjustment);
         }
         if (flow && flow.segments) {
-          for (const piece of layout.pieces) {
-            const spacing = segmentJustify(widths, spaceAt, piece);
+          for (let i = 0; i < layout.pieces.length; i++) {
+            const piece = layout.pieces[i];
+            const spacing = pieceSpacings[i];
             let from = piece.from;
             let to = piece.to;
             while (from < to && spaceAt[from]) from += 1;
@@ -568,9 +600,10 @@ function runAroundEngineFactory() {
       if (layout.leadingGap > 0.5) widgets.push({ pos: glyphs[layout.pieces[0].from].pos, kind: "gap", size: layout.leadingGap, side: -1 });
       for (const piece of layout.pieces) {
         if (piece.gapAfter > 0.5 && piece.to < glyphs.length) {
-          // A space kept on this side of the hole collapses against the gap widget.
           let size = piece.gapAfter;
-          for (let cursor = piece.to - 1; cursor >= piece.from && glyphs[cursor].space; cursor -= 1) size += glyphs[cursor].width;
+          if (!fill) {
+            for (let cursor = piece.to - 1; cursor >= piece.from && glyphs[cursor].space; cursor -= 1) size += glyphs[cursor].width;
+          }
           widgets.push({ pos: glyphs[piece.to].pos, kind: "gap", size, side: fill ? -4 : -1 });
         }
       }
@@ -735,31 +768,6 @@ function runAroundEngineFactory() {
       walkInline(block);
       flushRun();
       const fallbackWidth = (parseFloat(style.fontSize) || 16) * 0.5;
-      const measureSlice = (node: Text, offset: number, end: number) => {
-        const range = document.createRange();
-        range.setStart(node, offset);
-        range.setEnd(node, end);
-        const rects = [...range.getClientRects()];
-        let ink = 0;
-        const byLine = new Map<number, { min: number; max: number }>();
-        for (const rect of rects) {
-          painted = Math.max(painted, rect.height);
-          if (rect.width <= 0) continue;
-          const key = Math.round(rect.top);
-          const band = byLine.get(key) ?? { min: rect.left, max: rect.right };
-          band.min = Math.min(band.min, rect.left);
-          band.max = Math.max(band.max, rect.right);
-          byLine.set(key, band);
-        }
-        for (const band of byLine.values()) ink = Math.max(ink, band.max - band.min);
-        const startCaret = range.cloneRange();
-        startCaret.collapse(true);
-        const endCaret = range.cloneRange();
-        endCaret.collapse(false);
-        const advance = Math.abs(endCaret.getBoundingClientRect().left - startCaret.getBoundingClientRect().left);
-        // A caret pair on a wrapped line can report the whole block. Prefer the ink width then.
-        return advance > 0 && (ink <= 0 || advance <= ink + 1) ? advance : ink;
-      };
       const pointAt = (nodes: Text[], index: number) => {
         let cursor = 0;
         for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
@@ -773,23 +781,12 @@ function runAroundEngineFactory() {
       };
       for (const run of runs) {
         if (glyphs.length >= 8000) break;
-        if (run.length === 1) {
-          const textNode = run[0];
-          const text = textNode.data;
-          for (let offset = 0; offset < text.length && glyphs.length < 8000;) {
-            const end = wordEnd(text, offset);
-            const width = measureSlice(textNode, offset, end);
-            const slice = text.slice(offset, end);
-            const blank = !slice.trim();
-            glyphs.push({ pos: glyphs.length, width: width || (blank ? 0 : fallbackWidth), node: textNode, offset, space: blank });
-            offset = end;
-          }
-          continue;
-        }
         const joined = run.map(node => node.data).join("");
         const probe = document.createElement("div");
         probe.setAttribute("aria-hidden", "true");
-        probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};`;
+        // Always measure in an offscreen nowrap probe so text-align:justify on the
+        // live paragraph never inflates space widths during Run Around planning.
+        probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};text-align:start;`;
         const copies: Text[] = [];
         for (const node of run) {
           const font = node.parentElement ? getComputedStyle(node.parentElement) : style;
@@ -800,6 +797,8 @@ function runAroundEngineFactory() {
           span.style.fontStyle = font.fontStyle;
           span.style.letterSpacing = font.letterSpacing;
           span.style.wordSpacing = font.wordSpacing;
+          if (font.fontFeatureSettings) span.style.fontFeatureSettings = font.fontFeatureSettings;
+          if (font.fontVariantLigatures) span.style.fontVariantLigatures = font.fontVariantLigatures;
           span.textContent = node.data;
           probe.appendChild(span);
           copies.push(span.firstChild as Text);

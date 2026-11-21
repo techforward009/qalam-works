@@ -1,9 +1,9 @@
-/** InPage Offset defaults for a fresh box. Missing fields on old files mean these values. */
+/** Balanced default Run Around clearances (matching InPage-style breathing room around boxes). */
 export const DEFAULT_RUN_AROUND = false;
-export const DEFAULT_RUN_AROUND_LEFT_MM = 0.71;
-export const DEFAULT_RUN_AROUND_RIGHT_MM = 0.71;
-export const DEFAULT_RUN_AROUND_TOP_MM = 0.35;
-export const DEFAULT_RUN_AROUND_BOTTOM_MM = 0.35;
+export const DEFAULT_RUN_AROUND_LEFT_MM = 2.5;
+export const DEFAULT_RUN_AROUND_RIGHT_MM = 2.5;
+export const DEFAULT_RUN_AROUND_TOP_MM = 1.5;
+export const DEFAULT_RUN_AROUND_BOTTOM_MM = 1.5;
 const CLEARANCE_MAX_MM = 2000;
 
 export type RunAroundFields = {

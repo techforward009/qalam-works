@@ -726,6 +726,9 @@ describe("Pasteboard marquee, facing-page selection, InPage menu visuals, and to
       expect(drawnTb.page).toBe(2);
       expect(drawnTb.xMm).toBeCloseTo(15, 2);
       expect(drawnTb.yMm).toBeCloseTo(45, 2);
+      // Newly inserted Text Boxes keep Run Around off by default, while newly inserted rectangular Picture Boxes default ON.
+      expect(drawnTb.runAround).toBeUndefined();
+      expect(drawnPic.runAround).toBe(true);
 
       // 3. Switch to select tool, select singleLine Title Text Box in Facing Pages and resize east handle -> no slot1.x jump!
       switchTool("select");

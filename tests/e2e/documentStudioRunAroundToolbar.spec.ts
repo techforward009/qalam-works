@@ -96,7 +96,7 @@ test.describe("Run Around Property Toolbar integration", () => {
     const frameId = (await frameLocator.getAttribute("data-studio-frame-id"))!;
     expect(frameId).toBeTruthy();
 
-    // 2. Select using the Arrow tool & verify toolbar state
+    // 2. Select using the Arrow tool & verify toolbar state: newly inserted Picture Box defaults to Run Around ON
     await page.locator('[data-studio-tool-button="select"]').click();
     await frameLocator.click();
     const ribbon = page.locator('[data-studio-object-ribbon="true"]');
@@ -104,16 +104,10 @@ test.describe("Run Around Property Toolbar integration", () => {
     const runAroundBtn = page.locator('[data-ribbon-field="run-around"]');
     const insetBtn = page.locator('[data-ribbon-field="inset"]');
     await expect(runAroundBtn).toBeEnabled();
-    await expect(runAroundBtn).toHaveAttribute("aria-pressed", "false");
+    await expect(runAroundBtn).toHaveAttribute("aria-pressed", "true");
     await expect(insetBtn).toBeDisabled();
 
-    // Initially unwrapped story text overlaps the box
-    await expect(page.locator("[data-run-around-gap]")).toHaveCount(0);
-    await expect.poll(async () => (await measureFlow(page, frameId)).overlap).toBeGreaterThan(0);
-
-    // 3-6. Toggle Run Around ON via toolbar & verify story wraps on both sides
-    await runAroundBtn.click();
-    await expect(runAroundBtn).toHaveAttribute("aria-pressed", "true");
+    // Story automatically flows on both sides of the newly inserted Picture Box
     await expect.poll(async () => (await stored(page, frameId))?.runAround).toBe(true);
     await expect.poll(() => page.locator("[data-run-around-gap]").count(), { timeout: 15000 }).toBeGreaterThan(0);
     await expect.poll(() => measureFlow(page, frameId), { timeout: 15000 }).toEqual({ left: true, right: true, overlap: 0 });
@@ -150,10 +144,10 @@ test.describe("Run Around Property Toolbar integration", () => {
     const dialog = page.getByRole("dialog", { name: "Runaround" });
     await expect(dialog).toBeVisible();
     const clearance = (name: string) => dialog.getByRole("spinbutton", { name, exact: true });
-    await expect(clearance("Top")).toHaveValue("0.35mm");
-    await expect(clearance("Left")).toHaveValue("0.71mm");
-    await expect(clearance("Right")).toHaveValue("0.71mm");
-    await expect(clearance("Bottom")).toHaveValue("0.35mm");
+    await expect(clearance("Top")).toHaveValue("1.50mm");
+    await expect(clearance("Left")).toHaveValue("2.50mm");
+    await expect(clearance("Right")).toHaveValue("2.50mm");
+    await expect(clearance("Bottom")).toHaveValue("1.50mm");
     await clearance("Top").fill("2mm");
     await clearance("Left").fill("2.5mm");
     await clearance("Right").fill("8mm");

@@ -115,6 +115,7 @@ function measurePdfFlow() {
   const printFrames = document.querySelectorAll("[data-print-frame]").length;
   const skipInLines = document.querySelectorAll('[data-pdf-ink-line] [data-print-run-around="skip"]').length;
   const tailInLines = document.querySelectorAll('[data-pdf-ink-line] [data-print-run-around="tail"]').length;
+  const hardBreaks = document.querySelectorAll('[data-pdf-preserved-break="hard-break"]').length;
   const frameRects: Record<string, { page: number; left: number; right: number; top: number; bottom: number }> = {};
   for (const el of document.querySelectorAll("[data-print-frame-id]")) {
     const id = el.getAttribute("data-print-frame-id") ?? "";
@@ -153,7 +154,7 @@ function measurePdfFlow() {
       text: line.textContent ?? "",
     };
   });
-  return { report, pages, screenDecorations, printFrames, inkRects, imageRects, text: document.body.textContent ?? "", lowest, skipInLines, tailInLines, frameRects, lineRects };
+  return { report, pages, screenDecorations, printFrames, inkRects, imageRects, text: document.body.textContent ?? "", lowest, skipInLines, tailInLines, hardBreaks, frameRects, lineRects };
 }
 
 describe.runIf(existsSync(CHROME))("PDF run around for image and text boxes", () => {
@@ -556,5 +557,83 @@ describe.runIf(existsSync(CHROME))("PDF run around for image and text boxes", ()
       expect(r.left).toBeGreaterThanOrEqual(25.4 * pxPerMm - 2);
       expect(r.right).toBeLessThanOrEqual((210 - 25.4) * pxPerMm + 2);
     }
+  }, 120000);
+
+  it("justifies both lanes around a centered Picture Box with balanced default clearance and preserves hard breaks", async () => {
+    const settings = defaultDocumentSettings();
+    settings.headerFooter = { ...settings.headerFooter, headerEnabled: false, footerEnabled: false };
+    const pxPerMm = 96 / 25.4;
+    const text = "اردو زبان و ادب کی تاریخ میں خطِ نستعلیق کو ایک منفرد اور ممتاز مقام حاصل ہے۔ صدیوں سے برصغیر کے خطاطوں اور کاتبوں نے اس خوبصورت رسم الخط کو اپنی محنت، ذوق اور فنی مہارت سے نکھارا ہے جس کی بدولت آج بھی کتابیں، رسائل اور اخبارات اس کی دلکشی سے مزین نظر آتے ہیں۔ کمپیوٹر اور جدید طباعت کے دور میں بھی نستعلیق کی اصل روح، کشش، نشست و برخاست اور الفاظ کے درمیان متوازن فاصلہ برقرار رکھنا ایک نہایت اہم اور نازک مرحلہ رہا ہے۔ جب کسی صفحے کے درمیان کوئی تصویر یا خاکہ شامل کیا جاتا ہے تو اس کے دونوں اطراف عبارت کا خوبصورتی اور توازن کے ساتھ پھیلنا، حاشیوں کا سیدھا رہنا اور تصویر کے گرد مناسب فاصلہ ہونا اعلیٰ معیار کی کتابت کی پہچان ہے۔ قارئین کے لیے مطالعہ اسی وقت خوشگوار اور آسان ہوتا ہے جب سطریں نہ تو تصویر سے ٹکرائیں اور نہ ہی بائیں یا دائیں جانب بے ڈھنگا خالی پن پیدا ہو، بلکہ پوری عبارت ایک ہموار اور منظم انداز میں تصویر کے اردگرد بہتی ہوئی نیچے مکمل چوڑائی کے ساتھ جاری رہے۔";
+    const centeredFrame = {
+      id: "center-pic",
+      kind: "picture-rect",
+      page: 1,
+      xMm: 78,
+      yMm: 46,
+      wMm: 54,
+      hMm: 46,
+      flip: false,
+      text: "",
+      runAround: true,
+      borderPattern: "solid",
+      borderColor: "#222222",
+      borderWidthMm: 0.4,
+      backgroundColor: "#e8edf2",
+    };
+    const doc = {
+      type: "doc" as const,
+      content: [
+        { type: "paragraph", attrs: { dir: "rtl", textAlign: "justify" }, content: [{ type: "text", text: `${text} ${text}` }] },
+        { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "سطر اول" }, { type: "hardBreak" }, { type: "hardBreak" }, { type: "text", text: "سطر سوم" }] },
+      ],
+    };
+    const res = await POST(new PdfExportTestRequest("http://localhost/api/export-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doc, frames: [centeredFrame], dir: "rtl", settings }),
+    }));
+    expect(res.status, res.status === 200 ? "" : await res.clone().text()).toBe(200);
+
+    const f = captured!.frameRects["center-pic"];
+    expect(f).toBeTruthy();
+    expect(captured!.report["center-pic"]).toMatchObject({ left: true, right: true });
+    const hits = captured!.inkRects.filter(
+      r => r.page === 1 && r.bottom > f.top + 1 && r.top < f.bottom - 1 && r.right > f.left - 0.5 && r.left < f.right + 0.5,
+    );
+    expect(hits, "center-pic ink collision").toEqual([]);
+    const leftMarginPx = 25.4 * pxPerMm;
+    const besideLines = captured!.lineRects.filter(l => l.page === 1 && l.bottom > f.top + 2 && l.top < f.bottom - 2 && l.text.trim().length > 0);
+    expect(besideLines.length).toBeGreaterThanOrEqual(4);
+
+    // Measure actual ink clearance on both sides of the picture box and left-margin alignment for left lanes.
+    let minLeftBoxGapPx = Infinity;
+    let minRightBoxGapPx = Infinity;
+    const leftLaneLeftEdges: number[] = [];
+    for (const line of besideLines) {
+      const lineInk = captured!.inkRects.filter(r => r.page === 1 && r.bottom > line.top - 4 && r.top < line.bottom + 4);
+      const leftSide = lineInk.filter(r => (r.left + r.right) / 2 < f.left);
+      const rightSide = lineInk.filter(r => (r.left + r.right) / 2 > f.right);
+      if (leftSide.length) {
+        const closestToBox = Math.max(...leftSide.map(r => r.right));
+        const leftmost = Math.min(...leftSide.map(r => r.left));
+        minLeftBoxGapPx = Math.min(minLeftBoxGapPx, f.left - closestToBox);
+        leftLaneLeftEdges.push(leftmost);
+      }
+      if (rightSide.length) {
+        const closestToBox = Math.min(...rightSide.map(r => r.left));
+        minRightBoxGapPx = Math.min(minRightBoxGapPx, closestToBox - f.right);
+      }
+    }
+    // Comfortable, balanced visual clearance (~2.5mm default = ~9.45px) on both sides of the box (never touching).
+    expect(minLeftBoxGapPx).toBeGreaterThanOrEqual(6);
+    expect(minRightBoxGapPx).toBeGreaterThanOrEqual(6);
+    expect(Math.abs(minLeftBoxGapPx - minRightBoxGapPx)).toBeLessThan(6);
+    // Justified left lanes reach close to the left margin (not ragged short lines).
+    expect(leftLaneLeftEdges.length).toBeGreaterThanOrEqual(4);
+    for (const leftEdge of leftLaneLeftEdges) {
+      expect(leftEdge - leftMarginPx).toBeLessThan(12);
+    }
+    // Genuine hard breaks in a document with Run Around frames remain preserved (and Run Around wrap breaks do not fabricate markers).
+    expect(captured!.hardBreaks).toBe(2);
   }, 120000);
 });

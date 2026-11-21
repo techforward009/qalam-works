@@ -37,14 +37,14 @@ describe("Run Around persistence", () => {
     const pic = { ...picture, runAround: true, runAroundLeftMm: DEFAULT_RUN_AROUND_LEFT_MM, runAroundRightMm: DEFAULT_RUN_AROUND_RIGHT_MM, runAroundTopMm: DEFAULT_RUN_AROUND_TOP_MM, runAroundBottomMm: DEFAULT_RUN_AROUND_BOTTOM_MM };
     expect(deserializeQpg(serializeQpg(documentWith(pic))).frames[0]).toMatchObject({
       runAround: true,
-      runAroundLeftMm: 0.71,
-      runAroundRightMm: 0.71,
-      runAroundTopMm: 0.35,
-      runAroundBottomMm: 0.35,
+      runAroundLeftMm: 2.5,
+      runAroundRightMm: 2.5,
+      runAroundTopMm: 1.5,
+      runAroundBottomMm: 1.5,
     });
   });
 
-  it("opens old boxes without the fields and reads the InPage defaults", () => {
+  it("opens old boxes without the fields and reads the default clearances without enabling runAround", () => {
     const legacyFile = serializeQpg(documentWith(text));
     expect(legacyFile).not.toContain("runAround");
     expect(legacyFile).not.toContain("runAroundLeftMm");
@@ -56,7 +56,11 @@ describe("Run Around persistence", () => {
     expect(legacy).not.toHaveProperty("runAroundBottomMm");
     expect(resolvedRunAround(legacy)).toBe(DEFAULT_RUN_AROUND);
     expect(resolvedRunAround(legacy)).toBe(false);
-    expect(resolvedRunAroundClearance(legacy)).toEqual({ leftMm: 0.71, rightMm: 0.71, topMm: 0.35, bottomMm: 0.35 });
+    expect(resolvedRunAroundClearance(legacy)).toEqual({ leftMm: 2.5, rightMm: 2.5, topMm: 1.5, bottomMm: 1.5 });
+    // An explicitly saved runAround: false on a Picture Box stays false on reopen.
+    const picOff = deserializeQpg(serializeQpg(documentWith({ ...picture, runAround: false }))).frames[0];
+    expect(picOff.runAround).toBe(false);
+    expect(resolvedRunAround(picOff)).toBe(false);
   });
 
   it("stores the fields through applyObjectGeometry and rejects invalid values", () => {

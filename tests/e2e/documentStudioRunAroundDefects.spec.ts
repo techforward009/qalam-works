@@ -207,11 +207,12 @@ test.describe("Run Around C1/H1/H2/H3/M2 Browser Verification", () => {
       expect(printMediaMetrics.left).toBe(true);
       expect(printMediaMetrics.right).toBe(true);
       expect(printMediaMetrics.collisions).toBe(0);
-      // Tight default clearance (~0.71mm) is preserved: no overlap, and no wide phantom hole.
-      expect(printMediaMetrics.minLeftGapMm).toBeGreaterThanOrEqual(0);
-      expect(printMediaMetrics.minRightGapMm).toBeGreaterThanOrEqual(0);
-      expect(printMediaMetrics.minLeftGapMm).toBeLessThan(4);
-      expect(printMediaMetrics.minRightGapMm).toBeLessThan(4);
+      // Balanced default clearance (2.5mm) is preserved: comfortable margin on both sides, no overlap, and no phantom padding shift.
+      expect(printMediaMetrics.minLeftGapMm).toBeGreaterThanOrEqual(1.5);
+      expect(printMediaMetrics.minRightGapMm).toBeGreaterThanOrEqual(1.5);
+      expect(printMediaMetrics.minLeftGapMm).toBeLessThan(4.5);
+      // Right lane is ragged on its left edge in non-justified RTL, so clearance + at most one whole Urdu word (~10mm).
+      expect(printMediaMetrics.minRightGapMm).toBeLessThan(14);
       expect(printMediaMetrics.p2Present).toBe(1);
     } finally {
       await page.emulateMedia({ media: "screen" });

@@ -1109,6 +1109,11 @@ function RibbonShell({
         overflowY: "hidden",
       }}
     >
+      <style>{`@media (max-width:719px){
+        [data-studio-shell] [data-studio-sticky-chrome]{min-width:0 !important;max-width:100% !important;}
+        [data-studio-shell] [data-studio-chrome="toolbar"]{min-width:0 !important;width:100% !important;max-width:100% !important;overflow-x:auto !important;overflow-y:hidden !important;touch-action:pan-x !important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;}
+        [data-studio-object-ribbon="true"]{height:69px !important;min-height:69px !important;max-height:69px !important;justify-content:center !important;}
+      }`}</style>
       <div
         aria-hidden="true"
         data-studio-toolbar-etched="true"

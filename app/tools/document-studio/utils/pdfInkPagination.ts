@@ -375,10 +375,10 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       };
       const [endNode, endOffset] = locate(group.end);
       const after = document.createRange(); after.selectNodeContents(element); after.setStart(endNode, endOffset); after.deleteContents();
-      const [startNode, startOffset] = locateStart(group.start);
+      const [startNode, startOffset] = blockHasRunAround ? locateStart(group.start) : locate(group.start);
       const before = document.createRange(); before.selectNodeContents(element);
-      let leadingGap: Node | null = null;
-      if (startOffset === 0) {
+      let keepFrom: Node | null = null;
+      if (blockHasRunAround && startOffset === 0) {
         let cursor: Node | null = startNode;
         while (cursor && cursor !== element) {
           let prev: Node | null = cursor.previousSibling;
@@ -387,18 +387,22 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
             cursor = cursor.parentNode;
             continue;
           }
-          if (prev.nodeType === 1 && (prev as Element).getAttribute("data-print-run-around") === "gap") {
-            leadingGap = prev;
-            cursor = prev;
-            continue;
+          if (prev.nodeType === 1) {
+            const el = prev as Element;
+            const ra = el.getAttribute("data-print-run-around");
+            if (ra === "gap" || (el.tagName === "BR" && !ra)) {
+              keepFrom = prev;
+              cursor = prev;
+              continue;
+            }
           }
           break;
         }
       }
-      if (leadingGap) before.setEndBefore(leadingGap);
+      if (keepFrom) before.setEndBefore(keepFrom);
       else before.setEnd(startNode, startOffset);
       before.deleteContents();
-      element.querySelectorAll('[data-print-run-around="skip"], [data-print-run-around="tail"]').forEach(node => node.remove());
+      element.querySelectorAll('[data-print-run-around="skip"], [data-print-run-around="tail"], [data-print-run-around="break"]').forEach(node => node.remove());
       element.querySelectorAll("br").forEach(br => {
         const marker = document.createElement("span");
         marker.dataset.pdfPreservedBreak = "hard-break";
