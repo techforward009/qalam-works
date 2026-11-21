@@ -409,7 +409,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         marker.style.display = "none";
         br.replaceWith(marker);
       });
-      for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "text-align-last", "letter-spacing", "word-spacing", "text-decoration", "-webkit-text-stroke"]) element.style.setProperty(property, style.getPropertyValue(property));
+      for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "text-align-last", "letter-spacing", "word-spacing", "text-decoration", "-webkit-text-stroke", "text-rendering"]) element.style.setProperty(property, style.getPropertyValue(property));
       const box = lineBox(group);
       const colLeft = rect.left - origin.left + blockPadLeft;
       const colRight = rect.right - origin.left - blockPadRight;
@@ -549,14 +549,18 @@ export async function paginatePdfInk(
   const horizontalOverscan = 64;
   await page.setViewport({ width: Math.ceil(width) + horizontalOverscan * 4, height: 900, deviceScaleFactor: 2 });
   await page.emulateMediaType("print");
-  await page.evaluate(({ w, overscan }) => {
+  const hasPhysicalMargins = Boolean(runAround?.frames.length);
+  await page.evaluate(({ w, overscan, leftMargin, rightMargin, physicalMargins }) => {
     // Fix only the CSS wrapping viewport. Glyph overhang is measured later on
     // the wider staging surface and must not narrow unrelated blocks.
     document.body.style.width = `${w}px`;
     document.body.style.marginLeft = "0px";
     document.body.dataset.pdfInkHorizontalOverscan = String(overscan);
     // Reserve only the loaded face's measured terminal overhang inside each
-    // source block. This can rewrap that block, but cannot narrow neighbors.
+    // source block. When full-paper physical page containers render with 0mm
+    // native print margins (frame/Run Around documents), small glyph overhangs
+    // paint cleanly inside the physical margins without narrowing the text
+    // column relative to the editor; only excess beyond the margin needs padding.
     const canvas = document.createElement("canvas").getContext("2d")!;
     const blockSelector = "p,h1,h2,h3,h4,li";
     for (const block of document.querySelectorAll<HTMLElement>(blockSelector)) {
@@ -586,19 +590,21 @@ export async function paginatePdfInk(
           if ([...sample].length <= 64 && inkSpan > blockWidth - 2) needsEmergencyWrap = true;
         }
       }
-      if ((leftInset || rightInset) && !block.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-studio-preserved-space],[data-pdf-scale],[data-typographic-space],[data-typographic-latin],[data-tracking]:not([data-tracking="0"]))')) {
+      const effLeftInset = physicalMargins ? Math.max(0, leftInset - Math.floor(leftMargin)) : leftInset;
+      const effRightInset = physicalMargins ? Math.max(0, rightInset - Math.floor(rightMargin)) : rightInset;
+      if ((effLeftInset || effRightInset) && !block.querySelector(':is([data-pdf-font="Digital Khatt Indo-Pak"],[data-studio-preserved-space],[data-pdf-scale],[data-typographic-space],[data-typographic-latin],[data-tracking]:not([data-tracking="0"]))')) {
         const style = getComputedStyle(block);
         block.style.boxSizing = "border-box";
-        block.style.paddingLeft = `${parseFloat(style.paddingLeft) + leftInset}px`;
-        block.style.paddingRight = `${parseFloat(style.paddingRight) + rightInset}px`;
-        block.dataset.pdfLocalInkInsets = JSON.stringify({ left: leftInset, right: rightInset });
+        block.style.paddingLeft = `${parseFloat(style.paddingLeft) + effLeftInset}px`;
+        block.style.paddingRight = `${parseFloat(style.paddingRight) + effRightInset}px`;
+        block.dataset.pdfLocalInkInsets = JSON.stringify({ left: effLeftInset, right: effRightInset });
       }
       if (needsEmergencyWrap) {
         block.style.overflowWrap = "anywhere";
         block.dataset.pdfEmergencyWrap = "true";
       }
     }
-  }, { w: width, overscan: horizontalOverscan });
+  }, { w: width, overscan: horizontalOverscan, leftMargin: leftMarginPx, rightMargin: rightMarginPx, physicalMargins: hasPhysicalMargins });
   const exclusions = pdfRunAroundExclusions(runAround, height, mmToCssPx(runAround?.topMarginMm ?? 0), leftMarginPx);
   if (exclusions.length) {
     const program = runAroundBrowserProgram();

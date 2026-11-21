@@ -754,6 +754,7 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror {
           font-variant-ligatures: normal;
           font-feature-settings: normal;
+          text-rendering: geometricPrecision;
         }
         .qalam-editor-content.qalam-doc-page .ProseMirror,
         .qalam-editor-content.qalam-view-pageless .ProseMirror {

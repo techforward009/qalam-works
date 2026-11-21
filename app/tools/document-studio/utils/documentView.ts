@@ -328,6 +328,21 @@ export function mountDocumentPrintPortal(inputFrames: StudioFrame[] = []): HTMLE
   });
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
+  const sourceStyle = getComputedStyle(source);
+  for (const name of [
+    "--qalam-body-size",
+    "--qalam-line-height",
+    "--qalam-rtl-font",
+    "--qalam-ltr-font",
+    "--qalam-first-line-indent",
+    "--qalam-paragraph-before",
+    "--qalam-paragraph-after",
+    "--qalam-latin-size-factor",
+    "--qalam-typographic-space-tokens",
+  ]) {
+    const value = sourceStyle.getPropertyValue(name).trim();
+    if (value) page.style.setProperty(name, value);
+  }
   const frameHtml = printFramePageMarkup(printableFrames, widthMm, heightMm);
   if (frameHtml) {
     portal.setAttribute("data-print-frames", "true");
@@ -416,6 +431,7 @@ export function documentPrintCss(widthMm: number, heightMm: number, topMm = 0, b
   [data-studio-print-page] .ProseMirror {
     font-variant-ligatures: normal;
     font-feature-settings: normal;
+    text-rendering: geometricPrecision;
     min-height: 0 !important;
     height: auto !important;
     width: auto !important;

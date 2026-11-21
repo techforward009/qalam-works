@@ -154,7 +154,8 @@ function measurePdfFlow() {
       text: line.textContent ?? "",
     };
   });
-  return { report, pages, screenDecorations, printFrames, inkRects, imageRects, text: document.body.textContent ?? "", lowest, skipInLines, tailInLines, hardBreaks, frameRects, lineRects };
+  const framePlaceholderStrokes = document.querySelectorAll('[data-print-frame="picture-rect"] line').length;
+  return { report, pages, screenDecorations, printFrames, inkRects, imageRects, text: document.body.textContent ?? "", lowest, skipInLines, tailInLines, hardBreaks, frameRects, lineRects, framePlaceholderStrokes };
 }
 
 describe.runIf(existsSync(CHROME))("PDF run around for image and text boxes", () => {
@@ -635,5 +636,95 @@ describe.runIf(existsSync(CHROME))("PDF run around for image and text boxes", ()
     }
     // Genuine hard breaks in a document with Run Around frames remain preserved (and Run Around wrap breaks do not fabricate markers).
     expect(captured!.hardBreaks).toBe(2);
+  }, 120000);
+
+  it("matches editor line breaks, lane distribution, and full-width continuation for an empty borderless Picture Box", async () => {
+    const settings = defaultDocumentSettings();
+    settings.page.margins = { preset: "custom", topMm: 12.7, bottomMm: 12.7, startMm: 12.7, endMm: 12.7 };
+    const pxPerMm = 96 / 25.4;
+    const text = "اردو زبان و ادب کی تاریخ میں خطِ نستعلیق کو ایک منفرد اور ممتاز مقام حاصل ہے۔ صدیوں سے برصغیر کے خطاطوں اور کاتبوں نے اس خوبصورت رسم الخط کو اپنی محنت، ذوق اور فنی مہارت سے نکھارا ہے جس کی بدولت آج بھی کتابیں، رسائل اور اخبارات اس کی دلکشی سے مزین نظر آتے ہیں۔ کمپیوٹر اور جدید طباعت کے دور میں بھی نستعلیق کی اصل روح، کشش، نشست و برخاست اور الفاظ کے درمیان متوازن فاصلہ برقرار رکھنا ایک نہایت اہم اور نازک مرحلہ رہا ہے۔ جب کسی صفحے کے درمیان کوئی تصویر یا خاکہ شامل کیا جاتا ہے تو اس کے دونوں اطراف عبارت کا خوبصورتی اور توازن کے ساتھ پھیلنا، حاشیوں کا سیدھا رہنا اور تصویر کے گرد مناسب فاصلہ ہونا اعلیٰ معیار کی کتابت کی پہچان ہے۔ قارئین کے لیے مطالعہ اسی وقت خوشگوار اور آسان ہوتا ہے جب سطریں نہ تو تصویر سے ٹکرائیں اور نہ ہی بائیں یا دائیں جانب بے ڈھنگا خالی پن پیدا ہو، بلکہ پوری عبارت ایک ہموار اور منظم انداز میں تصویر کے اردگرد بہتی ہوئی نیچے مکمل چوڑائی کے ساتھ جاری رہے۔";
+    const emptyBorderlessPicture = {
+      id: "empty-center-pic",
+      kind: "picture-rect",
+      page: 1,
+      xMm: 78,
+      yMm: 46,
+      wMm: 54,
+      hMm: 46,
+      flip: false,
+      text: "",
+      runAround: true,
+      borderColor: "#000000",
+      borderWidthMm: 25.4 / 72,
+      borderPattern: "none",
+      borderPosition: "inside",
+      backgroundColor: "#FFFFFF",
+      backgroundHatch: "none",
+      roundnessMm: 6.35,
+      angle1Deg: 0,
+    };
+    const doc = {
+      type: "doc" as const,
+      content: [
+        { type: "paragraph", attrs: { dir: "rtl", textAlign: "justify" }, content: [{ type: "text", text: `${text} ${text}` }] },
+      ],
+    };
+    const res = await POST(new PdfExportTestRequest("http://localhost/api/export-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doc, frames: [emptyBorderlessPicture], dir: "rtl", settings }),
+    }));
+    expect(res.status, res.status === 200 ? "" : await res.clone().text()).toBe(200);
+
+    // Empty borderless Picture Box does not print editor placeholder diagonals, while preserving Run Around exclusion geometry.
+    expect(captured!.framePlaceholderStrokes).toBe(0);
+    const f = captured!.frameRects["empty-center-pic"];
+    expect(f).toBeTruthy();
+    expect(captured!.report["empty-center-pic"]).toMatchObject({ left: true, right: true });
+    const hits = captured!.inkRects.filter(
+      r => r.page === 1 && r.bottom > f.top + 1 && r.top < f.bottom - 1 && r.right > f.left - 0.5 && r.left < f.right + 0.5,
+    );
+    expect(hits, "empty-center-pic ink collision").toEqual([]);
+
+    // Physical-margin pages must not shrink paragraph content width with localInkInsets relative to the editor (697.70px).
+    const expectedLeftPx = 12.7 * pxPerMm;
+    const expectedContentWidthPx = (210 - 25.4) * pxPerMm;
+    const pdfLines = captured!.lineRects.filter(l => l.page === 1 && l.text.trim().length > 0);
+    expect(pdfLines).toHaveLength(14);
+    for (const line of pdfLines) {
+      expect(Math.abs(line.styleLeft - expectedLeftPx)).toBeLessThan(1);
+      expect(Math.abs((line.styleRight - line.styleLeft) - expectedContentWidthPx)).toBeLessThan(1);
+    }
+
+    // Exact line progression matching the Qalam Page editor: 4 full lines above, 8 wrapped lines beside, 2 full lines below.
+    const normalized = pdfLines.map(l => l.text.replace(/\s+/g, " ").trim());
+    expect(normalized[0]).toMatch(/^اردو زبان و ادب .* اپنی محنت، ذوق اور$/);
+    expect(normalized[1]).toMatch(/^فنی مہارت .* نستعلیق کی اصل روح،$/);
+    expect(normalized[2]).toMatch(/^کشش، نشست .* شامل کیا جاتا ہے تو$/);
+    expect(normalized[3]).toMatch(/^اس کے دونوں .* قارئین کے لیے$/);
+    expect(normalized[4]).toMatch(/^مطالعہ اسی .* بے ڈھنگا$/);
+    expect(normalized[11]).toMatch(/^خوبصورتی اور .* کتابت کی پہچان$/);
+    // Full-width continuation directly beneath the Picture Box and natural final line.
+    expect(normalized[12]).toMatch(/^ہے۔ قارئین کے لیے .* بلکہ پوری عبارت$/);
+    expect(normalized[13]).toBe("ایک ہموار اور منظم انداز میں تصویر کے اردگرد بہتی ہوئی نیچے مکمل چوڑائی کے ساتھ جاری رہے۔");
+    expect(pdfLines[12].top).toBeGreaterThanOrEqual(f.bottom - 2);
+    expect(pdfLines[13].top).toBeGreaterThan(pdfLines[12].top);
+
+    const besideLines = pdfLines.filter(l => l.bottom > f.top + 2 && l.top < f.bottom - 2);
+    expect(besideLines).toHaveLength(8);
+    let minLeftBoxGapPx = Infinity;
+    let minRightBoxGapPx = Infinity;
+    for (const line of besideLines) {
+      const lineInk = captured!.inkRects.filter(r => r.page === 1 && r.bottom > line.top - 4 && r.top < line.bottom + 4);
+      const leftSide = lineInk.filter(r => (r.left + r.right) / 2 < f.left);
+      const rightSide = lineInk.filter(r => (r.left + r.right) / 2 > f.right);
+      expect(leftSide.length).toBeGreaterThan(0);
+      expect(rightSide.length).toBeGreaterThan(0);
+      minLeftBoxGapPx = Math.min(minLeftBoxGapPx, f.left - Math.max(...leftSide.map(r => r.right)));
+      minRightBoxGapPx = Math.min(minRightBoxGapPx, Math.min(...rightSide.map(r => r.left)) - f.right);
+    }
+    expect(minLeftBoxGapPx).toBeGreaterThanOrEqual(6);
+    expect(minRightBoxGapPx).toBeGreaterThanOrEqual(6);
+    expect(Math.abs(minLeftBoxGapPx - minRightBoxGapPx)).toBeLessThan(6);
   }, 120000);
 });

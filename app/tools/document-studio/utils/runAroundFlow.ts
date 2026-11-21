@@ -786,7 +786,7 @@ function runAroundEngineFactory() {
         probe.setAttribute("aria-hidden", "true");
         // Always measure in an offscreen nowrap probe so text-align:justify on the
         // live paragraph never inflates space widths during Run Around planning.
-        probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};text-align:start;`;
+        probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};text-align:start;text-rendering:${style.textRendering};`;
         const copies: Text[] = [];
         for (const node of run) {
           const font = node.parentElement ? getComputedStyle(node.parentElement) : style;
@@ -799,6 +799,7 @@ function runAroundEngineFactory() {
           span.style.wordSpacing = font.wordSpacing;
           if (font.fontFeatureSettings) span.style.fontFeatureSettings = font.fontFeatureSettings;
           if (font.fontVariantLigatures) span.style.fontVariantLigatures = font.fontVariantLigatures;
+          if (font.textRendering) span.style.textRendering = font.textRendering;
           span.textContent = node.data;
           probe.appendChild(span);
           copies.push(span.firstChild as Text);
@@ -834,11 +835,12 @@ function runAroundEngineFactory() {
           const endCaret = range.cloneRange();
           endCaret.collapse(false);
           const advance = Math.abs(endCaret.getBoundingClientRect().left - startCaret.getBoundingClientRect().left);
-          const shaped = advance > 0 && (ink <= 0 || advance <= ink + 1) ? advance : ink;
+          // Matches RunAroundLayout's advanceWidth() in the single-line nowrap probe.
+          const shaped = advance > 0 ? advance : ink;
           const live = pointAt(run, offset);
           const slice = joined.slice(offset, end);
           const blank = !slice.trim();
-          glyphs.push({ pos: glyphs.length, width: shaped || (blank ? 0 : fallbackWidth), node: live.node, offset: live.offset, space: blank });
+          glyphs.push({ pos: glyphs.length, width: shaped > 0 ? Math.round(shaped * 100) / 100 : (blank ? 0 : fallbackWidth), node: live.node, offset: live.offset, space: blank });
           offset = end;
         }
         probe.remove();

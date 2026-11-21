@@ -158,3 +158,154 @@ test("justified Urdu keeps word spacing beside image and text boxes", async ({ p
     expect(textAgain!.justifyMark, align).toBeNull();
   }
 });
+
+const PARITY_URDU = "اردو زبان و ادب کی تاریخ میں خطِ نستعلیق کو ایک منفرد اور ممتاز مقام حاصل ہے۔ صدیوں سے برصغیر کے خطاطوں اور کاتبوں نے اس خوبصورت رسم الخط کو اپنی محنت، ذوق اور فنی مہارت سے نکھارا ہے جس کی بدولت آج بھی کتابیں، رسائل اور اخبارات اس کی دلکشی سے مزین نظر آتے ہیں۔ کمپیوٹر اور جدید طباعت کے دور میں بھی نستعلیق کی اصل روح، کشش، نشست و برخاست اور الفاظ کے درمیان متوازن فاصلہ برقرار رکھنا ایک نہایت اہم اور نازک مرحلہ رہا ہے۔ جب کسی صفحے کے درمیان کوئی تصویر یا خاکہ شامل کیا جاتا ہے تو اس کے دونوں اطراف عبارت کا خوبصورتی اور توازن کے ساتھ پھیلنا، حاشیوں کا سیدھا رہنا اور تصویر کے گرد مناسب فاصلہ ہونا اعلیٰ معیار کی کتابت کی پہچان ہے۔ قارئین کے لیے مطالعہ اسی وقت خوشگوار اور آسان ہوتا ہے جب سطریں نہ تو تصویر سے ٹکرائیں اور نہ ہی بائیں یا دائیں جانب بے ڈھنگا خالی پن پیدا ہو، بلکہ پوری عبارت ایک ہموار اور منظم انداز میں تصویر کے اردگرد بہتی ہوئی نیچے مکمل چوڑائی کے ساتھ جاری رہے۔";
+
+test("matches Editor, Browser Print, and Save as PDF line distribution around an empty centered Picture Box", async ({ page }) => {
+  test.setTimeout(120000);
+  await open(page);
+  const emptyCenterPic = {
+    id: "parity-center-pic",
+    kind: "picture-rect",
+    page: 1,
+    xMm: 78,
+    yMm: 46,
+    wMm: 54,
+    hMm: 46,
+    flip: false,
+    text: "",
+    runAround: true,
+    borderColor: "#000000",
+    borderWidthMm: 25.4 / 72,
+    borderPattern: "none",
+    borderPosition: "inside",
+    backgroundColor: "#FFFFFF",
+    backgroundHatch: "none",
+    roundnessMm: 6.35,
+    angle1Deg: 0,
+  };
+  await page.evaluate(next => {
+    const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
+    const map = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}") as Record<string, unknown>;
+    map[id] = [next];
+    localStorage.setItem("qalam-studio-frames-v1", JSON.stringify(map));
+  }, emptyCenterPic);
+  await page.reload();
+  await expect(page.locator(".ProseMirror")).toBeEditable({ timeout: 45000 });
+  await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
+  await page.locator(".ProseMirror").click();
+  await page.locator(".ProseMirror").evaluate((root, text) => {
+    const editor = (root as HTMLElement & { editor: { commands: { setContent: (doc: unknown) => void; focus: (at: string) => void } } }).editor;
+    editor.commands.setContent({
+      type: "doc",
+      content: [{ type: "paragraph", attrs: { dir: "rtl", textAlign: "justify" }, content: [{ type: "text", text: `${text} ${text}` }] }],
+    });
+    editor.commands.focus("start");
+  }, PARITY_URDU);
+  await expect.poll(() => page.locator("[data-run-around-gap]").count(), { timeout: 15000 }).toBeGreaterThanOrEqual(4);
+
+  const collectLines = async (selectorP: string, selectorFrame: string) =>
+    page.evaluate(({ pSel, fSel }) => {
+      const p = document.querySelector<HTMLElement>(pSel);
+      const frame = document.querySelector<HTMLElement>(fSel);
+      if (!p || !frame) return null;
+      const pRect = p.getBoundingClientRect();
+      const fRect = frame.getBoundingClientRect();
+      const spans: Array<{ word: string; top: number; bottom: number; side: "left" | "right" | "mid" }> = [];
+      const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+        if (!node.data.trim()) continue;
+        if (node.parentElement?.closest("[data-run-around-gap], [data-run-around-skip], [data-print-run-around='gap'], [data-print-run-around='skip'], [data-print-run-around='tail']")) continue;
+        const re = /\S+/g;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(node.data))) {
+          const range = document.createRange();
+          range.setStart(node, m.index);
+          range.setEnd(node, m.index + m[0].length);
+          const r = range.getBoundingClientRect();
+          if (r.width <= 0 || r.height <= 0) continue;
+          const mid = (r.left + r.right) / 2;
+          spans.push({
+            word: m[0],
+            top: r.top,
+            bottom: r.bottom,
+            side: mid > fRect.right ? "right" : mid < fRect.left ? "left" : "mid",
+          });
+        }
+      }
+      const lines: Array<{ top: number; bottom: number; words: typeof spans }> = [];
+      for (const s of spans) {
+        let row = lines.find(l => Math.abs(l.top - s.top) < 8);
+        if (!row) { row = { top: s.top, bottom: s.bottom, words: [] }; lines.push(row); }
+        row.words.push(s);
+      }
+      lines.sort((a, b) => a.top - b.top);
+      return {
+        pWidth: pRect.width,
+        textRendering: getComputedStyle(p).textRendering,
+        lines: lines.map(l => {
+          const inBand = l.bottom > fRect.top + 1 && l.top < fRect.bottom - 1;
+          return {
+            inBand,
+            text: l.words.map(w => w.word).join(" "),
+            right: inBand ? l.words.filter(w => w.side === "right").map(w => w.word).join(" ") : "",
+            left: inBand ? l.words.filter(w => w.side === "left").map(w => w.word).join(" ") : "",
+          };
+        }),
+      };
+    }, { pSel: selectorP, fSel: selectorFrame });
+
+  const editorSnapshot = await collectLines(".qalam-editor-content .ProseMirror p", '[data-studio-frame-id="parity-center-pic"]');
+  expect(editorSnapshot).toBeTruthy();
+  expect(editorSnapshot!.textRendering).toBe("geometricprecision");
+  const editorWrapped = editorSnapshot!.lines.filter(l => l.inBand);
+  expect(editorWrapped.length).toBeGreaterThanOrEqual(6);
+  expect(editorWrapped.every(l => l.right.length > 0 && l.left.length > 0)).toBe(true);
+  // Full-width continuation lines appear below the wrapped band.
+  const lastWrappedIdx = editorSnapshot!.lines.map(l => l.inBand).lastIndexOf(true);
+  expect(editorSnapshot!.lines.length - 1 - lastWrappedIdx).toBeGreaterThanOrEqual(2);
+
+  // Verify Browser Print portal produces identical line breaks and right/left lane distribution.
+  await page.evaluate(() => {
+    const w = window as Window & { __origPrint?: typeof window.print; __printCalled?: number };
+    w.__origPrint = window.print;
+    w.__printCalled = 0;
+    window.print = () => { w.__printCalled = (w.__printCalled ?? 0) + 1; };
+  });
+  try {
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-action="file.print"]').click();
+    await expect.poll(() => page.evaluate(() => (window as Window & { __printCalled?: number }).__printCalled), { timeout: 15000 }).toBe(1);
+    await expect(page.locator('[data-studio-print-portal][data-print-waited-fonts="true"]')).toHaveCount(1);
+    await page.emulateMedia({ media: "print" });
+    const printSnapshot = await collectLines("[data-studio-print-portal] .ProseMirror p", '[data-studio-print-portal] [data-print-frame-id="parity-center-pic"]');
+    await page.emulateMedia({ media: "screen" });
+    expect(printSnapshot).toBeTruthy();
+    expect(printSnapshot!.lines).toEqual(editorSnapshot!.lines);
+  } finally {
+    await page.emulateMedia({ media: "screen" });
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("afterprint"));
+      const w = window as Window & { __origPrint?: typeof window.print };
+      if (w.__origPrint) { window.print = w.__origPrint; delete w.__origPrint; }
+    });
+  }
+
+  // Verify Save as PDF uses identical printable width, embedded Mehr Nastaliq Web, and identical visual line count.
+  let pdfStatus = 0;
+  let pdfHeaders: Record<string, string> = {};
+  await page.route("**/api/export-pdf", async route => {
+    const response = await route.fetch();
+    pdfStatus = response.status();
+    pdfHeaders = response.headers();
+    await route.fulfill({ response });
+  });
+  await page.locator('[data-menu-root="file"]').click();
+  await page.locator('[data-menu-action="file.downloadPdf"]').click();
+  await expect.poll(() => pdfStatus, { timeout: 45000 }).toBe(200);
+  expect(pdfHeaders["x-pdf-page-count"]).toBe("1");
+  expect(Number(pdfHeaders["x-pdf-visual-lines"])).toBe(editorSnapshot!.lines.length);
+  expect(Math.abs(Number(pdfHeaders["x-pdf-printable-width"]) - editorSnapshot!.pWidth)).toBeLessThan(1);
+  expect(pdfHeaders["x-pdf-embedded-fonts"]).toContain("MehrNastaliqWeb");
+  expect(pdfHeaders["x-pdf-font-fallbacks"]).toBe("[]");
+});

@@ -438,12 +438,13 @@ function firstFamily(signature: string): string {
 
 function fontAtNode(view: EditorView, pos: number, fallback: CSSStyleDeclaration): string {
   const dom = view.nodeDOM(pos);
-  const el = dom instanceof Text ? dom.parentElement : dom instanceof HTMLElement ? dom : null;
+  let el = dom instanceof Text ? dom.parentElement : dom instanceof HTMLElement ? dom : null;
+  while (el && el.hasAttribute("data-run-around-segment")) el = el.parentElement;
   return fontSignature(el ? getComputedStyle(el) : fallback);
 }
 
 function fontSignature(style: CSSStyleDeclaration): string {
-  return [style.fontFamily, style.fontSize, style.fontWeight, style.fontStyle, style.letterSpacing, style.wordSpacing, style.fontFeatureSettings].join("\n");
+  return [style.fontFamily, style.fontSize, style.fontWeight, style.fontStyle, style.letterSpacing, style.wordSpacing, style.fontFeatureSettings, style.fontVariantLigatures, style.textRendering].join("\n");
 }
 
 function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration, seen: Map<Element, string>): string {
@@ -455,6 +456,7 @@ function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration, se
   } catch {
     el = null;
   }
+  while (el && el.hasAttribute("data-run-around-segment")) el = el.parentElement;
   if (!el) return fontSignature(fallback);
   const cached = seen.get(el);
   if (cached) return cached;
@@ -483,10 +485,10 @@ function pushShapedWords(glyphs: Glyph[], source: HTMLElement, pieces: readonly 
     widths = [];
     const probe = document.createElement("div");
     probe.setAttribute("aria-hidden", "true");
-    probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};`;
+    probe.style.cssText = `position:fixed;left:-100000px;top:0;white-space:nowrap;opacity:0;pointer-events:none;direction:${style.direction};text-rendering:${style.textRendering};`;
     const nodes: Text[] = [];
     for (const piece of pieces) {
-      const [family, size, weight, fontStyle, spacing, wordSpacing, features] = piece.font.split("\n");
+      const [family, size, weight, fontStyle, spacing, wordSpacing, features, ligatures, textRendering] = piece.font.split("\n");
       const span = document.createElement("span");
       span.style.fontFamily = family;
       span.style.fontSize = size;
@@ -495,6 +497,8 @@ function pushShapedWords(glyphs: Glyph[], source: HTMLElement, pieces: readonly 
       span.style.letterSpacing = spacing;
       span.style.wordSpacing = wordSpacing;
       if (features) span.style.fontFeatureSettings = features;
+      if (ligatures) span.style.fontVariantLigatures = ligatures;
+      if (textRendering) span.style.textRendering = textRendering;
       span.textContent = piece.text;
       probe.appendChild(span);
       const text = span.firstChild;
@@ -555,7 +559,7 @@ const intrinsicWidthCache = new Map<string, number[]>();
 /** Shaped width of each word in `text`, with its real neighbors and no wrap widgets. */
 function intrinsicWordWidths(source: HTMLElement, text: string): number[] {
   const style = getComputedStyle(source);
-  const key = `${style.fontFamily}\n${style.fontSize}\n${style.fontWeight}\n${style.fontStyle}\n${style.direction}\n${style.letterSpacing}\n${text}`;
+  const key = `${style.fontFamily}\n${style.fontSize}\n${style.fontWeight}\n${style.fontStyle}\n${style.direction}\n${style.letterSpacing}\n${style.fontFeatureSettings}\n${style.fontVariantLigatures}\n${style.textRendering}\n${text}`;
   const cached = intrinsicWidthCache.get(key);
   if (cached) return cached;
   const probe = document.createElement("div");
@@ -565,6 +569,8 @@ function intrinsicWordWidths(source: HTMLElement, text: string): number[] {
     `direction:${style.direction}`, `font-family:${style.fontFamily}`, `font-size:${style.fontSize}`,
     `font-weight:${style.fontWeight}`, `font-style:${style.fontStyle}`, `letter-spacing:${style.letterSpacing}`,
     `word-spacing:${style.wordSpacing}`, `line-height:${style.lineHeight}`,
+    `font-feature-settings:${style.fontFeatureSettings}`, `font-variant-ligatures:${style.fontVariantLigatures}`,
+    `text-rendering:${style.textRendering}`,
   ].join(";");
   probe.textContent = text;
   document.body.appendChild(probe);
