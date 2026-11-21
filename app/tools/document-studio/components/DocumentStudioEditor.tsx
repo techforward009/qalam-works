@@ -180,6 +180,8 @@ import type { FrameAlignSnapshot, FrameRememberOptions } from "../utils/paragrap
 import { createStudioHistoryCoordinator, resolveStudioHistoryShortcut } from "../utils/studioHistory";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
+import { StudioRunAroundDialog } from "./StudioRunAroundDialog";
+import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
 import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import { StudioTableToTextDialog } from "./StudioTableToTextDialog";
@@ -345,6 +347,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [characterOpen,setCharacterOpen] = useState(false);
   const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
+  const [runAroundFrame, setRunAroundFrame] = useState<StudioFrame | null>(null);
   const [typographicOpen,setTypographicOpen] = useState(false);
   const [qpgSaveAsOpen,setQpgSaveAsOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
@@ -2302,6 +2305,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       paragraph: () => setParagraphOpen(true),
       tableLayout: () => setTableLayoutOpen(true),
       tableFormat: () => setTableFormatOpen(true),
+      runaround: () => {
+        const selected = framesRef.current.filter(
+          (frame) => selectedFrameIds.includes(frame.id) && !frame.locked && isRectangularRunAroundBox(frame),
+        );
+        if (selectedFrameIds.length === 1 && selected.length === 1) setRunAroundFrame(selected[0]);
+      },
       tableToText: () => {if(editor?.isActive("table"))setTableToTextOpen(true);},
       textToTable: () => {if(editor && !editor.isActive("table") && !editor.state.selection.empty)setTextToTableOpen(true);},
       splitTable: () => {if(editor)splitTableAbove(editor);},
@@ -2401,6 +2410,15 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   if (!editor?.isActive("table")) disabledIds.add("insert.splitTable");
   if (!canFormatTable && !hasTableForFormat(editor)) {
     disabledIds.add("text.tableFormat");
+  }
+  const selectedFramesForMenu = frames.filter((frame) => selectedFrameIds.includes(frame.id));
+  if (
+    selectedFrameIds.length !== 1 ||
+    selectedFramesForMenu.length !== 1 ||
+    selectedFramesForMenu[0].locked ||
+    !isRectangularRunAroundBox(selectedFramesForMenu[0])
+  ) {
+    disabledIds.add("text.runaround");
   }
   if (!inTableSelection && !editor?.isActive("table")) {
     disabledIds.add("text.tableLayout");
@@ -2750,6 +2768,18 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
+      {runAroundFrame ? (
+        <StudioRunAroundDialog
+          frame={runAroundFrame}
+          onClose={() => setRunAroundFrame(null)}
+          onApply={(patch) => {
+            const current = framesRef.current.find((frame) => frame.id === runAroundFrame.id);
+            const updated = current && !current.locked && applyObjectGeometry(current, patch);
+            if (updated) changeFrames(framesRef.current.map((frame) => (frame.id === updated.id ? updated : frame)));
+            setRunAroundFrame(null);
+          }}
+        />
+      ) : null}
       {imageMenu && editor ? (
         <div
           role="menu"

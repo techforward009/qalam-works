@@ -8,7 +8,7 @@ import { resolvePageLayout } from "../app/tools/document-studio/utils/pageLayout
 import { StudioPictureContextMenu } from "../app/tools/document-studio/components/StudioPictureContextMenu";
 import { marqueeSelectedFrameIds, StudioObjectLayer, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import DocumentMenuBar from "../app/tools/document-studio/components/DocumentMenuBar";
-import { pageProjection } from "../app/tools/document-studio/utils/facingPages";
+import { facingSlot, pageProjection } from "../app/tools/document-studio/utils/facingPages";
 import { pictureContextItems } from "../app/tools/document-studio/utils/pictureContextMenu";
 import { cloneCopiedFramesForPaste, copyFramesToClipboard, clearPictureFromFrame, pasteImageFromCopiedFrames } from "../app/tools/document-studio/utils/pictureClipboard";
 import { useStudioZoomVisibility } from "../app/tools/document-studio/components/useStudioZoomVisibility";
@@ -436,6 +436,9 @@ describe("Pasteboard marquee, facing-page selection, InPage menu visuals, and to
     const facingRender = render(<CanvasHost viewMode="facing" minimumPages={2} initialFrames={[f1, f2]} />);
     const facingScroller = facingRender.container.querySelector('[data-studio-scroller="true"]') as HTMLElement;
     const facingObjects = facingRender.container.querySelector("[data-studio-objects]") as HTMLElement;
+    expect(facingObjects.style.left).toBe("0px");
+    expect(facingObjects.style.right).toBe("auto");
+    expect(facingObjects.style.bottom).toBe("auto");
     facingObjects.getBoundingClientRect = () => ({ left: 80, top: 40, width: 1700, height: 2400, right: 1780, bottom: 2440, x: 80, y: 40, toJSON: () => ({}) });
     fireEvent.pointerDown(facingScroller, { clientX: 10, clientY: 10, pointerId: 6, button: 0 });
     fireEvent.pointerMove(facingScroller, { clientX: 1850, clientY: 2500, pointerId: 6 });
@@ -644,5 +647,125 @@ describe("Pasteboard marquee, facing-page selection, InPage menu visuals, and to
     rerender(<ZoomAlignHost zoom={2} selectedIds={["pic-left"]} mockEditor={fakeEditor} />);
     expect(scroller.scrollLeft).toBe(108);
     expect(frameNode.getBoundingClientRect().left).toBe(60);
+  });
+
+  it("unprojects Facing Pages drawing and clamps Single/Facing resize including singleLine boxes (H3)", () => {
+    const prevFonts = Object.getOwnPropertyDescriptor(document, "fonts");
+    if (!("fonts" in document) || !document.fonts) {
+      Object.defineProperty(document, "fonts", {
+        configurable: true,
+        value: { addEventListener: () => {}, removeEventListener: () => {} },
+      });
+    }
+    try {
+      const projection = { width: LAYER_BOX.pageWidthPx, height: LAYER_BOX.pageHeightPx, gap: LAYER_BOX.gapPx, count: 2 };
+      const slot1 = facingSlot(0, projection);
+      const slot2 = facingSlot(1, projection);
+      const initial: StudioFrame[] = [
+        { ...makeFrame("single-line-f", 30, 20, 50, 10), kind: "text", singleLine: true, page: 1 },
+        { ...makeFrame("facing-box", 20, 40, 40, 30), page: 2 },
+      ];
+      let latest: StudioFrame[] = initial;
+      let switchTool!: (next: "select" | "cross-square" | "textbox" | "text") => void;
+      let selectIds!: (ids: string[]) => void;
+      function Harness() {
+        const [frames, setFrames] = useState<StudioFrame[]>(initial);
+        const [selected, setSelected] = useState<string[]>(["single-line-f"]);
+        const [tool, setTool] = useState<"select" | "cross-square" | "textbox" | "text">("cross-square");
+        latest = frames;
+        switchTool = setTool;
+        selectIds = setSelected;
+        return (
+          <StudioObjectLayer
+            editor={null}
+            tool={tool}
+            frames={frames}
+            selectedIds={selected}
+            onSelectedChange={setSelected}
+            onFramesChange={(next) => { latest = next; setFrames(next); }}
+            onToolAction={(t) => setTool(t as typeof tool)}
+            projection={projection}
+            pageCount={2}
+            pageWidthPx={LAYER_BOX.pageWidthPx}
+            pageHeightPx={LAYER_BOX.pageHeightPx}
+            gapPx={LAYER_BOX.gapPx}
+            marginTopPx={LAYER_BOX.marginTopPx}
+            marginRightPx={LAYER_BOX.marginRightPx}
+          />
+        );
+      }
+
+      const { container, rerender } = render(<Harness />);
+      const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
+      layer.getBoundingClientRect = () => ({ left: 0, top: 0, right: 2000, bottom: 2600, width: 2000, height: 2600, x: 0, y: 0, toJSON: () => ({}) });
+
+      // 1. Draw a Picture Box on Page 1 in Facing Pages: saved xMm/yMm must unproject slot1 once, and DOM left must equal slot1.x + xMm*PX_PER_MM.
+      const drawStartX = slot1.x + 25 * PX_PER_MM;
+      const drawStartY = slot1.y + 35 * PX_PER_MM;
+      fireEvent.pointerDown(layer, { clientX: drawStartX, clientY: drawStartY, pointerId: 10, button: 0 });
+      fireEvent.pointerMove(layer, { clientX: drawStartX + 40 * PX_PER_MM, clientY: drawStartY + 25 * PX_PER_MM, pointerId: 10 });
+      fireEvent.pointerUp(layer, { clientX: drawStartX + 40 * PX_PER_MM, clientY: drawStartY + 25 * PX_PER_MM, pointerId: 10 });
+      const drawnPic = latest.find((f) => f.kind === "picture-rect" && f.id !== "facing-box")!;
+      expect(drawnPic).toBeTruthy();
+      expect(drawnPic.page).toBe(1);
+      expect(drawnPic.xMm).toBeCloseTo(25, 2);
+      expect(drawnPic.yMm).toBeCloseTo(35, 2);
+      const drawnEl = container.querySelector(`[data-studio-frame-id="${drawnPic.id}"]`) as HTMLElement;
+      expect(parseFloat(drawnEl.style.left)).toBeCloseTo(drawStartX, 0);
+
+      // 2. Switch to textbox tool and draw a Text Box on Page 2 in Facing Pages -> lands on Page 2 with page-2 local xMm/yMm.
+      switchTool("textbox");
+      rerender(<Harness />);
+      const tbStartX = slot2.x + 15 * PX_PER_MM;
+      const tbStartY = slot2.y + 45 * PX_PER_MM;
+      fireEvent.pointerDown(layer, { clientX: tbStartX, clientY: tbStartY, pointerId: 11, button: 0 });
+      fireEvent.pointerMove(layer, { clientX: tbStartX + 50 * PX_PER_MM, clientY: tbStartY + 20 * PX_PER_MM, pointerId: 11 });
+      fireEvent.pointerUp(layer, { clientX: tbStartX + 50 * PX_PER_MM, clientY: tbStartY + 20 * PX_PER_MM, pointerId: 11 });
+      const drawnTb = latest.find((f) => f.kind === "text" && f.id !== "single-line-f")!;
+      expect(drawnTb).toBeTruthy();
+      expect(drawnTb.page).toBe(2);
+      expect(drawnTb.xMm).toBeCloseTo(15, 2);
+      expect(drawnTb.yMm).toBeCloseTo(45, 2);
+
+      // 3. Switch to select tool, select singleLine Title Text Box in Facing Pages and resize east handle -> no slot1.x jump!
+      switchTool("select");
+      selectIds(["single-line-f"]);
+      rerender(<Harness />);
+      const titleEast = container.querySelector('[data-studio-frame-id="single-line-f"] [data-studio-frame-handle="e"]') as HTMLElement;
+      expect(titleEast).toBeTruthy();
+      expect(fireEvent.pointerDown(titleEast, { pointerId: 12, button: 0 })).toBe(false);
+      fireEvent.pointerMove(layer, { clientX: slot1.x + 120 * PX_PER_MM, clientY: slot1.y + 20 * PX_PER_MM, pointerId: 12 });
+      fireEvent.pointerUp(layer, { clientX: slot1.x + 120 * PX_PER_MM, clientY: slot1.y + 20 * PX_PER_MM, pointerId: 12 });
+      const resizedTitle = latest.find((f) => f.id === "single-line-f")!;
+      expect(resizedTitle.page).toBe(1);
+      expect(resizedTitle.xMm).toBeCloseTo(30, 4);
+      expect(resizedTitle.wMm).toBeCloseTo(90, 4);
+
+      // 4. Resize facing-box west handle past spine and south handle beyond row bottom -> page stays 2 and coordinates clamp!
+      selectIds(["facing-box"]);
+      rerender(<Harness />);
+      const westHandle = container.querySelector('[data-studio-frame-id="facing-box"] [data-studio-frame-handle="w"]') as HTMLElement;
+      expect(fireEvent.pointerDown(westHandle, { pointerId: 99, button: 2 })).toBe(true);
+      expect(fireEvent.pointerDown(westHandle, { pointerId: 13, button: 0 })).toBe(false);
+      fireEvent.pointerMove(layer, { clientX: slot2.x - 180, clientY: slot2.y + 50 * PX_PER_MM, pointerId: 13 });
+      fireEvent.pointerUp(layer, { clientX: slot2.x - 180, clientY: slot2.y + 50 * PX_PER_MM, pointerId: 13 });
+      const westResized = latest.find((f) => f.id === "facing-box")!;
+      expect(westResized.page).toBe(2);
+      expect(westResized.xMm).toBeCloseTo(0, 4);
+      expect(westResized.wMm).toBeCloseTo(60, 4);
+
+      const southHandle = container.querySelector('[data-studio-frame-id="facing-box"] [data-studio-frame-handle="s"]') as HTMLElement;
+      fireEvent.pointerDown(southHandle, { pointerId: 14, button: 0 });
+      fireEvent.pointerMove(layer, { clientX: slot2.x + 30 * PX_PER_MM, clientY: slot2.y + LAYER_BOX.pageHeightPx + 300, pointerId: 14 });
+      fireEvent.pointerUp(layer, { clientX: slot2.x + 30 * PX_PER_MM, clientY: slot2.y + LAYER_BOX.pageHeightPx + 300, pointerId: 14 });
+      const southResized = latest.find((f) => f.id === "facing-box")!;
+      expect(southResized.page).toBe(2);
+      expect(southResized.yMm).toBeCloseTo(40, 6);
+      expect(southResized.hMm).toBeCloseTo(LAYER_BOX.pageHeightPx / PX_PER_MM - 40, 4);
+    } finally {
+      cleanup();
+      if (prevFonts) Object.defineProperty(document, "fonts", prevFonts);
+      else delete (document as unknown as Record<string, unknown>).fonts;
+    }
   });
 });

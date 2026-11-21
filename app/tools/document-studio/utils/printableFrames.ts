@@ -7,6 +7,7 @@ import type { DocNode } from './extractPlainText';
 import { isParagraphAlignList, type ParagraphAlign } from './paragraphAlign';
 import { normalizeSafeHex } from './studioColors';
 import { cssBorderStyleForPattern, isValidBorderPattern, resolveBorderStrokes } from './borderPatterns';
+import { validRunAroundFields } from './runAround';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
 const kinds = new Set([
@@ -60,6 +61,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       }
     }
     if (f.locked !== undefined && typeof f.locked !== 'boolean' || f.dontPrint !== undefined && typeof f.dontPrint !== 'boolean' || f.template !== undefined && typeof f.template !== 'boolean') throw new Error('Invalid drawing frame flags; export blocked');
+    if (!validRunAroundFields(f)) throw new Error('Invalid drawing frame run around; export blocked');
     if (f.roundnessMm !== undefined && (typeof f.roundnessMm !== 'number' || !Number.isFinite(f.roundnessMm) || f.roundnessMm < 0 || f.roundnessMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame roundness; export blocked');
     if (f.angle1Deg !== undefined && (typeof f.angle1Deg !== 'number' || !Number.isFinite(f.angle1Deg) || Math.abs(f.angle1Deg) > 3600)) throw new Error('Invalid drawing frame angle; export blocked');
     if (f.angle2Deg !== undefined && (typeof f.angle2Deg !== 'number' || !Number.isFinite(f.angle2Deg) || Math.abs(f.angle2Deg) > 3600)) throw new Error('Invalid drawing frame angle; export blocked');
@@ -93,6 +95,11 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.borderPattern !== undefined ? { borderPattern: f.borderPattern } : {}),
       ...(f.backgroundColor !== undefined ? { backgroundColor: normalizeSafeHex(f.backgroundColor)! } : {}),
       ...(f.backgroundHatch !== undefined ? { backgroundHatch: f.backgroundHatch } : {}),
+      ...(f.runAround !== undefined ? { runAround: f.runAround } : {}),
+      ...(f.runAroundLeftMm !== undefined ? { runAroundLeftMm: f.runAroundLeftMm } : {}),
+      ...(f.runAroundRightMm !== undefined ? { runAroundRightMm: f.runAroundRightMm } : {}),
+      ...(f.runAroundTopMm !== undefined ? { runAroundTopMm: f.runAroundTopMm } : {}),
+      ...(f.runAroundBottomMm !== undefined ? { runAroundBottomMm: f.runAroundBottomMm } : {}),
     };
   });
 }
@@ -255,7 +262,10 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
     : '';
   return `<svg ${attr} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="${geometry}overflow:${rotated || frame.borderPosition === 'outside' ? 'visible' : 'hidden'};" aria-hidden="true">${bg}${shape}</svg>`;
 }
+export function filterPrintableFrames<T extends { dontPrint?: boolean }>(frames: readonly T[]): T[] {
+  return frames.filter(frame => frame.dontPrint !== true);
+}
 export function printFramePageMarkup(frames: StudioFrame[], width: number, height: number): string {
-  const printable = frames.filter(frame => frame.dontPrint !== true);
+  const printable = filterPrintableFrames(frames);
   return Array.from(new Set(printable.map(f => f.page))).sort((a, b) => a - b).map(page => `<div data-print-object-page="${page}" style="position:absolute;left:0;top:${framePrintTopMm({ page, yMm: 0 }, height)}mm;width:${width}mm;height:${height}mm;overflow:hidden;pointer-events:none;z-index:10;">${printable.filter(f => f.page === page).map(f => renderPrintFrame(f)).join('')}</div>`).join('');
 }

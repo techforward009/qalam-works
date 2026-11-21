@@ -11,10 +11,12 @@ import {
   QALAM_PAGINATION_ATTR,
   QALAM_PAGINATION_COUNT_META,
   QALAM_PAGINATION_GEOMETRY_META,
+  QALAM_PAGINATION_REMEASURE_META,
   QalamPagination,
   applyQalamPagination,
   buildPaginationWidget,
   contentAreaHeightPx,
+  effectiveMinimumPageCount,
   extraPagesFromOverflow,
   getQalamPaginationState,
   measureUnscaledPageCount,
@@ -375,5 +377,82 @@ describe("Qalam pagination foundation", () => {
     expect(undoDepth(editor.state)).toBe(0);
     expect(editor.getText()).toBe("Loaded");
     editor.destroy();
+  });
+
+  it("collapses trailing empty page even when page-1 text ends near the breaker band, and remeasure meta keeps undo clean", () => {
+    const host = document.createElement("div");
+    const paragraph = document.createElement("p");
+    const pagination = document.createElement("div");
+    pagination.setAttribute("data-qalam-pagination", "true");
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    first.className = "qalam-pagination-breaker";
+    second.className = "qalam-pagination-breaker";
+    pagination.append(first, second);
+    host.append(paragraph, pagination);
+    const stub = (el: HTMLElement, top: number, height: number) => {
+      Object.defineProperty(el, "offsetTop", { configurable: true, get: () => top });
+      Object.defineProperty(el, "offsetHeight", { configurable: true, get: () => height });
+      Object.defineProperty(el, "offsetParent", { configurable: true, get: () => host });
+    };
+    // Page-1 text ends within 2px of breaker top (contentBottom = 799 vs breaker.offsetTop = 800),
+    // but well before page 2 starts (top + height = 1004). Trailing empty sheet 2 must collapse to 1.
+    stub(paragraph, 20, 779);
+    stub(first, 800, 204);
+    stub(second, 1800, 204);
+    const { layout, geometry } = a4Geometry("rtl");
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, 1), 2)).toBe(1);
+
+    // Once text actually crosses below the breaker sheet-start boundary (contentBottom = 1030 > 1004), page 2 stays.
+    stub(paragraph, 20, 1010);
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, 1), 2)).toBe(2);
+
+    const { editor } = makeEditor({
+      type: "doc",
+      content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "آزمائش" }] }],
+    });
+    applyQalamPagination(editor, geometry);
+    const beforeDoc = editor.state.doc;
+    const tickBefore = getQalamPaginationState(editor)?.remeasureTick ?? 0;
+    editor.view.dispatch(
+      editor.view.state.tr.setMeta(QALAM_PAGINATION_REMEASURE_META, true).setMeta("addToHistory", false),
+    );
+    expect(getQalamPaginationState(editor)?.remeasureTick).toBe(tickBefore + 1);
+    expect(editor.state.doc).toBe(beforeDoc);
+    expect(undoDepth(editor.state)).toBe(0);
+    editor.destroy();
+  });
+
+  it("M2: raises effective minimum pages when a frame sits on Page 2+ and collapses once removed", () => {
+    expect(effectiveMinimumPageCount(1, [])).toBe(1);
+    expect(effectiveMinimumPageCount(1, [{ page: 1 }, { page: 2 }])).toBe(2);
+    expect(effectiveMinimumPageCount(3, [{ page: 2 }])).toBe(3);
+
+    const host = document.createElement("div");
+    const paragraph = document.createElement("p");
+    const pagination = document.createElement("div");
+    pagination.setAttribute("data-qalam-pagination", "true");
+    const b1 = document.createElement("div");
+    const b2 = document.createElement("div");
+    b1.className = "qalam-pagination-breaker";
+    b2.className = "qalam-pagination-breaker";
+    pagination.append(b1, b2);
+    host.append(paragraph, pagination);
+    const stub = (el: HTMLElement, top: number, height: number) => {
+      Object.defineProperty(el, "offsetTop", { configurable: true, get: () => top });
+      Object.defineProperty(el, "offsetHeight", { configurable: true, get: () => height });
+      Object.defineProperty(el, "offsetParent", { configurable: true, get: () => host });
+    };
+    // Short text on Page 1 (contentBottom = 300 < b1 top 800), yet a frame on Page 2 keeps 2 pages alive.
+    stub(paragraph, 20, 280);
+    stub(b1, 800, 204);
+    stub(b2, 1800, 204);
+    const { layout } = a4Geometry("rtl");
+    const floorWithFrame = effectiveMinimumPageCount(1, [{ page: 2 }]);
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, floorWithFrame), 2)).toBe(2);
+
+    // Removing the Page-2 frame lowers the floor back to 1, allowing trailing empty Page 2 to collapse.
+    const floorWithoutFrame = effectiveMinimumPageCount(1, [{ page: 1 }]);
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, floorWithoutFrame), 2)).toBe(1);
   });
 });

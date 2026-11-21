@@ -1,4 +1,7 @@
 import { firstLinePaintShift, topEdgeInkShift } from "./firstLinePaint";
+import { filterPrintableFrames } from "./printableFrames";
+import { runAroundBrowserProgram } from "../extensions/RunAroundLayout";
+import { runAroundContentExclusionPx, type RunAroundBox, type RunAroundRect } from "./runAroundFlow";
 import type { Page } from "puppeteer-core";
 export const PDF_TABLE_SELECTOR = "table.qalam-document-table,table[data-pdf-table]";
 export const isPdfTableBlock = (tagName: string) => tagName.toUpperCase() === "TABLE";
@@ -357,16 +360,45 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       const side: "left" | "right" = figure.classList.contains("image-left") || floatStyle.cssFloat === "left" ? "left" : "right";
       return { side, ...exclusion };
     });
+    const blockHasRunAround = Boolean(block.querySelector("[data-print-run-around]"));
+    const blockPadLeft = blockHasRunAround ? (parseFloat(style.paddingLeft) || 0) : 0;
+    const blockPadRight = blockHasRunAround ? (parseFloat(style.paddingRight) || 0) : 0;
     for (const [index, group] of groups.entries()) {
       const element = source.cloneNode(true) as HTMLElement, cloned = textNodes(element);
       const locate = (position: number): [Text, number] => {
         for (const node of cloned) { if (position <= node.length) return [node, position]; position -= node.length; }
         return [cloned[cloned.length - 1], cloned[cloned.length - 1].length];
       };
+      const locateStart = (position: number): [Text, number] => {
+        for (const node of cloned) { if (node.length > 0 && position < node.length) return [node, position]; position -= node.length; }
+        return [cloned[cloned.length - 1], cloned[cloned.length - 1].length];
+      };
       const [endNode, endOffset] = locate(group.end);
       const after = document.createRange(); after.selectNodeContents(element); after.setStart(endNode, endOffset); after.deleteContents();
-      const [startNode, startOffset] = locate(group.start);
-      const before = document.createRange(); before.selectNodeContents(element); before.setEnd(startNode, startOffset); before.deleteContents();
+      const [startNode, startOffset] = locateStart(group.start);
+      const before = document.createRange(); before.selectNodeContents(element);
+      let leadingGap: Node | null = null;
+      if (startOffset === 0) {
+        let cursor: Node | null = startNode;
+        while (cursor && cursor !== element) {
+          let prev: Node | null = cursor.previousSibling;
+          while (prev && prev.nodeType === 3 && !(prev as Text).data.length) prev = prev.previousSibling;
+          if (!prev) {
+            cursor = cursor.parentNode;
+            continue;
+          }
+          if (prev.nodeType === 1 && (prev as Element).getAttribute("data-print-run-around") === "gap") {
+            leadingGap = prev;
+            cursor = prev;
+            continue;
+          }
+          break;
+        }
+      }
+      if (leadingGap) before.setEndBefore(leadingGap);
+      else before.setEnd(startNode, startOffset);
+      before.deleteContents();
+      element.querySelectorAll('[data-print-run-around="skip"], [data-print-run-around="tail"]').forEach(node => node.remove());
       element.querySelectorAll("br").forEach(br => {
         const marker = document.createElement("span");
         marker.dataset.pdfPreservedBreak = "hard-break";
@@ -375,17 +407,22 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       });
       for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "text-align-last", "letter-spacing", "word-spacing", "text-decoration", "-webkit-text-stroke"]) element.style.setProperty(property, style.getPropertyValue(property));
       const box = lineBox(group);
-      let frame = { left: rect.left - origin.left, width: rect.width };
+      const colLeft = rect.left - origin.left + blockPadLeft;
+      const colRight = rect.right - origin.left - blockPadRight;
+      const colWidth = Math.max(1, colRight - colLeft);
+      let frameLeft = colLeft;
+      let frameRight = colRight;
       let besideFloat = false;
       for (const floatBox of wrapFloats) {
         if (group.baseline < floatBox.top - 1 || group.baseline > floatBox.bottom + 1) continue;
         besideFloat = true;
-        const next = floatBox.side === "right"
-          ? { left: rect.left - origin.left, width: floatBox.left - rect.left }
-          : { left: floatBox.right - origin.left, width: rect.right - floatBox.right };
-        if (next.width > 8 && next.width < frame.width - 8) frame = next;
+        if (floatBox.side === "right") frameRight = Math.min(frameRight, floatBox.left - origin.left);
+        else frameLeft = Math.max(frameLeft, floatBox.right - origin.left);
       }
-      if (besideFloat && frame.width >= rect.width - 8 && box.width > 1 && box.width < rect.width - 8) {
+      let frame = frameRight - frameLeft > 8
+        ? { left: frameLeft, width: frameRight - frameLeft }
+        : { left: colLeft, width: colWidth };
+      if (besideFloat && frame.width >= colWidth - 8 && box.width > 1 && box.width < colWidth - 8) {
         frame = { left: box.left - origin.left, width: box.width };
       }
       element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:pre;`;
@@ -403,7 +440,12 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       }
       element.style.textIndent = index === 0 ? style.textIndent : "0px";
       const fullJustify = style.textAlignLast === "justify" || element.getAttribute("data-text-align") === "justify-all";
-      if (style.textAlign === "justify" && (fullJustify || index < groups.length - 1)) element.style.textAlignLast = "justify";
+      if (element.querySelector("[data-print-run-around]")) {
+        element.style.textAlign = "start";
+        element.style.textAlignLast = "auto";
+      } else if (style.textAlign === "justify" && (fullJustify || index < groups.length - 1)) {
+        element.style.textAlignLast = "justify";
+      }
       const quote = block.closest("blockquote");
       if (quote) {
         const q = quote.getBoundingClientRect(), qs = getComputedStyle(quote);
@@ -475,12 +517,26 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
   document.head.append(measurement); return lines;
 }
 
+function pdfRunAroundExclusions(
+  runAround: { frames: readonly RunAroundBox[] } | undefined,
+  contentHeightPx: number,
+  topMarginPx: number,
+  leftMarginPx: number,
+): RunAroundRect[] {
+  if (!runAround?.frames.length) return [];
+  return filterPrintableFrames(runAround.frames).flatMap(frame => {
+    const box = runAroundContentExclusionPx(frame, contentHeightPx, topMarginPx, leftMarginPx);
+    return box ? [box] : [];
+  });
+}
+
 export async function paginatePdfInk(
   page: Page,
   widthMm: number,
   heightMm: number,
   leftMarginMm = 0,
   rightMarginMm = 0,
+  runAround?: { frames: readonly RunAroundBox[]; topMarginMm: number; direction?: "rtl" | "ltr" },
 ): Promise<{ lines: number; pages: number; stagingHeight: number; screenshots: number; measurementMs: number }> {
   await page.evaluate(()=>{(window as unknown as {qalamApplyTypographicPreferences?:()=>void}).qalamApplyTypographicPreferences?.();});
   const measurementStarted = Date.now();
@@ -539,6 +595,20 @@ export async function paginatePdfInk(
       }
     }
   }, { w: width, overscan: horizontalOverscan });
+  const exclusions = pdfRunAroundExclusions(runAround, height, mmToCssPx(runAround?.topMarginMm ?? 0), leftMarginPx);
+  if (exclusions.length) {
+    const program = runAroundBrowserProgram();
+    await page.evaluate(
+      new Function("exclusions", "direction", "options", `${program}\nreturn applyStoryRunAround(document.body, exclusions, direction, options);`) as (
+        exclusions: RunAroundRect[],
+        direction: "rtl" | "ltr",
+        options: { contentHeightPx: number },
+      ) => number,
+      exclusions,
+      runAround?.direction ?? "rtl",
+      { contentHeightPx: height },
+    );
+  }
   const lines = await page.evaluate(collectInkLines, PDF_MEASUREMENT_LIMITS), total = lines.at(-1)?.frameBottom ?? 0;
   const stageOffset = await page.$eval("[data-pdf-ink-stage]", element => Number((element as HTMLElement).dataset.pdfInkHorizontalOffset));
   // Non-finite numbers do not survive the browser's JSON result serialization.

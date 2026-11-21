@@ -2,7 +2,7 @@ import {collectTypographicPaint} from "./typographicPaint";
 import {tableFormatAlignedMargins} from "./tableFormatUnits";
 import {parseTypographicPreferences} from "./typographicPreferences";
 import { preservedSpaceHtml } from "./preservedSpaces";
-import { frameTextNode, renderPrintFrame } from "./printableFrames";
+import { filterPrintableFrames, frameTextNode, renderPrintFrame } from "./printableFrames";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 // Document Studio PDF HTML adapter — pure/sync.
 // Fonts and direction resolve through the central font registry.
@@ -592,7 +592,8 @@ export function buildPdfHtml(
   };
 
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");
-  const frameHtml = frames.map(frame => renderPrintFrame(frame, frame.kind === "text" ? convertInline(frameTextNode(frame).content, ctx, "rtl", false) : undefined)).join("");
+  const printableFrames = filterPrintableFrames(frames);
+  const frameHtml = printableFrames.map(frame => renderPrintFrame(frame, frame.kind === "text" ? convertInline(frameTextNode(frame).content, ctx, "rtl", false) : undefined)).join("");
 
   if (ctx.fontsUsed.size === 0) {
     const effective = resolveEffectivePdfFont(null, dir, available, typography);

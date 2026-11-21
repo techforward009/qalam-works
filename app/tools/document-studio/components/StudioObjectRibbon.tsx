@@ -36,6 +36,8 @@ import { isPictureBox, isPictureDrawTool, pictureKindForTool, type FrameKind, ty
 import type { StudioToolId } from "./InPageToolPalette";
 import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import { contextMenuPosition } from "../utils/textContextMenu";
+import { resolvedRunAround } from "../utils/runAround";
+import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
 
 export type PropertyToolbarMode = "picture-tool" | "picture" | "object" | "none";
 
@@ -433,16 +435,19 @@ function BorderInsideIcon() {
   );
 }
 
-function RunAroundIcon() {
+function RunAroundIcon({ disabled = false }: { disabled?: boolean }) {
+  const stroke = disabled ? "#787878" : "#111";
+  const boxFill = disabled ? "#bbb" : "#888";
+  const boxStroke = disabled ? "#787878" : "#333";
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <line x1="1.5" y1="2.5" x2="12.5" y2="2.5" stroke="#555" strokeWidth="1" />
-      <line x1="1.5" y1="5.5" x2="4" y2="5.5" stroke="#555" strokeWidth="1" />
-      <line x1="10" y1="5.5" x2="12.5" y2="5.5" stroke="#555" strokeWidth="1" />
-      <rect x="4.8" y="4.5" width="4.4" height="4.4" fill="#999" stroke="#555" strokeWidth="0.9" />
-      <line x1="1.5" y1="8.5" x2="4" y2="8.5" stroke="#555" strokeWidth="1" />
-      <line x1="10" y1="8.5" x2="12.5" y2="8.5" stroke="#555" strokeWidth="1" />
-      <line x1="1.5" y1="11.5" x2="12.5" y2="11.5" stroke="#555" strokeWidth="1" />
+      <line x1="1.5" y1="2.5" x2="12.5" y2="2.5" stroke={stroke} strokeWidth="1" />
+      <line x1="1.5" y1="5.5" x2="4" y2="5.5" stroke={stroke} strokeWidth="1" />
+      <line x1="10" y1="5.5" x2="12.5" y2="5.5" stroke={stroke} strokeWidth="1" />
+      <rect x="4.8" y="4.5" width="4.4" height="4.4" fill={boxFill} stroke={boxStroke} strokeWidth="0.9" />
+      <line x1="1.5" y1="8.5" x2="4" y2="8.5" stroke={stroke} strokeWidth="1" />
+      <line x1="10" y1="8.5" x2="12.5" y2="8.5" stroke={stroke} strokeWidth="1" />
+      <line x1="1.5" y1="11.5" x2="12.5" y2="11.5" stroke={stroke} strokeWidth="1" />
     </svg>
   );
 }
@@ -1405,6 +1410,33 @@ function ObjectPropertyRibbon({
   const shapeGroupEnabled = editable && (allPictureFamily || allDrawingShapes);
   const sharedVariant = resolveShared<ShapeVariant | null>(selectedFrames, (f) => shapeVariantOf(f.kind));
   const roundnessEnabled = editable && selectedFrames.some((f) => shapeVariantOf(f.kind) === "round-rect");
+  const eligibleRunAroundFrames = creationMode ? [] : selectedFrames.filter((f) => isRectangularRunAroundBox(f));
+  const editableRunAroundFrames = creationMode ? [] : unlockedFrames.filter((f) => isRectangularRunAroundBox(f));
+  const runAroundEnabled = !creationMode && editableRunAroundFrames.length > 0;
+  const sharedRunAround = eligibleRunAroundFrames.length > 0
+    ? resolveShared(eligibleRunAroundFrames, resolvedRunAround)
+    : ({ mixed: false, value: false } as const);
+  const editableSharedRunAround = editableRunAroundFrames.length > 0
+    ? resolveShared(editableRunAroundFrames, resolvedRunAround)
+    : ({ mixed: false, value: false } as const);
+  const runAroundActive = eligibleRunAroundFrames.length > 0 && !sharedRunAround.mixed && sharedRunAround.value;
+  const runAroundPressed: boolean | "mixed" = eligibleRunAroundFrames.length === 0
+    ? false
+    : sharedRunAround.mixed
+      ? "mixed"
+      : sharedRunAround.value;
+  const runAroundNextValue = editableSharedRunAround.mixed ? true : !editableSharedRunAround.value;
+  const runAroundTitle = creationMode
+    ? "Select a rectangular object to toggle Run Around"
+    : runAroundEnabled
+      ? sharedRunAround.mixed
+        ? `Run Around (Mixed — click to turn ${runAroundNextValue ? "on" : "off"} for unlocked rectangular objects; Format → Runaround… for clearances)`
+        : runAroundActive
+          ? "Run Around: On (Format → Runaround… for clearances)"
+          : "Run Around: Off (Format → Runaround… for clearances)"
+      : allLocked || eligibleRunAroundFrames.length > 0
+        ? "Locked objects cannot be modified"
+        : "Run Around is only supported on unrotated rectangular objects";
 
   const commitGeometry = (key: "xMm" | "yMm" | "wMm" | "hMm", raw: string): boolean => {
     const parsed = parseGeometryLength(raw);
@@ -1596,11 +1628,17 @@ function ObjectPropertyRibbon({
           <button
             type="button"
             aria-label="Object Run Around"
+            title={runAroundTitle}
             data-ribbon-field="run-around"
-            {...unsupported}
-            style={ribbonBevelButton(false, true)}
+            data-ribbon-mixed={eligibleRunAroundFrames.length > 0 && sharedRunAround.mixed ? "true" : undefined}
+            aria-pressed={runAroundPressed}
+            disabled={!runAroundEnabled}
+            onClick={() => {
+              applyToSelected((target) => (isRectangularRunAroundBox(target) ? { runAround: runAroundNextValue } : null));
+            }}
+            style={ribbonBevelButton(runAroundActive, !runAroundEnabled)}
           >
-            <RunAroundIcon />
+            <RunAroundIcon disabled={!runAroundEnabled} />
           </button>
           <button
             type="button"
@@ -1990,6 +2028,13 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
   const [borderPosition, setBorderPosition] = useState<"inside" | "outside" | undefined>(frame.borderPosition);
   const [draft, setDraft] = useState<Record<GeometryKey, string>>(() => Object.fromEntries(fields.map(([key]) => [key, formatGeometryLength(frame[key])])) as Record<GeometryKey, string>);
   const preview = { ...frame, ...patch };
+  const parsedPreviewAngle1 = parseDegrees(angle1);
+  const effectivePreviewAngle1 = Number.isFinite(parsedPreviewAngle1) ? parsedPreviewAngle1 : (frame.angle1Deg ?? 0);
+  const runAroundSupported = isRectangularRunAroundBox({
+    kind: preview.kind,
+    angle1Deg: effectivePreviewAngle1,
+  });
+  const runAroundChecked = runAroundSupported && (patch.runAround ?? frame.runAround ?? false);
   useEffect(() => { firstField.current?.focus({ preventScroll: true }); return () => returnFocus.current?.focus({ preventScroll: true }); }, [returnFocus]);
   useEffect(() => { const escape = (event: KeyboardEvent) => { if (event.defaultPrevented) return; if (event.key === "Escape") onCancel(); }; document.addEventListener("keydown", escape); return () => document.removeEventListener("keydown", escape); }, [onCancel]);
   return createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 130, display: "grid", placeItems: "center", background: "rgba(0,0,0,.25)", padding: 12 }}><form ref={node => { drag.dialogRef.current = node; formRef.current = node; }} role="dialog" aria-modal="true" aria-label="Modify Object" data-studio-format-object-dialog="true" data-inpage2009-dialog="true" data-modify-object-window="true" dir="ltr" onSubmit={e => { e.preventDefault(); const current = Object.fromEntries(fields.map(([key]) => [key, parseGeometryLength(draft[key])] )) as ObjectGeometryPatch; const style: ObjectGeometryPatch = {};
@@ -2014,13 +2059,24 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       if (patch.locked !== undefined && patch.locked !== (frame.locked ?? false)) current.locked = patch.locked;
       if (patch.dontPrint !== undefined && patch.dontPrint !== (frame.dontPrint ?? false)) current.dontPrint = patch.dontPrint;
       if (patch.template !== undefined && patch.template !== (frame.template ?? false)) current.template = patch.template;
+      const submitSupported = isRectangularRunAroundBox({
+        kind: patch.kind ?? frame.kind,
+        angle1Deg: current.angle1Deg ?? frame.angle1Deg,
+      });
+      if (submitSupported) {
+        if (patch.runAround !== undefined && patch.runAround !== (frame.runAround ?? false)) {
+          current.runAround = patch.runAround;
+        }
+      } else if (frame.runAround === true) {
+        current.runAround = false;
+      }
       const parsedWidth = parseBorderWidth(borderWidth);
       if (Number.isFinite(parsedWidth) && Math.abs(parsedWidth - (frame.borderWidthMm ?? 25.4 / 96)) > 1e-6) style.borderWidthMm = parsedWidth;
       if ((normalizeSafeHex(borderColor) ?? borderColor).toLowerCase() !== (normalizeSafeHex(frame.borderColor ?? "#000000") ?? "#000000").toLowerCase()) style.borderColor = borderColor;
       if ((normalizeSafeHex(backgroundColor) ?? backgroundColor).toLowerCase() !== (normalizeSafeHex(frame.backgroundColor ?? "") ?? (frame.backgroundColor ?? "")).toLowerCase()) style.backgroundColor = backgroundColor;
       if (borderPattern !== effectiveBorderPattern(frame) || frame.borderPattern !== undefined) style.borderPattern = borderPattern;
       if (frame.backgroundHatch !== undefined) style.backgroundHatch = frame.backgroundHatch;
-      const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
+      const selection = { ...patch }; delete selection.locked; delete selection.dontPrint; delete selection.template; delete selection.runAround; onApply({ ...current, ...selection, ...style }); }} style={{ ...drag.style, position: "relative", boxSizing: "border-box", width: 352, height: 322, flex: "none", padding: 0, overflow: "hidden", border: "1px solid #252c33", background: "#b8dbfd", color: "#000", font: '11px QalamUITahoma, Tahoma, "Segoe UI", Arial, sans-serif', boxShadow: "0 2px 8px #555" }}>
     <div {...drag.handleProps} style={{ ...drag.handleProps.style, position: "absolute", left: 0, top: 0, right: 0, height: 29, boxSizing: "border-box", paddingLeft: 7, display: "flex", alignItems: "center", fontWeight: "normal", fontSize: 11, borderBottom: "1px solid #5d6c7a", background: "linear-gradient(#e9f5ff,#c6e2fc 70%,#b8dbfd)" }}>Modify Object</div>
     <button type="button" aria-label="Close" onClick={onCancel} style={{ position: "absolute", right: 3, top: 2, width: 43, height: 18, padding: 0, border: "1px solid #9e382d", borderRadius: "0 0 4px 4px", color: "white", font: 'bold 13px QalamUIArial, Arial, sans-serif', lineHeight: "15px", textShadow: "0 1px #6b1915", background: "linear-gradient(#f7a08f,#ce392c 55%,#a51d18)", zIndex: 2 }}>×</button>
     <div style={{ position: "absolute", left: 7, top: 29, width: 336, height: 284, boxSizing: "border-box", border: "1px solid #5d6c7a", background: "#f0f0f0" }}>
@@ -2049,7 +2105,25 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       <button type="submit" style={{ ...classicButton, position: "absolute", left: 257, top: 7, width: 75, height: 22, outline: "1px solid #59636b", outlineOffset: 1 }}>OK</button>
       <button type="button" onClick={onCancel} style={{ ...classicButton, position: "absolute", left: 257, top: 34, width: 75, height: 22 }}>Cancel</button>
       <button type="button" onClick={() => setHelpOpen(true)} style={{ ...classicButton, position: "absolute", left: 257, top: 60, width: 75, height: 22 }}>Help</button>
-      <label title={unsupported.title} aria-description={unsupported["aria-description"]} style={{ position: "absolute", left: 250, top: 213, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input type="checkbox" {...unsupported} checked={false} readOnly style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(false)}Run Around</label>
+      <label
+        title={runAroundSupported ? undefined : "Run Around is only supported for unrotated rectangular objects"}
+        style={{ position: "absolute", left: 250, top: 213, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap", color: runAroundSupported ? "#000" : "#808080", opacity: runAroundSupported ? 1 : 0.75 }}
+      >
+        <input
+          aria-label="Run Around"
+          type="checkbox"
+          checked={runAroundChecked}
+          disabled={!runAroundSupported}
+          readOnly={!runAroundSupported}
+          onChange={(e) => {
+            if (!runAroundSupported) return;
+            setPatch((v) => ({ ...v, runAround: e.target.checked }));
+          }}
+          style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
+        />
+        {checkbox(runAroundChecked)}
+        Run Around
+      </label>
       <label style={{ position: "absolute", left: 250, top: 230, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input aria-label="Template" type="checkbox" checked={patch.template ?? frame.template ?? false} onChange={e => setPatch(v => ({ ...v, template: e.target.checked }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(patch.template ?? frame.template ?? false)}Template</label>
       <label style={{ position: "absolute", left: 250, top: 246, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input aria-label="Lock" type="checkbox" checked={patch.locked ?? frame.locked ?? false} onChange={e => setPatch(v => ({ ...v, locked: e.target.checked }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(patch.locked ?? frame.locked ?? false)}Lock</label>
       <label style={{ position: "absolute", left: 250, top: 262, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}><input aria-label="Don't Print" type="checkbox" checked={patch.dontPrint ?? frame.dontPrint ?? false} onChange={e => setPatch(v => ({ ...v, dontPrint: e.target.checked }))} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />{checkbox(patch.dontPrint ?? frame.dontPrint ?? false)}Don't Print</label>

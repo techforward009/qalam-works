@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
+import { resolveMovedFramePlacement, resolveResizedFrameBounds, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
+import { facingSlot, type PageProjection } from "../app/tools/document-studio/utils/facingPages";
 import {
   OBJECT_FRAME_HISTORY_LIMIT,
   beginObjectGesture,
@@ -78,5 +79,239 @@ describe("object frame history", () => {
       frames = next;
     }
     expect(capped.past).toHaveLength(OBJECT_FRAME_HISTORY_LIMIT);
+  });
+
+  it("records and restores Run Around flags, four-sided clearances, and move/resize geometry", () => {
+    const base = frame("pic-1", { xMm: 20, yMm: 30, wMm: 45, hMm: 35, runAround: false });
+    const enabled = frame("pic-1", {
+      xMm: 20,
+      yMm: 30,
+      wMm: 45,
+      hMm: 35,
+      runAround: true,
+      runAroundLeftMm: 4,
+      runAroundRightMm: 6,
+      runAroundTopMm: 2,
+      runAroundBottomMm: 5,
+    });
+    const moved = frame("pic-1", {
+      ...enabled,
+      xMm: 52,
+      yMm: 64,
+      wMm: 60,
+      hMm: 42,
+    });
+
+    let history = recordObjectFrames(createObjectFrameHistory(), [base], [enabled]);
+    history = recordObjectFrames(history, [enabled], [moved]);
+
+    const afterFirstUndo = undoObjectFrames(history, [moved])!;
+    expect(afterFirstUndo.frames[0]).toMatchObject({
+      xMm: 20,
+      yMm: 30,
+      wMm: 45,
+      hMm: 35,
+      runAround: true,
+      runAroundLeftMm: 4,
+      runAroundRightMm: 6,
+      runAroundTopMm: 2,
+      runAroundBottomMm: 5,
+    });
+
+    const afterSecondUndo = undoObjectFrames(afterFirstUndo.state, afterFirstUndo.frames)!;
+    expect(afterSecondUndo.frames[0]).toMatchObject({
+      xMm: 20,
+      yMm: 30,
+      runAround: false,
+    });
+
+    const afterRedo = redoObjectFrames(afterSecondUndo.state, afterSecondUndo.frames)!;
+    expect(afterRedo.frames[0]).toMatchObject({
+      runAround: true,
+      runAroundLeftMm: 4,
+      runAroundRightMm: 6,
+    });
+  });
+
+  it("updates page and page-local yMm across page boundaries without coordinate drift", () => {
+    const pageHeightPx = 1122.52;
+    const gapPx = 12;
+    const stride = pageHeightPx + gapPx;
+    const start = frame("cross", { page: 1, xMm: 42, yMm: 35, wMm: 30, hMm: 20, runAround: true });
+
+    const movedToPage2 = resolveMovedFramePlacement(start, 0, stride, {
+      pageCount: 2,
+      pageHeightPx,
+      gapPx,
+    });
+    expect(movedToPage2.page).toBe(2);
+    expect(movedToPage2.xMm).toBeCloseTo(42, 6);
+    expect(movedToPage2.yMm).toBeCloseTo(35, 6);
+
+    const movedBackToPage1 = resolveMovedFramePlacement(
+      { ...start, ...movedToPage2 },
+      0,
+      -stride,
+      { pageCount: 2, pageHeightPx, gapPx },
+    );
+    expect(movedBackToPage1.page).toBe(1);
+    expect(movedBackToPage1.xMm).toBeCloseTo(42, 6);
+    expect(movedBackToPage1.yMm).toBeCloseTo(35, 6);
+  });
+
+  it("updates page and local coordinates in Facing Pages mode without drift", () => {
+    const projection: PageProjection = { width: 794, height: 1123, gap: 12, count: 3 };
+    const start = frame("facing-cross", { page: 1, xMm: 50, yMm: 40, wMm: 30, hMm: 20, runAround: true });
+    const slot1 = facingSlot(0, projection);
+    const slot2 = facingSlot(1, projection);
+    const dxPx = slot2.x - slot1.x;
+    const dyPx = slot2.y - slot1.y;
+
+    const toPage2 = resolveMovedFramePlacement(start, dxPx, dyPx, {
+      pageCount: 3,
+      pageHeightPx: projection.height,
+      gapPx: projection.gap,
+      projection,
+    });
+    expect(toPage2.page).toBe(2);
+    expect(toPage2.xMm).toBeCloseTo(50, 6);
+    expect(toPage2.yMm).toBeCloseTo(40, 6);
+
+    const backToPage1 = resolveMovedFramePlacement(
+      { ...start, ...toPage2 },
+      -dxPx,
+      -dyPx,
+      { pageCount: 3, pageHeightPx: projection.height, gapPx: projection.gap, projection },
+    );
+    expect(backToPage1.page).toBe(1);
+    expect(backToPage1.xMm).toBeCloseTo(50, 6);
+    expect(backToPage1.yMm).toBeCloseTo(40, 6);
+  });
+
+  it("preserves page-2+ frames when moved slightly in Pageless mode (pageCount === 1)", () => {
+    const start = frame("pageless-p2", { page: 2, xMm: 30, yMm: 25, wMm: 30, hMm: 20 });
+    const moved = resolveMovedFramePlacement(start, 15, 10, {
+      pageCount: 1,
+      pageHeightPx: 1122.52,
+      gapPx: 12,
+    });
+    expect(moved.page).toBe(2);
+    expect(moved.xMm).toBeGreaterThan(30);
+    expect(moved.yMm).toBeGreaterThan(25);
+  });
+
+  it("records a single history entry for cross-page Run Around drag and supports Undo/Redo", () => {
+    const pageHeightPx = 1122.52;
+    const gapPx = 12;
+    const stride = pageHeightPx + gapPx;
+    const start = [frame("ra-move", { page: 1, xMm: 50, yMm: 60, runAround: true })];
+
+    let history = beginObjectGesture(createObjectFrameHistory(), start);
+    const stepMid = [{
+      ...start[0],
+      ...resolveMovedFramePlacement(start[0], 0, stride / 2, { pageCount: 2, pageHeightPx, gapPx }),
+    }];
+    expect(recordObjectFrames(history, start, stepMid)).toBe(history);
+
+    const end = [{
+      ...start[0],
+      ...resolveMovedFramePlacement(start[0], 0, stride, { pageCount: 2, pageHeightPx, gapPx }),
+    }];
+    expect(end[0].page).toBe(2);
+    expect(end[0].yMm).toBeCloseTo(60, 6);
+    expect(recordObjectFrames(history, stepMid, end)).toBe(history);
+
+    history = endObjectGesture(history, end);
+    expect(history.past).toHaveLength(1);
+
+    const undone = undoObjectFrames(history, end)!;
+    expect(undone.frames[0]).toMatchObject({ id: "ra-move", page: 1, runAround: true });
+    expect(undone.frames[0].yMm).toBeCloseTo(60, 6);
+
+    const redone = redoObjectFrames(undone.state, undone.frames)!;
+    expect(redone.frames[0]).toMatchObject({ id: "ra-move", page: 2, runAround: true });
+    expect(redone.frames[0].yMm).toBeCloseTo(60, 6);
+  });
+
+  it("clamps south/north resizes to owning physical page and handles Facing Pages without negative coordinates (H3)", () => {
+    const pxPerMm = 96 / 25.4;
+    const pageWidthMm = 210;
+    const pageHeightMm = 297;
+    const pageWidthPx = pageWidthMm * pxPerMm;
+    const pageHeightPx = pageHeightMm * pxPerMm;
+
+    // 1. Single Pages south-handle dragged past Page 1 bottom stays on Page 1 and clamps hMm to Page 1 bottom.
+    const p1 = frame("p1-tall", { page: 1, xMm: 20, yMm: 240, wMm: 40, hMm: 30 });
+    const clampedSouth = resolveResizedFrameBounds(
+      p1,
+      "s",
+      { x: 50 * pxPerMm, y: 420 * pxPerMm },
+      { startSlot: { x: 0, y: 0 }, pageWidthPx, pageHeightPx },
+    )!;
+    expect(clampedSouth.page).toBe(1);
+    expect(clampedSouth.yMm).toBe(240);
+    expect(clampedSouth.yMm + clampedSouth.hMm).toBeCloseTo(pageHeightMm, 4);
+
+    // 2. Single Pages north-handle on Page 2 dragged above Page 2 top stays on Page 2 and clamps yMm >= 0.
+    const stride = pageHeightPx + 12;
+    const p2 = frame("p2-north", { page: 2, xMm: 25, yMm: 20, wMm: 40, hMm: 35, imageSrc: "data:image/png;base64,a", imageXMm: 4, imageYMm: 6 });
+    const clampedNorth = resolveResizedFrameBounds(
+      p2,
+      "n",
+      { x: 35 * pxPerMm, y: stride - 140 },
+      { startSlot: { x: 0, y: stride }, pageWidthPx, pageHeightPx },
+    )!;
+    expect(clampedNorth.page).toBe(2);
+    expect(clampedNorth.yMm).toBeCloseTo(0, 6);
+    expect(clampedNorth.hMm).toBeCloseTo(55, 4);
+    expect(clampedNorth.imageYMm).toBeCloseTo(26, 4);
+
+    // 3. Rapid pointer movement across nw handle: returning to start point yields exact original imageYMm without drift.
+    const rapidMid = resolveResizedFrameBounds(
+      p2,
+      "nw",
+      { x: 15 * pxPerMm, y: stride + 8 * pxPerMm },
+      { startSlot: { x: 0, y: stride }, pageWidthPx, pageHeightPx },
+    )!;
+    const rapidBack = resolveResizedFrameBounds(
+      p2,
+      "nw",
+      { x: 25 * pxPerMm, y: stride + 20 * pxPerMm },
+      { startSlot: { x: 0, y: stride }, pageWidthPx, pageHeightPx },
+    )!;
+    expect(rapidMid.imageXMm).toBeCloseTo(14, 4);
+    expect(rapidMid.imageYMm).toBeCloseTo(18, 4);
+    expect(rapidBack.xMm).toBeCloseTo(25, 4);
+    expect(rapidBack.yMm).toBeCloseTo(20, 4);
+    expect(rapidBack.imageXMm).toBeCloseTo(4, 4);
+    expect(rapidBack.imageYMm).toBeCloseTo(6, 4);
+
+    // 4. Facing Pages south & west across spread spine keep owning page and clamp to page bounds.
+    const projection: PageProjection = { width: pageWidthPx, height: pageHeightPx, gap: 12, count: 3 };
+    const slot2 = facingSlot(1, projection); // Page 2 in spread
+    const p2Facing = frame("p2-facing", { page: 2, xMm: 20, yMm: 30, wMm: 40, hMm: 30 });
+    const crossSpineWest = resolveResizedFrameBounds(
+      p2Facing,
+      "w",
+      { x: slot2.x - 160, y: slot2.y + 40 * pxPerMm },
+      { startSlot: slot2, pageWidthPx, pageHeightPx },
+    )!;
+    expect(crossSpineWest.page).toBe(2);
+    expect(crossSpineWest.xMm).toBeCloseTo(0, 6);
+    expect(crossSpineWest.wMm).toBeCloseTo(60, 4);
+
+    // 5. Facing Pages singleLine resize applies startSlot.x cleanly.
+    const slot1 = facingSlot(0, projection);
+    const titleFacing = frame("title-facing", { page: 1, singleLine: true, kind: "text", xMm: 40, yMm: 25, wMm: 60, hMm: 10 });
+    const titleResized = resolveResizedFrameBounds(
+      titleFacing,
+      "e",
+      { x: slot1.x + 130 * pxPerMm, y: slot1.y + 25 * pxPerMm },
+      { startSlot: slot1, pageWidthPx, pageHeightPx },
+    )!;
+    expect(titleResized.page).toBe(1);
+    expect(titleResized.xMm).toBeCloseTo(40, 6);
+    expect(titleResized.wMm).toBeCloseTo(90, 4);
+    expect(titleResized.hMm).toBe(10);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validatePrintFrames, renderPrintFrame, framePrintTopMm, printFramePageMarkup } from '../app/tools/document-studio/utils/printableFrames';
+import type { StudioFrame } from '../app/tools/document-studio/components/StudioObjectLayer';
+import { filterPrintableFrames, validatePrintFrames, renderPrintFrame, framePrintTopMm, printFramePageMarkup } from '../app/tools/document-studio/utils/printableFrames';
 import { defaultDocumentSettings } from '../app/tools/document-studio/utils/documentSettings';
 const base = { id: 'frame', page: 2, xMm: 20, yMm: 30, wMm: 40, hMm: 25, flip: false, text: '' };
 describe('validated printable drawing objects', () => {
@@ -49,10 +50,14 @@ describe("picture appearance in printable frames", () => {
     expect(legacy).toContain('stroke="#000"');
     expect(legacy).toContain('stroke-width="0.2645833333"');
     expect(legacy).not.toContain('fill="#FFFFFF"');
-    const styled = { ...base, kind: "picture-rect" as const, borderColor: "#123456", borderWidthMm: 1, borderPattern: "none" as const, backgroundColor: "#FFFFFF", backgroundHatch: "none" as const };
-    expect(renderPrintFrame(styled)).toContain('stroke="#123456" stroke-width="1"');
-    expect(renderPrintFrame(styled)).toContain('fill="#FFFFFF"');
-    expect(validatePrintFrames([styled])[0]).toMatchObject({ borderColor: "#123456", borderWidthMm: 1, backgroundColor: "#FFFFFF", borderPattern: "none", backgroundHatch: "none" });
+    const solid = { ...base, kind: "picture-rect" as const, borderColor: "#123456", borderWidthMm: 1, borderPattern: "solid" as const, backgroundColor: "#FFFFFF", backgroundHatch: "none" as const };
+    expect(renderPrintFrame(solid)).toContain('stroke="#123456" stroke-width="1"');
+    expect(renderPrintFrame(solid)).toContain('fill="#FFFFFF"');
+    expect(validatePrintFrames([solid])[0]).toMatchObject({ borderColor: "#123456", borderWidthMm: 1, backgroundColor: "#FFFFFF", borderPattern: "solid", backgroundHatch: "none" });
+    const noBorder = { ...base, kind: "picture-rect" as const, borderColor: "#123456", borderWidthMm: 1, borderPattern: "none" as const, backgroundColor: "#FFFFFF", backgroundHatch: "none" as const };
+    expect(renderPrintFrame(noBorder)).toContain('fill="#FFFFFF"');
+    expect(renderPrintFrame(noBorder)).not.toContain('stroke="#123456"');
+    expect(validatePrintFrames([noBorder])[0]).toMatchObject({ borderColor: "#123456", borderWidthMm: 1, backgroundColor: "#FFFFFF", borderPattern: "none", backgroundHatch: "none" });
     expect(renderPrintFrame({ ...base, kind: "picture-rect" as const, backgroundColor: "#FFFFFF", imageSrc: undefined })).toContain('fill="#FFFFFF"');
   });
 
@@ -122,4 +127,11 @@ it("persists and prints single-line text without wrapping while retaining unknow
   expect(renderPrintFrame(frame)).toContain('data-print-frame-single-line="true"');
   expect(renderPrintFrame(frame)).toContain("white-space:nowrap;");
   expect(renderPrintFrame({ ...frame, singleLine: false })).toContain("white-space:pre-wrap;");
+});
+
+it("filterPrintableFrames omits dontPrint: true while retaining dontPrint: false and undefined", () => {
+  const hidden: StudioFrame = { ...base, id: "hidden", kind: "picture-rect", dontPrint: true, runAround: true };
+  const explicit: StudioFrame = { ...base, id: "shown", kind: "picture-rect", dontPrint: false, runAround: true };
+  const omitted: StudioFrame = { ...base, id: "default", kind: "rect", runAround: true };
+  expect(filterPrintableFrames([hidden, explicit, omitted]).map((f) => f.id)).toEqual(["shown", "default"]);
 });

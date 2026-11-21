@@ -31,6 +31,7 @@ import { PAGE_STACK_GAP_PX } from "../utils/documentView";
 export const QALAM_PAGINATION_PLUGIN = "qalamPagination";
 export const QALAM_PAGINATION_GEOMETRY_META = "qalamPaginationGeometry";
 export const QALAM_PAGINATION_COUNT_META = "qalamPaginationPageCount";
+export const QALAM_PAGINATION_REMEASURE_META = "qalamPaginationRemeasure";
 export const QALAM_PAGINATION_ATTR = "data-qalam-pagination";
 export const QALAM_PAGINATION_CLASS = "qalam-pagination";
 export const QALAM_PAGE_UNIT_ATTR = "data-studio-page-sheet";
@@ -56,6 +57,7 @@ export type QalamPaginationPluginState = {
   pageCount: number;
   decorations: DecorationSet;
   oversized: number[];
+  remeasureTick: number;
 };
 
 const DISABLED: QalamPaginationGeometry = {
@@ -85,6 +87,17 @@ export function pageStackHeightPx(pageCount: number, pageHeightPx: number, gapPx
 export function extraPagesFromOverflow(overflowPx: number, contentAreaPx: number): number {
   if (!(overflowPx > 0) || !(contentAreaPx > 0)) return 0;
   return Math.ceil(overflowPx / contentAreaPx);
+}
+
+export function effectiveMinimumPageCount(
+  minimumPages: number,
+  frames: readonly { page: number }[] = [],
+): number {
+  let floor = Math.max(1, Math.floor(Number.isFinite(minimumPages) ? minimumPages : 1) || 1);
+  for (const frame of frames) {
+    if (Number.isInteger(frame.page) && frame.page > floor) floor = frame.page;
+  }
+  return Math.min(MAX_PAGES, floor);
 }
 
 export function paginationGeometryFromLayout(
@@ -390,7 +403,8 @@ function measureLinearPageCount(dom: HTMLElement, geometry: QalamPaginationGeome
   while (count > 1) {
     const boundary = breakers[count - 2];
     const top = offsetTopIn(boundary, dom) ?? boundary.offsetTop;
-    if (top > contentBottom + 8) count -= 1;
+    const sheetEndLimit = top + Math.max(0, boundary.offsetHeight);
+    if (contentBottom <= sheetEndLimit - 2) count -= 1;
     else break;
   }
   return atLeast(count);
@@ -415,7 +429,7 @@ function createPaginationPlugin() {
   return new Plugin<QalamPaginationPluginState>({
     key: qalamPaginationKey,
     state: {
-      init: () => ({ geometry: DISABLED, pageCount: 1, decorations: DecorationSet.empty, oversized:[] }),
+      init: () => ({ geometry: DISABLED, pageCount: 1, decorations: DecorationSet.empty, oversized: [], remeasureTick: 0 }),
       apply(tr, prev) {
         const nextGeometry = (tr.getMeta(QALAM_PAGINATION_GEOMETRY_META) as QalamPaginationGeometry | undefined) ?? prev.geometry;
         const countMeta = tr.getMeta(QALAM_PAGINATION_COUNT_META);
@@ -426,10 +440,11 @@ function createPaginationPlugin() {
         const oversizedMeta=tr.getMeta('qalamOversizedLines') as number[]|undefined;
         const oversized=oversizedMeta ?? prev.oversized.flatMap(pos=>{const mapped=tr.mapping.mapResult(pos);return mapped.deleted?[]:[mapped.pos];});
         const oversizedChanged=oversized.length!==prev.oversized.length || oversized.some((pos,index)=>pos!==prev.oversized[index]);
+        const remeasureTick = tr.getMeta(QALAM_PAGINATION_REMEASURE_META) ? prev.remeasureTick + 1 : prev.remeasureTick;
         const geoChanged = !geometryEqual(nextGeometry, prev.geometry);
         const countChanged = nextCount !== prev.pageCount;
         if (!nextGeometry.enabled) {
-          return { geometry: nextGeometry, pageCount: 1, decorations: DecorationSet.empty, oversized:[] };
+          return { geometry: nextGeometry, pageCount: 1, decorations: DecorationSet.empty, oversized: [], remeasureTick };
         }
         if (geoChanged || countChanged || oversizedChanged) {
           return {
@@ -437,6 +452,7 @@ function createPaginationPlugin() {
             pageCount: nextCount,
             decorations: decorationSet(tr.doc, nextCount, oversized),
             oversized,
+            remeasureTick,
           };
         }
         return {
@@ -444,6 +460,7 @@ function createPaginationPlugin() {
           pageCount: nextCount,
           decorations: prev.decorations.map(tr.mapping, tr.doc),
           oversized,
+          remeasureTick,
         };
       },
     },
@@ -510,7 +527,7 @@ function createPaginationPlugin() {
           const prev = qalamPaginationKey.getState(prevState);
           if (!st || !prev) return;
           const geoChanged = !geometryEqual(st.geometry, prev.geometry);
-          if (view.state.doc !== prevState.doc || geoChanged || st.pageCount !== prev.pageCount) {
+          if (view.state.doc !== prevState.doc || geoChanged || st.pageCount !== prev.pageCount || st.remeasureTick !== prev.remeasureTick) {
             syncDom();
             schedule();
           }

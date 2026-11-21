@@ -70,6 +70,13 @@ export type StudioFrame = {
   borderPattern?: BorderPatternId;
   backgroundColor?: string;
   backgroundHatch?: "none";
+  /** Story text flows around this box. Absent means off. */
+  runAround?: boolean;
+  /** Clearance outside the box when runAround is on. Absent uses 0.71 / 0.71 / 0.35 / 0.35 mm. */
+  runAroundLeftMm?: number;
+  runAroundRightMm?: number;
+  runAroundTopMm?: number;
+  runAroundBottomMm?: number;
 };
 
 export function isPictureBox(kind: string): boolean {
@@ -159,6 +166,124 @@ function releaseCapturedPointer(node: EventTarget | null, pointerId: number) {
 const PX_PER_MM = 96 / 25.4;
 const PICTURE_CORNER_RX_PX = 6.35 * PX_PER_MM;
 const pictureCornerRadiusPx = (frame: StudioFrame) => (frame.roundnessMm ?? 6.35) * PX_PER_MM;
+
+/** Reassign destination page and page-local yMm when a move crosses a page boundary. */
+export function resolveMovedFramePlacement(
+  original: Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm">,
+  dxPx: number,
+  dyPx: number,
+  options: {
+    pageCount: number;
+    pageHeightPx: number;
+    gapPx: number;
+    projection?: PageProjection;
+  },
+): { page: number; xMm: number; yMm: number } {
+  const { pageCount, pageHeightPx, gapPx, projection } = options;
+  const maxPage = Math.max(1, pageCount, original.page);
+  if (projection) {
+    const origSlot = facingSlot(original.page - 1, projection);
+    const projX = origSlot.x + original.xMm * PX_PER_MM + dxPx;
+    const projY = origSlot.y + original.yMm * PX_PER_MM + dyPx;
+    const centerX = projX + (original.wMm * PX_PER_MM) / 2;
+    const centerY = projY + (original.hMm * PX_PER_MM) / 2;
+    const mapped = unprojectPoint(centerX, centerY, { ...projection, count: Math.max(maxPage, projection.count) });
+    const page = Math.min(Math.max(maxPage, projection.count), Math.max(1, mapped.page + 1));
+    const destSlot = facingSlot(page - 1, projection);
+    return {
+      page,
+      xMm: (projX - destSlot.x) / PX_PER_MM,
+      yMm: (projY - destSlot.y) / PX_PER_MM,
+    };
+  }
+  const stride = pageHeightPx + gapPx;
+  if (!(stride > 0)) {
+    return {
+      page: original.page,
+      xMm: original.xMm + dxPx / PX_PER_MM,
+      yMm: original.yMm + dyPx / PX_PER_MM,
+    };
+  }
+  const nextLeftPx = original.xMm * PX_PER_MM + dxPx;
+  const nextTopPx = (original.page - 1) * stride + original.yMm * PX_PER_MM + dyPx;
+  const centerY = nextTopPx + (original.hMm * PX_PER_MM) / 2;
+  const page = Math.min(maxPage, Math.max(1, Math.floor((centerY + gapPx / 2) / stride) + 1));
+  return {
+    page,
+    xMm: nextLeftPx / PX_PER_MM,
+    yMm: (nextTopPx - (page - 1) * stride) / PX_PER_MM,
+  };
+}
+
+/**
+ * Compute resized frame bounds against the pointer-down snapshot, keeping the
+ * frame anchored to its owning page and clamping handles within that page.
+ */
+export function resolveResizedFrameBounds(
+  startFrame: Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm" | "singleLine" | "imageSrc" | "imageXMm" | "imageYMm">,
+  edge: string,
+  point: { x: number; y: number },
+  options: {
+    startSlot: { x: number; y: number };
+    pageWidthPx: number;
+    pageHeightPx: number;
+  },
+): (Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm"> & Partial<Pick<StudioFrame, "imageXMm" | "imageYMm">>) | null {
+  const { startSlot, pageWidthPx, pageHeightPx } = options;
+  const startLeft = startSlot.x + startFrame.xMm * PX_PER_MM;
+  const startTop = startSlot.y + startFrame.yMm * PX_PER_MM;
+  const startRight = startLeft + startFrame.wMm * PX_PER_MM;
+  const startBottom = startTop + startFrame.hMm * PX_PER_MM;
+  const minX = pageWidthPx > 0 ? Math.min(startSlot.x, startLeft) : Number.NEGATIVE_INFINITY;
+  const maxX = pageWidthPx > 0 ? Math.max(startSlot.x + pageWidthPx, startRight) : Number.POSITIVE_INFINITY;
+  const minY = pageHeightPx > 0 ? Math.min(startSlot.y, startTop) : Number.NEGATIVE_INFINITY;
+  const maxY = pageHeightPx > 0 ? Math.max(startSlot.y + pageHeightPx, startBottom) : Number.POSITIVE_INFINITY;
+  const px = Math.min(maxX, Math.max(minX, point.x));
+  const py = Math.min(maxY, Math.max(minY, point.y));
+  if (startFrame.singleLine) {
+    if (!edge.includes("e") && !edge.includes("w")) return null;
+    let x1 = startLeft;
+    let x2 = startRight;
+    if (edge.includes("w")) x1 = px;
+    if (edge.includes("e")) x2 = px;
+    const x = Math.min(x1, x2);
+    return {
+      page: startFrame.page,
+      xMm: x === startLeft ? startFrame.xMm : (x - startSlot.x) / PX_PER_MM,
+      yMm: startFrame.yMm,
+      wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
+      hMm: startFrame.hMm,
+    };
+  }
+  let x1 = startLeft;
+  let y1 = startTop;
+  let x2 = startRight;
+  let y2 = startBottom;
+  if (edge.includes("w")) x1 = px;
+  if (edge.includes("e")) x2 = px;
+  if (edge.includes("n")) y1 = py;
+  if (edge.includes("s")) y2 = py;
+  const x = Math.min(x1, x2);
+  const y = Math.min(y1, y2);
+  const wPx = Math.max(1, Math.abs(x2 - x1));
+  const hPx = Math.max(1, Math.abs(y2 - y1));
+  const newXMm = x === startLeft ? startFrame.xMm : (x - startSlot.x) / PX_PER_MM;
+  const newYMm = y === startTop ? startFrame.yMm : (y - startSlot.y) / PX_PER_MM;
+  const dxMm = newXMm - startFrame.xMm;
+  const dyMm = newYMm - startFrame.yMm;
+  const next: Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm"> & Partial<Pick<StudioFrame, "imageXMm" | "imageYMm">> = {
+    page: startFrame.page,
+    xMm: newXMm,
+    yMm: newYMm,
+    wMm: wPx / PX_PER_MM,
+    hMm: hPx / PX_PER_MM,
+  };
+  if (startFrame.imageSrc && (edge.includes("w") || edge.includes("n"))) {
+    if (edge.includes("w")) next.imageXMm = (startFrame.imageXMm ?? 0) - dxMm;
+    if (edge.includes("n")) next.imageYMm = (startFrame.imageYMm ?? 0) - dyMm;
+  }
+  return next;
+}
 
 export function isUndraggedShape(w: number, h: number): boolean {
   return Math.abs(w) < 4 && Math.abs(h) < 4;
@@ -299,7 +424,7 @@ export function StudioObjectLayer({
     | { mode: "draw"; x: number; y: number; pointer: number }
     | { mode: "marquee"; x: number; y: number; pointer: number; initialSelected: string[] }
     | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string; peeled?: boolean }
-    | { mode: "resize"; id: string; edge: string; pointer: number }
+    | { mode: "resize"; id: string; edge: string; pointer: number; startFrame: StudioFrame; startSlot: { x: number; y: number } }
     | { mode: "pan"; id: string; x: number; y: number; pointer: number; startX: number; startY: number; angle: number }
     | null
   >(null);
@@ -520,16 +645,29 @@ export function StudioObjectLayer({
     } else if (textTool && (w < 4 || h < 4)) return;
     if (!singleLine && isUndraggedShape(w, h)) return;
     const stride = pageHeightPx + gapPx;
-    const page = pageOf(y);
-    const yOnPage = y - (page - 1) * stride;
+    let page: number;
+    let xOnPage: number;
+    let yOnPage: number;
+    if (projectionProp) {
+      const count = Math.max(1, pageCount, projectionProp.count);
+      const mapped = unprojectPoint(x + w / 2, y + (singleLine ? 0 : h / 2), { ...projectionProp, count });
+      page = Math.min(count, Math.max(1, mapped.page + 1));
+      const slot = facingSlot(page - 1, projectionProp);
+      xOnPage = x - slot.x;
+      yOnPage = Math.max(0, y - slot.y);
+    } else {
+      page = pageOf(y);
+      xOnPage = x;
+      yOnPage = Math.max(0, y - (page - 1) * stride);
+    }
     const frameTypography = typography ?? defaultDocumentSettings().typography;
     const defaults = pictureBoxDefaults ?? DEFAULT_PICTURE_TOOL_DEFAULTS;
     const frame: StudioFrame = {
       id: newId(),
       kind,
       page,
-      xMm: x / PX_PER_MM,
-      yMm: Math.max(0, yOnPage) / PX_PER_MM,
+      xMm: xOnPage / PX_PER_MM,
+      yMm: yOnPage / PX_PER_MM,
       wMm: Math.max(1, w) / PX_PER_MM,
       hMm: singleLine ? singleLineOuterHeightMm(frameTypography) : Math.max(1, h) / PX_PER_MM,
       flip,
@@ -572,7 +710,7 @@ export function StudioObjectLayer({
       ref={rootRef}
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
-      style={{ width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
+      style={{ left: projectionProp ? 0 : undefined, right: projectionProp ? "auto" : undefined, bottom: projectionProp ? "auto" : undefined, width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => {
         if (tool !== "select") return;
@@ -640,8 +778,7 @@ export function StudioObjectLayer({
             pictureDraggedRef.current = true;
             if (lastPressRef.current?.id === drag.pressedId) lastPressRef.current.moved = true;
           }
-          const dx = dxPx / PX_PER_MM;
-          const dy = dyPx / PX_PER_MM;
+          const placementOptions = { pageCount, pageHeightPx, gapPx, projection: projectionProp };
           if (!drag.peeled && Math.hypot(dxPx, dyPx) >= 4) {
             const template = drag.frames.find((frame) => frame.id === drag.pressedId && frame.template);
             if (template) {
@@ -655,37 +792,15 @@ export function StudioObjectLayer({
               setSelected([id]);
               const withClone = [...framesRef.current, clone];
               const peeled = new Map(drag.frames.map((frame) => [frame.id, frame]));
-              onChangeRef.current(withClone.map((frame) => {
+              emitFrames(withClone.map((frame) => {
                 const original = peeled.get(frame.id);
-                return original
-                  ? {
-                      ...frame,
-                      xMm: original.xMm + dx,
-                      yMm: original.yMm + dy,
-                      ...(isPictureBox(original.kind)
-                        ? {
-                            imageXMm: original.imageXMm,
-                            imageYMm: original.imageYMm,
-                            imageWMm: original.imageWMm,
-                            imageHMm: original.imageHMm,
-                          }
-                        : {}),
-                    }
-                  : frame;
-              }));
-              return;
-            }
-          }
-          const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
-          emitFrames(framesRef.current.map((frame) => {
-            const original = moved.get(frame.id);
-            // Offsets stay box-relative so the picture travels with the box.
-            // Top/left resize, below, is what keeps the picture on the page.
-            return original
-              ? {
+                if (!original) return frame;
+                const placement = resolveMovedFramePlacement(original, dxPx, dyPx, placementOptions);
+                return {
                   ...frame,
-                  xMm: original.xMm + dx,
-                  yMm: original.yMm + dy,
+                  page: placement.page,
+                  xMm: placement.xMm,
+                  yMm: placement.yMm,
                   ...(isPictureBox(original.kind)
                     ? {
                         imageXMm: original.imageXMm,
@@ -694,9 +809,33 @@ export function StudioObjectLayer({
                         imageHMm: original.imageHMm,
                       }
                     : {}),
-                }
-              : frame;
-          }));
+                };
+              }), "gesture");
+              return;
+            }
+          }
+          const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
+          emitFrames(framesRef.current.map((frame) => {
+            const original = moved.get(frame.id);
+            // Offsets stay box-relative so the picture travels with the box.
+            // Top/left resize, below, is what keeps the picture on the page.
+            if (!original) return frame;
+            const placement = resolveMovedFramePlacement(original, dxPx, dyPx, placementOptions);
+            return {
+              ...frame,
+              page: placement.page,
+              xMm: placement.xMm,
+              yMm: placement.yMm,
+              ...(isPictureBox(original.kind)
+                ? {
+                    imageXMm: original.imageXMm,
+                    imageYMm: original.imageYMm,
+                    imageWMm: original.imageWMm,
+                    imageHMm: original.imageHMm,
+                  }
+                : {}),
+            };
+          }), "gesture");
           return;
         }
         if (drag.mode === "pan") {
@@ -710,58 +849,17 @@ export function StudioObjectLayer({
           updateFrame(drag.id, { imageXMm: drag.startX + delta.xMm, imageYMm: drag.startY + delta.yMm }, "gesture");
           return;
         }
-        const frame = frames.find((item) => item.id === drag.id);
-        if (!frame) return;
-        if (frame.singleLine) {
-          if (!drag.edge.includes("e") && !drag.edge.includes("w")) return;
-          const left = frame.xMm * PX_PER_MM;
-          const right = left + frame.wMm * PX_PER_MM;
-          let x1 = left;
-          let x2 = right;
-          if (drag.edge.includes("w")) x1 = point.x;
-          if (drag.edge.includes("e")) x2 = point.x;
-          const x = Math.min(x1, x2);
-          pictureDraggedRef.current = true;
-          lastPressRef.current = null;
-          updateFrame(frame.id, {
-            xMm: x / PX_PER_MM,
-            wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
-          }, "gesture");
-          return;
-        }
-        const stride = pageHeightPx + gapPx;
-        const origin = (frame.page - 1) * stride;
-        const left = frame.xMm * PX_PER_MM;
-        const top = origin + frame.yMm * PX_PER_MM;
-        const right = left + frame.wMm * PX_PER_MM;
-        const bottom = top + frame.hMm * PX_PER_MM;
-        let x1 = left;
-        let y1 = top;
-        let x2 = right;
-        let y2 = bottom;
-        if (drag.edge.includes("w")) x1 = point.x;
-        if (drag.edge.includes("e")) x2 = point.x;
-        if (drag.edge.includes("n")) y1 = point.y;
-        if (drag.edge.includes("s")) y2 = point.y;
-        const x = Math.min(x1, x2);
-        const y = Math.min(y1, y2);
-        const newXMm = x / PX_PER_MM;
-        const newYMm = (y - origin) / PX_PER_MM;
-        const dxMm = newXMm - frame.xMm;
-        const dyMm = newYMm - frame.yMm;
-        const patch: Partial<StudioFrame> = {
-          xMm: newXMm,
-          yMm: newYMm,
-          wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
-          hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
-        };
+        const live = framesRef.current.find((item) => item.id === drag.id);
+        if (!live || live.locked) return;
+        const patch = resolveResizedFrameBounds(drag.startFrame, drag.edge, point, {
+          startSlot: drag.startSlot,
+          pageWidthPx,
+          pageHeightPx,
+        });
+        if (!patch) return;
         pictureDraggedRef.current = true;
         lastPressRef.current = null;
-        if (frame.imageSrc && (drag.edge.includes("w") || drag.edge.includes("n"))) {
-          if (dxMm !== 0) patch.imageXMm = (frame.imageXMm ?? 0) - dxMm;
-          if (dyMm !== 0) patch.imageYMm = (frame.imageYMm ?? 0) - dyMm;
-        }
-        updateFrame(frame.id, patch, "gesture");
+        updateFrame(live.id, patch, "gesture");
       }}
       onPointerCancel={(event) => {
         dragRef.current = null;
@@ -931,13 +1029,28 @@ export function StudioObjectLayer({
                       border: "1px solid #000",
                       ...handlePos(edge),
                       pointerEvents: tool === "select" ? "auto" : "none",
+                      userSelect: "none",
                       cursor: tool !== "select" ? "inherit" : edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
                     }}
                     onPointerDown={(event) => {
+                      if (event.button === 2) return;
+                      event.preventDefault();
                       event.stopPropagation();
-                      if (frame.locked) return;
+                      const live = framesRef.current.find((item) => item.id === frame.id) ?? frame;
+                      if (live.locked) return;
+                      const stride = pageHeightPx + gapPx;
+                      const startSlot = projectionProp
+                        ? facingSlot(live.page - 1, projectionProp)
+                        : { x: 0, y: (live.page - 1) * stride };
                       beginGesture();
-                      dragRef.current = { mode: "resize", id: frame.id, edge, pointer: event.pointerId };
+                      dragRef.current = {
+                        mode: "resize",
+                        id: live.id,
+                        edge,
+                        pointer: event.pointerId,
+                        startFrame: { ...live },
+                        startSlot,
+                      };
                       (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
                     }}
                   />

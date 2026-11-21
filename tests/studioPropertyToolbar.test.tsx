@@ -317,6 +317,8 @@ describe("Immediate Picture Tool activation before frame creation", () => {
     expect((ribbon.querySelector('[data-ribbon-field="roundness"]') as HTMLInputElement).value).toBe("6.35mm");
     expect((ribbon.querySelector('[data-ribbon-field="roundness"]') as HTMLInputElement).disabled).toBe(true);
     expect((ribbon.querySelector('[data-ribbon-field="angle1"]') as HTMLInputElement).value).toBe("0°");
+    expect((ribbon.querySelector('[data-ribbon-field="run-around"]') as HTMLButtonElement).disabled).toBe(true);
+    expect((ribbon.querySelector('[data-ribbon-field="inset"]') as HTMLButtonElement).disabled).toBe(true);
     expect(ribbon.querySelector('[data-ribbon-field="shape-rect"]')?.getAttribute("aria-pressed")).toBe("true");
 
     // Clicking Rounded shape in creation mode switches tool to cross-round and enables Roundness
@@ -484,7 +486,9 @@ describe("Object-selected property toolbar (InPage Arrow mode parity)", () => {
     expect(wInput.value).toBe("81.76mm");
     // Roundness disabled on Rectangular box just like InPage 2009
     expect(roundnessInput.disabled).toBe(true);
-    expect((screen.getByLabelText("Object Run Around") as HTMLButtonElement).disabled).toBe(true);
+    const runAroundButton = screen.getByLabelText("Object Run Around") as HTMLButtonElement;
+    expect(runAroundButton.disabled).toBe(false);
+    expect(runAroundButton.getAttribute("aria-pressed")).toBe("false");
     expect((screen.getByLabelText("Object Inset") as HTMLButtonElement).disabled).toBe(true);
 
     // Geometry edits
@@ -778,5 +782,163 @@ describe(".qpg persistence and PDF/Print geometry after toolbar edits", () => {
     const ellipseSvg = renderPrintFrame(validatePrintFrames([shaped])[0]);
     expect(ellipseSvg).toContain('<ellipse cx="25" cy="20" rx="25" ry="20" fill="#1D4ED8"/>');
     expect(ellipseSvg).not.toContain('stroke="#000"');
+  });
+});
+
+describe("Object Run Around toolbar & dialog integration", () => {
+  it("toggles Run Around on rectangular picture, text, and shape frames with Undo/Redo while keeping Object Inset disabled", () => {
+    const pic = makePictureFrame({ id: "rect-pic", kind: "picture-rect" });
+    const txt = makeShapeFrame({ id: "rect-txt", kind: "text" });
+    const rect = makeShapeFrame({ id: "rect-shape", kind: "rect" });
+    render(<Harness initialFrames={[pic, txt, rect]} mode="object" />);
+
+    const getBtn = () => screen.getByLabelText("Object Run Around") as HTMLButtonElement;
+    const getInsetBtn = () => screen.getByLabelText("Object Inset") as HTMLButtonElement;
+
+    for (const id of ["rect-pic", "rect-txt", "rect-shape"] as const) {
+      fireEvent.click(screen.getByRole("button", { name: `Select ${id}` }));
+      expect(getBtn().disabled).toBe(false);
+      expect(getBtn().getAttribute("aria-pressed")).toBe("false");
+      expect(getInsetBtn().disabled).toBe(true);
+
+      fireEvent.click(getBtn());
+      expect(getBtn().getAttribute("aria-pressed")).toBe("true");
+      expect(readFramesFromHarness().find((f) => f.id === id)?.runAround).toBe(true);
+
+      fireEvent.click(getBtn());
+      expect(getBtn().getAttribute("aria-pressed")).toBe("false");
+      expect(readFramesFromHarness().find((f) => f.id === id)?.runAround).toBe(false);
+    }
+
+    // Undo / Redo restores Run Around toggle via StudioHistoryCoordinator
+    fireEvent.click(screen.getByRole("button", { name: "Select rect-pic" }));
+    fireEvent.click(getBtn());
+    expect(readFramesFromHarness().find((f) => f.id === "rect-pic")?.runAround).toBe(true);
+
+    fireEvent.keyDown(getBtn(), { key: "z", code: "KeyZ", ctrlKey: true });
+    expect(readFramesFromHarness().find((f) => f.id === "rect-pic")?.runAround).toBe(false);
+    expect(getBtn().getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.keyDown(getBtn(), { key: "z", code: "KeyZ", ctrlKey: true, shiftKey: true });
+    expect(readFramesFromHarness().find((f) => f.id === "rect-pic")?.runAround).toBe(true);
+    expect(getBtn().getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("keeps Object Run Around disabled for unsupported shapes, rotated boxes, locked boxes, and Picture Tool creation mode", () => {
+    const unsupportedCases: StudioFrame[] = [
+      makePictureFrame({ id: "pic-ell", kind: "picture-ellipse" }),
+      makePictureFrame({ id: "pic-rnd", kind: "picture-round-rect" }),
+      makeShapeFrame({ id: "shp-ell", kind: "ellipse" }),
+      makeShapeFrame({ id: "shp-rnd", kind: "round-rect" }),
+      makeShapeFrame({ id: "shp-line", kind: "line" }),
+      makePictureFrame({ id: "rot-rect", kind: "picture-rect", angle1Deg: 15 }),
+      makePictureFrame({ id: "locked-rect", kind: "picture-rect", locked: true }),
+    ];
+    render(<Harness initialFrames={unsupportedCases} mode="object" />);
+
+    const getBtn = () => screen.getByLabelText("Object Run Around") as HTMLButtonElement;
+    for (const item of unsupportedCases) {
+      fireEvent.click(screen.getByRole("button", { name: `Select ${item.id}` }));
+      expect(getBtn().disabled).toBe(true);
+      expect(getBtn().getAttribute("aria-pressed")).toBe("false");
+      fireEvent.click(getBtn());
+      expect(readFramesFromHarness().find((f) => f.id === item.id)?.runAround).toBeUndefined();
+    }
+
+    cleanup();
+    render(
+      <StudioObjectRibbon
+        disableContextMenu
+        mode="picture-tool"
+        creationTool="cross-square"
+        pictureDefaults={DEFAULT_PICTURE_TOOL_DEFAULTS}
+        frames={[makePictureFrame({ id: "pre-existing", runAround: true })]}
+        onChange={() => {}}
+      />,
+    );
+    const ribbon = document.querySelector<HTMLElement>('[data-studio-object-ribbon="true"]')!;
+    expect(ribbon.dataset.ribbonMode).toBe("picture-tool");
+    expect((ribbon.querySelector('[data-ribbon-field="run-around"]') as HTMLButtonElement).disabled).toBe(true);
+    expect((ribbon.querySelector('[data-ribbon-field="inset"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("shows mixed state on multi-selection and only modifies unlocked rectangular targets", () => {
+    // Case A: unlocked rectangular mixed (true + false) plus unsupported ellipse
+    const rectOn = makePictureFrame({ id: "rect-on", kind: "picture-rect", runAround: true });
+    const rectOff = makePictureFrame({ id: "rect-off", kind: "picture-rect", runAround: false });
+    const ell = makePictureFrame({ id: "ell", kind: "picture-ellipse", runAround: false });
+
+    render(<Harness initialFrames={[rectOn, rectOff, ell]} initialSelected={["rect-on", "rect-off", "ell"]} mode="object" />);
+
+    let btn = screen.getByLabelText("Object Run Around") as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute("aria-pressed")).toBe("mixed");
+    expect(btn.getAttribute("data-ribbon-mixed")).toBe("true");
+
+    // Click 1 turns all unlocked rectangular boxes On and leaves ellipse untouched
+    fireEvent.click(btn);
+    expect(btn.getAttribute("aria-pressed")).toBe("true");
+    expect(btn.getAttribute("data-ribbon-mixed")).toBeNull();
+    let current = readFramesFromHarness();
+    expect(current.find((f) => f.id === "rect-on")?.runAround).toBe(true);
+    expect(current.find((f) => f.id === "rect-off")?.runAround).toBe(true);
+    expect(current.find((f) => f.id === "ell")?.runAround).toBe(false);
+
+    // Click 2 turns all unlocked rectangular boxes Off and leaves ellipse untouched
+    fireEvent.click(btn);
+    expect(btn.getAttribute("aria-pressed")).toBe("false");
+    current = readFramesFromHarness();
+    expect(current.find((f) => f.id === "rect-on")?.runAround).toBe(false);
+    expect(current.find((f) => f.id === "rect-off")?.runAround).toBe(false);
+    expect(current.find((f) => f.id === "ell")?.runAround).toBe(false);
+
+    // Case B: unlocked rect (true) + locked rect (false) starts mixed; clicking toggles unlocked Off cleanly
+    cleanup();
+    const lockedOff = makePictureFrame({ id: "locked-off", kind: "picture-rect", locked: true, runAround: false });
+    render(<Harness initialFrames={[rectOn, lockedOff]} initialSelected={["rect-on", "locked-off"]} mode="object" />);
+    btn = screen.getByLabelText("Object Run Around") as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    expect(btn.getAttribute("aria-pressed")).toBe("mixed");
+    expect(btn.getAttribute("data-ribbon-mixed")).toBe("true");
+
+    fireEvent.click(btn);
+    expect(btn.getAttribute("aria-pressed")).toBe("false");
+    expect(btn.getAttribute("data-ribbon-mixed")).toBeNull();
+    current = readFramesFromHarness();
+    expect(current.find((f) => f.id === "rect-on")?.runAround).toBe(false);
+    expect(current.find((f) => f.id === "locked-off")?.runAround).toBe(false);
+  });
+
+  it("disables Run Around in Modify Object dialog and clears runAround when converted to ellipse or rotated", () => {
+    const pic = makePictureFrame({ id: "fmt-pic", kind: "picture-rect", angle1Deg: 0, runAround: true });
+    render(<Harness initialFrames={[pic]} mode="object" />);
+
+    // Switching shape to Elliptical in Modify Object clears active Run Around
+    fireEvent.click(screen.getByRole("button", { name: "Open Modify Dialog" }));
+    let dialog = screen.getByRole("dialog", { name: "Modify Object" });
+    let runAroundCheckbox = within(dialog).getByLabelText("Run Around") as HTMLInputElement;
+    expect(runAroundCheckbox.disabled).toBe(false);
+    expect(runAroundCheckbox.checked).toBe(true);
+
+    fireEvent.click(within(dialog).getByLabelText("Elliptical Picture Box"));
+    expect(runAroundCheckbox.disabled).toBe(true);
+    expect(runAroundCheckbox.checked).toBe(false);
+    fireEvent.click(within(dialog).getByRole("button", { name: "OK" }));
+    expect(readFramesFromHarness()[0]).toMatchObject({ kind: "picture-ellipse", runAround: false });
+
+    // Rotating a rectangular box with active Run Around clears Run Around
+    cleanup();
+    const rotPic = makePictureFrame({ id: "rot-fmt", kind: "picture-rect", angle1Deg: 0, runAround: true });
+    render(<Harness initialFrames={[rotPic]} mode="object" />);
+    fireEvent.click(screen.getByRole("button", { name: "Open Modify Dialog" }));
+    dialog = screen.getByRole("dialog", { name: "Modify Object" });
+    runAroundCheckbox = within(dialog).getByLabelText("Run Around") as HTMLInputElement;
+    expect(runAroundCheckbox.checked).toBe(true);
+
+    fireEvent.change(within(dialog).getByLabelText("Angle1"), { target: { value: "15" } });
+    expect(runAroundCheckbox.disabled).toBe(true);
+    expect(runAroundCheckbox.checked).toBe(false);
+    fireEvent.click(within(dialog).getByRole("button", { name: "OK" }));
+    expect(readFramesFromHarness()[0]).toMatchObject({ kind: "picture-rect", angle1Deg: 15, runAround: false });
   });
 });

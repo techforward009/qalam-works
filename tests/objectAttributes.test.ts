@@ -101,3 +101,48 @@ describe("appearance patches", () => {
     expect(applyObjectGeometry(frame, patch as never)).toBeNull();
   });
 });
+
+describe("Run Around eligibility and transitions", () => {
+  it("allows Run Around and clearances on unrotated rectangular picture, text, and shape frames", () => {
+    for (const kind of ["picture-rect", "text", "rect"] as const) {
+      const target: StudioFrame = { ...frame, kind, angle1Deg: 0 };
+      const updated = applyObjectGeometry(target, {
+        runAround: true,
+        runAroundLeftMm: 3.5,
+        runAroundRightMm: 4,
+        runAroundTopMm: 1.5,
+        runAroundBottomMm: 2.5,
+      });
+      expect(updated).toMatchObject({
+        runAround: true,
+        runAroundLeftMm: 3.5,
+        runAroundRightMm: 4,
+        runAroundTopMm: 1.5,
+        runAroundBottomMm: 2.5,
+      });
+    }
+  });
+
+  it.each([
+    { kind: "picture-ellipse", angle1Deg: 0 },
+    { kind: "picture-round-rect", angle1Deg: 0 },
+    { kind: "ellipse", angle1Deg: 0 },
+    { kind: "round-rect", angle1Deg: 0 },
+    { kind: "line", angle1Deg: 0 },
+    { kind: "picture-rect", angle1Deg: 15 },
+    { kind: "text", angle1Deg: -5 },
+    { kind: "rect", angle1Deg: 10 },
+  ] as const)("rejects enabling Run Around on unsupported shape $kind at angle $angle1Deg", ({ kind, angle1Deg }) => {
+    const target: StudioFrame = { ...frame, kind, angle1Deg };
+    expect(applyObjectGeometry(target, { runAround: true })).toBeNull();
+  });
+
+  it("clears active Run Around when a rectangular box is switched to an ellipse or rotated", () => {
+    const wrapping: StudioFrame = { ...frame, kind: "picture-rect", angle1Deg: 0, runAround: true };
+    const asEllipse = applyObjectGeometry(wrapping, { kind: "picture-ellipse" });
+    expect(asEllipse).toMatchObject({ kind: "picture-ellipse", runAround: false });
+
+    const asRotated = applyObjectGeometry(wrapping, { angle1Deg: 15 });
+    expect(asRotated).toMatchObject({ kind: "picture-rect", angle1Deg: 15, runAround: false });
+  });
+});

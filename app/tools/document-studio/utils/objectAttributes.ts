@@ -2,6 +2,8 @@ import { isPictureBox, type FrameKind, type StudioFrame } from "../components/St
 import { normalizeSafeHex } from "./studioColors";
 import { PRINT_FRAME_LIMITS } from "./printableFrames";
 import { isValidBorderPattern, type BorderPatternId } from "./borderPatterns";
+import { validRunAroundFields } from "./runAround";
+import { isRectangularRunAroundBox } from "./runAroundFlow";
 
 export const DEFAULT_INPAGE_BORDER_WIDTH_MM = 25.4 / 72;
 export const STUDIO_PX_PER_MM = 96 / 25.4;
@@ -53,7 +55,7 @@ export function pictureDimensionMmFromScale(scalePct: number, refMm: number): nu
     : refMm;
 }
 
-export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition">>;
+export type ObjectGeometryPatch = Partial<Pick<StudioFrame, "xMm" | "yMm" | "wMm" | "hMm" | "kind" | "borderColor" | "borderWidthMm" | "borderPattern" | "backgroundColor" | "backgroundHatch" | "imageXMm" | "imageYMm" | "imageWMm" | "imageHMm" | "locked" | "dontPrint" | "template" | "roundnessMm" | "angle1Deg" | "angle2Deg" | "borderPosition" | "runAround" | "runAroundLeftMm" | "runAroundRightMm" | "runAroundTopMm" | "runAroundBottomMm">>;
 const pictureKinds: readonly FrameKind[] = ["picture-rect", "picture-round-rect", "picture-ellipse"];
 const shapeKinds: readonly FrameKind[] = ["rect", "round-rect", "ellipse"];
 
@@ -131,6 +133,12 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (patch.locked !== undefined && typeof patch.locked !== "boolean") return null;
   if (patch.dontPrint !== undefined && typeof patch.dontPrint !== "boolean") return null;
   if (patch.template !== undefined && typeof patch.template !== "boolean") return null;
+  if (!validRunAroundFields(patch)) return null;
+  const candidate = {
+    kind: patch.kind ?? frame.kind,
+    angle1Deg: patch.angle1Deg ?? frame.angle1Deg,
+  };
+  if (patch.runAround === true && !isRectangularRunAroundBox(candidate)) return null;
   if (
     patch.kind !== undefined &&
     !(
@@ -144,6 +152,9 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (patch.borderPattern !== undefined && !isValidBorderPattern(patch.borderPattern)) return null;
   if (patch.backgroundHatch !== undefined && patch.backgroundHatch !== "none") return null;
   const next: StudioFrame = { ...frame, ...patch, ...(patch.borderColor !== undefined ? { borderColor: normalizeSafeHex(patch.borderColor)! } : {}) };
+  if (patch.runAround === undefined && frame.runAround === true && !isRectangularRunAroundBox(candidate)) {
+    next.runAround = false;
+  }
   if (patch.backgroundColor !== undefined) {
     if (patch.backgroundColor === "") delete next.backgroundColor;
     else next.backgroundColor = normalizeSafeHex(patch.backgroundColor)!;
