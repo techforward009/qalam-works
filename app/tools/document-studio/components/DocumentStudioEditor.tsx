@@ -447,6 +447,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [documentTitle]);
   const sessionWrites = useRef(createDocumentSessionWrites());
   const transitionRef = useRef(false);
+  const pendingStartFocusRef = useRef(false);
   const [switchingDocument, setSwitchingDocument] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [openDocuments, setOpenDocuments] = useState<{ id: string; title: string }[]>([]);
@@ -988,6 +989,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     hasAuditReportRef.current = false;
     setIsAuditStale(false);
     setVisiblePage(1);
+    pendingStartFocusRef.current = Boolean(options?.focusAtStart);
     if (editor) {
       const wantTextFocus = Boolean(options?.focusAtStart);
       let remaining = 6;
@@ -995,12 +997,17 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         try {
           if (editor.isDestroyed) return;
           if (wantTextFocus || canvasToolRef.current === "text") {
+            if (editor.view.dom.closest("[inert]")) {
+              pendingStartFocusRef.current = true;
+              return;
+            }
             if ((!editor.isEditable || editor.view.dom.getAttribute("contenteditable") !== "true") && remaining > 0) {
               remaining -= 1;
               if (typeof requestAnimationFrame === "function") requestAnimationFrame(place);
               return;
             }
             placeStoryCaretAtStart(editor);
+            pendingStartFocusRef.current = false;
           } else {
             editor.commands.blur();
           }
@@ -1107,6 +1114,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       } else {
         // Persisted content and objects remain in the library; only this window closes.
         formattingSafety.current?.documentChanged();
+        pendingStartFocusRef.current = false;
         editor.commands.blur();
         activeDocumentIdRef.current=null;
         setActiveDocumentId(null);
@@ -2093,6 +2101,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const onCanvasTool = (id: StudioToolId) => {
+    if (id !== "text") pendingStartFocusRef.current = false;
     setCanvasTool(id);
     if (id === "select" && editor) {
       editor.commands.blur();
@@ -2535,6 +2544,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       editor.off("transaction", sync);
     };
   }, [editor]);
+
+  useEffect(() => {
+    if (switchingDocument || !pendingStartFocusRef.current || !editor || editor.isDestroyed) return;
+    if (editor.view.dom.closest("[inert]")) return;
+    if (!editor.isEditable || editor.view.dom.getAttribute("contenteditable") !== "true") return;
+    pendingStartFocusRef.current = false;
+    placeStoryCaretAtStart(editor);
+  }, [switchingDocument, editor]);
 
   const onZoomPercentChange = useCallback((percent: number) => {
     setZoomPercent((prev) => (prev === percent ? prev : percent));
