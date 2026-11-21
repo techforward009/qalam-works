@@ -33,6 +33,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Install Poppler utilities for full repository PDF tests
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
       # One Playwright invocation per project: each starts its own fresh
       # webServer, so the per-instance PDF export rate limiter is not shared
       # between the desktop and mobile runs.
