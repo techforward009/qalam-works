@@ -1,4 +1,6 @@
-import { validatePrintFrames, printFramePageMarkup } from "./printableFrames";
+import { filterPrintableFrames, validatePrintFrames, printFramePageMarkup } from "./printableFrames";
+import { applyStoryRunAround } from "../extensions/RunAroundLayout";
+import { runAroundContentExclusionPx } from "./runAroundFlow";
 import type { StudioFrame } from "../components/StudioObjectLayer";
 /**
  * Single Pages / Facing Pages / Pageless are VIEW preferences only.
@@ -219,6 +221,22 @@ export async function printDocumentStudioAsync(frames: StudioFrame[] = []): Prom
     return;
   }
   await waitForPrintFonts(portal);
+  const page = portal.querySelector<HTMLElement>("[data-studio-print-page]");
+  if (page) {
+    const heightMm = Number(portal.getAttribute("data-print-page-height-mm") || 297);
+    const printRoot = document.querySelector("[data-studio-print-root]");
+    const topPx = Number(printRoot?.getAttribute("data-print-margin-top-mm") || 0) * (96 / 25.4);
+    const bottomPx = Number(printRoot?.getAttribute("data-print-margin-bottom-mm") || 0) * (96 / 25.4);
+    // The clone is one continuous story. Each printed sheet then adds top and
+    // bottom padding, so page 2 starts after the content height, not a full sheet.
+    const contentHeightPx = Math.max(1, heightMm * (96 / 25.4) - topPx - bottomPx);
+    const printableFrames = filterPrintableFrames(frames);
+    const exclusions = printableFrames.flatMap(frame => {
+      const box = runAroundContentExclusionPx(frame, contentHeightPx, topPx, 0);
+      return box ? [box] : [];
+    });
+    if (exclusions.length) applyStoryRunAround(page, exclusions, page.getAttribute("dir") === "ltr" ? "ltr" : "rtl", { contentHeightPx });
+  }
   const cleanup = () => unmountDocumentPrintPortal();
   window.addEventListener("afterprint", cleanup, { once: true });
   window.print();
@@ -257,6 +275,10 @@ export function stripViewOnlyPagination(root: HTMLElement): void {
   });
   root.querySelectorAll("[data-qalam-pagination], .qalam-pagination-pages").forEach((node) => node.remove());
   root.querySelectorAll("[data-image-wrap-spacer]").forEach((node) => node.remove());
+  root.querySelectorAll("[data-run-around-gap], [data-run-around-break], [data-run-around-skip], [data-run-around-space]").forEach((node) => node.remove());
+  root.querySelectorAll("[data-run-around-segment]").forEach((node) => node.replaceWith(...node.childNodes));
+  root.querySelectorAll("[data-run-around-justify]").forEach((node) => node.removeAttribute("data-run-around-justify"));
+  root.normalize();
   const styled: HTMLElement[] = [];
   if (root.classList.contains("qalam-pagination")) styled.push(root);
   root.querySelectorAll(".qalam-pagination").forEach((node) => styled.push(node as HTMLElement));
@@ -277,6 +299,7 @@ export function stripViewOnlyPagination(root: HTMLElement): void {
 
 export function mountDocumentPrintPortal(inputFrames: StudioFrame[] = []): HTMLElement | null {
   const frames = validatePrintFrames(inputFrames);
+  const printableFrames = filterPrintableFrames(frames);
   if (typeof document === "undefined") return null;
   unmountDocumentPrintPortal();
   const root = document.querySelector("[data-studio-print-root]");
@@ -305,7 +328,22 @@ export function mountDocumentPrintPortal(inputFrames: StudioFrame[] = []): HTMLE
   });
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
-  const frameHtml = printFramePageMarkup(frames, widthMm, heightMm);
+  const sourceStyle = getComputedStyle(source);
+  for (const name of [
+    "--qalam-body-size",
+    "--qalam-line-height",
+    "--qalam-rtl-font",
+    "--qalam-ltr-font",
+    "--qalam-first-line-indent",
+    "--qalam-paragraph-before",
+    "--qalam-paragraph-after",
+    "--qalam-latin-size-factor",
+    "--qalam-typographic-space-tokens",
+  ]) {
+    const value = sourceStyle.getPropertyValue(name).trim();
+    if (value) page.style.setProperty(name, value);
+  }
+  const frameHtml = printFramePageMarkup(printableFrames, widthMm, heightMm);
   if (frameHtml) {
     portal.setAttribute("data-print-frames", "true");
     page.insertAdjacentHTML("beforeend", frameHtml);
@@ -314,7 +352,7 @@ export function mountDocumentPrintPortal(inputFrames: StudioFrame[] = []): HTMLE
   const onDemandFaces = studioOnDemandFontFaceCss(source.innerHTML + frameHtml);
   const style = document.createElement("style");
   style.textContent = `${needsJameel ? studioJameelFontFaceCss() + "\n" : ""}${onDemandFaces ? onDemandFaces + "\n" : ""}${studioGulzarFontFaceCss()}\n${studioMehrFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
-  if (frames.length) style.textContent += `
+  if (printableFrames.length) style.textContent += `
 @page{margin:0;}
 @media print{[data-studio-print-portal][data-print-frames] [data-studio-print-page]{position:relative!important;padding:${topMm}mm ${rightMm}mm ${bottomMm}mm ${leftMm}mm!important;box-decoration-break:clone;-webkit-box-decoration-break:clone;}}`;
   portal.append(style, page);
@@ -335,6 +373,22 @@ export function documentPrintCss(widthMm: number, heightMm: number, topMm = 0, b
     left: -99999px !important;
     top: 0 !important;
     width: ${widthMm}mm !important;
+  }
+  [data-studio-print-portal] [data-document-page-break="true"],
+  [data-studio-print-portal] [data-document-section-break="true"] {
+    display: block !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+  [data-studio-print-page] .ProseMirror {
+    min-height: 0 !important;
+    height: auto !important;
+    width: auto !important;
+    padding: 0 !important;
   }
 }
 @media print {
@@ -377,9 +431,11 @@ export function documentPrintCss(widthMm: number, heightMm: number, topMm = 0, b
   [data-studio-print-page] .ProseMirror {
     font-variant-ligatures: normal;
     font-feature-settings: normal;
+    text-rendering: geometricPrecision;
     min-height: 0 !important;
     height: auto !important;
     width: auto !important;
+    padding: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }

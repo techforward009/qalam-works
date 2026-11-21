@@ -1,5 +1,6 @@
 /** @vitest-environment happy-dom */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import { resolvePageLayout, mmToPx } from "../app/tools/document-studio/utils/pageLayout";
 import {
   DEFAULT_DOCUMENT_VIEW_MODE,
@@ -15,6 +16,7 @@ import {
   visualPageCountWithGaps,
   documentPrintCss,
   mountDocumentPrintPortal,
+  printDocumentStudioAsync,
   unmountDocumentPrintPortal,
 } from "../app/tools/document-studio/utils/documentView";
 import {
@@ -238,5 +240,125 @@ describe("print portal strips view-only pagination", () => {
     expect(page?.style.paddingLeft).toContain("25.4");
     expect(page?.style.paddingRight).toContain("25.4");
     expect(portal?.querySelector("style")?.textContent).toContain("margin: 25.4mm 0 25.4mm 0");
+  });
+
+  it("H2: zeroes [data-studio-print-page] .ProseMirror padding in both screen measurement and print CSS", () => {
+    const css = documentPrintCss(210, 297, 25.4, 25.4);
+    const screenSection = css.slice(css.indexOf("@media screen"), css.indexOf("@media print"));
+    const printSection = css.slice(css.indexOf("@media print"));
+    expect(screenSection).toContain("[data-studio-print-page] .ProseMirror");
+    expect(screenSection).toContain("padding: 0 !important");
+    expect(printSection).toContain("[data-studio-print-page] .ProseMirror");
+    expect(printSection).toContain("padding: 0 !important");
+  });
+
+  it("H1: clamps Page-2 top-margin Run Around frames so Page-1 Browser Print text receives no phantom hole", async () => {
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-margin-top-mm="25.4" data-print-margin-bottom-mm="25.4" data-print-margin-left-mm="25.4" data-print-margin-right-mm="25.4" data-print-dir="rtl">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content">
+            <div class="ProseMirror"><p>${"اب ".repeat(60)}</p></div>
+          </div>
+        </div>
+      </div>`;
+    const originalPrint = window.print;
+    window.print = vi.fn();
+    const originalProto = HTMLElement.prototype.getBoundingClientRect;
+    const originalRangeRects = Range.prototype.getClientRects;
+    const contentH = (297 - 50.8) * (96 / 25.4);
+    // Paragraph sits in the bottom band of Page 1 (within 60px of contentH) where an unclamped
+    // Page-2 frame at yMm=10 would previously bleed -59.5px across the page boundary.
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.tagName === "P") {
+        return { left: 0, right: 700, top: contentH - 70, bottom: contentH - 5, width: 700, height: 65, x: 0, y: contentH - 70, toJSON() { return {}; } } as DOMRect;
+      }
+      return { left: 0, right: 700, top: 0, bottom: contentH, width: 700, height: contentH, x: 0, y: 0, toJSON() { return {}; } } as DOMRect;
+    };
+    Range.prototype.getClientRects = () => [{ width: 14, height: 18, left: 0, right: 14, top: 10, bottom: 28 }] as unknown as DOMRectList;
+    const page2TopMarginFrame: StudioFrame = {
+      id: "p2-top-margin",
+      kind: "picture-rect",
+      page: 2,
+      xMm: 60,
+      yMm: 10,
+      wMm: 45,
+      hMm: 30,
+      flip: false,
+      text: "",
+      runAround: true,
+    };
+    try {
+      await printDocumentStudioAsync([page2TopMarginFrame]);
+      const portal = document.querySelector("[data-studio-print-portal]");
+      expect(portal?.querySelector('[data-print-frame-id="p2-top-margin"]')).toBeTruthy();
+      expect(portal?.querySelectorAll(".ProseMirror p [data-print-run-around]").length).toBe(0);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = originalProto;
+      Range.prototype.getClientRects = originalRangeRects;
+      window.print = originalPrint;
+      unmountDocumentPrintPortal();
+    }
+  });
+
+  it("H: excludes dontPrint Run Around frames from both Browser Print rendering and text exclusions", async () => {
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-margin-top-mm="20" data-print-margin-bottom-mm="20" data-print-margin-left-mm="20" data-print-margin-right-mm="20" data-print-dir="rtl">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content">
+            <div class="ProseMirror"><p>${"اب ".repeat(40)}</p></div>
+          </div>
+        </div>
+      </div>`;
+    const originalPrint = window.print;
+    window.print = vi.fn();
+    const originalProto = HTMLElement.prototype.getBoundingClientRect;
+    const originalRangeRects = Range.prototype.getClientRects;
+    const box = { left: 0, right: 700, top: 0, bottom: 200, width: 700, height: 200, x: 0, y: 0, toJSON() { return {}; } } as DOMRect;
+    HTMLElement.prototype.getBoundingClientRect = () => box;
+    Range.prototype.getClientRects = () => [{ width: 14, height: 18, left: 0, right: 14, top: 10, bottom: 28 }] as unknown as DOMRectList;
+    const hiddenFrame: StudioFrame = {
+      id: "hidden-ra",
+      kind: "picture-rect",
+      page: 1,
+      xMm: 60,
+      yMm: 22,
+      wMm: 40,
+      hMm: 24,
+      flip: false,
+      text: "",
+      dontPrint: true,
+      runAround: true,
+    };
+    const printableFrame: StudioFrame = {
+      id: "shown-ra",
+      kind: "rect",
+      page: 1,
+      xMm: 120,
+      yMm: 22,
+      wMm: 35,
+      hMm: 24,
+      flip: false,
+      text: "",
+      dontPrint: false,
+      runAround: true,
+    };
+    try {
+      await printDocumentStudioAsync([hiddenFrame]);
+      let portal = document.querySelector("[data-studio-print-portal]");
+      expect(portal?.querySelector("[data-print-frame]")).toBeNull();
+      expect(portal?.querySelector("[data-print-run-around]")).toBeNull();
+      expect(portal?.querySelector("style")?.textContent).not.toContain("@page{margin:0;}");
+
+      await printDocumentStudioAsync([hiddenFrame, printableFrame]);
+      portal = document.querySelector("[data-studio-print-portal]");
+      expect(portal?.querySelector('[data-print-frame-id="hidden-ra"]')).toBeNull();
+      expect(portal?.querySelector('[data-print-frame-id="shown-ra"]')).toBeTruthy();
+      expect(portal?.querySelectorAll("[data-print-run-around='gap']").length).toBeGreaterThan(0);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = originalProto;
+      Range.prototype.getClientRects = originalRangeRects;
+      window.print = originalPrint;
+      unmountDocumentPrintPortal();
+    }
   });
 });

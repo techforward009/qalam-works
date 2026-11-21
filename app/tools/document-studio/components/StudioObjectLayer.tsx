@@ -3,14 +3,14 @@ import {nativeCaretSnapshot} from "../utils/nativeCaretSnapshot";
 import {pageProjection,projectPoint,facingArrowKey,facingTextRect,facingLineTop,requestCanonicalFrame,cancelCanonicalFrame,withCanonicalPages,facingSlot,unprojectPoint,facingExtent,type PageProjection} from "../utils/facingPages";
 import { StudioScreenOverlay } from "./StudioScreenOverlay";
 
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type Ref } from "react";
 import { useStudioCaretVisibility } from "./useStudioCaretVisibility";
 import { caretGeometry } from "../utils/caretGeometry";
 import { getQalamPaginationState } from "../extensions/QalamPagination";
 import {hardBreakLineTop} from "../utils/hardBreakLineGrid";
 import { renderedLineBoxTop } from "../utils/textLineBoxes";
 import { firstLineRunAt } from "../extensions/FirstLineLayout";
-import { StudioTextFrame } from "./StudioTextFrame";
+import { StudioTextFrame, type StudioFrameHistoryBridge } from "./StudioTextFrame";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../utils/documentSettings";
 import { singleLineLeadingPt, singleLineOuterHeightMm, singleLineOuterHeightPx } from "../utils/singleLineFrame";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
@@ -20,6 +20,9 @@ import type { MenuActionId } from "../utils/documentMenus";
 import type { StudioTextAlign } from "../utils/documentCommands";
 import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../utils/paragraphAlign";
 import { pictureContentDeltaMm } from "../utils/pictureFit";
+import { DEFAULT_PICTURE_TOOL_DEFAULTS, type PictureToolDefaults } from "../utils/objectAttributes";
+import { resolveBorderStrokes, type BorderPatternId } from "../utils/borderPatterns";
+import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
 
 export type FrameKind =
   | "rect"
@@ -49,6 +52,7 @@ export type StudioFrame = {
   paragraphAligns?: ParagraphAlign[];
   singleLine?: boolean;
   imageSrc?: string;
+  imageName?: string;
   imageNaturalW?: number;
   imageNaturalH?: number;
   imageXMm?: number;
@@ -64,9 +68,16 @@ export type StudioFrame = {
   borderPosition?: "inside" | "outside";
   borderColor?: string;
   borderWidthMm?: number;
-  borderPattern?: "none";
+  borderPattern?: BorderPatternId;
   backgroundColor?: string;
   backgroundHatch?: "none";
+  /** Story text flows around this box. Absent means off. */
+  runAround?: boolean;
+  /** Clearance outside the box when runAround is on. Absent uses 2.5 / 2.5 / 1.5 / 1.5 mm. */
+  runAroundLeftMm?: number;
+  runAroundRightMm?: number;
+  runAroundTopMm?: number;
+  runAroundBottomMm?: number;
 };
 
 export function isPictureBox(kind: string): boolean {
@@ -157,15 +168,179 @@ const PX_PER_MM = 96 / 25.4;
 const PICTURE_CORNER_RX_PX = 6.35 * PX_PER_MM;
 const pictureCornerRadiusPx = (frame: StudioFrame) => (frame.roundnessMm ?? 6.35) * PX_PER_MM;
 
+/** Reassign destination page and page-local yMm when a move crosses a page boundary. */
+export function resolveMovedFramePlacement(
+  original: Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm">,
+  dxPx: number,
+  dyPx: number,
+  options: {
+    pageCount: number;
+    pageHeightPx: number;
+    gapPx: number;
+    projection?: PageProjection;
+  },
+): { page: number; xMm: number; yMm: number } {
+  const { pageCount, pageHeightPx, gapPx, projection } = options;
+  const maxPage = Math.max(1, pageCount, original.page);
+  if (projection) {
+    const origSlot = facingSlot(original.page - 1, projection);
+    const projX = origSlot.x + original.xMm * PX_PER_MM + dxPx;
+    const projY = origSlot.y + original.yMm * PX_PER_MM + dyPx;
+    const centerX = projX + (original.wMm * PX_PER_MM) / 2;
+    const centerY = projY + (original.hMm * PX_PER_MM) / 2;
+    const mapped = unprojectPoint(centerX, centerY, { ...projection, count: Math.max(maxPage, projection.count) });
+    const page = Math.min(Math.max(maxPage, projection.count), Math.max(1, mapped.page + 1));
+    const destSlot = facingSlot(page - 1, projection);
+    return {
+      page,
+      xMm: (projX - destSlot.x) / PX_PER_MM,
+      yMm: (projY - destSlot.y) / PX_PER_MM,
+    };
+  }
+  const stride = pageHeightPx + gapPx;
+  if (!(stride > 0)) {
+    return {
+      page: original.page,
+      xMm: original.xMm + dxPx / PX_PER_MM,
+      yMm: original.yMm + dyPx / PX_PER_MM,
+    };
+  }
+  const nextLeftPx = original.xMm * PX_PER_MM + dxPx;
+  const nextTopPx = (original.page - 1) * stride + original.yMm * PX_PER_MM + dyPx;
+  const centerY = nextTopPx + (original.hMm * PX_PER_MM) / 2;
+  const page = Math.min(maxPage, Math.max(1, Math.floor((centerY + gapPx / 2) / stride) + 1));
+  return {
+    page,
+    xMm: nextLeftPx / PX_PER_MM,
+    yMm: (nextTopPx - (page - 1) * stride) / PX_PER_MM,
+  };
+}
+
+/**
+ * Compute resized frame bounds against the pointer-down snapshot, keeping the
+ * frame anchored to its owning page and clamping handles within that page.
+ */
+export function resolveResizedFrameBounds(
+  startFrame: Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm" | "singleLine" | "imageSrc" | "imageXMm" | "imageYMm">,
+  edge: string,
+  point: { x: number; y: number },
+  options: {
+    startSlot: { x: number; y: number };
+    pageWidthPx: number;
+    pageHeightPx: number;
+  },
+): (Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm"> & Partial<Pick<StudioFrame, "imageXMm" | "imageYMm">>) | null {
+  const { startSlot, pageWidthPx, pageHeightPx } = options;
+  const startLeft = startSlot.x + startFrame.xMm * PX_PER_MM;
+  const startTop = startSlot.y + startFrame.yMm * PX_PER_MM;
+  const startRight = startLeft + startFrame.wMm * PX_PER_MM;
+  const startBottom = startTop + startFrame.hMm * PX_PER_MM;
+  const minX = pageWidthPx > 0 ? Math.min(startSlot.x, startLeft) : Number.NEGATIVE_INFINITY;
+  const maxX = pageWidthPx > 0 ? Math.max(startSlot.x + pageWidthPx, startRight) : Number.POSITIVE_INFINITY;
+  const minY = pageHeightPx > 0 ? Math.min(startSlot.y, startTop) : Number.NEGATIVE_INFINITY;
+  const maxY = pageHeightPx > 0 ? Math.max(startSlot.y + pageHeightPx, startBottom) : Number.POSITIVE_INFINITY;
+  const px = Math.min(maxX, Math.max(minX, point.x));
+  const py = Math.min(maxY, Math.max(minY, point.y));
+  if (startFrame.singleLine) {
+    if (!edge.includes("e") && !edge.includes("w")) return null;
+    let x1 = startLeft;
+    let x2 = startRight;
+    if (edge.includes("w")) x1 = px;
+    if (edge.includes("e")) x2 = px;
+    const x = Math.min(x1, x2);
+    return {
+      page: startFrame.page,
+      xMm: x === startLeft ? startFrame.xMm : (x - startSlot.x) / PX_PER_MM,
+      yMm: startFrame.yMm,
+      wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
+      hMm: startFrame.hMm,
+    };
+  }
+  let x1 = startLeft;
+  let y1 = startTop;
+  let x2 = startRight;
+  let y2 = startBottom;
+  if (edge.includes("w")) x1 = px;
+  if (edge.includes("e")) x2 = px;
+  if (edge.includes("n")) y1 = py;
+  if (edge.includes("s")) y2 = py;
+  const x = Math.min(x1, x2);
+  const y = Math.min(y1, y2);
+  const wPx = Math.max(1, Math.abs(x2 - x1));
+  const hPx = Math.max(1, Math.abs(y2 - y1));
+  const newXMm = x === startLeft ? startFrame.xMm : (x - startSlot.x) / PX_PER_MM;
+  const newYMm = y === startTop ? startFrame.yMm : (y - startSlot.y) / PX_PER_MM;
+  const dxMm = newXMm - startFrame.xMm;
+  const dyMm = newYMm - startFrame.yMm;
+  const next: Pick<StudioFrame, "page" | "xMm" | "yMm" | "wMm" | "hMm"> & Partial<Pick<StudioFrame, "imageXMm" | "imageYMm">> = {
+    page: startFrame.page,
+    xMm: newXMm,
+    yMm: newYMm,
+    wMm: wPx / PX_PER_MM,
+    hMm: hPx / PX_PER_MM,
+  };
+  if (startFrame.imageSrc && (edge.includes("w") || edge.includes("n"))) {
+    if (edge.includes("w")) next.imageXMm = (startFrame.imageXMm ?? 0) - dxMm;
+    if (edge.includes("n")) next.imageYMm = (startFrame.imageYMm ?? 0) - dyMm;
+  }
+  return next;
+}
+
 export function isUndraggedShape(w: number, h: number): boolean {
   return Math.abs(w) < 4 && Math.abs(h) < 4;
 }
 
-function isPictureDrawTool(tool: StudioToolId): boolean {
+export function marqueeSelectedFrameIds(
+  frames: readonly StudioFrame[],
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  {
+    stride,
+    projection,
+    shiftKey = false,
+    initialSelected = [],
+  }: {
+    stride: number;
+    projection?: PageProjection;
+    shiftKey?: boolean;
+    initialSelected?: readonly string[];
+  },
+): string[] {
+  if (isUndraggedShape(end.x - start.x, end.y - start.y)) {
+    return shiftKey ? [...initialSelected] : [];
+  }
+  const left = Math.min(start.x, end.x);
+  const right = Math.max(start.x, end.x);
+  const top = Math.min(start.y, end.y);
+  const bottom = Math.max(start.y, end.y);
+  // Left-to-right selects fully enclosed objects; right-to-left selects intersected objects.
+  const requireEnclosed = end.x >= start.x;
+  const matched = frames
+    .filter((frame) => {
+      const slot = projection ? facingSlot(frame.page - 1, projection) : { x: 0, y: (frame.page - 1) * stride };
+      const fx1 = slot.x + frame.xMm * PX_PER_MM;
+      const fy1 = slot.y + frame.yMm * PX_PER_MM;
+      const fx2 = fx1 + frame.wMm * PX_PER_MM;
+      const fy2 = fy1 + frame.hMm * PX_PER_MM;
+      return requireEnclosed
+        ? fx1 >= left && fy1 >= top && fx2 <= right && fy2 <= bottom
+        : fx2 >= left && fx1 <= right && fy2 >= top && fy1 <= bottom;
+    })
+    .map((frame) => frame.id);
+  if (!shiftKey) return matched;
+  const next = new Set(initialSelected);
+  for (const id of matched) {
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+  }
+  return frames.filter((frame) => next.has(frame.id)).map((frame) => frame.id);
+}
+
+export function isPictureDrawTool(tool: StudioToolId): boolean {
   return tool === "cross-square" || tool === "cross-circle" || tool === "cross-round";
 }
 
-function pictureKindForTool(tool: StudioToolId): "picture-rect" | "picture-ellipse" | "picture-round-rect" | null {
+export function pictureKindForTool(tool: StudioToolId): "picture-rect" | "picture-ellipse" | "picture-round-rect" | null {
   if (tool === "cross-square") return "picture-rect";
   if (tool === "cross-circle") return "picture-ellipse";
   if (tool === "cross-round") return "picture-round-rect";
@@ -179,6 +354,13 @@ function constrainPictureDrag(w: number, h: number, shift: boolean): { w: number
   return { w: (w < 0 ? -1 : 1) * size, h: (h < 0 ? -1 : 1) * size };
 }
 
+export type StudioObjectLayerHandle = {
+  startMarquee: (event: { clientX: number; clientY: number; pointerId: number; shiftKey: boolean }) => void;
+  moveMarquee: (event: { clientX: number; clientY: number; pointerId: number }) => void;
+  endMarquee: (event: { clientX: number; clientY: number; pointerId: number; shiftKey: boolean }) => void;
+  cancelMarquee: () => void;
+};
+
 export function StudioObjectLayer({
   editor,
   tool,
@@ -187,6 +369,10 @@ export function StudioObjectLayer({
   onToolAction,
   onSelectedChange,
   onDoubleClickFrame,
+  onGestureBegin,
+  onGestureEnd,
+  frameHistoryBridge,
+  layerRef,
   selectedIds: selectedIdsProp,
   pageCount,
   pageWidthPx,
@@ -198,6 +384,7 @@ export function StudioObjectLayer({
   zoom = 1,
   projection: projectionProp,
   keyboardLayout,
+  pictureBoxDefaults,
 }: {
   editor: Editor | null;
   tool: StudioToolId;
@@ -206,10 +393,15 @@ export function StudioObjectLayer({
   zoom?:number;
   projection?:PageProjection;
   keyboardLayout?: KeyboardLayout | null;
-  onFramesChange: (frames: StudioFrame[]) => void;
+  pictureBoxDefaults?: PictureToolDefaults;
+  onFramesChange: (frames: StudioFrame[], source?: "gesture") => void;
   onToolAction: (tool: StudioToolId) => void;
   onSelectedChange?: (selectedIds: string[]) => void;
   onDoubleClickFrame?: (frame: StudioFrame) => void;
+  onGestureBegin?: () => void;
+  onGestureEnd?: () => void;
+  frameHistoryBridge?: StudioFrameHistoryBridge;
+  layerRef?: Ref<StudioObjectLayerHandle>;
   selectedIds?: string[];
   pageCount: number;
   pageWidthPx: number;
@@ -231,9 +423,9 @@ export function StudioObjectLayer({
   const [panningFrameId, setPanningFrameId] = useState<string | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
-    | { mode: "marquee"; x: number; y: number; pointer: number }
+    | { mode: "marquee"; x: number; y: number; pointer: number; initialSelected: string[] }
     | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string; peeled?: boolean }
-    | { mode: "resize"; id: string; edge: string; pointer: number }
+    | { mode: "resize"; id: string; edge: string; pointer: number; startFrame: StudioFrame; startSlot: { x: number; y: number } }
     | { mode: "pan"; id: string; x: number; y: number; pointer: number; startX: number; startY: number; angle: number }
     | null
   >(null);
@@ -251,21 +443,22 @@ export function StudioObjectLayer({
   framesRef.current = frames;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const toolRef = useRef(tool);
+  toolRef.current = tool;
 
-  // Switching to a drawing tool clears the object selection. Switching between
-  // the Arrow and Hand tools keeps a targeted picture box, so Insert > Picture
-  // and Import Picture still fill it.
+  // Preserve existing selection across tool switches so returning to the Arrow tool
+  // restores the selected object state; only select a freshly committed picture box
+  // or drop IDs that no longer exist.
   useEffect(() => {
-    const pictureIds = new Set(framesRef.current.filter((frame) => isPictureBox(frame.kind)).map((frame) => frame.id));
+    const existingIds = new Set(framesRef.current.map((frame) => frame.id));
     const fresh = pictureSelectionRef.current;
     pictureSelectionRef.current = null;
-    if (tool === "select" || tool === "text") {
-      const keep = selectedRef.current.filter((id) => pictureIds.has(id));
-      if (fresh && !keep.includes(fresh)) keep.push(fresh);
-      setSelected(keep);
+    if (fresh) {
+      setSelected(existingIds.has(fresh) ? [fresh] : []);
       return;
     }
-    setSelected([]);
+    const keep = selectedRef.current.filter((id) => existingIds.has(id));
+    if (keep.length !== selectedRef.current.length) setSelected(keep);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool]);
 
@@ -280,6 +473,7 @@ export function StudioObjectLayer({
 
   useEffect(() => {
     const clearOnEmpty = (event: PointerEvent) => {
+      if (event.shiftKey && toolRef.current === "select") return;
       const target = event.target as HTMLElement | null;
       // Any click in the document/pasteboard away from a frame dismisses the
       // previous object selection, whether the active tool is Arrow or Text.
@@ -287,6 +481,16 @@ export function StudioObjectLayer({
     };
     const clearOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (event.target instanceof Element && event.target.closest("[data-studio-object-ribbon]")) {
+          return;
+        }
+        if (
+          document.querySelector(
+            '[data-studio-picture-menu], [data-studio-picture-context-zoom], [data-studio-text-menu], [data-menu-dropdown], [role="dialog"], [role="listbox"]',
+          )
+        ) {
+          return;
+        }
         setSelected([]);
         setDraft(null);
         dragRef.current = null;
@@ -320,11 +524,12 @@ export function StudioObjectLayer({
     const root = rootRef.current;
     if (!root) return { x: 0, y: 0 };
     const rect = root.getBoundingClientRect();
-    const surface=root.closest<HTMLElement>("[data-studio-zoom-surface]");
-    const scale = surface ? surface.getBoundingClientRect().width/pageWidthPx : zoom;
-    const point={x:(event.clientX-rect.left)/scale,y:(event.clientY-rect.top)/scale};
-    const projection=editor?pageProjection(editor.view.dom):undefined;
-    return projection?unprojectPoint(point.x,point.y,projection):point;
+    const surface = root.closest<HTMLElement>("[data-studio-zoom-surface]");
+    const scale = projectionProp ? zoom : surface ? surface.getBoundingClientRect().width / pageWidthPx : zoom;
+    const point = { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
+    if (projectionProp) return point;
+    const projection = editor ? pageProjection(editor.view.dom) : undefined;
+    return projection ? unprojectPoint(point.x, point.y, projection) : point;
   };
 
   const pageOf = (y: number) => {
@@ -334,9 +539,67 @@ export function StudioObjectLayer({
 
   const onChangeRef = useRef(onFramesChange);
   onChangeRef.current = onFramesChange;
+  const onGestureBeginRef = useRef(onGestureBegin);
+  onGestureBeginRef.current = onGestureBegin;
+  const onGestureEndRef = useRef(onGestureEnd);
+  onGestureEndRef.current = onGestureEnd;
+  const gestureOpenRef = useRef(false);
 
-  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => {
-    onChangeRef.current(framesRef.current.map((frame) => {
+  const beginGesture = () => {
+    if (gestureOpenRef.current) return;
+    gestureOpenRef.current = true;
+    onGestureBeginRef.current?.();
+  };
+
+  const endGesture = () => {
+    if (!gestureOpenRef.current) return;
+    gestureOpenRef.current = false;
+    onGestureEndRef.current?.();
+  };
+
+  const emitFrames = (next: StudioFrame[], source?: "gesture") => {
+    onChangeRef.current(next, source);
+  };
+
+  useImperativeHandle(layerRef, () => ({
+    startMarquee(event) {
+      if (tool !== "select") return;
+      const initialSelected = event.shiftKey ? [...selectedRef.current] : [];
+      if (!event.shiftKey) setSelected([]);
+      const point = localPoint(event);
+      dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId, initialSelected };
+      setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
+    },
+    moveMarquee(event) {
+      const drag = dragRef.current;
+      if (!drag || drag.mode !== "marquee" || drag.pointer !== event.pointerId) return;
+      const point = localPoint(event);
+      setDraft({ x: drag.x, y: drag.y, w: point.x - drag.x, h: point.y - drag.y, flip: false });
+    },
+    endMarquee(event) {
+      const drag = dragRef.current;
+      if (!drag || drag.mode !== "marquee" || drag.pointer !== event.pointerId) return;
+      dragRef.current = null;
+      const point = localPoint(event);
+      setSelected(
+        marqueeSelectedFrameIds(framesRef.current, { x: drag.x, y: drag.y }, point, {
+          stride: pageHeightPx + gapPx,
+          projection: projectionProp,
+          shiftKey: event.shiftKey,
+          initialSelected: drag.initialSelected,
+        }),
+      );
+      setDraft(null);
+    },
+    cancelMarquee() {
+      if (dragRef.current?.mode !== "marquee") return;
+      dragRef.current = null;
+      setDraft(null);
+    },
+  }));
+
+  const updateFrame = (id: string, patch: Partial<Omit<StudioFrame, "paragraphAligns" | "textAlign">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }, source?: "gesture") => {
+    emitFrames(framesRef.current.map((frame) => {
       if (frame.id !== id) return frame;
       const { paragraphAligns, textAlign, ...rest } = patch;
       const next: StudioFrame = { ...frame, ...rest };
@@ -349,7 +612,7 @@ export function StudioObjectLayer({
         else next.textAlign = textAlign;
       }
       return next;
-    }));
+    }), source);
   };
 
   const commitBox = (box: { x: number; y: number; w: number; h: number; flip: boolean }) => {
@@ -383,21 +646,48 @@ export function StudioObjectLayer({
     } else if (textTool && (w < 4 || h < 4)) return;
     if (!singleLine && isUndraggedShape(w, h)) return;
     const stride = pageHeightPx + gapPx;
-    const page = pageOf(y);
-    const yOnPage = y - (page - 1) * stride;
+    let page: number;
+    let xOnPage: number;
+    let yOnPage: number;
+    if (projectionProp) {
+      const count = Math.max(1, pageCount, projectionProp.count);
+      const mapped = unprojectPoint(x + w / 2, y + (singleLine ? 0 : h / 2), { ...projectionProp, count });
+      page = Math.min(count, Math.max(1, mapped.page + 1));
+      const slot = facingSlot(page - 1, projectionProp);
+      xOnPage = x - slot.x;
+      yOnPage = Math.max(0, y - slot.y);
+    } else {
+      page = pageOf(y);
+      xOnPage = x;
+      yOnPage = Math.max(0, y - (page - 1) * stride);
+    }
     const frameTypography = typography ?? defaultDocumentSettings().typography;
+    const defaults = pictureBoxDefaults ?? DEFAULT_PICTURE_TOOL_DEFAULTS;
     const frame: StudioFrame = {
       id: newId(),
       kind,
       page,
-      xMm: x / PX_PER_MM,
-      yMm: Math.max(0, yOnPage) / PX_PER_MM,
+      xMm: xOnPage / PX_PER_MM,
+      yMm: yOnPage / PX_PER_MM,
       wMm: Math.max(1, w) / PX_PER_MM,
       hMm: singleLine ? singleLineOuterHeightMm(frameTypography) : Math.max(1, h) / PX_PER_MM,
       flip,
       text: "",
       typography,
       ...(singleLine ? { singleLine: true } : {}),
+      ...(isPictureBox(kind)
+        ? {
+            ...(isRectangularRunAroundBox({ kind, angle1Deg: defaults.angle1Deg }) ? { runAround: true } : {}),
+            borderColor: defaults.borderColor,
+            borderWidthMm: defaults.borderWidthMm,
+            borderPattern: defaults.borderPattern,
+            borderPosition: defaults.borderPosition,
+            ...(defaults.backgroundColor ? { backgroundColor: defaults.backgroundColor } : {}),
+            backgroundHatch: defaults.backgroundHatch,
+            ...(kind === "picture-round-rect" || defaults.roundnessMm !== 6.35 ? { roundnessMm: defaults.roundnessMm } : {}),
+            ...(defaults.angle1Deg !== 0 ? { angle1Deg: defaults.angle1Deg } : {}),
+          }
+        : {}),
     };
     if (textTool) pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
@@ -422,8 +712,18 @@ export function StudioObjectLayer({
       ref={rootRef}
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
-      style={{ width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
+      style={{ left: projectionProp ? 0 : undefined, right: projectionProp ? "auto" : undefined, bottom: projectionProp ? "auto" : undefined, width:projectionProp?facingExtent(projectionProp).width:undefined,height:projectionProp?facingExtent(projectionProp).height:undefined, pointerEvents: drawing || tool === "select" ? "auto" : "none", cursor: tool === "select" ? "default" : tool === "text" ? "text" : drawing ? "crosshair" : undefined }}
       onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => {
+        if (tool !== "select") return;
+        const target = event.target instanceof HTMLElement ? event.target : null;
+        if (target?.closest?.("[data-studio-frame-id]")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const detail = { id: "", x: event.clientX, y: event.clientY, tool: "select-empty" };
+        (window as Window & { __studioPictureContextRequest?: typeof detail }).__studioPictureContextRequest = detail;
+        window.dispatchEvent(new CustomEvent("studio-picture-context", { detail }));
+      }}
       onDoubleClick={(event) => {
         if (tool !== "select" && tool !== "text") return;
         const target = event.target as HTMLElement | null;
@@ -445,11 +745,12 @@ export function StudioObjectLayer({
         if (tool === "select") {
           event.preventDefault();
           event.stopPropagation();
-          setSelected([]);
+          const initialSelected = event.shiftKey ? [...selected] : [];
+          if (!event.shiftKey) setSelected([]);
           const point = localPoint(event);
-          dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId };
+          dragRef.current = { mode: "marquee", x: point.x, y: point.y, pointer: event.pointerId, initialSelected };
           setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
-          event.currentTarget.setPointerCapture(event.pointerId);
+          event.currentTarget.setPointerCapture?.(event.pointerId);
           return;
         }
         if (!drawing) return;
@@ -479,8 +780,7 @@ export function StudioObjectLayer({
             pictureDraggedRef.current = true;
             if (lastPressRef.current?.id === drag.pressedId) lastPressRef.current.moved = true;
           }
-          const dx = dxPx / PX_PER_MM;
-          const dy = dyPx / PX_PER_MM;
+          const placementOptions = { pageCount, pageHeightPx, gapPx, projection: projectionProp };
           if (!drag.peeled && Math.hypot(dxPx, dyPx) >= 4) {
             const template = drag.frames.find((frame) => frame.id === drag.pressedId && frame.template);
             if (template) {
@@ -494,37 +794,15 @@ export function StudioObjectLayer({
               setSelected([id]);
               const withClone = [...framesRef.current, clone];
               const peeled = new Map(drag.frames.map((frame) => [frame.id, frame]));
-              onChangeRef.current(withClone.map((frame) => {
+              emitFrames(withClone.map((frame) => {
                 const original = peeled.get(frame.id);
-                return original
-                  ? {
-                      ...frame,
-                      xMm: original.xMm + dx,
-                      yMm: original.yMm + dy,
-                      ...(isPictureBox(original.kind)
-                        ? {
-                            imageXMm: original.imageXMm,
-                            imageYMm: original.imageYMm,
-                            imageWMm: original.imageWMm,
-                            imageHMm: original.imageHMm,
-                          }
-                        : {}),
-                    }
-                  : frame;
-              }));
-              return;
-            }
-          }
-          const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
-          onChangeRef.current(framesRef.current.map((frame) => {
-            const original = moved.get(frame.id);
-            // Offsets stay box-relative so the picture travels with the box.
-            // Top/left resize, below, is what keeps the picture on the page.
-            return original
-              ? {
+                if (!original) return frame;
+                const placement = resolveMovedFramePlacement(original, dxPx, dyPx, placementOptions);
+                return {
                   ...frame,
-                  xMm: original.xMm + dx,
-                  yMm: original.yMm + dy,
+                  page: placement.page,
+                  xMm: placement.xMm,
+                  yMm: placement.yMm,
                   ...(isPictureBox(original.kind)
                     ? {
                         imageXMm: original.imageXMm,
@@ -533,9 +811,33 @@ export function StudioObjectLayer({
                         imageHMm: original.imageHMm,
                       }
                     : {}),
-                }
-              : frame;
-          }));
+                };
+              }), "gesture");
+              return;
+            }
+          }
+          const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
+          emitFrames(framesRef.current.map((frame) => {
+            const original = moved.get(frame.id);
+            // Offsets stay box-relative so the picture travels with the box.
+            // Top/left resize, below, is what keeps the picture on the page.
+            if (!original) return frame;
+            const placement = resolveMovedFramePlacement(original, dxPx, dyPx, placementOptions);
+            return {
+              ...frame,
+              page: placement.page,
+              xMm: placement.xMm,
+              yMm: placement.yMm,
+              ...(isPictureBox(original.kind)
+                ? {
+                    imageXMm: original.imageXMm,
+                    imageYMm: original.imageYMm,
+                    imageWMm: original.imageWMm,
+                    imageHMm: original.imageHMm,
+                  }
+                : {}),
+            };
+          }), "gesture");
           return;
         }
         if (drag.mode === "pan") {
@@ -546,68 +848,34 @@ export function StudioObjectLayer({
             if (lastPressRef.current?.id === drag.id) lastPressRef.current.moved = true;
           }
           const delta = pictureContentDeltaMm(dxPx, dyPx, drag.angle, PX_PER_MM);
-          updateFrame(drag.id, { imageXMm: drag.startX + delta.xMm, imageYMm: drag.startY + delta.yMm });
+          updateFrame(drag.id, { imageXMm: drag.startX + delta.xMm, imageYMm: drag.startY + delta.yMm }, "gesture");
           return;
         }
-        const frame = frames.find((item) => item.id === drag.id);
-        if (!frame) return;
-        if (frame.singleLine) {
-          if (!drag.edge.includes("e") && !drag.edge.includes("w")) return;
-          const left = frame.xMm * PX_PER_MM;
-          const right = left + frame.wMm * PX_PER_MM;
-          let x1 = left;
-          let x2 = right;
-          if (drag.edge.includes("w")) x1 = point.x;
-          if (drag.edge.includes("e")) x2 = point.x;
-          const x = Math.min(x1, x2);
-          pictureDraggedRef.current = true;
-          lastPressRef.current = null;
-          updateFrame(frame.id, {
-            xMm: x / PX_PER_MM,
-            wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
-          });
-          return;
-        }
-        const stride = pageHeightPx + gapPx;
-        const origin = (frame.page - 1) * stride;
-        const left = frame.xMm * PX_PER_MM;
-        const top = origin + frame.yMm * PX_PER_MM;
-        const right = left + frame.wMm * PX_PER_MM;
-        const bottom = top + frame.hMm * PX_PER_MM;
-        let x1 = left;
-        let y1 = top;
-        let x2 = right;
-        let y2 = bottom;
-        if (drag.edge.includes("w")) x1 = point.x;
-        if (drag.edge.includes("e")) x2 = point.x;
-        if (drag.edge.includes("n")) y1 = point.y;
-        if (drag.edge.includes("s")) y2 = point.y;
-        const x = Math.min(x1, x2);
-        const y = Math.min(y1, y2);
-        const newXMm = x / PX_PER_MM;
-        const newYMm = (y - origin) / PX_PER_MM;
-        const dxMm = newXMm - frame.xMm;
-        const dyMm = newYMm - frame.yMm;
-        const patch: Partial<StudioFrame> = {
-          xMm: newXMm,
-          yMm: newYMm,
-          wMm: Math.max(1, Math.abs(x2 - x1)) / PX_PER_MM,
-          hMm: Math.max(1, Math.abs(y2 - y1)) / PX_PER_MM,
-        };
+        const live = framesRef.current.find((item) => item.id === drag.id);
+        if (!live || live.locked) return;
+        const patch = resolveResizedFrameBounds(drag.startFrame, drag.edge, point, {
+          startSlot: drag.startSlot,
+          pageWidthPx,
+          pageHeightPx,
+        });
+        if (!patch) return;
         pictureDraggedRef.current = true;
         lastPressRef.current = null;
-        if (frame.imageSrc && (drag.edge.includes("w") || drag.edge.includes("n"))) {
-          if (dxMm !== 0) patch.imageXMm = (frame.imageXMm ?? 0) - dxMm;
-          if (dyMm !== 0) patch.imageYMm = (frame.imageYMm ?? 0) - dyMm;
-        }
-        updateFrame(frame.id, patch);
+        updateFrame(live.id, patch, "gesture");
       }}
       onPointerCancel={(event) => {
         dragRef.current = null;
         setPanningFrameId(null);
         setDraft(null);
+        endGesture();
         releaseCapturedPointer(event.currentTarget, event.pointerId);
         releaseCapturedPointer(event.target, event.pointerId);
+      }}
+      onLostPointerCapture={() => {
+        dragRef.current = null;
+        setPanningFrameId(null);
+        setDraft(null);
+        endGesture();
       }}
       onPointerUp={(event) => {
         const drag = dragRef.current;
@@ -622,16 +890,17 @@ export function StudioObjectLayer({
         }
         if (drag?.mode === "marquee") {
           const point = localPoint(event);
-          const left = Math.min(drag.x, point.x), right = Math.max(drag.x, point.x);
-          const top = Math.min(drag.y, point.y), bottom = Math.max(drag.y, point.y);
-          const stride = pageHeightPx + gapPx;
-          setSelected(isUndraggedShape(point.x - drag.x, point.y - drag.y) ? [] : framesRef.current.filter((frame) => {
-            const x = frame.xMm * PX_PER_MM;
-            const y = (frame.page - 1) * stride + frame.yMm * PX_PER_MM;
-            return x >= left && y >= top && x + frame.wMm * PX_PER_MM <= right && y + frame.hMm * PX_PER_MM <= bottom;
-          }).map((frame) => frame.id));
+          setSelected(
+            marqueeSelectedFrameIds(framesRef.current, { x: drag.x, y: drag.y }, point, {
+              stride: pageHeightPx + gapPx,
+              projection: projectionProp,
+              shiftKey: event.shiftKey,
+              initialSelected: drag.initialSelected,
+            }),
+          );
         }
         setDraft(null);
+        endGesture();
         releaseCapturedPointer(event.currentTarget, event.pointerId);
         releaseCapturedPointer(event.target, event.pointerId);
       }}
@@ -655,10 +924,12 @@ export function StudioObjectLayer({
             data-studio-frame={frame.kind}
             data-studio-frame-id={frame.id}
             onContextMenu={(event) => {
-              if (!isPictureBox(frame.kind)) return;
+              const isPicture = isPictureBox(frame.kind);
+              if (tool !== "select" && !isPicture) return;
               event.preventDefault();
-              setSelected([frame.id]);
-              const detail = { id: frame.id, x: event.clientX, y: event.clientY };
+              event.stopPropagation();
+              if (!selected.includes(frame.id)) setSelected([frame.id]);
+              const detail = { id: frame.id, x: event.clientX, y: event.clientY, tool };
               (window as Window & { __studioPictureContextRequest?: typeof detail }).__studioPictureContextRequest = detail;
               window.dispatchEvent(new CustomEvent("studio-picture-context", { detail }));
             }}
@@ -687,6 +958,7 @@ export function StudioObjectLayer({
                 if (frame.imageSrc && !frame.locked) {
                   const point = localPoint(event);
                   lastPressRef.current = { id: frame.id, moved: false };
+                  beginGesture();
                   setPanningFrameId(frame.id);
                   dragRef.current = {
                     mode: "pan",
@@ -718,6 +990,7 @@ export function StudioObjectLayer({
               if (tool !== "select" || !next.includes(frame.id) || frame.locked) return;
               const point = localPoint(event);
               lastPressRef.current = { id: frame.id, moved: false };
+              beginGesture();
               dragRef.current = {
                 mode: "move",
                 frames: framesRef.current.filter((item) => next.includes(item.id) && !item.locked),
@@ -729,7 +1002,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} historyBridge={frameHistoryBridge} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -758,12 +1031,28 @@ export function StudioObjectLayer({
                       border: "1px solid #000",
                       ...handlePos(edge),
                       pointerEvents: tool === "select" ? "auto" : "none",
+                      userSelect: "none",
                       cursor: tool !== "select" ? "inherit" : edge.length === 2 ? `${edge}-resize` : edge === "n" || edge === "s" ? "ns-resize" : "ew-resize",
                     }}
                     onPointerDown={(event) => {
+                      if (event.button === 2) return;
+                      event.preventDefault();
                       event.stopPropagation();
-                      if (frame.locked) return;
-                      dragRef.current = { mode: "resize", id: frame.id, edge, pointer: event.pointerId };
+                      const live = framesRef.current.find((item) => item.id === frame.id) ?? frame;
+                      if (live.locked) return;
+                      const stride = pageHeightPx + gapPx;
+                      const startSlot = projectionProp
+                        ? facingSlot(live.page - 1, projectionProp)
+                        : { x: 0, y: (live.page - 1) * stride };
+                      beginGesture();
+                      dragRef.current = {
+                        mode: "resize",
+                        id: live.id,
+                        edge,
+                        pointer: event.pointerId,
+                        startFrame: { ...live },
+                        startSlot,
+                      };
                       (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
                     }}
                   />
@@ -855,6 +1144,7 @@ function FrameShape({
   onRestore,
   onStyle,
   keyboardLayout,
+  historyBridge,
 }: {
   frame: StudioFrame;
   active: boolean;
@@ -866,25 +1156,38 @@ function FrameShape({
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   keyboardLayout?: KeyboardLayout | null;
+  historyBridge?: StudioFrameHistoryBridge;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
+    return <StudioTextFrame frameId={frame.id} historyBridge={historyBridge} text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
+  const hasExplicitNonePattern = frame.borderPattern === "none";
+  const hasExplicitPattern = frame.borderPattern !== undefined && !hasExplicitNonePattern;
   const strokeWidth = frame.borderWidthMm === undefined ? 1 : frame.borderWidthMm * PX_PER_MM;
-  const inset = frame.borderPosition === "outside" ? -strokeWidth / 2 : strokeWidth / 2;
+  const inset = hasExplicitNonePattern ? 0 : frame.borderPosition === "outside" ? -strokeWidth / 2 : strokeWidth / 2;
   const innerWidth = Math.max(0, width - 2 * inset);
   const innerHeight = Math.max(0, height - 2 * inset);
-  const clipInset = frame.borderPosition === "inside" ? strokeWidth : 0;
+  const clipInset = !hasExplicitNonePattern && frame.borderPosition === "inside" ? strokeWidth : 0;
+  const borderColor = frame.borderColor ?? "#000";
   const stroke = frame.borderWidthMm === undefined
-    ? { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
-    : { fill: "none" as const, stroke: frame.borderColor ?? "#000", strokeWidth: frame.borderWidthMm * PX_PER_MM };
+    ? { fill: "none" as const, stroke: borderColor, strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
+    : { fill: "none" as const, stroke: borderColor, strokeWidth: frame.borderWidthMm * PX_PER_MM };
+  const hairlineGuideStroke = {
+    fill: "none" as const,
+    stroke: "#a0a0a0",
+    strokeWidth: 0.5,
+    vectorEffect: "non-scaling-stroke" as const,
+  };
+  const patternParts = hasExplicitPattern ? resolveBorderStrokes(frame.borderPattern, strokeWidth) : null;
 
   if (isPictureBox(frame.kind)) {
     const rx = frame.kind === "picture-round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined;
     const clipStyle: CSSProperties =
       frame.kind === "picture-ellipse"
-        ? frame.borderPosition === "inside" ? { clipPath: `ellipse(calc(50% - ${clipInset}px) calc(50% - ${clipInset}px) at 50% 50%)` } : { clipPath: "ellipse(50% 50% at 50% 50%)", borderRadius: "50%" }
+        ? !hasExplicitNonePattern && frame.borderPosition === "inside"
+          ? { clipPath: `ellipse(calc(50% - ${clipInset}px) calc(50% - ${clipInset}px) at 50% 50%)` }
+          : { clipPath: "ellipse(50% 50% at 50% 50%)", borderRadius: "50%" }
         : frame.kind === "picture-round-rect"
           ? { clipPath: `inset(${clipInset}px round ${Math.max(0, pictureCornerRadiusPx(frame) - clipInset)}px)`, borderRadius: pictureCornerRadiusPx(frame) }
           : { clipPath: `inset(${clipInset}px)`, borderRadius: 0 };
@@ -893,6 +1196,11 @@ function FrameShape({
     const imgY = (frame.imageYMm ?? 0) * PX_PER_MM;
     const imgW = (frame.imageWMm ?? frame.wMm) * PX_PER_MM;
     const imgH = (frame.imageHMm ?? frame.hMm) * PX_PER_MM;
+    const diagStroke = hasExplicitNonePattern
+      ? hairlineGuideStroke
+      : hasExplicitPattern
+        ? { fill: "none" as const, stroke: borderColor, strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const }
+        : stroke;
 
     return (
       <div style={{ position: "relative", width, height, overflow: "visible", cursor: "inherit" }}>
@@ -909,6 +1217,8 @@ function FrameShape({
               width: imgW,
               height: imgH,
               maxWidth: "none",
+              maxHeight: "none",
+              objectFit: "fill",
               userSelect: "none",
               pointerEvents: "none",
               transform: frame.angle2Deg !== undefined && Math.abs(frame.angle2Deg) > 1e-9 ? `rotate(${-frame.angle2Deg}deg)` : undefined,
@@ -923,7 +1233,7 @@ function FrameShape({
           viewBox={`0 0 ${width} ${height}`}
           preserveAspectRatio="none"
           aria-hidden
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: frame.borderPosition === "outside" ? "visible" : undefined }}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: !hasExplicitNonePattern && frame.borderPosition === "outside" ? "visible" : undefined }}
         >
           {frame.kind === "picture-ellipse" ? (
             <>
@@ -935,12 +1245,40 @@ function FrameShape({
                     </clipPath>
                   </defs>
                   <g clipPath={`url(#clip-${frame.id})`}>
-                    <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-                    <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                    <line x1={0} y1={0} x2={width} y2={height} {...diagStroke} />
+                    <line x1={width} y1={0} x2={0} y2={height} {...diagStroke} />
                   </g>
                 </>
               ) : null}
-              <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} />
+              {hasExplicitNonePattern ? (
+                <ellipse
+                  cx={width / 2}
+                  cy={height / 2}
+                  rx={width / 2}
+                  ry={height / 2}
+                  data-studio-hairline-guide="true"
+                  {...hairlineGuideStroke}
+                />
+              ) : patternParts ? (
+                patternParts.map((part, idx) => {
+                  const pi = inset + part.insetDelta;
+                  return (
+                    <ellipse
+                      key={idx}
+                      cx={width / 2}
+                      cy={height / 2}
+                      rx={Math.max(0, width / 2 - pi)}
+                      ry={Math.max(0, height / 2 - pi)}
+                      fill="none"
+                      stroke={borderColor}
+                      strokeWidth={part.strokeWidth}
+                      strokeDasharray={part.dashArray}
+                    />
+                  );
+                })
+              ) : (
+                <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} />
+              )}
             </>
           ) : (
             <>
@@ -952,12 +1290,45 @@ function FrameShape({
                     </clipPath>
                   </defs>
                   <g clipPath={`url(#clip-${frame.id})`}>
-                    <line x1={0} y1={0} x2={width} y2={height} {...stroke} />
-                    <line x1={width} y1={0} x2={0} y2={height} {...stroke} />
+                    <line x1={0} y1={0} x2={width} y2={height} {...diagStroke} />
+                    <line x1={width} y1={0} x2={0} y2={height} {...diagStroke} />
                   </g>
                 </>
               ) : null}
-              <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} {...stroke} />
+              {hasExplicitNonePattern ? (
+                <rect
+                  x={0}
+                  y={0}
+                  width={width}
+                  height={height}
+                  rx={frame.kind === "picture-round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+                  data-studio-hairline-guide="true"
+                  {...hairlineGuideStroke}
+                />
+              ) : patternParts ? (
+                patternParts.map((part, idx) => {
+                  const pi = inset + part.insetDelta;
+                  const pw = Math.max(0, width - 2 * pi);
+                  const ph = Math.max(0, height - 2 * pi);
+                  const prx = frame.kind === "picture-round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - pi) : undefined;
+                  return (
+                    <rect
+                      key={idx}
+                      x={pi}
+                      y={pi}
+                      width={pw}
+                      height={ph}
+                      rx={prx}
+                      fill="none"
+                      stroke={borderColor}
+                      strokeWidth={part.strokeWidth}
+                      strokeDasharray={part.dashArray}
+                    />
+                  );
+                })
+              ) : (
+                <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={rx} {...stroke} />
+              )}
             </>
           )}
           {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#808080" strokeWidth={1} vectorEffect="non-scaling-stroke" /> : null}
@@ -967,13 +1338,127 @@ function FrameShape({
   }
 
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden style={{ overflow: frame.borderPosition === "outside" ? "visible" : undefined }}>
-      {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} fill={frame.backgroundColor ?? "none"} /> : null}
-        {frame.kind === "rect" || frame.kind === "round-rect" ? (
-        <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined} {...stroke} fill={frame.backgroundColor ?? "none"} />
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden style={{ overflow: !hasExplicitNonePattern && frame.borderPosition === "outside" ? "visible" : undefined }}>
+      {frame.kind === "ellipse" ? (
+        hasExplicitNonePattern ? (
+          <>
+            {frame.backgroundColor ? <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill={frame.backgroundColor} stroke="none" /> : null}
+            <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} data-studio-hairline-guide="true" {...hairlineGuideStroke} />
+          </>
+        ) : patternParts ? (
+          <>
+            {frame.backgroundColor ? <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill={frame.backgroundColor} stroke="none" /> : null}
+            {patternParts.map((part, idx) => {
+              const pi = inset + part.insetDelta;
+              return (
+                <ellipse
+                  key={idx}
+                  cx={width / 2}
+                  cy={height / 2}
+                  rx={Math.max(0, width / 2 - pi)}
+                  ry={Math.max(0, height / 2 - pi)}
+                  fill="none"
+                  stroke={borderColor}
+                  strokeWidth={part.strokeWidth}
+                  strokeDasharray={part.dashArray}
+                />
+              );
+            })}
+          </>
+        ) : (
+          <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} fill={frame.backgroundColor ?? "none"} />
+        )
+      ) : null}
+      {frame.kind === "rect" || frame.kind === "round-rect" ? (
+        hasExplicitNonePattern ? (
+          <>
+            {frame.backgroundColor ? (
+              <rect
+                x={0}
+                y={0}
+                width={width}
+                height={height}
+                rx={frame.kind === "round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+                fill={frame.backgroundColor}
+                stroke="none"
+              />
+            ) : null}
+            <rect
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              rx={frame.kind === "round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+              data-studio-hairline-guide="true"
+              {...hairlineGuideStroke}
+            />
+          </>
+        ) : patternParts ? (
+          <>
+            {frame.backgroundColor ? (
+              <rect
+                x={0}
+                y={0}
+                width={width}
+                height={height}
+                rx={frame.kind === "round-rect" ? pictureCornerRadiusPx(frame) : undefined}
+                fill={frame.backgroundColor}
+                stroke="none"
+              />
+            ) : null}
+            {patternParts.map((part, idx) => {
+              const pi = inset + part.insetDelta;
+              return (
+                <rect
+                  key={idx}
+                  x={pi}
+                  y={pi}
+                  width={Math.max(0, width - 2 * pi)}
+                  height={Math.max(0, height - 2 * pi)}
+                  rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - pi) : undefined}
+                  fill="none"
+                  stroke={borderColor}
+                  strokeWidth={part.strokeWidth}
+                  strokeDasharray={part.dashArray}
+                />
+              );
+            })}
+          </>
+        ) : (
+          <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? Math.max(0, pictureCornerRadiusPx(frame) - inset) : undefined} {...stroke} fill={frame.backgroundColor ?? "none"} />
+        )
       ) : null}
       {frame.kind === "line" ? (
-        <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
+        hasExplicitNonePattern ? (
+          <line x1={frame.flip ? width : 0} y1={0} x2={frame.flip ? 0 : width} y2={height} data-studio-hairline-guide="true" {...hairlineGuideStroke} />
+        ) : patternParts ? (
+          patternParts.map((part, idx) => {
+            const tx = frame.flip ? -width : width;
+            const ty = height;
+            const len = Math.hypot(tx, ty) || 1;
+            const nx = -ty / len;
+            const ny = tx / len;
+            const x1 = (frame.flip ? width - inset : inset) + nx * part.insetDelta;
+            const y1 = inset + ny * part.insetDelta;
+            const x2 = (frame.flip ? inset : width - inset) + nx * part.insetDelta;
+            const y2 = (height - inset) + ny * part.insetDelta;
+            return (
+              <line
+                key={idx}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                fill="none"
+                stroke={borderColor}
+                strokeWidth={part.strokeWidth}
+                strokeDasharray={part.dashArray}
+              />
+            );
+          })
+        ) : (
+          <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
+        )
       ) : null}
       {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#808080" strokeWidth={1} vectorEffect="non-scaling-stroke" /> : null}
     </svg>

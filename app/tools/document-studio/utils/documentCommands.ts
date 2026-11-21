@@ -9,7 +9,7 @@ import type { Editor } from "@tiptap/react";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 import { Slice, Fragment as pmFragment } from "@tiptap/pm/model";
-import { closeHistory } from "@tiptap/pm/history";
+import { closeHistory, history } from "@tiptap/pm/history";
 import { liftTarget } from "@tiptap/pm/transform";
 import { detectParagraphDirection, type ParagraphDirectionMode } from "./paragraphDirection";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
@@ -69,6 +69,21 @@ export function applyParagraphDirection(editor: Editor, mode: ParagraphDirection
   editor.commands.focus();
 }
 
+/** Clear ProseMirror's undo/redo history stacks without resetting any other plugin's state. */
+export function resetEditorHistory(editor: Editor): void {
+  if (editor.isDestroyed) return;
+  const state = editor.view.state;
+  const historyIndex = state.plugins.findIndex((plugin) => (plugin as { key?: string }).key === "history$");
+  if (historyIndex < 0) return;
+  const config = (state.plugins[historyIndex].spec as { config?: { depth?: number; newGroupDelay?: number } }).config;
+  const withoutHistory = state.reconfigure({
+    plugins: state.plugins.filter((_, index) => index !== historyIndex),
+  });
+  const nextPlugins = [...withoutHistory.plugins];
+  nextPlugins.splice(historyIndex, 0, history(config));
+  editor.view.updateState(withoutHistory.reconfigure({ plugins: nextPlugins }));
+}
+
 /** Replace editor JSON. `load` is not a user edit and must not join the next undo group. */
 export function setEditorContent(
   editor: Editor,
@@ -84,6 +99,10 @@ export function setEditorContent(
     })
     .setContent(content)
     .run();
+  if (origin === "load") {
+    resetEditorHistory(editor);
+    return;
+  }
   editor.view.dispatch(closeHistory(editor.view.state.tr).setMeta("addToHistory", false));
 }
 

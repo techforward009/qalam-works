@@ -1,4 +1,4 @@
-import { validatePrintFrames, frameTextNode } from "../../tools/document-studio/utils/printableFrames";
+import { filterPrintableFrames, validatePrintFrames, frameTextNode } from "../../tools/document-studio/utils/printableFrames";
 import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
 import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../../tools/document-studio/utils/pdfHeaderFooter";
 import { fontsForDocument } from "../../tools/document-studio/utils/pdfDocumentFonts";
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   }
   const { dir } = body;
   let frames;
-  try { frames = validatePrintFrames(body.frames); }
+  try { frames = filterPrintableFrames(validatePrintFrames(body.frames)); }
   catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 400 }); }
   const settings = parseDocumentSettings(body.settings);
   const admission = await pdfExportLimiter.acquireSlot(request.signal);
@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
       layout.heightMm - layout.margins.topMm - layout.margins.bottomMm,
       physical.leftMm,
       physical.rightMm,
+      { frames, topMarginMm: layout.margins.topMm, direction: dir },
     );
     if (frames.length) {
       const pageCount = Math.max(inkPagination.pages, ...frames.map(f => f.page));

@@ -6,6 +6,8 @@ import { blockLeadingPt } from './autoLeading';
 import type { DocNode } from './extractPlainText';
 import { isParagraphAlignList, type ParagraphAlign } from './paragraphAlign';
 import { normalizeSafeHex } from './studioColors';
+import { cssBorderStyleForPattern, isValidBorderPattern, resolveBorderStrokes } from './borderPatterns';
+import { validRunAroundFields } from './runAround';
 
 export const PRINT_FRAME_LIMITS = { count: 200, pages: 100, mm: 2000, text: 10000, totalText: 50000 } as const;
 const kinds = new Set([
@@ -40,7 +42,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
     if (f.paragraphAligns !== undefined && !isParagraphAlignList(f.paragraphAligns)) throw new Error('Invalid drawing frame paragraph alignment; export blocked');
     if (f.singleLine !== undefined && typeof f.singleLine !== 'boolean') throw new Error('Invalid drawing frame single-line flag; export blocked');
     if (f.borderWidthMm !== undefined && (typeof f.borderWidthMm !== 'number' || !Number.isFinite(f.borderWidthMm) || f.borderWidthMm <= 0 || f.borderWidthMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame border width; export blocked');
-    if (f.borderPattern !== undefined && f.borderPattern !== 'none') throw new Error('Invalid drawing frame border pattern; export blocked');
+    if (f.borderPattern !== undefined && !isValidBorderPattern(f.borderPattern)) throw new Error('Invalid drawing frame border pattern; export blocked');
     if (f.backgroundHatch !== undefined && f.backgroundHatch !== 'none') throw new Error('Invalid drawing frame background hatch; export blocked');
     if (f.imageSrc !== undefined) {
       if (typeof f.imageSrc !== 'string' || !/^data:image\/(?:png|jpeg|webp|gif|bmp);base64,/i.test(f.imageSrc)) {
@@ -50,12 +52,16 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
         throw new Error('Drawing image exceeds supported limit; export blocked');
       }
     }
+    if (f.imageName !== undefined && (typeof f.imageName !== 'string' || f.imageName.length > 512)) {
+      throw new Error('Invalid drawing frame image name; export blocked');
+    }
     for (const key of ['imageXMm', 'imageYMm', 'imageWMm', 'imageHMm', 'imageNaturalW', 'imageNaturalH'] as const) {
       if (f[key] !== undefined && (typeof f[key] !== 'number' || !Number.isFinite(f[key]))) {
         throw new Error('Invalid drawing frame picture geometry; export blocked');
       }
     }
     if (f.locked !== undefined && typeof f.locked !== 'boolean' || f.dontPrint !== undefined && typeof f.dontPrint !== 'boolean' || f.template !== undefined && typeof f.template !== 'boolean') throw new Error('Invalid drawing frame flags; export blocked');
+    if (!validRunAroundFields(f)) throw new Error('Invalid drawing frame run around; export blocked');
     if (f.roundnessMm !== undefined && (typeof f.roundnessMm !== 'number' || !Number.isFinite(f.roundnessMm) || f.roundnessMm < 0 || f.roundnessMm > PRINT_FRAME_LIMITS.mm)) throw new Error('Invalid drawing frame roundness; export blocked');
     if (f.angle1Deg !== undefined && (typeof f.angle1Deg !== 'number' || !Number.isFinite(f.angle1Deg) || Math.abs(f.angle1Deg) > 3600)) throw new Error('Invalid drawing frame angle; export blocked');
     if (f.angle2Deg !== undefined && (typeof f.angle2Deg !== 'number' || !Number.isFinite(f.angle2Deg) || Math.abs(f.angle2Deg) > 3600)) throw new Error('Invalid drawing frame angle; export blocked');
@@ -70,6 +76,7 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.paragraphAligns !== undefined ? { paragraphAligns: f.paragraphAligns } : {}),
       ...(f.singleLine !== undefined ? { singleLine: f.singleLine } : {}),
       ...(f.imageSrc !== undefined ? { imageSrc: f.imageSrc } : {}),
+      ...(f.imageName !== undefined ? { imageName: f.imageName } : {}),
       ...(f.imageNaturalW !== undefined ? { imageNaturalW: f.imageNaturalW } : {}),
       ...(f.imageNaturalH !== undefined ? { imageNaturalH: f.imageNaturalH } : {}),
       ...(f.imageXMm !== undefined ? { imageXMm: f.imageXMm } : {}),
@@ -88,6 +95,11 @@ export function validatePrintFrames(input: unknown): StudioFrame[] {
       ...(f.borderPattern !== undefined ? { borderPattern: f.borderPattern } : {}),
       ...(f.backgroundColor !== undefined ? { backgroundColor: normalizeSafeHex(f.backgroundColor)! } : {}),
       ...(f.backgroundHatch !== undefined ? { backgroundHatch: f.backgroundHatch } : {}),
+      ...(f.runAround !== undefined ? { runAround: f.runAround } : {}),
+      ...(f.runAroundLeftMm !== undefined ? { runAroundLeftMm: f.runAroundLeftMm } : {}),
+      ...(f.runAroundRightMm !== undefined ? { runAroundRightMm: f.runAroundRightMm } : {}),
+      ...(f.runAroundTopMm !== undefined ? { runAroundTopMm: f.runAroundTopMm } : {}),
+      ...(f.runAroundBottomMm !== undefined ? { runAroundBottomMm: f.runAroundBottomMm } : {}),
     };
   });
 }
@@ -128,34 +140,63 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
   const attr = `data-print-frame="${frame.kind}" data-print-frame-id="${escape(frame.id)}" data-print-frame-page="${frame.page}"`;
   if (frame.kind === 'text') {
     const t = frameTypography(frame), family = getFontById(t.defaultRtlFontId).cssStack, leading = blockLeadingPt({ type: 'paragraph' }, family, t, 'rtl');
-    const textBorder = `border:${frame.borderWidthMm ?? 0.2645833333}mm solid ${escape(frame.borderColor ?? "#000")};`;
+    const cssBorderStyle = cssBorderStyleForPattern(frame.borderPattern);
+    const textBorder = cssBorderStyle === 'none'
+      ? 'border:none;'
+      : `border:${frame.borderWidthMm ?? 0.2645833333}mm ${cssBorderStyle} ${escape(frame.borderColor ?? "#000")};`;
     const textBackground = frame.backgroundColor ? `background:${escape(frame.backgroundColor)};` : "background:transparent;";
     const textAlign = frame.textAlign === 'justify-all' ? 'justify' : frame.textAlign ?? 'start';
     const textAlignLast = frame.textAlign === 'justify-all' ? 'text-align-last:justify;' : '';
     const paragraphs = frameParagraphMarkup(frame, leading);
     return `<div ${attr}${frame.singleLine ? ' data-print-frame-single-line="true"' : ''} data-print-frame-font="${escape(getFontById(t.defaultRtlFontId).editorFamily)}" dir="rtl" style="${geometry}${textBorder}padding:0.5291666667mm;overflow:hidden;${textBackground}color:${escape(frame.textColor ?? '#000')};font-family:${escape(family)}!important;font-size:${t.bodyFontSizePt}pt;line-height:${leading}pt;direction:rtl;unicode-bidi:plaintext;text-align:${textAlign};${textAlignLast}white-space:${frame.singleLine ? 'nowrap' : 'pre-wrap'};${frame.singleLine ? '' : 'overflow-wrap:break-word;'}text-indent:0;tab-size:8;font-kerning:auto;-webkit-text-size-adjust:none;text-size-adjust:none;font-variant-ligatures:normal;font-feature-settings:normal;">${paragraphs ?? textHtml ?? escape(frame.text)}</div>`;
   }
+  const hasExplicitNonePattern = frame.borderPattern === 'none';
+  const hasExplicitPattern = frame.borderPattern !== undefined && !hasExplicitNonePattern;
   const legacyStroke = 'fill="none" stroke="#000" stroke-width="0.2645833333"';
   const borderColor = frame.borderColor ?? '#000';
   const borderWidth = frame.borderWidthMm ?? 0.2645833333;
   const stroke = frame.borderWidthMm === undefined
     ? frame.borderColor === undefined ? legacyStroke : `fill="none" stroke="${escape(borderColor)}" stroke-width="0.2645833333"`
     : `fill="none" stroke="${escape(borderColor)}" stroke-width="${borderWidth}"`;
-  const inset = frame.borderPosition === 'outside' ? -borderWidth / 2 : borderWidth / 2;
-  const clipInset = frame.borderPosition === 'inside' ? borderWidth : 0;
+  const inset = hasExplicitNonePattern ? 0 : frame.borderPosition === 'outside' ? -borderWidth / 2 : borderWidth / 2;
+  const clipInset = !hasExplicitNonePattern && frame.borderPosition === 'inside' ? borderWidth : 0;
+  const patternParts = hasExplicitPattern ? resolveBorderStrokes(frame.borderPattern, borderWidth) : null;
+  const formatPartStroke = (partWidth: number, dashArray?: string) =>
+    `fill="none" stroke="${escape(borderColor)}" stroke-width="${Number(partWidth.toFixed(6))}"${dashArray ? ` stroke-dasharray="${dashArray}"` : ''}`;
   if (frame.kind === 'picture-rect' || frame.kind === 'picture-ellipse' || frame.kind === 'picture-round-rect') {
     const clipId = `print-clip-${escape(frame.id)}-${frame.page}`;
     let clipShape = '';
     let outlineShape = '';
     if (frame.kind === 'picture-ellipse') {
       clipShape = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - clipInset)}" ry="${Math.max(0, h / 2 - clipInset)}"/>`;
-      outlineShape = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - inset)}" ry="${Math.max(0, h / 2 - inset)}" ${stroke}/>`;
+      if (!hasExplicitNonePattern) {
+        outlineShape = patternParts
+          ? patternParts.map((part) => {
+              const pi = inset + part.insetDelta;
+              return `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - pi)}" ry="${Math.max(0, h / 2 - pi)}" ${formatPartStroke(part.strokeWidth, part.dashArray)}/>`;
+            }).join('')
+          : `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - inset)}" ry="${Math.max(0, h / 2 - inset)}" ${stroke}/>`;
+      }
     } else if (frame.kind === 'picture-round-rect') {
       clipShape = `<rect x="${clipInset}" y="${clipInset}" width="${Math.max(0, w - 2 * clipInset)}" height="${Math.max(0, h - 2 * clipInset)}" rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - clipInset)}"/>`;
-      outlineShape = `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - inset)}" ${stroke}/>`;
+      if (!hasExplicitNonePattern) {
+        outlineShape = patternParts
+          ? patternParts.map((part) => {
+              const pi = inset + part.insetDelta;
+              return `<rect x="${pi}" y="${pi}" width="${Math.max(0, w - 2 * pi)}" height="${Math.max(0, h - 2 * pi)}" rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - pi)}" ${formatPartStroke(part.strokeWidth, part.dashArray)}/>`;
+            }).join('')
+          : `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - inset)}" ${stroke}/>`;
+      }
     } else {
       clipShape = `<rect x="${clipInset}" y="${clipInset}" width="${Math.max(0, w - 2 * clipInset)}" height="${Math.max(0, h - 2 * clipInset)}"/>`;
-      outlineShape = `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" ${stroke}/>`;
+      if (!hasExplicitNonePattern) {
+        outlineShape = patternParts
+          ? patternParts.map((part) => {
+              const pi = inset + part.insetDelta;
+              return `<rect x="${pi}" y="${pi}" width="${Math.max(0, w - 2 * pi)}" height="${Math.max(0, h - 2 * pi)}" ${formatPartStroke(part.strokeWidth, part.dashArray)}/>`;
+            }).join('')
+          : `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" ${stroke}/>`;
+      }
     }
 
     const defs = `<defs><clipPath id="${clipId}">${clipShape}</clipPath></defs>`;
@@ -169,7 +210,7 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
       const angle2 = frame.angle2Deg ?? 0;
       const imageRotation = Math.abs(angle2) > 1e-9 ? ` transform="rotate(${-angle2} ${ix + iw / 2} ${iy + ih / 2})"` : '';
       content = `<g clip-path="url(#${clipId})"><rect x="0" y="0" width="${w}" height="${h}" fill="${escape(frame.backgroundColor ?? "#ffffff")}"/><image href="${escape(frame.imageSrc)}" xlink:href="${escape(frame.imageSrc)}" x="${ix}" y="${iy}" width="${iw}" height="${ih}" preserveAspectRatio="none"${imageRotation}/></g>`;
-    } else {
+    } else if (!hasExplicitNonePattern) {
       const diags = `<line x1="0" y1="0" x2="${w}" y2="${h}" ${stroke}/><line x1="${w}" y1="0" x2="0" y2="${h}" ${stroke}/>`;
       content = `<g clip-path="url(#${clipId})">${diags}</g>`;
     }
@@ -178,13 +219,53 @@ export function renderPrintFrame(frame: StudioFrame, textHtml?: string): string 
     return `<svg ${attr} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${w} ${h}" style="${geometry}overflow:${rotated || frame.borderPosition === 'outside' ? 'visible' : 'hidden'};" aria-hidden="true">${defs}${background}${content}${outlineShape}</svg>`;
   }
   let shape = '';
-  if (frame.kind === 'line') shape = `<line x1="${frame.flip ? w - inset : inset}" y1="${inset}" x2="${frame.flip ? inset : w - inset}" y2="${h - inset}" ${stroke}/>`;
-  else if (frame.kind === 'ellipse') shape = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - inset)}" ry="${Math.max(0, h / 2 - inset)}" ${stroke}/>`;
-  else shape = `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" ${frame.kind === 'round-rect' ? `rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - inset)}"` : ''} ${stroke}/>`;
-  const bg = frame.backgroundColor ? `<rect x="0" y="0" width="${w}" height="${h}" fill="${escape(frame.backgroundColor)}"/>` : '';
+  if (!hasExplicitNonePattern) {
+    if (frame.kind === 'line') {
+      if (patternParts) {
+        const tx = frame.flip ? -w : w;
+        const ty = h;
+        const len = Math.hypot(tx, ty) || 1;
+        const nx = -ty / len;
+        const ny = tx / len;
+        const x1Base = frame.flip ? w - inset : inset;
+        const y1Base = inset;
+        const x2Base = frame.flip ? inset : w - inset;
+        const y2Base = h - inset;
+        shape = patternParts.map((part) =>
+          `<line x1="${x1Base + nx * part.insetDelta}" y1="${y1Base + ny * part.insetDelta}" x2="${x2Base + nx * part.insetDelta}" y2="${y2Base + ny * part.insetDelta}" ${formatPartStroke(part.strokeWidth, part.dashArray)}/>`,
+        ).join('');
+      } else {
+        shape = `<line x1="${frame.flip ? w - inset : inset}" y1="${inset}" x2="${frame.flip ? inset : w - inset}" y2="${h - inset}" ${stroke}/>`;
+      }
+    } else if (frame.kind === 'ellipse') {
+      shape = patternParts
+        ? patternParts.map((part) => {
+            const pi = inset + part.insetDelta;
+            return `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - pi)}" ry="${Math.max(0, h / 2 - pi)}" ${formatPartStroke(part.strokeWidth, part.dashArray)}/>`;
+          }).join('')
+        : `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0, w / 2 - inset)}" ry="${Math.max(0, h / 2 - inset)}" ${stroke}/>`;
+    } else {
+      shape = patternParts
+        ? patternParts.map((part) => {
+            const pi = inset + part.insetDelta;
+            return `<rect x="${pi}" y="${pi}" width="${Math.max(0, w - 2 * pi)}" height="${Math.max(0, h - 2 * pi)}" ${frame.kind === 'round-rect' ? `rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - pi)}"` : ''} ${formatPartStroke(part.strokeWidth, part.dashArray)}/>`;
+          }).join('')
+        : `<rect x="${inset}" y="${inset}" width="${Math.max(0, w - 2 * inset)}" height="${Math.max(0, h - 2 * inset)}" ${frame.kind === 'round-rect' ? `rx="${Math.max(0, (frame.roundnessMm ?? 6.35) - inset)}"` : ''} ${stroke}/>`;
+    }
+  }
+  const bg = frame.backgroundColor
+    ? frame.kind === 'line'
+      ? ''
+      : frame.kind === 'ellipse'
+        ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${escape(frame.backgroundColor)}"/>`
+        : `<rect x="0" y="0" width="${w}" height="${h}" ${frame.kind === 'round-rect' ? `rx="${frame.roundnessMm ?? 6.35}"` : ''} fill="${escape(frame.backgroundColor)}"/>`
+    : '';
   return `<svg ${attr} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="${geometry}overflow:${rotated || frame.borderPosition === 'outside' ? 'visible' : 'hidden'};" aria-hidden="true">${bg}${shape}</svg>`;
 }
+export function filterPrintableFrames<T extends { dontPrint?: boolean }>(frames: readonly T[]): T[] {
+  return frames.filter(frame => frame.dontPrint !== true);
+}
 export function printFramePageMarkup(frames: StudioFrame[], width: number, height: number): string {
-  const printable = frames.filter(frame => frame.dontPrint !== true);
+  const printable = filterPrintableFrames(frames);
   return Array.from(new Set(printable.map(f => f.page))).sort((a, b) => a - b).map(page => `<div data-print-object-page="${page}" style="position:absolute;left:0;top:${framePrintTopMm({ page, yMm: 0 }, height)}mm;width:${width}mm;height:${height}mm;overflow:hidden;pointer-events:none;z-index:10;">${printable.filter(f => f.page === page).map(f => renderPrintFrame(f)).join('')}</div>`).join('');
 }

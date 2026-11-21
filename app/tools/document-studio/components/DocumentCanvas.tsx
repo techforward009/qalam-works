@@ -10,6 +10,7 @@ import {StudioFacingLayout} from "./StudioFacingLayout";
 import {useFacingPageInteraction} from "./useFacingPageInteraction";
 import {facingSlot,facingRow,facingPadding,facingExtent,projectPoint,withCanonicalPages,requestCanonicalFrame,cancelCanonicalFrame} from "../utils/facingPages";
 import { StudioLineLayout } from "./StudioLineLayout";
+import { StudioRunAround } from "./StudioRunAround";
 import { useStudioZoomVisibility } from "./useStudioZoomVisibility";
 import { StudioTextSelection } from "./StudioTextSelection";
 import { StudioTextEffects } from "./StudioTextEffects";
@@ -23,6 +24,7 @@ import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { KeyboardLayout } from "../utils/inpageKeyboard";
+import type { PictureToolDefaults } from "../utils/objectAttributes";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
   DOCUMENT_ZOOM_PRESETS,
@@ -36,6 +38,7 @@ import {
 } from "../utils/documentView";
 import {
   applyQalamPagination,
+  effectiveMinimumPageCount,
   getQalamPaginationState,
   pageStackHeightPx,
   paginationGeometryFromLayout,
@@ -44,7 +47,8 @@ import type { RulerUnit } from "../utils/rulerLayout";
 import { MarginGuides } from "./MarginGuides";
 import { InPageToolPalette, type StudioToolId } from "./InPageToolPalette";
 import { WindowRuler } from "./WindowRuler";
-import { StudioObjectLayer, type StudioFrame } from "./StudioObjectLayer";
+import { StudioObjectLayer, type StudioFrame, type StudioObjectLayerHandle } from "./StudioObjectLayer";
+import type { StudioFrameHistoryBridge } from "./StudioTextFrame";
 import {
   INPAGE_HSCROLL_PX,
   INPAGE_RULER_BAR_PX,
@@ -84,9 +88,13 @@ export default function DocumentCanvas({
   selectedFrameIds,
   onSelectedFramesChange,
   onDoubleClickFrame,
+  onObjectGestureBegin,
+  onObjectGestureEnd,
+  frameHistoryBridge,
   tool: toolProp,
   englishFont = "Arial Unicode MS",
   keyboardLayout = null,
+  pictureBoxDefaults,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -111,18 +119,24 @@ export default function DocumentCanvas({
   columnGutterMm?: number;
   minimumPages?: number;
   frames?: StudioFrame[];
-  onFramesChange?: (frames: StudioFrame[]) => void;
+  onFramesChange?: (frames: StudioFrame[], source?: "gesture") => void;
   selectedFrameIds?: string[];
   onSelectedFramesChange?: (ids: string[]) => void;
   onDoubleClickFrame?: (frame: StudioFrame) => void;
+  onObjectGestureBegin?: () => void;
+  onObjectGestureEnd?: () => void;
+  frameHistoryBridge?: StudioFrameHistoryBridge;
   tool?: StudioToolId;
   englishFont?: string;
   keyboardLayout?: KeyboardLayout | null;
+  pictureBoxDefaults?: PictureToolDefaults;
 }) {
   const isPages = viewMode !== "pageless";
   const facing=viewMode === "facing";
   useFacingPageInteraction(editor,facing);
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const objectLayerRef = useRef<StudioObjectLayerHandle>(null);
+  const pasteboardMarqueeRef = useRef<number | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const hShiftRef = useRef<HTMLDivElement>(null);
   const vShiftRef = useRef<HTMLDivElement>(null);
@@ -164,7 +178,8 @@ export default function DocumentCanvas({
   }, [isPages]);
 
   const natural = layoutNaturalSizePx(pageLayout);
-  const geometry = paginationGeometryFromLayout(pageLayout, dir, isPages, minimumPages);
+  const effectiveMinimumPages = effectiveMinimumPageCount(minimumPages, frames);
+  const geometry = paginationGeometryFromLayout(pageLayout, dir, isPages, effectiveMinimumPages);
 
   useEffect(() => {
     applyQalamPagination(editor, geometry);
@@ -213,12 +228,12 @@ export default function DocumentCanvas({
   const hScrollPx = isPages ? INPAGE_HSCROLL_PX : 0;
   const scrollerWidth = scrollerBox.w > 0 ? scrollerBox.w : Math.max(0, availableWidth - toolboxPx - vRulerPx - vScrollPx);
   const scrollerHeight = scrollerBox.h > 0 ? scrollerBox.h : Math.max(0, availableHeight - hRulerPx - hScrollPx);
-  const pageCount = isPages ? Math.max(1, livePageCount) : 1;
+  const pageCount = isPages ? Math.max(effectiveMinimumPages, livePageCount) : 1;
   useEffect(() => {
     onPageCountChange?.(isPages ? pageCount : null);
   }, [isPages, pageCount, onPageCountChange]);
   const stackHeight = isPages ? pageStackHeightPx(pageCount, natural.heightPx, PAGE_STACK_GAP_PX) : undefined;
-  const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, scrollerWidth || PAGELESS_MAX_WIDTH_PX);
+  const baseWidth = isPages || frames.length ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, scrollerWidth || PAGELESS_MAX_WIDTH_PX);
   const projection=facing?{width:natural.widthPx,height:natural.heightPx,gap:PAGE_STACK_GAP_PX,count:pageCount}:undefined;
   const spread=projection?facingExtent(projection):null;
   const bottomPad = 24;
@@ -229,7 +244,7 @@ export default function DocumentCanvas({
     scrollerWidth,
     Math.max(0, scrollerHeight - PASTEBOARD_TOP_PX - bottomPad),
   );
-  useStudioZoomVisibility(editor,zoomFactor,scrollerRef,viewMode);
+  useStudioZoomVisibility(editor,zoomFactor,scrollerRef,viewMode,selectedFrameIds);
   useStudioPageAnchor(editor,scrollerRef,viewMode,viewAnchor);
   const visualWidth = (spread?.width ?? baseWidth) * zoomFactor;
   const visualPageHeight = natural.heightPx * zoomFactor;
@@ -441,22 +456,68 @@ export default function DocumentCanvas({
             ref={scrollerRef}
             className="relative isolate min-h-0 min-w-0 flex-1 overflow-auto"
             data-studio-scroller="true"
-            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined, scrollbarWidth: "none" }}
+            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : undefined, scrollbarWidth: "none" }}
+            onContextMenu={(event) => {
+              if (!isPages || tool !== "select") return;
+              const target = event.target instanceof Element ? event.target : null;
+              if (target?.closest("[data-studio-objects]")) return;
+              event.preventDefault();
+              event.stopPropagation();
+              const detail = { id: "", x: event.clientX, y: event.clientY, tool: "select-empty" };
+              (window as Window & { __studioPictureContextRequest?: typeof detail }).__studioPictureContextRequest = detail;
+              window.dispatchEvent(new CustomEvent("studio-picture-context", { detail }));
+            }}
             onPointerDown={(event) => {
-              if (tool !== "hand") return;
-              const el = scrollerRef.current;
-              if (!el) return;
-              panRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, sl: el.scrollLeft, st: el.scrollTop };
-              el.setPointerCapture(event.pointerId);
+              if (tool === "hand") {
+                const el = scrollerRef.current;
+                if (!el) return;
+                panRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, sl: el.scrollLeft, st: el.scrollTop };
+                el.setPointerCapture?.(event.pointerId);
+                return;
+              }
+              if (isPages && tool === "select" && event.button === 0) {
+                const target = event.target instanceof Element ? event.target : null;
+                if (target?.closest("[data-studio-objects]")) return;
+                event.preventDefault();
+                pasteboardMarqueeRef.current = event.pointerId;
+                objectLayerRef.current?.startMarquee(event);
+                event.currentTarget.setPointerCapture?.(event.pointerId);
+              }
             }}
             onPointerMove={(event) => {
+              if (pasteboardMarqueeRef.current === event.pointerId) {
+                objectLayerRef.current?.moveMarquee(event);
+                return;
+              }
               const pan = panRef.current;
               const el = scrollerRef.current;
               if (!pan || !el || pan.id !== event.pointerId) return;
               el.scrollLeft = pan.sl - (event.clientX - pan.x);
               el.scrollTop = pan.st - (event.clientY - pan.y);
             }}
-            onPointerUp={() => {
+            onPointerUp={(event) => {
+              if (pasteboardMarqueeRef.current === event.pointerId) {
+                pasteboardMarqueeRef.current = null;
+                objectLayerRef.current?.endMarquee(event);
+                if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                }
+                return;
+              }
+              panRef.current = null;
+            }}
+            onPointerCancel={() => {
+              if (pasteboardMarqueeRef.current !== null) {
+                pasteboardMarqueeRef.current = null;
+                objectLayerRef.current?.cancelMarquee();
+              }
+              panRef.current = null;
+            }}
+            onLostPointerCapture={() => {
+              if (pasteboardMarqueeRef.current !== null) {
+                pasteboardMarqueeRef.current = null;
+                objectLayerRef.current?.cancelMarquee();
+              }
               panRef.current = null;
             }}
           >
@@ -622,7 +683,7 @@ export default function DocumentCanvas({
                       role="textbox"
                       aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
                     >
-                      <div className={isPages ? undefined : "px-5 py-6 sm:px-8 sm:py-8"}>
+                      <div className={!isPages && !frames.length ? "px-5 py-6 sm:px-8 sm:py-8" : undefined}>
                         <EditorContent
                           editor={editor}
                           className={`qalam-editor-content focus:outline-none ${isPages ? "qalam-doc-page qalam-view-pages" : "qalam-view-pageless"} ${
@@ -630,25 +691,28 @@ export default function DocumentCanvas({
                           }`}
                           style={typeVars}
                         />
-                        {isPages ? (
-                          <StudioObjectLayer zoom={zoomFactor} projection={projection}
-                            editor={editor} keyboardLayout={keyboardLayout}
-                            tool={tool}
-                            frames={frames}
-                            typography={documentSettings.typography}
-                            onFramesChange={onFramesChange ?? (() => undefined)}
-                            onToolAction={chooseTool}
-                            selectedIds={selectedFrameIds}
-                            onSelectedChange={onSelectedFramesChange}
-                            onDoubleClickFrame={onDoubleClickFrame}
-                            pageCount={pageCount}
-                            pageWidthPx={natural.widthPx}
-                            pageHeightPx={natural.heightPx}
-                            gapPx={PAGE_STACK_GAP_PX}
-                            marginTopPx={geometry.marginTopPx}
-                            marginRightPx={geometry.marginRightPx}
-                          />
-                        ) : null}
+                        <StudioObjectLayer zoom={zoomFactor} projection={projection}
+                          layerRef={objectLayerRef}
+                          onGestureBegin={onObjectGestureBegin}
+                          onGestureEnd={onObjectGestureEnd}
+                          frameHistoryBridge={frameHistoryBridge}
+                          editor={editor} keyboardLayout={keyboardLayout}
+                          tool={tool}
+                          frames={frames}
+                          typography={documentSettings.typography}
+                          onFramesChange={onFramesChange ?? (() => undefined)}
+                          onToolAction={chooseTool}
+                          selectedIds={selectedFrameIds}
+                          onSelectedChange={onSelectedFramesChange}
+                          onDoubleClickFrame={onDoubleClickFrame}
+                          pictureBoxDefaults={pictureBoxDefaults}
+                          pageCount={pageCount}
+                          pageWidthPx={natural.widthPx}
+                          pageHeightPx={natural.heightPx}
+                          gapPx={PAGE_STACK_GAP_PX}
+                          marginTopPx={geometry.marginTopPx}
+                          marginRightPx={geometry.marginRightPx}
+                        />
                       </div>
                     </div>
                   </div>
@@ -683,13 +747,14 @@ export default function DocumentCanvas({
       {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
         <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
       </div> : null}
-      <StudioFacingLayout editor={editor} geometry={projection??null} zoom={zoomFactor}/><StudioLineLayout editor={editor} />
+      <StudioFacingLayout editor={editor} geometry={projection??null} zoom={zoomFactor}/><StudioLineLayout editor={editor} /><StudioRunAround editor={editor} frames={frames} />
       <StudioTextSelection editor={editor} zoom={zoomFactor} revision={viewMode} />
       <StudioTextEffects editor={editor} zoom={zoomFactor} revision={viewMode} />
       <style jsx global>{`
         .qalam-editor-content .ProseMirror {
           font-variant-ligatures: normal;
           font-feature-settings: normal;
+          text-rendering: geometricPrecision;
         }
         .qalam-editor-content.qalam-doc-page .ProseMirror,
         .qalam-editor-content.qalam-view-pageless .ProseMirror {
@@ -763,6 +828,9 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror [data-text-align="justify-all"] {
           text-align: justify !important;
           text-align-last: justify !important;
+          text-justify: inter-word;
+        }
+        .qalam-editor-content .ProseMirror [data-run-around-justify="true"] {
           text-justify: inter-word;
         }
         .qalam-editor-content [data-studio-arabic-run] {

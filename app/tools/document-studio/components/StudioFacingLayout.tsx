@@ -5,7 +5,9 @@ import {Plugin,Selection,TextSelection} from '@tiptap/pm/state';
 import {Decoration,DecorationSet} from '@tiptap/pm/view';
 import {renderedLineBoxTop} from "../utils/textLineBoxes";
 import {firstLineKey} from '../extensions/FirstLineLayout';
+import {runAroundKey} from '../extensions/RunAroundLayout';
 import {facingKey,facingArrowKey,createFacingArrowTracking,facingTextRect,facingTextLineTop,facingSlot,keepFacingInputPaint,adjacentVisualPosition,projectPoint,unprojectPoint,requestCanonicalFrame,cancelCanonicalFrame,pageProjection,setPageProjection,withCanonicalPages,withCanonicalHit,type PageProjection} from '../utils/facingPages';
+const FACING_WIDGET_SELECTOR='[data-studio-empty-line-strut], [data-run-around-gap], [data-run-around-skip], [data-run-around-space]';
 const nodePaint=(from:number,to:number,attrs:Record<string,string>)=>Decoration.node(from,to,attrs,{paint:JSON.stringify(attrs)});
 const inlinePaint=(from:number,to:number,attrs:Record<string,string>)=>Decoration.inline(from,to,attrs,{paint:JSON.stringify(attrs),inclusiveStart:true,inclusiveEnd:true});
 const paintSignature=(set:DecorationSet)=>JSON.stringify(set.find().map(d=>[d.from,d.to,d.spec.paint??d.spec.key]).sort((a,b)=>Number(a[0])-Number(b[0])||Number(a[1])-Number(b[1])||String(a[2]).localeCompare(String(b[2]))));
@@ -101,7 +103,8 @@ export function StudioFacingLayout({editor,geometry,zoom}:{editor:Editor|null;ge
       const clip=root.closest('[data-studio-scroller]')!.getBoundingClientRect();
       for(let page=0;page<geometry.count;page++){const slot=facingSlot(page,geometry),top=rect.top+slot.y*scale;if(top+geometry.height*scale>=clip.top-100&&top<=clip.bottom+100)visible.add(page);}
       if(view.hasFocus())visible.add(pageAt(view.state.selection.head));
-      const layoutKey=`${geometry.width}:${geometry.height}:${geometry.count}`;
+      const runAroundSig=runAroundKey.getState(view.state)?.signature??'';
+      const layoutKey=`${geometry.width}:${geometry.height}:${geometry.count}:${runAroundSig}`;
       const rebuild=indexedDoc!==view.state.doc || layout!==layoutKey;
       if(rebuild){
        const previous=new Map(index.map(item=>[item.pos,item.bounds]));
@@ -180,21 +183,22 @@ export function StudioFacingLayout({editor,geometry,zoom}:{editor:Editor|null;ge
      });
      if(view.state.doc!==measuredDoc){schedule();return;}
      const next=signature.join('|');if(next!==last){last=next;const painted=DecorationSet.create(view.state.doc,decorations);if(paintSignature(painted)!==paintSignature(facingKey.getState(view.state)??DecorationSet.empty))view.dispatch(view.state.tr.setMeta(facingKey,painted).setMeta('addToHistory',false));}
-     // Ordinary paragraphs have no strut widgets: avoid a second measuring pass.
-     if(!strutBlocks.some(block=>block.querySelector('[data-studio-empty-line-strut]')))return;
+     // Ordinary paragraphs have no strut/run-around widgets: avoid a second measuring pass.
+     if(!strutBlocks.some(block=>block.querySelector(FACING_WIDGET_SELECTOR)))return;
      cancelCanonicalFrame(strutFrame);strutFrame=requestCanonicalFrame(root,()=>{
       if(dead)return;if(view.state.doc!==measuredDoc){schedule();return;}const g=pageProjection(root);if(!g)return;
       const changes:{strut:HTMLElement;x:number;y:number;project:boolean}[]=[];
       withCanonicalPages(root,()=>{
        const rect=root.getBoundingClientRect(),scale=rect.width/g.width,stride=g.height+g.gap,blocks=new Map<HTMLElement,{first:number;last:number}>();
-       for(const strut of strutBlocks.flatMap(block=>[...block.querySelectorAll<HTMLElement>('[data-studio-empty-line-strut]')])){
+       for(const strut of strutBlocks.flatMap(block=>[...block.querySelectorAll<HTMLElement>(FACING_WIDGET_SELECTOR)])){
         const block=strut.closest<HTMLElement>('p,h1,h2,h3,h4,h5,h6');if(!block)continue;
         let bounds=blocks.get(block);if(!bounds){const b=block.getBoundingClientRect();bounds={first:Math.floor((b.top-rect.top)/scale/stride),last:Math.floor((b.bottom-rect.top)/scale/stride)};blocks.set(block,bounds);}
         if(bounds.first===bounds.last){if(strut.hasAttribute('data-facing-projected'))changes.push({strut,x:0,y:0,project:false});continue;}
         const at=strut.getBoundingClientRect(),page=Math.max(0,Math.min(g.count-1,Math.floor((at.top-rect.top)/scale/stride)));if(!visible.has(page))continue;
         const slot=facingSlot(page,g);let x=slot.x,y=slot.y-page*stride;
         for(let parent=strut.parentElement;parent&&parent!==root;parent=parent.parentElement)if(parent.hasAttribute('data-facing-projected')){x-=parseFloat(parent.style.left)||0;y-=parseFloat(parent.style.top)||0;}
-        changes.push({strut,x,y,project:true});
+        if(Math.abs(x)<=.5&&Math.abs(y)<=.5){if(strut.hasAttribute('data-facing-projected'))changes.push({strut,x:0,y:0,project:false});}
+        else changes.push({strut,x,y,project:true});
        }
       });
       // Widgets are view-owned and ignore DOM mutations. Read all geometry
@@ -206,10 +210,10 @@ export function StudioFacingLayout({editor,geometry,zoom}:{editor:Editor|null;ge
     const scroller=root.closest('[data-studio-scroller]');scroller?.addEventListener('scroll',schedule,{passive:true});
     const invalidateLayout=()=>{indexedDoc=null;boundsByNode=new WeakMap();schedule();};
     const observer=new ResizeObserver(invalidateLayout);observer.observe(root);if(scroller)observer.observe(scroller);document.fonts.addEventListener('loadingdone',invalidateLayout);schedule();
-    return {update:(view,previous)=>{if(view.state.doc!==previous.doc){schedule();}else if(view.state.selection.head!==previous.selection.head||firstLineKey.getState(view.state)?.runs!==firstLineKey.getState(previous)?.runs)schedule();},destroy(){dead=true;scheduleRef.current=()=>{};scroller?.removeEventListener('scroll',schedule);cancelCanonicalFrame(frame);cancelCanonicalFrame(strutFrame);observer.disconnect();document.fonts.removeEventListener('loadingdone',invalidateLayout);}};
+    return {update:(view,previous)=>{if(view.state.doc!==previous.doc){schedule();}else if(view.state.selection.head!==previous.selection.head||firstLineKey.getState(view.state)?.runs!==firstLineKey.getState(previous)?.runs||runAroundKey.getState(view.state)?.signature!==runAroundKey.getState(previous)?.signature)schedule();},destroy(){dead=true;scheduleRef.current=()=>{};scroller?.removeEventListener('scroll',schedule);cancelCanonicalFrame(frame);cancelCanonicalFrame(strutFrame);observer.disconnect();document.fonts.removeEventListener('loadingdone',invalidateLayout);}};
    }
   }));
-  return()=>{for(const strut of root.querySelectorAll<HTMLElement>('[data-studio-empty-line-strut]')){strut.removeAttribute('data-facing-projected');strut.style.removeProperty('left');strut.style.removeProperty('top');strut.style.removeProperty('position');}setPageProjection(root,null);root.removeAttribute('data-studio-facing-editor');if(!editor.isDestroyed){editor.view.posAtCoords=original;editor.unregisterPlugin(facingKey);editor.unregisterPlugin(facingArrowKey);}};
+  return()=>{for(const strut of root.querySelectorAll<HTMLElement>(FACING_WIDGET_SELECTOR)){strut.removeAttribute('data-facing-projected');strut.style.removeProperty('left');strut.style.removeProperty('top');strut.style.removeProperty('position');}setPageProjection(root,null);root.removeAttribute('data-studio-facing-editor');if(!editor.isDestroyed){editor.view.posAtCoords=original;editor.unregisterPlugin(facingKey);editor.unregisterPlugin(facingArrowKey);}};
  },[editor,geometry?.width,geometry?.height,geometry?.gap]);
  useLayoutEffect(()=>{if(editor&&geometry){setPageProjection(editor.view.dom,geometry);scheduleRef.current();}},[editor,geometry?.width,geometry?.height,geometry?.gap,geometry?.count,zoom]);
  return null;

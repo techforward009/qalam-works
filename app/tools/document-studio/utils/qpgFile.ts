@@ -4,6 +4,8 @@ import type { StudioFrame } from "../components/StudioObjectLayer";
 import type { DocumentViewMode } from "./documentView";
 import { isParagraphAlignList } from "./paragraphAlign";
 import { normalizeSafeHex } from "./studioColors";
+import { isValidBorderPattern } from "./borderPatterns";
+import { validRunAroundFields } from "./runAround";
 
 export const QPG_FILE_ACCEPT = ".qpg,.inp,.txt,.docx";
 export const QPG_MIME_TYPE = "application/octet-stream";
@@ -41,7 +43,7 @@ export function serializeQpg(document: QpgDocument): string {
   return JSON.stringify({ format: QPG_FORMAT, version: QPG_VERSION, ...document, frames: document.frames.map(copyQpgFrame) });
 }
 
-const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "singleLine", "imageSrc", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch"] as const;
+const QPG_FRAME_KEYS = ["id", "kind", "page", "xMm", "yMm", "wMm", "hMm", "flip", "text", "typography", "textColor", "textAlign", "paragraphAligns", "singleLine", "imageSrc", "imageName", "imageNaturalW", "imageNaturalH", "imageXMm", "imageYMm", "imageWMm", "imageHMm", "locked", "dontPrint", "template", "roundnessMm", "angle1Deg", "angle2Deg", "borderPosition", "borderColor", "borderWidthMm", "borderPattern", "backgroundColor", "backgroundHatch", "runAround", "runAroundLeftMm", "runAroundRightMm", "runAroundTopMm", "runAroundBottomMm"] as const;
 function copyQpgFrame(frame: StudioFrame): StudioFrame {
   return Object.fromEntries(QPG_FRAME_KEYS.flatMap(key => frame[key] === undefined ? [] : [[key, frame[key]]])) as unknown as StudioFrame;
 }
@@ -58,6 +60,7 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       typeof frame.wMm === "number" && typeof frame.hMm === "number" &&
       typeof frame.text === "string" &&
       (frame.imageSrc === undefined || typeof frame.imageSrc === "string") &&
+      (frame.imageName === undefined || (typeof frame.imageName === "string" && frame.imageName.length <= 512)) &&
       (frame.imageNaturalW === undefined || typeof frame.imageNaturalW === "number") &&
       (frame.imageNaturalH === undefined || typeof frame.imageNaturalH === "number") &&
       (frame.imageXMm === undefined || typeof frame.imageXMm === "number") &&
@@ -67,13 +70,14 @@ function validateQpgDocument(value: unknown): asserts value is QpgDocument {
       (frame.locked === undefined || typeof frame.locked === "boolean") &&
       (frame.dontPrint === undefined || typeof frame.dontPrint === "boolean") &&
       (frame.template === undefined || typeof frame.template === "boolean") &&
+      validRunAroundFields(frame) &&
       (frame.roundnessMm === undefined || typeof frame.roundnessMm === "number" && Number.isFinite(frame.roundnessMm) && frame.roundnessMm >= 0 && frame.roundnessMm <= 2000) &&
       (frame.angle1Deg === undefined || typeof frame.angle1Deg === "number" && Number.isFinite(frame.angle1Deg) && Math.abs(frame.angle1Deg) <= 3600) &&
       (frame.angle2Deg === undefined || typeof frame.angle2Deg === "number" && Number.isFinite(frame.angle2Deg) && Math.abs(frame.angle2Deg) <= 3600) &&
       (frame.borderPosition === undefined || frame.borderPosition === "inside" || frame.borderPosition === "outside") &&
       (frame.borderColor === undefined || normalizeSafeHex(frame.borderColor) !== null) &&
       (frame.borderWidthMm === undefined || typeof frame.borderWidthMm === "number" && Number.isFinite(frame.borderWidthMm) && frame.borderWidthMm > 0 && frame.borderWidthMm <= 2000) &&
-      (frame.borderPattern === undefined || frame.borderPattern === "none") &&
+      (frame.borderPattern === undefined || isValidBorderPattern(frame.borderPattern)) &&
       (frame.backgroundColor === undefined || normalizeSafeHex(frame.backgroundColor) !== null) &&
       (frame.textColor === undefined || normalizeSafeHex(frame.textColor) !== null) &&
       (frame.textAlign === undefined || ["left", "center", "right", "justify", "justify-all"].includes(String(frame.textAlign))) &&

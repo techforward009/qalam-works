@@ -802,9 +802,22 @@ const QuotedFontFamily = FontFamily.extend({
   },
 });
 
+const DisableModYRedo = Extension.create({
+  name: "disableModYRedo",
+  priority: 1000,
+  addKeyboardShortcuts() {
+    return {
+      // Qalam Page uses Ctrl/Cmd+Z for Undo and Ctrl/Cmd+Shift+Z for Redo;
+      // Mod-y is reserved for Import Picture and must never trigger native Redo.
+      "Mod-y": () => true,
+    };
+  },
+});
+
 export function createDocumentStudioExtensions() {
   return [
     NonBreakingSpace,
+    DisableModYRedo,
     StarterKit.configure({
       paragraph: false,
       heading: false,

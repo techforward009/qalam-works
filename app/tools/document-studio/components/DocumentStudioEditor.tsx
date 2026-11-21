@@ -9,14 +9,14 @@ import {moveTableCell,moveToLastTableRow} from "../utils/tableCellNavigation";
 import {inheritPreviousTableRow,inheritPreviousCellStoredMarks} from "../utils/tableRowFormatInheritance";
 import {splitTableAbove} from "../utils/splitTableAbove";
 import {hasTableForFormat} from "../utils/tableFormat";
-import { hasEditableFormattingFrame, installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
+import { STORY_HISTORY_CHANGE, hasEditableFormattingFrame, installFormattingSafety, formattingSafetyMessage } from "../utils/formattingSafety";
 import StudioPdfRecoveryDialog from "./StudioPdfRecoveryDialog";
 import { isRecoverablePdfStatus } from "../utils/pdfExportRecovery";
 import { createDocumentSessionWrites } from "../utils/documentSessionWrites";
 import { migrateDocumentLeading } from "../utils/leading";
 
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { InpageKeyboard } from "../utils/inpageKeyboardExtension";
 import { useInpageKeyboard } from "../utils/useInpageKeyboard";
 import { KEYBOARD_LAYOUT_LABELS, type KeyboardLayout } from "../utils/inpageKeyboard";
@@ -29,7 +29,7 @@ import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
 import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
 import { useEditor, type Editor } from "@tiptap/react";
-import { closeHistory } from "@tiptap/pm/history";
+import { closeHistory, isHistoryTransaction, redo as pmRedo, redoDepth, undo as pmUndo, undoDepth } from "@tiptap/pm/history";
 import { Selection } from "@tiptap/pm/state";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
@@ -105,9 +105,11 @@ import {
   findBlockStartPosition,
   findSuggestionRange,
   replaceAll,
+  resetEditorHistory,
   setEditorContent,
   setAlign,
   setLinkHref,
+  selectAll,
   transformPastedSlice,
   activeBlockStyleId,
 } from "../utils/documentCommands";
@@ -153,19 +155,33 @@ import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { AllahAutoMarks } from "../extensions/AllahAutoMarks";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
-import { StudioObjectRibbon } from "./StudioObjectRibbon";
-import { applyObjectGeometry } from "../utils/objectAttributes";
+import { FormatDialog, StudioObjectRibbon, resolvePropertyToolbarMode } from "./StudioObjectRibbon";
+import { StudioPictureContextMenu } from "./StudioPictureContextMenu";
+import type { PictureContextItemId, PictureContextToolMode } from "../utils/pictureContextMenu";
+import {
+  applyObjectGeometry,
+  DEFAULT_PICTURE_TOOL_DEFAULTS,
+  type ObjectGeometryPatch,
+  type PictureToolDefaults,
+} from "../utils/objectAttributes";
+import type { ObjectHistoryGroupOptions } from "../utils/objectFrameHistory";
 import type {StudioPageAnchor} from "./useStudioPageAnchor";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
 import { readStoredFrames, writeStoredFrames, isPictureBox, pictureMenuDisabledIds, type StudioFrame } from "./StudioObjectLayer";
 import { fitPictureInBox, PICTURE_SOURCE_HARD_CAP_BYTES } from "../utils/pictureFit";
+import { clearPictureFromFrame, cloneCopiedFramesForPaste, copyFramesToClipboard, pasteImageFromCopiedFrames } from "../utils/pictureClipboard";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
 import { StudioTextContextMenu, type StudioTextActions } from "./StudioTextContextMenu";
+import type { StudioFrameHistoryBridge } from "./StudioTextFrame";
+import type { FrameAlignSnapshot, FrameRememberOptions } from "../utils/paragraphAlign";
+import { createStudioHistoryCoordinator, resolveStudioHistoryShortcut } from "../utils/studioHistory";
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
+import { StudioRunAroundDialog } from "./StudioRunAroundDialog";
+import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
 import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import { StudioTableToTextDialog } from "./StudioTableToTextDialog";
@@ -331,6 +347,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [characterOpen,setCharacterOpen] = useState(false);
   const textMenuActions = useRef<StudioTextActions>(null);
   const [paragraphOpen,setParagraphOpen] = useState(false);
+  const [runAroundFrame, setRunAroundFrame] = useState<StudioFrame | null>(null);
   const [typographicOpen,setTypographicOpen] = useState(false);
   const [qpgSaveAsOpen,setQpgSaveAsOpen] = useState(false);
   const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
@@ -410,6 +427,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [documentTitle, setDocumentTitle] = useState(() => defaultDocumentTitle(isUr));
   const router=useRouter();
   const [noDocumentOpen,setNoDocumentOpen]=useState(false);
+  const noDocumentOpenRef = useRef(noDocumentOpen);
+  noDocumentOpenRef.current = noDocumentOpen;
   const [exitConfirmOpen,setExitConfirmOpen]=useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [libraryItems, setLibraryItems] = useState<DocumentListItem[]>([]);
@@ -428,6 +447,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   }, [documentTitle]);
   const sessionWrites = useRef(createDocumentSessionWrites());
   const transitionRef = useRef(false);
+  const pendingStartFocusRef = useRef(false);
   const [switchingDocument, setSwitchingDocument] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [openDocuments, setOpenDocuments] = useState<{ id: string; title: string }[]>([]);
@@ -442,7 +462,18 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pictureInputRef = useRef<HTMLInputElement>(null);
   const [selectedFrameIds, setSelectedFrameIds] = useState<string[]>([]);
+  const selectedFrameIdsRef = useRef(selectedFrameIds);
+  selectedFrameIdsRef.current = selectedFrameIds;
+  const [pictureBoxDefaults, setPictureBoxDefaults] = useState<PictureToolDefaults>(DEFAULT_PICTURE_TOOL_DEFAULTS);
   const [pictureTargetFrameId, setPictureTargetFrameId] = useState<string | null>(null);
+  const [objectDialogFrameId, setObjectDialogFrameId] = useState<string | null>(null);
+  const objectDialogReturnFocus = useRef<HTMLElement | null>(null);
+  const objectClipboardRef = useRef<StudioFrame[]>([]);
+  const objectClipboardSourceRef = useRef<"copy" | "cut">("copy");
+  const historyCoordinatorRef = useRef(createStudioHistoryCoordinator());
+  const frameControlsRef = useRef(new Map<string, { getSnapshot: () => FrameAlignSnapshot; applySnapshot: (snap: FrameAlignSnapshot) => void }>());
+  const storyHistoryApplyingRef = useRef(false);
+  const [, setObjectHistoryVersion] = useState(0);
 
   const [preview, setPreview] = useState<{
     document: DocNode;
@@ -594,6 +625,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         return false;
       },
       handleKeyDown: (_view, event) => {
+        if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "y") {
+          event.preventDefault();
+          return true;
+        }
         if (handleStudioDocumentNavigation(_view, event)) return true;
         const $from = _view.state.selection.$from;
         const insideTableCell = Array.from({length:$from.depth},(_,depth)=> $from.node(depth+1).type.name).some(name=>name==="tableCell"||name==="tableHeader");
@@ -751,14 +786,51 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setIsEditorEmpty(empty);
       if (empty) setExampleJustLoaded(false);
     };
+    const onStoryUpdate = ({ transaction }: { transaction: { docChanged: boolean; getMeta: (key: string) => unknown } }) => {
+      if (storyHistoryApplyingRef.current) return;
+      if (isHistoryTransaction(transaction as never) || !transaction.docChanged || transaction.getMeta("addToHistory") === false) return;
+      historyCoordinatorRef.current.recordStoryEdit(undoDepth(editor.state));
+      setObjectHistoryVersion((v) => v + 1);
+    };
+    const onBeforeInput = (event: Event) => {
+      const inputType = (event as InputEvent).inputType;
+      if (inputType === "historyUndo" || inputType === "historyRedo") {
+        event.preventDefault();
+        event.stopPropagation();
+        runEditHistoryRef.current(inputType === "historyRedo" ? "redo" : "undo");
+      }
+    };
+    let dom: HTMLElement | undefined;
+    try {
+      dom = editor.view?.dom;
+    } catch {
+      dom = undefined;
+    }
+    dom?.addEventListener("beforeinput", onBeforeInput, true);
     syncEmpty();
     editor.on("update", syncEmpty);
+    editor.on("update", onStoryUpdate);
     editor.on("create", syncEmpty);
     return () => {
+      dom?.removeEventListener("beforeinput", onBeforeInput, true);
       editor.off("update", syncEmpty);
+      editor.off("update", onStoryUpdate);
       editor.off("create", syncEmpty);
     };
   }, [editor]);
+
+  useLayoutEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const action = resolveStudioHistoryShortcut(event);
+      if (!action) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      runEditHistoryRef.current(action);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
 
   // Language mode supplies canvas direction; textblocks resolve independently.
   useEffect(() => {
@@ -867,7 +939,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setLibraryItems(await library.listDocuments());
   };
 
-  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
+  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number; focusAtStart?: boolean }) => {
+    noDocumentOpenRef.current = false;
     setNoDocumentOpen(false);
     formattingSafety.current?.documentChanged();
     setFormattingNotice(0);
@@ -885,6 +958,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     documentSettingsRef.current = settings;
     if (!options?.skipContent && editor) {
       setEditorContent(editor, migrateDocumentLeading(record.content, settings.typography.bodyFontSizePt), "load");
+    } else if (options?.skipContent && editor) {
+      resetEditorHistory(editor);
     }
     const pages = options?.minimumPages ?? readStoredMinimumPages(record.id);
     minimumPagesRef.current = pages;
@@ -893,6 +968,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     const restoredFrames = readStoredFrames(record.id);
     framesRef.current = restoredFrames;
     setFrames(restoredFrames);
+    selectedFrameIdsRef.current = [];
+    setSelectedFrameIds([]);
+    historyCoordinatorRef.current.reset(0);
+    setObjectHistoryVersion((v) => v + 1);
     if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
       setZoomState("fit-width");
     }
@@ -910,11 +989,28 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     hasAuditReportRef.current = false;
     setIsAuditStale(false);
     setVisiblePage(1);
+    pendingStartFocusRef.current = Boolean(options?.focusAtStart);
     if (editor) {
+      const wantTextFocus = Boolean(options?.focusAtStart);
+      let remaining = 6;
       const place = () => {
         try {
-          if (canvasToolRef.current === "text") placeStoryCaretAtStart(editor);
-          else editor.commands.blur();
+          if (editor.isDestroyed) return;
+          if (wantTextFocus || canvasToolRef.current === "text") {
+            if (editor.view.dom.closest("[inert]")) {
+              pendingStartFocusRef.current = true;
+              return;
+            }
+            if ((!editor.isEditable || editor.view.dom.getAttribute("contenteditable") !== "true") && remaining > 0) {
+              remaining -= 1;
+              if (typeof requestAnimationFrame === "function") requestAnimationFrame(place);
+              return;
+            }
+            placeStoryCaretAtStart(editor);
+            pendingStartFocusRef.current = false;
+          } else {
+            editor.commands.blur();
+          }
         } catch {
           /* view not mounted yet */
         }
@@ -986,7 +1082,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       });
       setCanvasTool("text");
       canvasToolRef.current = "text";
-      applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
+      applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages, focusAtStart: true });
       void refreshLibraryList(library);
     });
   };
@@ -1018,11 +1114,20 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       } else {
         // Persisted content and objects remain in the library; only this window closes.
         formattingSafety.current?.documentChanged();
+        pendingStartFocusRef.current = false;
         editor.commands.blur();
         activeDocumentIdRef.current=null;
         setActiveDocumentId(null);
         saveActiveDocumentId(null);
+        noDocumentOpenRef.current = true;
         setNoDocumentOpen(true);
+        resetEditorHistory(editor);
+        historyCoordinatorRef.current.reset(0);
+        framesRef.current = [];
+        setFrames([]);
+        selectedFrameIdsRef.current = [];
+        setSelectedFrameIds([]);
+        setObjectHistoryVersion((v) => v + 1);
         setSaveStatus("saved");
         setLibraryOpen(false);
         setCharacterOpen(false);
@@ -1996,18 +2101,134 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const onCanvasTool = (id: StudioToolId) => {
+    if (id !== "text") pendingStartFocusRef.current = false;
     setCanvasTool(id);
     if (id === "select" && editor) {
       editor.commands.blur();
     }
   };
 
-  const changeFrames = (next: StudioFrame[]) => {
+  const closeStoryHistoryGroup = () => {
+    if (!editor || editor.isDestroyed) return;
+    editor.view.dispatch(closeHistory(editor.state.tr));
+  };
+
+  const changeFrames = (next: StudioFrame[], source?: "gesture" | "restore", historyOptions?: ObjectHistoryGroupOptions) => {
+    if (source !== "restore" && source !== "gesture") {
+      if (historyCoordinatorRef.current.recordObjectChange(framesRef.current, next, closeStoryHistoryGroup, historyOptions)) {
+        setObjectHistoryVersion((version) => version + 1);
+      }
+    }
     framesRef.current = next;
     setFrames(next);
     const id = activeDocumentIdRef.current;
     if (id) writeStoredFrames(id, next);
   };
+
+  const beginObjectFrameGesture = () => {
+    if (historyCoordinatorRef.current.beginObjectGesture(framesRef.current, closeStoryHistoryGroup)) {
+      setObjectHistoryVersion((version) => version + 1);
+    }
+  };
+
+  const endObjectFrameGesture = () => {
+    if (historyCoordinatorRef.current.endObjectGesture(framesRef.current, closeStoryHistoryGroup)) {
+      setObjectHistoryVersion((version) => version + 1);
+    }
+  };
+
+  const runEditHistory = (action: "undo" | "redo"): boolean => {
+    if (noDocumentOpen || noDocumentOpenRef.current || !activeDocumentIdRef.current || transitionRef.current) return false;
+    const handled = historyCoordinatorRef.current[action]({
+      getStoryUndoDepth: () => (editor && !editor.isDestroyed ? undoDepth(editor.state) : 0),
+      getStoryRedoDepth: () => (editor && !editor.isDestroyed ? redoDepth(editor.state) : 0),
+      undoStory: () => {
+        if (!editor || editor.isDestroyed) return false;
+        storyHistoryApplyingRef.current = true;
+        try {
+          return pmUndo(editor.state, (tr) => {
+            editor.view.dispatch(tr.setMeta(STORY_HISTORY_CHANGE, true));
+          });
+        } finally {
+          storyHistoryApplyingRef.current = false;
+        }
+      },
+      redoStory: () => {
+        if (!editor || editor.isDestroyed) return false;
+        storyHistoryApplyingRef.current = true;
+        try {
+          return pmRedo(editor.state, (tr) => {
+            editor.view.dispatch(tr.setMeta(STORY_HISTORY_CHANGE, true));
+          });
+        } finally {
+          storyHistoryApplyingRef.current = false;
+        }
+      },
+      closeStoryHistoryGroup,
+      getFrames: () => framesRef.current,
+      getSelectedIds: () => selectedFrameIdsRef.current,
+      restoreFrames: (nextFrames, nextSelection) => {
+        changeFrames(nextFrames, "restore");
+        if (nextSelection !== null) setSelectedFrameIds(nextSelection);
+      },
+      getFrameSnapshot: (frameId) => {
+        const mounted = frameControlsRef.current.get(frameId);
+        if (mounted) return mounted.getSnapshot();
+        const frame = framesRef.current.find((f) => f.id === frameId);
+        if (!frame) return null;
+        return {
+          text: frame.text,
+          textAlign: frame.textAlign ?? null,
+          paragraphAligns: frame.paragraphAligns ? [...frame.paragraphAligns] : undefined,
+          start: frame.text.length,
+          end: frame.text.length,
+        };
+      },
+      applyFrameSnapshot: (frameId, snap) => {
+        const mounted = frameControlsRef.current.get(frameId);
+        if (mounted) {
+          mounted.applySnapshot(snap);
+          return;
+        }
+        changeFrames(framesRef.current.map((f) => {
+          if (f.id !== frameId) return f;
+          const next: StudioFrame = { ...f, text: snap.text };
+          if (snap.textAlign) next.textAlign = snap.textAlign;
+          else delete next.textAlign;
+          if (snap.paragraphAligns) next.paragraphAligns = [...snap.paragraphAligns];
+          else delete next.paragraphAligns;
+          return next;
+        }), "restore");
+      },
+    });
+    if (handled) setObjectHistoryVersion((version) => version + 1);
+    return handled;
+  };
+
+  const runEditHistoryRef = useRef(runEditHistory);
+  runEditHistoryRef.current = runEditHistory;
+  const closeStoryHistoryGroupRef = useRef(closeStoryHistoryGroup);
+  closeStoryHistoryGroupRef.current = closeStoryHistoryGroup;
+
+  const frameHistoryBridgeRef = useRef<StudioFrameHistoryBridge>({
+    recordFrameEdit(frameId: string, before: FrameAlignSnapshot, options?: FrameRememberOptions) {
+      if (historyCoordinatorRef.current.recordFrameEdit(frameId, before, options, () => closeStoryHistoryGroupRef.current())) {
+        setObjectHistoryVersion((version) => version + 1);
+      }
+    },
+    closeFrameGroup(frameId: string) {
+      historyCoordinatorRef.current.getFrameHistory(frameId).closeGroup();
+    },
+    runHistoryCommand(action: "undo" | "redo") {
+      return runEditHistoryRef.current(action);
+    },
+    registerFrameControl(frameId, control) {
+      frameControlsRef.current.set(frameId, control);
+      return () => {
+        if (frameControlsRef.current.get(frameId) === control) frameControlsRef.current.delete(frameId);
+      };
+    },
+  });
 
   const selectedPictureBox = frames.find((f) => selectedFrameIds.includes(f.id) && isPictureBox(f.kind));
 
@@ -2038,6 +2259,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       changeFrames(frames.map((f) => f.id === targetId ? {
         ...f,
         imageSrc: compressed.src,
+        imageName: file.name,
         imageNaturalW: compressed.width,
         imageNaturalH: compressed.height,
         imageXMm: fit.x,
@@ -2087,6 +2309,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       else if (scroller) { scroller.tabIndex = -1; scroller.focus({ preventScroll: true }); }
       return;
     }
+    if (id === "edit.selectAll" && canvasTool === "select") {
+      setSelectedFrameIds(framesRef.current.map((f) => f.id));
+      return;
+    }
+    if (id === "edit.undo") { runEditHistory("undo"); return; }
+    if (id === "edit.redo") { runEditHistory("redo"); return; }
     dispatchDocumentMenuAction(id, editor, {
       saveAs: () => setQpgSaveAsOpen(true),
       save: () => {
@@ -2097,10 +2325,46 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       paragraph: () => setParagraphOpen(true),
       tableLayout: () => setTableLayoutOpen(true),
       tableFormat: () => setTableFormatOpen(true),
+      runaround: () => {
+        const selected = framesRef.current.filter(
+          (frame) => selectedFrameIds.includes(frame.id) && !frame.locked && isRectangularRunAroundBox(frame),
+        );
+        if (selectedFrameIds.length === 1 && selected.length === 1) setRunAroundFrame(selected[0]);
+      },
       tableToText: () => {if(editor?.isActive("table"))setTableToTextOpen(true);},
       textToTable: () => {if(editor && !editor.isActive("table") && !editor.state.selection.empty)setTextToTableOpen(true);},
       splitTable: () => {if(editor)splitTableAbove(editor);},
-      textAction: (action) => textMenuActions.current?.run(action),
+      textAction: (action) => {
+        if (canvasTool === "select" && selectedFrameIds.length > 0 && action !== "paste") {
+          if (action === "copy" || action === "cut") {
+            objectClipboardRef.current = copyFramesToClipboard(
+              framesRef.current.filter((f) => selectedFrameIds.includes(f.id)),
+            );
+            objectClipboardSourceRef.current = action;
+          }
+          if (action === "cut" || action === "clear") {
+            const remaining = framesRef.current.filter((f) => !selectedFrameIds.includes(f.id) || f.locked);
+            changeFrames(remaining);
+            setSelectedFrameIds(selectedFrameIds.filter((tid) => remaining.some((f) => f.id === tid && f.locked)));
+          }
+          return;
+        }
+        if (canvasTool === "select" && action === "paste" && objectClipboardRef.current.length > 0) {
+          const offsetMm = objectClipboardSourceRef.current === "cut" ? 0 : 5;
+          const clones = cloneCopiedFramesForPaste(
+            objectClipboardRef.current,
+            () => `f-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+            offsetMm,
+          );
+          if (objectClipboardSourceRef.current === "cut") {
+            objectClipboardSourceRef.current = "copy";
+          }
+          changeFrames([...framesRef.current, ...clones]);
+          setSelectedFrameIds(clones.map((f) => f.id));
+          return;
+        }
+        textMenuActions.current?.run(action);
+      },
       newDocument: handleNewDocument,
       openLibrary: () => setLibraryOpen(true),
       closeDocument: () => { void closeActiveDocument(); },
@@ -2150,9 +2414,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const disabledIds = new Set<MenuActionId>();
   if(noDocumentOpen)allMenuActionIds().filter(id=>!availableWithoutDocument(id)).forEach(id=>disabledIds.add(id));
   pictureMenuDisabledIds(frames, selectedFrameIds).forEach((id) => disabledIds.add(id));
-  if (!editor?.can().undo()) disabledIds.add("edit.undo");
-  if (!editor?.can().redo()) disabledIds.add("edit.redo");
-  if (!editor || editor.state.selection.empty) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
+  const storyUndo = editor ? undoDepth(editor.state) : 0;
+  const storyRedo = editor ? redoDepth(editor.state) : 0;
+  if (!historyCoordinatorRef.current.canUndo(storyUndo)) disabledIds.add("edit.undo");
+  if (!historyCoordinatorRef.current.canRedo(storyRedo)) disabledIds.add("edit.redo");
+  const hasObjectSelection = canvasTool === "select" && selectedFrameIds.length > 0;
+  if (!hasObjectSelection && (!editor || editor.state.selection.empty)) (["edit.cut", "edit.copy", "edit.clear"] as MenuActionId[]).forEach(id => disabledIds.add(id));
   if (!editor?.isActive("image")) (["format.image.left", "format.image.center", "format.image.right", "format.image.wrap", "format.image.break", "format.image.alt", "format.image.delete"] as MenuActionId[]).forEach(id => disabledIds.add(id));
   if (isExportingPdf) disabledIds.add("file.downloadPdf");
   if (isImporting) disabledIds.add("file.upload");
@@ -2163,6 +2430,15 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   if (!editor?.isActive("table")) disabledIds.add("insert.splitTable");
   if (!canFormatTable && !hasTableForFormat(editor)) {
     disabledIds.add("text.tableFormat");
+  }
+  const selectedFramesForMenu = frames.filter((frame) => selectedFrameIds.includes(frame.id));
+  if (
+    selectedFrameIds.length !== 1 ||
+    selectedFramesForMenu.length !== 1 ||
+    selectedFramesForMenu[0].locked ||
+    !isRectangularRunAroundBox(selectedFramesForMenu[0])
+  ) {
+    disabledIds.add("text.runaround");
   }
   if (!inTableSelection && !editor?.isActive("table")) {
     disabledIds.add("text.tableLayout");
@@ -2269,6 +2545,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     };
   }, [editor]);
 
+  useEffect(() => {
+    if (switchingDocument || !pendingStartFocusRef.current || !editor || editor.isDestroyed) return;
+    if (editor.view.dom.closest("[inert]")) return;
+    if (!editor.isEditable || editor.view.dom.getAttribute("contenteditable") !== "true") return;
+    pendingStartFocusRef.current = false;
+    placeStoryCaretAtStart(editor);
+  }, [switchingDocument, editor]);
+
   const onZoomPercentChange = useCallback((percent: number) => {
     setZoomPercent((prev) => (prev === percent ? prev : percent));
   }, []);
@@ -2351,10 +2635,179 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <StudioTextContextMenu editor={editor} actionRef={textMenuActions} onZoom={setZoom} onImport={()=>fileInputRef.current?.click()}
         onCharacter={()=>{ if (formattingSafety.current?.canFormat()) setCharacterOpen(true); }} onParagraph={()=>{ if (formattingSafety.current?.canFormat()) setParagraphOpen(true); }}
         onTable={()=>setTableInsertOpen(true)} onTextToTable={()=>setTextToTableOpen(true)} onTableLayout={()=>setTableLayoutOpen(true)} onTableFormat={()=>setTableFormatOpen(true)} onTableToText={()=>setTableToTextOpen(true)} />
+      <StudioPictureContextMenu
+        toolMode={canvasTool === "select" ? "arrow" : "hand"}
+        getDisabledIds={(mode: PictureContextToolMode, frameId: string) => {
+          const disabled = new Set<PictureContextItemId>();
+          if (mode === "hand") {
+            const target = framesRef.current.find((f) => f.id === frameId);
+            if (!target || target.locked) {
+              disabled.add("importPicture");
+              disabled.add("cut");
+              disabled.add("clear");
+              disabled.add("paste");
+            }
+            if (!target?.imageSrc) {
+              disabled.add("copy");
+              disabled.add("cut");
+              disabled.add("clear");
+            }
+            return disabled;
+          }
+          if (mode === "arrow-empty") {
+            if (framesRef.current.length === 0) disabled.add("selectAll");
+            if (objectClipboardRef.current.length === 0) disabled.add("paste");
+            return disabled;
+          }
+          const targetIds = selectedFrameIdsRef.current.includes(frameId) ? selectedFrameIdsRef.current : [frameId];
+          const targets = framesRef.current.filter((f) => targetIds.includes(f.id));
+          if (targets.length === 0 || targets.every((f) => f.locked)) {
+            disabled.add("cut");
+            disabled.add("clear");
+          }
+          return disabled;
+        }}
+        onZoom={setZoom}
+        onAction={(id, frameId, mode) => {
+          if (id === "importPicture") {
+            openPictureChooser(frameId);
+            return;
+          }
+          if (id === "selectAll") {
+            if (mode === "arrow" || mode === "arrow-empty") setSelectedFrameIds(framesRef.current.map((f) => f.id));
+            else if (editor) selectAll(editor);
+            return;
+          }
+          if (id === "paste") {
+            if (mode === "arrow-empty" || mode === "arrow") {
+              const copied = objectClipboardRef.current;
+              if (copied.length === 0) return;
+              const offsetMm = objectClipboardSourceRef.current === "cut" ? 0 : 5;
+              const clones = cloneCopiedFramesForPaste(
+                copied,
+                () => `f-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+                offsetMm,
+              );
+              if (objectClipboardSourceRef.current === "cut") {
+                objectClipboardSourceRef.current = "copy";
+              }
+              changeFrames([...framesRef.current, ...clones]);
+              setSelectedFrameIds(clones.map((f) => f.id));
+              return;
+            }
+            const targetFrame = framesRef.current.find((f) => f.id === frameId);
+            if (!targetFrame || targetFrame.locked) return;
+            const copied = objectClipboardRef.current;
+            if (copied.length > 0) {
+              const updated = pasteImageFromCopiedFrames(targetFrame, copied);
+              if (updated) {
+                changeFrames(framesRef.current.map((f) => (f.id === frameId ? updated : f)));
+                return;
+              }
+            }
+            if (typeof navigator !== "undefined" && navigator.clipboard?.read) {
+              void navigator.clipboard.read().then(async (items) => {
+                for (const item of items) {
+                  const imageType = item.types.find((t) => t.startsWith("image/"));
+                  if (!imageType) continue;
+                  const blob = await item.getType(imageType);
+                  const file = new File([blob], "pasted-image.png", { type: imageType });
+                  const compressed = await compressDocumentImage(file);
+                  const currentTarget = framesRef.current.find((f) => f.id === frameId);
+                  if (!currentTarget || currentTarget.locked) return;
+                  const fit = fitPictureInBox(currentTarget.wMm, currentTarget.hMm, compressed.width, compressed.height);
+                  changeFrames(framesRef.current.map((f) => (f.id === frameId ? {
+                    ...f,
+                    imageSrc: compressed.src,
+                    imageName: file.name,
+                    imageNaturalW: compressed.width,
+                    imageNaturalH: compressed.height,
+                    imageXMm: fit.x,
+                    imageYMm: fit.y,
+                    imageWMm: fit.w,
+                    imageHMm: fit.h,
+                  } : f)));
+                  return;
+                }
+              }).catch(() => {});
+            }
+            return;
+          }
+          if (mode === "hand") {
+            const targetFrame = framesRef.current.find((f) => f.id === frameId);
+            if (!targetFrame) return;
+            if (id === "copy") {
+              if (!targetFrame.imageSrc) return;
+              objectClipboardRef.current = copyFramesToClipboard([targetFrame]);
+              objectClipboardSourceRef.current = "copy";
+              return;
+            }
+            if (id === "cut") {
+              if (!targetFrame.imageSrc || targetFrame.locked) return;
+              objectClipboardRef.current = copyFramesToClipboard([targetFrame]);
+              objectClipboardSourceRef.current = "copy";
+              const cleared = clearPictureFromFrame(targetFrame);
+              changeFrames(framesRef.current.map((f) => (f.id === frameId ? cleared : f)));
+              return;
+            }
+            if (id === "clear") {
+              if (!targetFrame.imageSrc || targetFrame.locked) return;
+              const cleared = clearPictureFromFrame(targetFrame);
+              changeFrames(framesRef.current.map((f) => (f.id === frameId ? cleared : f)));
+              return;
+            }
+            return;
+          }
+          const targetIds = selectedFrameIds.includes(frameId) ? selectedFrameIds : [frameId];
+          if (id === "copy" || id === "cut") {
+            objectClipboardRef.current = copyFramesToClipboard(
+              framesRef.current.filter((f) => targetIds.includes(f.id)),
+            );
+            objectClipboardSourceRef.current = id;
+          }
+          if (id === "cut" || id === "clear") {
+            const remaining = framesRef.current.filter((f) => !targetIds.includes(f.id) || f.locked);
+            changeFrames(remaining);
+            setSelectedFrameIds(targetIds.filter((tid) => remaining.some((f) => f.id === tid && f.locked)));
+            return;
+          }
+          if (id === "object") {
+            objectDialogReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            setObjectDialogFrameId(frameId);
+          }
+        }}
+      />
+      {(() => {
+        const dialogFrame = objectDialogFrameId ? frames.find((f) => f.id === objectDialogFrameId) : null;
+        return dialogFrame ? (
+          <FormatDialog
+            frame={dialogFrame}
+            returnFocus={objectDialogReturnFocus}
+            onCancel={() => setObjectDialogFrameId(null)}
+            onApply={(patch) => {
+              const updated = applyObjectGeometry(dialogFrame, patch);
+              if (updated) changeFrames(framesRef.current.map((f) => (f.id === dialogFrame.id ? updated : f)));
+              setObjectDialogFrameId(null);
+            }}
+          />
+        ) : null;
+      })()}
       {characterOpen && editor ? <StudioCharacterDialog editor={editor} settings={documentSettings} onClose={()=>setCharacterOpen(false)} /> : null}
       {qpgSaveAsOpen && editor ? <StudioQpgSaveAsDialog title={documentTitle} snapshot={currentQpgSnapshot} onClose={() => setQpgSaveAsOpen(false)}/> : null}
       {typographicOpen && editor ? <StudioTypographicDialog editor={editor} value={parseTypographicPreferences(documentSettings.typography.preferences)} onClose={()=>setTypographicOpen(false)} onApply={preferences=>setDocumentSettings(current=>({...current,typography:{...current.typography,preferences}}))}/> : null}
       {paragraphOpen && editor ? <StudioParagraphDialog editor={editor} settings={documentSettings} onClose={()=>setParagraphOpen(false)} /> : null}
+      {runAroundFrame ? (
+        <StudioRunAroundDialog
+          frame={runAroundFrame}
+          onClose={() => setRunAroundFrame(null)}
+          onApply={(patch) => {
+            const current = framesRef.current.find((frame) => frame.id === runAroundFrame.id);
+            const updated = current && !current.locked && applyObjectGeometry(current, patch);
+            if (updated) changeFrames(framesRef.current.map((frame) => (frame.id === updated.id ? updated : frame)));
+            setRunAroundFrame(null);
+          }}
+        />
+      ) : null}
       {imageMenu && editor ? (
         <div
           role="menu"
@@ -2515,23 +2968,73 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
           />
         }
         toolbar={
-          <div inert={noDocumentOpen||undefined} style={noDocumentOpen?{opacity:0.5}:undefined}>{selectedFrameIds.length === 1 && selectedPictureBox ? <StudioObjectRibbon frame={selectedPictureBox} onChange={(frameId, patch) => {
-            const target = frames.find(frame => frame.id === frameId);
-            const updated = target && applyObjectGeometry(target, patch);
-            if (updated) changeFrames(frames.map(frame => frame.id === frameId ? updated : frame));
-          }} /> : <DocumentToolbar
-            editor={editor}
-            dir={dir}
-            setDir={setDir}
-            processingLanguage={processingLanguage}
-            setProcessingLanguage={setProcessingLanguage}
-            isUr={isUr}
-            zoom={zoom}
-            onZoomChange={setZoom}
-            documentSettings={documentSettings}
-            englishFont={englishFont}
-            onEnglishFontChange={setEnglishFont}
-          />}</div>
+          (() => {
+            const selectedFrames = frames.filter((frame) => selectedFrameIds.includes(frame.id));
+            const propertyToolbarMode = resolvePropertyToolbarMode(canvasTool, selectedFrames);
+            const applyRibbonPatch = (frameId: string, patch: ObjectGeometryPatch, historyOptions?: ObjectHistoryGroupOptions) => {
+              const currentFrames = framesRef.current;
+              let changed = false;
+              const nextFrames = currentFrames.map((frame) => {
+                if (frame.id !== frameId || frame.locked) return frame;
+                const updated = applyObjectGeometry(frame, patch);
+                if (!updated) return frame;
+                changed = true;
+                return updated;
+              });
+              if (changed) changeFrames(nextFrames, undefined, historyOptions);
+            };
+            const applyRibbonBatch = (
+              targetIds: string[],
+              buildPatch: (frame: StudioFrame) => ObjectGeometryPatch | null,
+              historyOptions?: ObjectHistoryGroupOptions,
+            ) => {
+              const idSet = new Set(targetIds);
+              const currentFrames = framesRef.current;
+              let changed = false;
+              const nextFrames = currentFrames.map((frame) => {
+                if (!idSet.has(frame.id) || frame.locked) return frame;
+                const patch = buildPatch(frame);
+                if (!patch) return frame;
+                const updated = applyObjectGeometry(frame, patch);
+                if (!updated) return frame;
+                changed = true;
+                return updated;
+              });
+              if (changed) changeFrames(nextFrames, undefined, historyOptions);
+            };
+            return (
+              <div inert={noDocumentOpen || undefined} style={noDocumentOpen ? { opacity: 0.5 } : undefined}>
+                {propertyToolbarMode !== "none" ? (
+                  <StudioObjectRibbon
+                    disableContextMenu
+                    mode={propertyToolbarMode}
+                    frame={selectedFrames[0]}
+                    frames={selectedFrames}
+                    creationTool={canvasTool}
+                    pictureDefaults={pictureBoxDefaults}
+                    onPictureDefaultsChange={setPictureBoxDefaults}
+                    onSelectCreationTool={onCanvasTool}
+                    onChange={applyRibbonPatch}
+                    onApplyBatch={applyRibbonBatch}
+                  />
+                ) : (
+                  <DocumentToolbar
+                    editor={editor}
+                    dir={dir}
+                    setDir={setDir}
+                    processingLanguage={processingLanguage}
+                    setProcessingLanguage={setProcessingLanguage}
+                    isUr={isUr}
+                    zoom={zoom}
+                    onZoomChange={setZoom}
+                    documentSettings={documentSettings}
+                    englishFont={englishFont}
+                    onEnglishFontChange={setEnglishFont}
+                  />
+                )}
+              </div>
+            );
+          })()
         }
         findBar={
           findOpen ? (
@@ -2669,10 +3172,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             selectedFrameIds={selectedFrameIds}
             onSelectedFramesChange={setSelectedFrameIds}
             onDoubleClickFrame={(frame) => openPictureChooser(frame.id)}
+            onObjectGestureBegin={beginObjectFrameGesture}
+            onObjectGestureEnd={endObjectFrameGesture}
+            frameHistoryBridge={frameHistoryBridgeRef.current}
             englishFont={englishFont}
             keyboardLayout={getKeyboardLayout()}
             tool={canvasTool}
             onToolAction={onCanvasTool}
+            pictureBoxDefaults={pictureBoxDefaults}
           />}
             </div>
           </div>

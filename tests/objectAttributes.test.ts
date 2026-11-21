@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { applyObjectGeometry, formatGeometryLength, parseGeometryLength, formatBorderWidth, parseBorderWidth, parseDegrees, formatDegrees } from "../app/tools/document-studio/utils/objectAttributes";
+import {
+  applyObjectGeometry,
+  formatGeometryLength,
+  parseGeometryLength,
+  formatBorderWidth,
+  parseBorderWidth,
+  parseDegrees,
+  formatDegrees,
+  shapeVariantOf,
+  frameKindForShape,
+} from "../app/tools/document-studio/utils/objectAttributes";
 import type { StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 
 const frame: StudioFrame = { id: "pic-1", kind: "picture-rect", page: 3, xMm: 10, yMm: 20, wMm: 30, hMm: 40, flip: false, text: "", imageSrc: "data:image/png;base64,abc" };
@@ -46,9 +56,27 @@ describe("applyObjectGeometry", () => {
     expect(applyObjectGeometry(frame, { borderPosition: "center" as never })).toBeNull();
   });
 
-  it("allows only picture kind switches", () => {
+  it("allows intra-family shape switches and blocks cross-family or line/text switches", () => {
     expect(applyObjectGeometry(frame, { kind: "picture-ellipse" })?.kind).toBe("picture-ellipse");
+    expect(applyObjectGeometry(frame, { kind: "picture-round-rect" })?.kind).toBe("picture-round-rect");
+    expect(applyObjectGeometry(frame, { kind: "rect" })).toBeNull();
     expect(applyObjectGeometry(frame, { kind: "text" })).toBeNull();
+
+    const rectFrame: StudioFrame = { id: "rect-1", kind: "rect", page: 1, xMm: 10, yMm: 20, wMm: 30, hMm: 40, flip: false, text: "" };
+    expect(applyObjectGeometry(rectFrame, { kind: "ellipse" })?.kind).toBe("ellipse");
+    expect(applyObjectGeometry(rectFrame, { kind: "round-rect" })?.kind).toBe("round-rect");
+    expect(applyObjectGeometry(rectFrame, { kind: "picture-rect" })).toBeNull();
+
+    const lineFrame: StudioFrame = { id: "line-1", kind: "line", page: 1, xMm: 10, yMm: 20, wMm: 30, hMm: 2, flip: false, text: "" };
+    expect(applyObjectGeometry(lineFrame, { kind: "rect" })).toBeNull();
+
+    expect(shapeVariantOf("picture-round-rect")).toBe("round-rect");
+    expect(shapeVariantOf("ellipse")).toBe("ellipse");
+    expect(shapeVariantOf("line")).toBeNull();
+    expect(shapeVariantOf("text")).toBeNull();
+    expect(frameKindForShape("picture-rect", "ellipse")).toBe("picture-ellipse");
+    expect(frameKindForShape("round-rect", "rect")).toBe("rect");
+    expect(frameKindForShape("text", "rect")).toBeNull();
   });
 });
 
@@ -69,7 +97,52 @@ describe("appearance patches", () => {
     expect(applyObjectGeometry(frame, { borderColor: "#123456", borderWidthMm: 1, borderPattern: "none", backgroundColor: "#FFFFFF", backgroundHatch: "none" })).toMatchObject({ borderColor: "#123456", borderWidthMm: 1, backgroundColor: "#FFFFFF" });
     expect(applyObjectGeometry({ ...frame, backgroundColor: "#FFFFFF" }, { backgroundColor: "" })?.backgroundColor).toBeUndefined();
   });
-  it.each([{ borderColor: "red" }, { backgroundColor: "transparent" }, { borderWidthMm: 0 }, { borderWidthMm: Infinity }, { borderPattern: "dashed" }, { backgroundHatch: "cross" }])("rejects invalid style patch $patch", patch => {
+  it.each([{ borderColor: "red" }, { backgroundColor: "transparent" }, { borderWidthMm: 0 }, { borderWidthMm: Infinity }, { borderPattern: "zig-zag" }, { backgroundHatch: "cross" }])("rejects invalid style patch $patch", patch => {
     expect(applyObjectGeometry(frame, patch as never)).toBeNull();
+  });
+});
+
+describe("Run Around eligibility and transitions", () => {
+  it("allows Run Around and clearances on unrotated rectangular picture, text, and shape frames", () => {
+    for (const kind of ["picture-rect", "text", "rect"] as const) {
+      const target: StudioFrame = { ...frame, kind, angle1Deg: 0 };
+      const updated = applyObjectGeometry(target, {
+        runAround: true,
+        runAroundLeftMm: 3.5,
+        runAroundRightMm: 4,
+        runAroundTopMm: 1.5,
+        runAroundBottomMm: 2.5,
+      });
+      expect(updated).toMatchObject({
+        runAround: true,
+        runAroundLeftMm: 3.5,
+        runAroundRightMm: 4,
+        runAroundTopMm: 1.5,
+        runAroundBottomMm: 2.5,
+      });
+    }
+  });
+
+  it.each([
+    { kind: "picture-ellipse", angle1Deg: 0 },
+    { kind: "picture-round-rect", angle1Deg: 0 },
+    { kind: "ellipse", angle1Deg: 0 },
+    { kind: "round-rect", angle1Deg: 0 },
+    { kind: "line", angle1Deg: 0 },
+    { kind: "picture-rect", angle1Deg: 15 },
+    { kind: "text", angle1Deg: -5 },
+    { kind: "rect", angle1Deg: 10 },
+  ] as const)("rejects enabling Run Around on unsupported shape $kind at angle $angle1Deg", ({ kind, angle1Deg }) => {
+    const target: StudioFrame = { ...frame, kind, angle1Deg };
+    expect(applyObjectGeometry(target, { runAround: true })).toBeNull();
+  });
+
+  it("clears active Run Around when a rectangular box is switched to an ellipse or rotated", () => {
+    const wrapping: StudioFrame = { ...frame, kind: "picture-rect", angle1Deg: 0, runAround: true };
+    const asEllipse = applyObjectGeometry(wrapping, { kind: "picture-ellipse" });
+    expect(asEllipse).toMatchObject({ kind: "picture-ellipse", runAround: false });
+
+    const asRotated = applyObjectGeometry(wrapping, { angle1Deg: 15 });
+    expect(asRotated).toMatchObject({ kind: "picture-rect", angle1Deg: 15, runAround: false });
   });
 });
