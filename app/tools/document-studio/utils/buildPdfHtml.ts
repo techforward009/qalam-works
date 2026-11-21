@@ -626,7 +626,7 @@ ${classRulesCss()}
   body {
     font-variant-ligatures: normal;
     font-feature-settings: normal;
-    text-rendering: geometricPrecision;
+    ${printableFrames.length > 0 ? "text-rendering: geometricPrecision;" : ""}
     font-family: ${defaultFamily};
     font-size: ${bodyFontSize};
     line-height: ${bodyLineHeight}pt;
