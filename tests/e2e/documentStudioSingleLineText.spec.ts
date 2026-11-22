@@ -161,6 +161,12 @@ test('a horizontal single-line drag is one line tall and a multiline drag keeps 
   await expect(single).toBeVisible();
   await expect.poll(async () => (await storedFrames(page)).find(frame => frame.singleLine)?.hMm).toBeCloseTo(8.5725, 3);
   expect((await storedFrames(page)).find(frame => frame.singleLine)?.wMm).toBeGreaterThan(60);
+  const titleBefore = (await storedFrames(page)).find(frame => frame.singleLine)!;
+  await single.fill('ایک بہت طویل اردو عنوان with a deliberately long English title');
+  await expect.poll(async () => (await storedFrames(page)).find(frame => frame.singleLine)?.wMm ?? 0).toBeGreaterThan(titleBefore.wMm);
+  const titleAfter = (await storedFrames(page)).find(frame => frame.singleLine)!;
+  expect(titleAfter.hMm).toBeCloseTo(titleBefore.hMm, 3);
+  expect(await single.evaluate(el => (el as HTMLInputElement).scrollWidth <= (el as HTMLInputElement).clientWidth + 1)).toBe(true);
 
   await page.locator('[data-studio-tool-button="textbox"]').click();
   const mx = bounds.x + 30 * pxPerMm, my = bounds.y + 140 * pxPerMm;
