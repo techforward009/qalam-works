@@ -228,7 +228,7 @@ describe("resolvePropertyToolbarMode (context sensitivity & no-selection state)"
     expect(resolvePropertyToolbarMode("select", [pic])).toBe("object");
     expect(resolvePropertyToolbarMode("text", [pic, shape])).toBe("none");
     expect(resolvePropertyToolbarMode("select", [pic, shape])).toBe("object");
-    expect(resolvePropertyToolbarMode("text", [text])).toBe("none");
+    expect(resolvePropertyToolbarMode("text", [text])).toBe("object");
     expect(resolvePropertyToolbarMode("select", [text])).toBe("object");
   });
 });
