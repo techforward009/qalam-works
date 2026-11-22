@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { nudgeSelectedFrames, resolveMovedFramePlacement, resolveResizedFrameBounds, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import { facingSlot, type PageProjection } from "../app/tools/document-studio/utils/facingPages";
+import { runAroundExclusionMm } from "../app/tools/document-studio/utils/runAroundFlow";
 import {
   OBJECT_FRAME_HISTORY_LIMIT,
   beginObjectGesture,
@@ -62,6 +63,22 @@ describe("object frame history", () => {
     expect(moved.page).toBe(2);
     expect(moved.xMm).toBeCloseTo(start.xMm + 25.4 / 72, 8);
     expect(moved.yMm).toBeCloseTo(start.yMm, 8);
+  });
+
+  it("preserves Run Around inputs while a picture box is nudged", () => {
+    const picture = frame("wrap", {
+      runAround: true,
+      runAroundLeftMm: 1,
+      runAroundRightMm: 2,
+      runAroundTopMm: 3,
+      runAroundBottomMm: 4,
+    });
+    const before = runAroundExclusionMm(picture)!;
+    const moved = nudgeSelectedFrames([picture], ["wrap"], "ArrowRight", false, { pageCount: 2, pageHeightPx: 1122.52, gapPx: 12 })[0];
+    const after = runAroundExclusionMm(moved)!;
+    expect(moved).toMatchObject({ runAround: true, runAroundLeftMm: 1, runAroundRightMm: 2, runAroundTopMm: 3, runAroundBottomMm: 4 });
+    expect(after.left - before.left).toBeCloseTo(25.4 / 72, 8);
+    expect(after.right - before.right).toBeCloseTo(25.4 / 72, 8);
   });
 
   it("supports Delete / Cut -> Undo -> Redo preserving IDs, geometry, z-order, and picture fields", () => {

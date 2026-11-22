@@ -469,6 +469,10 @@ export function StudioObjectLayer({
   selectedRef.current = selected;
   const toolRef = useRef(tool);
   toolRef.current = tool;
+  const onChangeRef = useRef(onFramesChange);
+  onChangeRef.current = onFramesChange;
+  const nudgePlacementOptionsRef = useRef({ pageCount, pageHeightPx, gapPx, projection: projectionProp });
+  nudgePlacementOptionsRef.current = { pageCount, pageHeightPx, gapPx, projection: projectionProp };
 
   // Preserve existing selection across tool switches so returning to the Arrow tool
   // restores the selected object state; only select a freshly committed picture box
@@ -530,28 +534,29 @@ export function StudioObjectLayer({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (tool !== "select") return;
+      if (toolRef.current !== "select") return;
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
       const target = event.target as HTMLElement | null;
       const inStoryEditor = Boolean(target?.closest(".ProseMirror"));
       if (!inStoryEditor && target?.closest("textarea, input, select, button, [contenteditable='true']")) return;
-      if (!selected.length) return;
+      const selectedIds = selectedRef.current;
+      if (!selectedIds.length) return;
       if (event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
       if (document.querySelector('[data-studio-picture-menu], [data-studio-picture-context-zoom], [data-studio-text-menu], [data-menu-dropdown], [role="dialog"], [role="listbox"]')) return;
       const next = nudgeSelectedFrames(
-        frames,
-        selected,
+        framesRef.current,
+        selectedIds,
         event.key,
         event.shiftKey,
-        { pageCount, pageHeightPx, gapPx, projection: projectionProp },
+        nudgePlacementOptionsRef.current,
       );
-      if (next.every((frame, index) => frame === frames[index])) return;
+      if (next.every((frame, index) => frame === framesRef.current[index])) return;
       event.preventDefault();
-      onFramesChange(next);
+      onChangeRef.current(next);
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [frames, gapPx, onFramesChange, pageCount, pageHeightPx, projectionProp, selected, tool]);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -586,8 +591,6 @@ export function StudioObjectLayer({
     return Math.min(pageCount, Math.max(1, Math.floor(y / stride) + 1));
   };
 
-  const onChangeRef = useRef(onFramesChange);
-  onChangeRef.current = onFramesChange;
   const onGestureBeginRef = useRef(onGestureBegin);
   onGestureBeginRef.current = onGestureBegin;
   const onGestureEndRef = useRef(onGestureEnd);
