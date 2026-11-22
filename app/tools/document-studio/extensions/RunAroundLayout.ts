@@ -39,7 +39,7 @@ const framesOf = new WeakMap<EditorView, RunAroundBox[]>();
 
 export function runAroundFrameKey(frames: readonly RunAroundBox[]): string {
   return frames.map(frame => [
-    frame.page, frame.kind, frame.textShape ?? "", frame.angle1Deg ?? "",
+    frame.page, frame.kind, frame.textShape ?? "", frame.roundnessMm ?? "", frame.angle1Deg ?? "",
     frame.xMm, frame.yMm, frame.wMm, frame.hMm, frame.runAround ? 1 : 0,
     frame.runAroundLeftMm ?? "", frame.runAroundRightMm ?? "", frame.runAroundTopMm ?? "", frame.runAroundBottomMm ?? "",
   ].join(",")).join(";");
