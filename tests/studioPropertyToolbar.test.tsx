@@ -862,8 +862,8 @@ describe("Object Run Around toolbar & dialog integration", () => {
     expect((ribbon.querySelector('[data-ribbon-field="inset"]') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("shows mixed state on multi-selection and only modifies unlocked rectangular targets", () => {
-    // Case A: unlocked rectangular mixed (true + false) plus unsupported ellipse
+  it("shows mixed state on multi-selection and only modifies unlocked supported targets", () => {
+    // Case A: supported rectangle and ellipse frames with mixed Run Around state
     const rectOn = makePictureFrame({ id: "rect-on", kind: "picture-rect", runAround: true });
     const rectOff = makePictureFrame({ id: "rect-off", kind: "picture-rect", runAround: false });
     const ell = makePictureFrame({ id: "ell", kind: "picture-ellipse", runAround: false });
@@ -875,16 +875,16 @@ describe("Object Run Around toolbar & dialog integration", () => {
     expect(btn.getAttribute("aria-pressed")).toBe("mixed");
     expect(btn.getAttribute("data-ribbon-mixed")).toBe("true");
 
-    // Click 1 turns all unlocked rectangular boxes On and leaves ellipse untouched
+    // Click 1 turns all unlocked supported shapes On
     fireEvent.click(btn);
     expect(btn.getAttribute("aria-pressed")).toBe("true");
     expect(btn.getAttribute("data-ribbon-mixed")).toBeNull();
     let current = readFramesFromHarness();
     expect(current.find((f) => f.id === "rect-on")?.runAround).toBe(true);
     expect(current.find((f) => f.id === "rect-off")?.runAround).toBe(true);
-    expect(current.find((f) => f.id === "ell")?.runAround).toBe(false);
+    expect(current.find((f) => f.id === "ell")?.runAround).toBe(true);
 
-    // Click 2 turns all unlocked rectangular boxes Off and leaves ellipse untouched
+    // Click 2 turns all unlocked supported shapes Off
     fireEvent.click(btn);
     expect(btn.getAttribute("aria-pressed")).toBe("false");
     current = readFramesFromHarness();
