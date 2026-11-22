@@ -2204,6 +2204,7 @@ textarea[data-studio-text-frame][data-studio-paragraph-paint="true"]::selection 
 input[data-studio-text-frame][data-studio-selection-painted="true"]::selection { background: transparent; color: transparent; }
 textarea[data-studio-text-frame] { scrollbar-width: none; }
 textarea[data-studio-text-frame]::-webkit-scrollbar { width: 0; height: 0; display: none; }
+@media print { [data-studio-text-frame-overflow] { display: none !important; } }
 
 /* Facing Pages paints one editable, canonical document into view-only slots. */
 .ProseMirror[data-studio-facing-editor] { background: transparent !important; }
