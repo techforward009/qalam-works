@@ -41,7 +41,7 @@ describe("run-around line splitting", () => {
       expect(runAroundExclusionMm(box({ runAround: true, kind }))).toMatchObject({ shape: "ellipse" });
     }
     for (const kind of ["round-rect", "picture-round-rect"]) {
-      expect(runAroundExclusionMm(box({ runAround: true, kind })).shape).toBe("round-rect");
+      expect(runAroundExclusionMm(box({ runAround: true, kind }))?.shape).toBe("round-rect");
     }
     expect(runAroundExclusionMm(box({ runAround: true, kind: "line" }))).toBeNull();
     expect(runAroundExclusionMm(box({ runAround: true, kind: "text", textShape: "ellipse" }))).toBeNull();
