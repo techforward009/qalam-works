@@ -48,3 +48,17 @@ export function centerSingleLinePadding(
   }
   return { top, bottom };
 }
+
+/**
+ * Outer border-box width in CSS pixels needed so neither the editable input nor
+ * the visible text layer overflows horizontally. Uses each element's measured
+ * horizontal chrome (offsetWidth - clientWidth) to avoid double-counting padding.
+ */
+export function singleLineOuterWidthPx(
+  input: { offsetWidth: number; clientWidth: number; scrollWidth: number },
+  textNode: { offsetWidth: number; clientWidth: number; scrollWidth: number },
+): number {
+  const inputChrome = Math.max(0, input.offsetWidth - input.clientWidth);
+  const nodeChrome = Math.max(0, textNode.offsetWidth - textNode.clientWidth);
+  return Math.ceil(Math.max(input.scrollWidth + inputChrome, textNode.scrollWidth + nodeChrome));
+}

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent as ReactChangeEvent, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent as ReactChangeEvent, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type UIEvent as ReactUIEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { FORMATTING_TARGET_CHANGE, isFormattingSurface, readFormattingTarget, registerFrameHistory, registerFrameStyleUpdater } from "../utils/formattingSafety";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { defaultDocumentSettings } from "../utils/documentSettings";
@@ -7,7 +7,7 @@ import { editorFontFamilyStack, getFontById } from "../utils/fontRegistry";
 import type { StudioFrame } from "./StudioObjectLayer";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { emptyFrameCaretLeft } from "../utils/frameCaret";
-import { centerSingleLinePadding } from "../utils/singleLineFrame";
+import { centerSingleLinePadding, singleLineOuterWidthPx } from "../utils/singleLineFrame";
 import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLineBoxes";
 import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKeyboard";
 import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
@@ -275,9 +275,8 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
   useLayoutEffect(() => {
     if (!singleLine) return;
     const input = ref.current, node = textRef.current;
-    if (!input || !node) return;
-    const border = (parseFloat(getComputedStyle(node).borderLeftWidth) || 0) + (parseFloat(getComputedStyle(node).borderRightWidth) || 0);
-    const required = Math.ceil(Math.max(input.scrollWidth, node.scrollWidth) + border);
+    if (!input || !node || !input.offsetWidth || !node.offsetWidth) return;
+    const required = singleLineOuterWidthPx(input, node);
     if (required > input.offsetWidth + 1) onSingleLineWidth?.(required);
   }, [alignKey, onSingleLineWidth, padY.top, padY.bottom, singleLine]);
   useEffect(() => {
@@ -374,7 +373,7 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       event.preventDefault();
       event.stopPropagation();
       input.setSelectionRange(next.start, next.end, next.direction);
-      requestAnimationFrame(resetScroll);
+      requestAnimationFrame(() => resetScroll());
       measure();
       return;
     }
@@ -386,7 +385,7 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       historyKey.current = true;
       if (event.shiftKey) redo(); else undo();
     }
-    if (!singleLine && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) requestAnimationFrame(resetScroll);
+    if (!singleLine && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) requestAnimationFrame(() => resetScroll());
   };
   const handleCompositionEnd = (input: HTMLInputElement | HTMLTextAreaElement, data: string) => {
     if (!keyboardLayout || !data) return;
@@ -467,7 +466,7 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
     event.stopPropagation();
     resetScroll(event.currentTarget);
   };
-  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;resetScroll();onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:()=>{ resetScroll(); measure(); }, onScroll:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ resetScroll(event.currentTarget); measure(); }, onWheel:handleWheel, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; resetScroll(); }, onBlur:()=>{ remembered.current = false; if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId); else history.current.closeGroup(); setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
+  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;resetScroll();onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:()=>{ resetScroll(); measure(); }, onScroll:(event: ReactUIEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ resetScroll(event.currentTarget); measure(); }, onWheel:handleWheel, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; resetScroll(); }, onBlur:()=>{ remembered.current = false; if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId); else history.current.closeGroup(); setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
   const displayText = singleLine ? normalizeSingleLineText(text) : text;
   const fieldStyle = paragraphPaint ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;
   return <>

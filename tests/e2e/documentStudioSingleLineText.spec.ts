@@ -11,7 +11,7 @@ const pxPerMm = 96 / 25.4;
 async function storedFrames(page: Page) {
   return page.evaluate(() => {
     const id = localStorage.getItem('qalam-document-studio-active-document-v1');
-    const map = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}') as Record<string, Array<{ id: string; singleLine?: boolean; hMm: number; wMm: number; text: string }>>;
+    const map = JSON.parse(localStorage.getItem('qalam-studio-frames-v1') || '{}') as Record<string, Array<{ id: string; singleLine?: boolean; xMm: number; yMm: number; hMm: number; wMm: number; text: string; textAlign?: string }>>;
     return id ? map[id] || [] : [];
   });
 }
@@ -193,4 +193,139 @@ test('loading a saved single-line frame does not change its height', async ({ pa
   await page.reload();
   await expect(page.locator('input[data-studio-text-single-line="true"]')).toHaveValue('محفوظ عنوان');
   expect((await storedFrames(page)).find(frame => frame.id === 'saved-title')?.hMm).toBe(25);
+});
+
+test('single-line titles expand cleanly across right, center, and left alignments without input scroll', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('qalam-site-language', 'en'));
+  await page.goto('/tools/document-studio');
+  await expect(story(page)).toBeEditable({ timeout: 15000 });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('qalam-document-studio-active-document-v1'))).not.toBeNull();
+  await page.evaluate(async () => { await document.fonts.ready; });
+  const initialStory = await storyJson(page);
+  const bounds = (await page.locator('[data-studio-objects]').boundingBox())!;
+
+  const cases = [
+    {
+      name: 'right-aligned pure Urdu',
+      xStartMm: 130,
+      xEndMm: 175,
+      yMm: 35,
+      alignGeom: null,
+      expectedAlign: '',
+      text: 'یہ ایک بہت طویل اردو عنوان ہے جو خودکار چوڑائی میں پھیل کر مکمل سطر دکھائے گا',
+      anchor: 'right' as const,
+    },
+    {
+      name: 'right-aligned mixed Urdu/English',
+      xStartMm: 130,
+      xEndMm: 175,
+      yMm: 60,
+      alignGeom: null,
+      expectedAlign: '',
+      text: 'ایک بہت طویل اردو عنوان with a deliberately long English title',
+      anchor: 'right' as const,
+    },
+    {
+      name: 'centered mixed Urdu/English',
+      xStartMm: 80,
+      xEndMm: 130,
+      yMm: 85,
+      alignGeom: 'align-center',
+      expectedAlign: 'center',
+      text: 'مرکزی طویل اردو عنوان with centered English expansion',
+      anchor: 'center' as const,
+    },
+    {
+      name: 'left-aligned LTR-first mixed Urdu/English',
+      xStartMm: 25,
+      xEndMm: 75,
+      yMm: 110,
+      alignGeom: 'align-left',
+      expectedAlign: 'left',
+      text: 'Left aligned long title with طویل اردو عبارت expansion',
+      anchor: 'left' as const,
+    },
+  ];
+
+  for (const item of cases) {
+    const existingIds = new Set((await storedFrames(page)).map(frame => frame.id));
+    await page.locator('[data-studio-tool-button="title-text"]').click();
+    await page.mouse.move(bounds.x + item.xStartMm * pxPerMm, bounds.y + item.yMm * pxPerMm);
+    await page.mouse.down();
+    await page.mouse.move(bounds.x + item.xEndMm * pxPerMm, bounds.y + item.yMm * pxPerMm, { steps: 4 });
+    await page.mouse.up();
+
+    let createdId = '';
+    await expect.poll(async () => {
+      const created = (await storedFrames(page)).find(frame => frame.singleLine && !existingIds.has(frame.id));
+      createdId = created?.id ?? '';
+      return createdId;
+    }).not.toBe('');
+
+    const frameLoc = object(page, createdId);
+    const input = frameLoc.locator('input[data-studio-text-single-line="true"]');
+    await expect(input).toBeVisible();
+    await input.click();
+
+    if (item.alignGeom) {
+      await page.locator(`[data-studio-geom="${item.alignGeom}"]`).click();
+      await expect(input).toHaveAttribute('data-studio-frame-text-align', item.expectedAlign);
+    }
+
+    const before = (await storedFrames(page)).find(frame => frame.id === createdId)!;
+    await input.click();
+    await input.fill(item.text);
+    await expect.poll(async () => (await storedFrames(page)).find(frame => frame.id === createdId)?.wMm ?? 0).toBeGreaterThan(before.wMm + 5);
+    await page.waitForTimeout(100);
+    const after = (await storedFrames(page)).find(frame => frame.id === createdId)!;
+
+    expect(after.wMm, `${item.name}: width expanded`).toBeGreaterThan(before.wMm);
+    expect(after.hMm, `${item.name}: height unchanged`).toBeCloseTo(before.hMm, 3);
+
+    const anchorDelta =
+      item.anchor === 'right'
+        ? Math.abs((after.xMm + after.wMm) - (before.xMm + before.wMm))
+        : item.anchor === 'center'
+          ? Math.abs((after.xMm + after.wMm / 2) - (before.xMm + before.wMm / 2))
+          : Math.abs(after.xMm - before.xMm);
+    expect(anchorDelta, `${item.name}: ${item.anchor} anchor preserved`).toBeLessThan(0.5);
+
+    const metrics = await frameLoc.evaluate(frameEl => {
+      const inputEl = frameEl.querySelector('input[data-studio-text-single-line="true"]') as HTMLInputElement;
+      const textEl = frameEl.querySelector('[data-studio-single-line-text]') as HTMLElement;
+      const inputStyle = getComputedStyle(inputEl);
+      const textStyle = getComputedStyle(textEl);
+      const range = document.createRange();
+      range.selectNodeContents(textEl);
+      const ink = range.getBoundingClientRect();
+      const box = textEl.getBoundingClientRect();
+      const borderLeft = parseFloat(textStyle.borderLeftWidth) || 0;
+      const borderRight = parseFloat(textStyle.borderRightWidth) || 0;
+      return {
+        scrollWidth: inputEl.scrollWidth,
+        clientWidth: inputEl.clientWidth,
+        scrollLeft: inputEl.scrollLeft,
+        nodeScrollWidth: textEl.scrollWidth,
+        nodeClientWidth: textEl.clientWidth,
+        inkLeft: ink.left,
+        inkRight: ink.right,
+        boxInnerLeft: box.left + borderLeft,
+        boxInnerRight: box.right - borderRight,
+        whiteSpace: inputStyle.whiteSpace,
+        direction: inputStyle.direction,
+        alignAttr: inputEl.getAttribute('data-studio-frame-text-align') ?? '',
+      };
+    });
+
+    expect(metrics.whiteSpace, `${item.name}: nowrap`).toBe('nowrap');
+    expect(metrics.direction, `${item.name}: rtl direction`).toBe('rtl');
+    expect(metrics.alignAttr, `${item.name}: alignment attribute`).toBe(item.expectedAlign);
+    expect(metrics.scrollWidth, `${item.name}: input scrollWidth <= clientWidth + 1`).toBeLessThanOrEqual(metrics.clientWidth + 1);
+    expect(metrics.scrollLeft, `${item.name}: input scrollLeft === 0`).toBe(0);
+    expect(metrics.nodeScrollWidth, `${item.name}: visible text layer fits`).toBeLessThanOrEqual(metrics.nodeClientWidth + 1);
+    expect(metrics.inkLeft, `${item.name}: visible ink not clipped on left`).toBeGreaterThanOrEqual(metrics.boxInnerLeft - 0.1);
+    expect(metrics.inkRight, `${item.name}: visible ink not clipped on right`).toBeLessThanOrEqual(metrics.boxInnerRight + 0.1);
+  }
+
+  expect(await storyJson(page)).toEqual(initialStory);
 });
