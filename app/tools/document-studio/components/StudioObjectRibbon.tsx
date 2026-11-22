@@ -37,7 +37,7 @@ import type { StudioToolId } from "./InPageToolPalette";
 import { useMovableStudioDialog } from "./useMovableStudioDialog";
 import { contextMenuPosition } from "../utils/textContextMenu";
 import { resolvedRunAround } from "../utils/runAround";
-import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
+import { isRunAroundBox } from "../utils/runAroundFlow";
 
 export type PropertyToolbarMode = "picture-tool" | "picture" | "object" | "none";
 
@@ -48,7 +48,9 @@ export function resolvePropertyToolbarMode(
   if (isPictureDrawTool(canvasTool)) return "picture-tool";
   if (selectedFrames.length === 0) return "none";
   if (canvasTool === "text") {
-    return selectedFrames.length === 1 && isPictureBox(selectedFrames[0].kind) ? "picture" : "none";
+    if (selectedFrames.length === 1 && isPictureBox(selectedFrames[0].kind)) return "picture";
+    if (selectedFrames.length > 0 && selectedFrames.every((frame) => frame.kind === "text")) return "object";
+    return "none";
   }
   return "object";
 }
@@ -1415,8 +1417,8 @@ function ObjectPropertyRibbon({
   const shapeGroupEnabled = editable && (allPictureFamily || allDrawingShapes);
   const sharedVariant = resolveShared<ShapeVariant | null>(selectedFrames, (f) => shapeVariantOf(f.kind));
   const roundnessEnabled = editable && selectedFrames.some((f) => shapeVariantOf(f.kind) === "round-rect");
-  const eligibleRunAroundFrames = creationMode ? [] : selectedFrames.filter((f) => isRectangularRunAroundBox(f));
-  const editableRunAroundFrames = creationMode ? [] : unlockedFrames.filter((f) => isRectangularRunAroundBox(f));
+  const eligibleRunAroundFrames = creationMode ? [] : selectedFrames.filter((f) => isRunAroundBox(f));
+  const editableRunAroundFrames = creationMode ? [] : unlockedFrames.filter((f) => isRunAroundBox(f));
   const runAroundEnabled = !creationMode && editableRunAroundFrames.length > 0;
   const sharedRunAround = eligibleRunAroundFrames.length > 0
     ? resolveShared(eligibleRunAroundFrames, resolvedRunAround)
@@ -1432,10 +1434,10 @@ function ObjectPropertyRibbon({
       : sharedRunAround.value;
   const runAroundNextValue = editableSharedRunAround.mixed ? true : !editableSharedRunAround.value;
   const runAroundTitle = creationMode
-    ? "Select a rectangular object to toggle Run Around"
+    ? "Select a supported object to toggle Run Around"
     : runAroundEnabled
       ? sharedRunAround.mixed
-        ? `Run Around (Mixed — click to turn ${runAroundNextValue ? "on" : "off"} for unlocked rectangular objects; Format → Runaround… for clearances)`
+        ? `Run Around (Mixed — click to turn ${runAroundNextValue ? "on" : "off"} for unlocked supported objects; Format → Runaround… for clearances)`
         : runAroundActive
           ? "Run Around: On (Format → Runaround… for clearances)"
           : "Run Around: Off (Format → Runaround… for clearances)"
@@ -1639,7 +1641,7 @@ function ObjectPropertyRibbon({
             aria-pressed={runAroundPressed}
             disabled={!runAroundEnabled}
             onClick={() => {
-              applyToSelected((target) => (isRectangularRunAroundBox(target) ? { runAround: runAroundNextValue } : null));
+              applyToSelected((target) => (isRunAroundBox(target) ? { runAround: runAroundNextValue } : null));
             }}
             style={ribbonBevelButton(runAroundActive, !runAroundEnabled)}
           >
@@ -2035,7 +2037,7 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
   const preview = { ...frame, ...patch };
   const parsedPreviewAngle1 = parseDegrees(angle1);
   const effectivePreviewAngle1 = Number.isFinite(parsedPreviewAngle1) ? parsedPreviewAngle1 : (frame.angle1Deg ?? 0);
-  const runAroundSupported = isRectangularRunAroundBox({
+  const runAroundSupported = isRunAroundBox({
     kind: preview.kind,
     angle1Deg: effectivePreviewAngle1,
   });
@@ -2064,7 +2066,7 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       if (patch.locked !== undefined && patch.locked !== (frame.locked ?? false)) current.locked = patch.locked;
       if (patch.dontPrint !== undefined && patch.dontPrint !== (frame.dontPrint ?? false)) current.dontPrint = patch.dontPrint;
       if (patch.template !== undefined && patch.template !== (frame.template ?? false)) current.template = patch.template;
-      const submitSupported = isRectangularRunAroundBox({
+      const submitSupported = isRunAroundBox({
         kind: patch.kind ?? frame.kind,
         angle1Deg: current.angle1Deg ?? frame.angle1Deg,
       });
@@ -2111,7 +2113,7 @@ export function FormatDialog({ frame, onCancel, onApply, returnFocus }: { frame:
       <button type="button" onClick={onCancel} style={{ ...classicButton, position: "absolute", left: 257, top: 34, width: 75, height: 22 }}>Cancel</button>
       <button type="button" onClick={() => setHelpOpen(true)} style={{ ...classicButton, position: "absolute", left: 257, top: 60, width: 75, height: 22 }}>Help</button>
       <label
-        title={runAroundSupported ? undefined : "Run Around is only supported for unrotated rectangular objects"}
+        title={runAroundSupported ? undefined : "Run Around supports unrotated boxes and curved shapes, but not lines"}
         style={{ position: "absolute", left: 250, top: 213, height: 13, display: "flex", alignItems: "center", whiteSpace: "nowrap", color: runAroundSupported ? "#000" : "#808080", opacity: runAroundSupported ? 1 : 0.75 }}
       >
         <input

@@ -181,7 +181,7 @@ import { createStudioHistoryCoordinator, resolveStudioHistoryShortcut } from "..
 import { StudioCharacterDialog } from "./StudioCharacterDialog";
 import { StudioParagraphDialog } from "./StudioParagraphDialog";
 import { StudioRunAroundDialog } from "./StudioRunAroundDialog";
-import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
+import { isRunAroundBox } from "../utils/runAroundFlow";
 import { StudioInsertTableDialog } from "./StudioInsertTableDialog";
 import { StudioTextToTableDialog } from "./StudioTextToTableDialog";
 import { StudioTableToTextDialog } from "./StudioTableToTextDialog";
@@ -2327,7 +2327,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       tableFormat: () => setTableFormatOpen(true),
       runaround: () => {
         const selected = framesRef.current.filter(
-          (frame) => selectedFrameIds.includes(frame.id) && !frame.locked && isRectangularRunAroundBox(frame),
+          (frame) => selectedFrameIds.includes(frame.id) && !frame.locked && isRunAroundBox(frame),
         );
         if (selectedFrameIds.length === 1 && selected.length === 1) setRunAroundFrame(selected[0]);
       },
@@ -2436,7 +2436,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     selectedFrameIds.length !== 1 ||
     selectedFramesForMenu.length !== 1 ||
     selectedFramesForMenu[0].locked ||
-    !isRectangularRunAroundBox(selectedFramesForMenu[0])
+    !isRunAroundBox(selectedFramesForMenu[0])
   ) {
     disabledIds.add("text.runaround");
   }

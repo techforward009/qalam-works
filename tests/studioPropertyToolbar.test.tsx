@@ -790,12 +790,16 @@ describe("Object Run Around toolbar & dialog integration", () => {
     const pic = makePictureFrame({ id: "rect-pic", kind: "picture-rect" });
     const txt = makeShapeFrame({ id: "rect-txt", kind: "text" });
     const rect = makeShapeFrame({ id: "rect-shape", kind: "rect" });
-    render(<Harness initialFrames={[pic, txt, rect]} mode="object" />);
+    const ellipse = makeShapeFrame({ id: "ellipse-shape", kind: "ellipse" });
+    const rounded = makeShapeFrame({ id: "rounded-shape", kind: "round-rect" });
+    const pictureEllipse = makePictureFrame({ id: "picture-ellipse", kind: "picture-ellipse" });
+    const pictureRounded = makePictureFrame({ id: "picture-rounded", kind: "picture-round-rect" });
+    render(<Harness initialFrames={[pic, txt, rect, ellipse, rounded, pictureEllipse, pictureRounded]} mode="object" />);
 
     const getBtn = () => screen.getByLabelText("Object Run Around") as HTMLButtonElement;
     const getInsetBtn = () => screen.getByLabelText("Object Inset") as HTMLButtonElement;
 
-    for (const id of ["rect-pic", "rect-txt", "rect-shape"] as const) {
+    for (const id of ["rect-pic", "rect-txt", "rect-shape", "ellipse-shape", "rounded-shape", "picture-ellipse", "picture-rounded"] as const) {
       fireEvent.click(screen.getByRole("button", { name: `Select ${id}` }));
       expect(getBtn().disabled).toBe(false);
       expect(getBtn().getAttribute("aria-pressed")).toBe("false");
@@ -824,12 +828,8 @@ describe("Object Run Around toolbar & dialog integration", () => {
     expect(getBtn().getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("keeps Object Run Around disabled for unsupported shapes, rotated boxes, locked boxes, and Picture Tool creation mode", () => {
+  it("keeps Object Run Around disabled for lines, rotated boxes, locked boxes, and Picture Tool creation mode", () => {
     const unsupportedCases: StudioFrame[] = [
-      makePictureFrame({ id: "pic-ell", kind: "picture-ellipse" }),
-      makePictureFrame({ id: "pic-rnd", kind: "picture-round-rect" }),
-      makeShapeFrame({ id: "shp-ell", kind: "ellipse" }),
-      makeShapeFrame({ id: "shp-rnd", kind: "round-rect" }),
       makeShapeFrame({ id: "shp-line", kind: "line" }),
       makePictureFrame({ id: "rot-rect", kind: "picture-rect", angle1Deg: 15 }),
       makePictureFrame({ id: "locked-rect", kind: "picture-rect", locked: true }),
@@ -909,7 +909,7 @@ describe("Object Run Around toolbar & dialog integration", () => {
     expect(current.find((f) => f.id === "locked-off")?.runAround).toBe(false);
   });
 
-  it("disables Run Around in Modify Object dialog and clears runAround when converted to ellipse or rotated", () => {
+  it("keeps Run Around enabled when converted to ellipse, and clears it when rotated", () => {
     const pic = makePictureFrame({ id: "fmt-pic", kind: "picture-rect", angle1Deg: 0, runAround: true });
     render(<Harness initialFrames={[pic]} mode="object" />);
 
@@ -921,10 +921,10 @@ describe("Object Run Around toolbar & dialog integration", () => {
     expect(runAroundCheckbox.checked).toBe(true);
 
     fireEvent.click(within(dialog).getByLabelText("Elliptical Picture Box"));
-    expect(runAroundCheckbox.disabled).toBe(true);
-    expect(runAroundCheckbox.checked).toBe(false);
+    expect(runAroundCheckbox.disabled).toBe(false);
+    expect(runAroundCheckbox.checked).toBe(true);
     fireEvent.click(within(dialog).getByRole("button", { name: "OK" }));
-    expect(readFramesFromHarness()[0]).toMatchObject({ kind: "picture-ellipse", runAround: false });
+    expect(readFramesFromHarness()[0]).toMatchObject({ kind: "picture-ellipse", runAround: true });
 
     // Rotating a rectangular box with active Run Around clears Run Around
     cleanup();

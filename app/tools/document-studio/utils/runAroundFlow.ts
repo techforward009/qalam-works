@@ -7,6 +7,12 @@ export interface RunAroundRect {
   right: number;
   top: number;
   bottom: number;
+  /** Optional curved exclusion contour; units follow the bounds. */
+  shape?: "ellipse" | "round-rect";
+  radius?: number;
+  /** Original contour bounds retained when the usable text area clips the box. */
+  contourTop?: number;
+  contourBottom?: number;
 }
 
 export type RunAroundSide = "left" | "right" | "full";
@@ -55,6 +61,7 @@ export interface RunAroundBox {
   hMm: number;
   kind: string;
   textShape?: string;
+  roundnessMm?: number;
   angle1Deg?: number;
   dontPrint?: boolean;
   runAround?: boolean;
@@ -68,25 +75,47 @@ function finite(value: number): boolean {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-/** Axis-aligned rectangles only. Ellipses, rounded boxes, lines, and rotated boxes stay unwrapped. */
+/** Supports unrotated rectangular, elliptical and rounded-rectangle objects, plus Text Boxes. */
+export function isRunAroundBox(frame: Pick<RunAroundBox, "kind" | "textShape" | "angle1Deg">): boolean {
+  if (frame.angle1Deg !== undefined && Math.abs(frame.angle1Deg) > 1e-9) return false;
+  if (frame.kind === "line") return false;
+  if (frame.kind === "text") return frame.textShape !== "ellipse";
+  return ["rect", "picture-rect", "ellipse", "picture-ellipse", "round-rect", "picture-round-rect"].includes(frame.kind);
+}
+
+/** Legacy rectangular-only predicate retained for callers that require a rectangle. */
 export function isRectangularRunAroundBox(frame: Pick<RunAroundBox, "kind" | "textShape" | "angle1Deg">): boolean {
   if (frame.angle1Deg !== undefined && Math.abs(frame.angle1Deg) > 1e-9) return false;
   if (frame.kind === "text") return frame.textShape !== "ellipse";
   return frame.kind === "rect" || frame.kind === "picture-rect";
 }
 
-/** Box expanded by its clearances, in page millimetres. Unchecked and non-rectangles return null. */
+/** Box expanded by its clearances, in page millimetres. */
 export function runAroundExclusionMm(frame: RunAroundBox): (RunAroundRect & { page: number }) | null {
-  if (frame.runAround !== true || !isRectangularRunAroundBox(frame)) return null;
+  if (frame.runAround !== true || !isRunAroundBox(frame)) return null;
   if (![frame.page, frame.xMm, frame.yMm, frame.wMm, frame.hMm].every(finite)) return null;
   if (!(frame.wMm > 0) || !(frame.hMm > 0)) return null;
   const clearance = resolvedRunAroundClearance(frame);
+  const left = frame.xMm - clearance.leftMm;
+  const right = frame.xMm + frame.wMm + clearance.rightMm;
+  const top = frame.yMm - clearance.topMm;
+  const bottom = frame.yMm + frame.hMm + clearance.bottomMm;
+  const shape = frame.kind === "ellipse" || frame.kind === "picture-ellipse"
+    ? "ellipse"
+    : frame.kind === "round-rect" || frame.kind === "picture-round-rect"
+      ? "round-rect"
+      : undefined;
+  const radius = shape === "round-rect"
+    ? Math.min(
+        Math.max(0, (frame.roundnessMm ?? 6.35) + Math.min(clearance.leftMm, clearance.rightMm, clearance.topMm, clearance.bottomMm)),
+        (right - left) / 2,
+        (bottom - top) / 2,
+      )
+    : undefined;
   return {
-    page: frame.page,
-    left: frame.xMm - clearance.leftMm,
-    right: frame.xMm + frame.wMm + clearance.rightMm,
-    top: frame.yMm - clearance.topMm,
-    bottom: frame.yMm + frame.hMm + clearance.bottomMm,
+    page: frame.page, left, right, top, bottom,
+    ...(shape ? { shape } : {}),
+    ...(radius !== undefined ? { radius } : {}),
   };
 }
 
@@ -101,6 +130,8 @@ export function runAroundExclusionPx(frame: RunAroundBox, pageStridePx: number):
     right: px(mm.right),
     top: origin + px(mm.top),
     bottom: origin + px(mm.bottom),
+    ...(mm.shape ? { shape: mm.shape, contourTop: origin + px(mm.top), contourBottom: origin + px(mm.bottom) } : {}),
+    ...(mm.radius !== undefined ? { radius: px(mm.radius) } : {}),
   };
 }
 
@@ -124,11 +155,15 @@ export function runAroundContentExclusionPx(
   const top = Math.max(pageStart, pageStart + mm.top * PX_PER_MM - topMarginPx);
   const bottom = Math.min(pageEnd, pageStart + mm.bottom * PX_PER_MM - topMarginPx);
   if (!(bottom > top)) return null;
+  const contourTop = pageStart + mm.top * PX_PER_MM - topMarginPx;
+  const contourBottom = pageStart + mm.bottom * PX_PER_MM - topMarginPx;
   return {
     left: mm.left * PX_PER_MM - leftMarginPx,
     right: mm.right * PX_PER_MM - leftMarginPx,
     top,
     bottom,
+    ...(mm.shape ? { shape: mm.shape, contourTop, contourBottom } : {}),
+    ...(mm.radius !== undefined ? { radius: mm.radius * PX_PER_MM } : {}),
   };
 }
 
@@ -254,12 +289,53 @@ function runAroundEngineFactory() {
     return cursor;
   }
 
+  function exclusionIntervalForLine(line: RunAroundRect, exclusion: RunAroundRect): [number, number] | null {
+    const shapeTop = exclusion.contourTop ?? exclusion.top;
+    const shapeBottom = exclusion.contourBottom ?? exclusion.bottom;
+    const bandTop = Math.max(line.top, shapeTop);
+    const bandBottom = Math.min(line.bottom, shapeBottom);
+    if (!(bandBottom > bandTop)) return null;
+    let left = exclusion.left;
+    let right = exclusion.right;
+    if (exclusion.shape === "ellipse") {
+      const rx = (exclusion.right - exclusion.left) / 2;
+      const ry = (shapeBottom - shapeTop) / 2;
+      if (!(rx > 0) || !(ry > 0)) return null;
+      const cy = (shapeTop + shapeBottom) / 2;
+      const y = Math.max(bandTop, Math.min(bandBottom, cy));
+      const ratio = Math.max(0, Math.min(1, (y - cy) / ry));
+      const reach = rx * Math.sqrt(Math.max(0, 1 - ratio * ratio));
+      const cx = (exclusion.left + exclusion.right) / 2;
+      left = cx - reach;
+      right = cx + reach;
+    } else if (exclusion.shape === "round-rect") {
+      const radius = Math.max(0, Math.min(exclusion.radius ?? 0, (exclusion.right - exclusion.left) / 2, (shapeBottom - shapeTop) / 2));
+      if (radius > 0) {
+        const topFlatEnd = shapeTop + radius;
+        const bottomFlatStart = shapeBottom - radius;
+        let inset = 0;
+        if (bandBottom < topFlatEnd) {
+          const distance = Math.min(radius, topFlatEnd - bandBottom);
+          inset = radius - Math.sqrt(Math.max(0, radius * radius - distance * distance));
+        } else if (bandTop > bottomFlatStart) {
+          const distance = Math.min(radius, bandTop - bottomFlatStart);
+          inset = radius - Math.sqrt(Math.max(0, radius * radius - distance * distance));
+        }
+        left += inset;
+        right -= inset;
+      }
+    }
+    const clippedLeft = Math.max(line.left, left);
+    const clippedRight = Math.min(line.right, right);
+    return clippedRight > clippedLeft ? [clippedLeft, clippedRight] : null;
+  }
+
   function splitLineAroundExclusions(line: RunAroundRect, exclusions: readonly RunAroundRect[], minWidth = 0): SplitLine {
     if (!(line.right > line.left) || !(line.bottom > line.top)) return { segments: [], skip: false };
     const blocked = mergeIntervals(
       exclusions
-        .filter(exclusion => verticalOverlap(line, exclusion))
-        .map(exclusion => [Math.max(line.left, exclusion.left), Math.min(line.right, exclusion.right)] as [number, number]),
+        .map(exclusion => exclusionIntervalForLine(line, exclusion))
+        .filter((interval): interval is [number, number] => interval !== null),
     );
     if (!blocked.length) return { segments: [{ left: line.left, right: line.right, side: "full" }], skip: false };
     const segments: RunAroundSegment[] = [];
@@ -280,6 +356,14 @@ function runAroundEngineFactory() {
       .map(exclusion => exclusion.bottom)
       .filter(bottom => bottom > line.top + 1e-6)
       .sort((a, b) => a - b);
+    if (!(height > 0)) return bottoms.length ? bottoms[0] : line.bottom;
+    if (exclusions.some(exclusion => exclusion.shape)) {
+      const last = bottoms.length ? bottoms[bottoms.length - 1] : line.bottom;
+      for (let top = line.top + height; top < last - 1e-6; top += height) {
+        if (!splitLineAroundExclusions({ ...line, top, bottom: top + height }, exclusions, minWidth).skip) return top;
+      }
+      return last;
+    }
     for (const bottom of bottoms) {
       const next = { ...line, top: bottom, bottom: bottom + height };
       if (!splitLineAroundExclusions(next, exclusions, minWidth).skip) return bottom;
