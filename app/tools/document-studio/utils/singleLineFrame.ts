@@ -50,15 +50,25 @@ export function centerSingleLinePadding(
 }
 
 /**
- * Outer border-box width in CSS pixels needed so neither the editable input nor
- * the visible text layer overflows horizontally. Uses each element's measured
- * horizontal chrome (offsetWidth - clientWidth) to avoid double-counting padding.
+ * Outer border-box height in CSS pixels needed for a fixed-width, downward-expanding
+ * text frame so wrapped or pasted lines never clip vertically and short content
+ * retains the configured minimum height without rounding drift.
  */
-export function singleLineOuterWidthPx(
-  input: { offsetWidth: number; clientWidth: number; scrollWidth: number },
-  textNode: { offsetWidth: number; clientWidth: number; scrollWidth: number },
-): number {
-  const inputChrome = Math.max(0, input.offsetWidth - input.clientWidth);
-  const nodeChrome = Math.max(0, textNode.offsetWidth - textNode.clientWidth);
-  return Math.ceil(Math.max(input.scrollWidth + inputChrome, textNode.scrollWidth + nodeChrome));
+export function autoExpandOuterHeightPx(params: {
+  minOuterHeightPx: number;
+  sizerOffsetHeight: number;
+  sizerClientHeight: number;
+  sizerScrollHeight: number;
+  textareaOffsetHeight: number;
+  textareaClientHeight: number;
+  textareaScrollHeight: number;
+}): number {
+  const sizerChromeY = Math.max(0, params.sizerOffsetHeight - params.sizerClientHeight);
+  const sizerOuter = Math.max(params.sizerOffsetHeight, params.sizerScrollHeight + sizerChromeY);
+  const textareaChromeY = Math.max(0, params.textareaOffsetHeight - params.textareaClientHeight);
+  const textareaOverflows = params.textareaScrollHeight > params.textareaClientHeight + 1;
+  const textareaOuter = textareaOverflows ? params.textareaScrollHeight + textareaChromeY : 0;
+  const contentOuter = Math.max(sizerOuter, textareaOuter);
+  if (contentOuter <= params.minOuterHeightPx + 1) return params.minOuterHeightPx;
+  return Math.ceil(contentOuter);
 }

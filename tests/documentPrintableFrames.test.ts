@@ -120,12 +120,13 @@ it("prints each multiline paragraph with its own alignment and keeps a legacy fr
   expect(() => validatePrintFrames([{ ...frame, paragraphAligns: ["sideways"] }])).toThrow(/paragraph alignment/);
 });
 
-it("persists and prints single-line text without wrapping while retaining unknown-key stripping", () => {
+it("persists and prints title frames with wrapping while retaining unknown-key stripping", () => {
   const [frame] = validatePrintFrames([{ ...base, kind: "text", singleLine: true, text: "ایک سطر", typo: "discard" }]);
   expect(frame).toMatchObject({ singleLine: true });
   expect(frame).not.toHaveProperty("typo");
   expect(renderPrintFrame(frame)).toContain('data-print-frame-single-line="true"');
-  expect(renderPrintFrame(frame)).toContain("white-space:nowrap;");
+  expect(renderPrintFrame(frame)).toContain("white-space:pre-wrap;");
+  expect(renderPrintFrame(frame)).toContain("overflow-wrap:break-word;");
   expect(renderPrintFrame({ ...frame, singleLine: false })).toContain("white-space:pre-wrap;");
 });
 
