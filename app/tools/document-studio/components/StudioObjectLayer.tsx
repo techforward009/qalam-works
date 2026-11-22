@@ -165,6 +165,7 @@ function releaseCapturedPointer(node: EventTarget | null, pointerId: number) {
 }
 
 const PX_PER_MM = 96 / 25.4;
+const PX_PER_POINT = 96 / 72;
 const PICTURE_CORNER_RX_PX = 6.35 * PX_PER_MM;
 const pictureCornerRadiusPx = (frame: StudioFrame) => (frame.roundnessMm ?? 6.35) * PX_PER_MM;
 
@@ -214,6 +215,29 @@ export function resolveMovedFramePlacement(
     xMm: nextLeftPx / PX_PER_MM,
     yMm: (nextTopPx - (page - 1) * stride) / PX_PER_MM,
   };
+}
+
+/** Move selected, unlocked frames by a document-space arrow-key nudge. */
+export function nudgeSelectedFrames(
+  frames: readonly StudioFrame[],
+  selectedIds: readonly string[],
+  key: "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown",
+  shiftKey: boolean,
+  options: Parameters<typeof resolveMovedFramePlacement>[3],
+): StudioFrame[] {
+  const distancePx = PX_PER_POINT * (shiftKey ? 10 : 1);
+  const dxPx = key === "ArrowLeft" ? -distancePx : key === "ArrowRight" ? distancePx : 0;
+  const dyPx = key === "ArrowUp" ? -distancePx : key === "ArrowDown" ? distancePx : 0;
+  const selected = new Set(selectedIds);
+  let changed = false;
+  const next = frames.map((frame) => {
+    if (!selected.has(frame.id) || frame.locked) return frame;
+    const placement = resolveMovedFramePlacement(frame, dxPx, dyPx, options);
+    if (placement.page === frame.page && placement.xMm === frame.xMm && placement.yMm === frame.yMm) return frame;
+    changed = true;
+    return { ...frame, ...placement };
+  });
+  return changed ? next : [...frames];
 }
 
 /**
@@ -503,6 +527,31 @@ export function StudioObjectLayer({
       document.removeEventListener("keydown", clearOnEscape, true);
     };
   }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (tool !== "select") return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+      const target = event.target as HTMLElement | null;
+      const inStoryEditor = Boolean(target?.closest(".ProseMirror"));
+      if (!inStoryEditor && target?.closest("textarea, input, select, button, [contenteditable='true']")) return;
+      if (!selected.length) return;
+      if (event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
+      if (document.querySelector('[data-studio-picture-menu], [data-studio-picture-context-zoom], [data-studio-text-menu], [data-menu-dropdown], [role="dialog"], [role="listbox"]')) return;
+      const next = nudgeSelectedFrames(
+        frames,
+        selected,
+        event.key,
+        event.shiftKey,
+        { pageCount, pageHeightPx, gapPx, projection: projectionProp },
+      );
+      if (next.every((frame, index) => frame === frames[index])) return;
+      event.preventDefault();
+      onFramesChange(next);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [frames, gapPx, onFramesChange, pageCount, pageHeightPx, projectionProp, selected, tool]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

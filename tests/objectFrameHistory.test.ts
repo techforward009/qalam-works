@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveMovedFramePlacement, resolveResizedFrameBounds, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
+import { nudgeSelectedFrames, resolveMovedFramePlacement, resolveResizedFrameBounds, type StudioFrame } from "../app/tools/document-studio/components/StudioObjectLayer";
 import { facingSlot, type PageProjection } from "../app/tools/document-studio/utils/facingPages";
 import {
   OBJECT_FRAME_HISTORY_LIMIT,
@@ -16,6 +16,54 @@ function frame(id: string, patch: Partial<StudioFrame> = {}): StudioFrame {
 }
 
 describe("object frame history", () => {
+  it("nudges selected picture, shape, and text frames by physical arrow-key points", () => {
+    const picture = frame("picture", { kind: "picture-rect", imageXMm: 2, imageYMm: 3, imageWMm: 20, imageHMm: 10 });
+    const ellipse = frame("ellipse", { kind: "ellipse", xMm: 40 });
+    const text = frame("text", { kind: "text", xMm: 70 });
+    const options = { pageCount: 2, pageHeightPx: 1122.52, gapPx: 12 };
+    const pointMm = 25.4 / 72;
+
+    const left = nudgeSelectedFrames([picture], ["picture"], "ArrowLeft", false, options)[0];
+    expect(left.xMm).toBeCloseTo(picture.xMm - pointMm, 8);
+    expect(left).toMatchObject({ imageXMm: 2, imageYMm: 3, imageWMm: 20, imageHMm: 10 });
+    expect(nudgeSelectedFrames([ellipse], ["ellipse"], "ArrowDown", false, options)[0].yMm).toBeCloseTo(ellipse.yMm + pointMm, 8);
+    expect(nudgeSelectedFrames([text], ["text"], "ArrowUp", false, options)[0].yMm).toBeCloseTo(text.yMm - pointMm, 8);
+    expect(nudgeSelectedFrames([picture], ["picture"], "ArrowRight", true, options)[0].xMm).toBeCloseTo(picture.xMm + pointMm * 10, 8);
+  });
+
+  it("nudges unlocked multi-selection together, leaves locked or unselected frames untouched, and records undo/redo", () => {
+    const first = frame("first", { xMm: 20, yMm: 30 });
+    const second = frame("second", { kind: "round-rect", xMm: 70, yMm: 45 });
+    const locked = frame("locked", { xMm: 90, yMm: 50, locked: true });
+    const start = [first, second, locked];
+    const options = { pageCount: 2, pageHeightPx: 1122.52, gapPx: 12 };
+    const moved = nudgeSelectedFrames(start, ["first", "second", "locked"], "ArrowRight", false, options);
+
+    expect(moved[1].xMm - moved[0].xMm).toBeCloseTo(second.xMm - first.xMm, 8);
+    expect(moved[1].yMm - moved[0].yMm).toBeCloseTo(second.yMm - first.yMm, 8);
+    expect(moved[2]).toEqual(locked);
+    expect(nudgeSelectedFrames(start, [], "ArrowRight", false, options)).toEqual(start);
+
+    const history = recordObjectFrames(createObjectFrameHistory(), start, moved);
+    const undone = undoObjectFrames(history, moved)!;
+    expect(undone.frames).toEqual(start);
+    expect(redoObjectFrames(undone.state, undone.frames)!.frames).toEqual(moved);
+  });
+
+  it("keeps arrow-key movement in page-local coordinates in Facing Pages mode", () => {
+    const projection: PageProjection = { width: 794, height: 1123, gap: 12, count: 2 };
+    const start = frame("facing", { page: 2, xMm: 40, yMm: 50 });
+    const moved = nudgeSelectedFrames([start], ["facing"], "ArrowRight", false, {
+      pageCount: 2,
+      pageHeightPx: projection.height,
+      gapPx: projection.gap,
+      projection,
+    })[0];
+    expect(moved.page).toBe(2);
+    expect(moved.xMm).toBeCloseTo(start.xMm + 25.4 / 72, 8);
+    expect(moved.yMm).toBeCloseTo(start.yMm, 8);
+  });
+
   it("supports Delete / Cut -> Undo -> Redo preserving IDs, geometry, z-order, and picture fields", () => {
     const pic1 = frame("pic-1", { xMm: 10, imageSrc: "data:image/png;base64,aaa", imageXMm: 2, imageYMm: 3 });
     const pic2 = frame("pic-2", { xMm: 50, locked: true });
