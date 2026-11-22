@@ -303,7 +303,7 @@ function runAroundEngineFactory() {
       if (!(rx > 0) || !(ry > 0)) return null;
       const cy = (shapeTop + shapeBottom) / 2;
       const y = Math.max(bandTop, Math.min(bandBottom, cy));
-      const ratio = Math.max(0, Math.min(1, (y - cy) / ry));
+      const ratio = Math.max(0, Math.min(1, Math.abs((y - cy) / ry)));
       const reach = rx * Math.sqrt(Math.max(0, 1 - ratio * ratio));
       const cx = (exclusion.left + exclusion.right) / 2;
       left = cx - reach;
