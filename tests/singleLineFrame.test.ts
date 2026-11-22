@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
-import { centerSingleLinePadding, singleLineOuterHeightMm, singleLineOuterWidthPx } from "../app/tools/document-studio/utils/singleLineFrame";
+import { centerSingleLinePadding, singleLineOuterHeightMm, autoExpandOuterHeightPx } from "../app/tools/document-studio/utils/singleLineFrame";
 
 const typography = (bodyFontSizePt: number, defaultRtlFontId: "mehr-nastaliq-web" | "jameel-noori-nastaleeq" | "amiri") => ({
   ...defaultDocumentSettings().typography,
@@ -27,25 +27,52 @@ describe("single-line frame height", () => {
   });
 });
 
-describe("single-line frame outer width", () => {
-  it("accounts for input horizontal padding and borders without double-counting", () => {
-    expect(singleLineOuterWidthPx(
-      { offsetWidth: 189, clientWidth: 183, scrollWidth: 340 },
-      { offsetWidth: 189, clientWidth: 187, scrollWidth: 342 },
-    )).toBe(346);
+describe("fixed-width auto-height expansion", () => {
+  it("retains the minimum configured height for short single-line content without rounding drift", () => {
+    expect(autoExpandOuterHeightPx({
+      minOuterHeightPx: 32.4,
+      sizerOffsetHeight: 33,
+      sizerClientHeight: 31,
+      sizerScrollHeight: 31,
+      textareaOffsetHeight: 32,
+      textareaClientHeight: 30,
+      textareaScrollHeight: 31,
+    })).toBe(32.4);
   });
 
-  it("is an exact fixed point once the input and visible text already fit", () => {
-    expect(singleLineOuterWidthPx(
-      { offsetWidth: 346, clientWidth: 340, scrollWidth: 340 },
-      { offsetWidth: 346, clientWidth: 344, scrollWidth: 344 },
-    )).toBe(346);
+  it("expands to fit wrapped or multiline content measured by the sizer", () => {
+    expect(autoExpandOuterHeightPx({
+      minOuterHeightPx: 32.4,
+      sizerOffsetHeight: 86,
+      sizerClientHeight: 84,
+      sizerScrollHeight: 84,
+      textareaOffsetHeight: 32,
+      textareaClientHeight: 30,
+      textareaScrollHeight: 84,
+    })).toBe(86);
   });
 
-  it("adds only the measured border when clientWidth already includes padding", () => {
-    expect(singleLineOuterWidthPx(
-      { offsetWidth: 200, clientWidth: 198, scrollWidth: 250 },
-      { offsetWidth: 200, clientWidth: 198, scrollWidth: 248 },
-    )).toBe(252);
+  it("accounts for textarea vertical overflow when the textarea exceeds the sizer", () => {
+    expect(autoExpandOuterHeightPx({
+      minOuterHeightPx: 32.4,
+      sizerOffsetHeight: 58,
+      sizerClientHeight: 56,
+      sizerScrollHeight: 56,
+      textareaOffsetHeight: 58,
+      textareaClientHeight: 56,
+      textareaScrollHeight: 61,
+    })).toBe(63);
+  });
+
+  it("shrinks back to shorter content and floors at a custom minimum configured height", () => {
+    expect(autoExpandOuterHeightPx({
+      minOuterHeightPx: 94.488,
+      sizerOffsetHeight: 60,
+      sizerClientHeight: 58,
+      sizerScrollHeight: 58,
+      textareaOffsetHeight: 140,
+      textareaClientHeight: 138,
+      textareaScrollHeight: 58,
+    })).toBe(94.488);
   });
 });
