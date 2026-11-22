@@ -54,6 +54,9 @@ describe("run-around line splitting", () => {
     const top = splitLineAroundExclusions(line({ top: 0, bottom: 10 }), [ellipse]);
     expect(top.segments[0].right).toBeCloseTo(70, 0);
     expect(top.segments[1].left).toBeCloseTo(130, 0);
+    const bottom = splitLineAroundExclusions(line({ top: 90, bottom: 100 }), [ellipse]);
+    expect(bottom.segments[0].right).toBeCloseTo(70, 0);
+    expect(bottom.segments[1].left).toBeCloseTo(130, 0);
     const middle = splitLineAroundExclusions(line({ top: 45, bottom: 55 }), [ellipse]);
     expect(middle.segments[0].right).toBeCloseTo(50, 0);
     expect(middle.segments[1].left).toBeCloseTo(150, 0);
