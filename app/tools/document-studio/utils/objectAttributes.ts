@@ -3,7 +3,7 @@ import { normalizeSafeHex } from "./studioColors";
 import { PRINT_FRAME_LIMITS } from "./printableFrames";
 import { isValidBorderPattern, type BorderPatternId } from "./borderPatterns";
 import { validRunAroundFields } from "./runAround";
-import { isRunAroundBox } from "./runAroundFlow";
+import { isRectangularRunAroundBox } from "./runAroundFlow";
 
 export const DEFAULT_INPAGE_BORDER_WIDTH_MM = 25.4 / 72;
 export const STUDIO_PX_PER_MM = 96 / 25.4;
@@ -138,7 +138,7 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
     kind: patch.kind ?? frame.kind,
     angle1Deg: patch.angle1Deg ?? frame.angle1Deg,
   };
-  if (patch.runAround === true && !isRunAroundBox(candidate)) return null;
+  if (patch.runAround === true && !isRectangularRunAroundBox(candidate)) return null;
   if (
     patch.kind !== undefined &&
     !(
@@ -152,7 +152,7 @@ export function applyObjectGeometry(frame: StudioFrame, patch: ObjectGeometryPat
   if (patch.borderPattern !== undefined && !isValidBorderPattern(patch.borderPattern)) return null;
   if (patch.backgroundHatch !== undefined && patch.backgroundHatch !== "none") return null;
   const next: StudioFrame = { ...frame, ...patch, ...(patch.borderColor !== undefined ? { borderColor: normalizeSafeHex(patch.borderColor)! } : {}) };
-  if (patch.runAround === undefined && frame.runAround === true && !isRunAroundBox(candidate)) {
+  if (patch.runAround === undefined && frame.runAround === true && !isRectangularRunAroundBox(candidate)) {
     next.runAround = false;
   }
   if (patch.backgroundColor !== undefined) {

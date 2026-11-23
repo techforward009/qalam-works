@@ -37,37 +37,12 @@ describe("run-around line splitting", () => {
       runAround: true, kind: "picture-rect", runAroundLeftMm: 1, runAroundRightMm: 2, runAroundTopMm: 3, runAroundBottomMm: 4,
     }))).toMatchObject({ left: 9, right: 42, top: 17, bottom: 64 });
     expect(runAroundExclusionMm(box({ runAround: true, kind: "text" }))).toMatchObject({ left: 7.5, right: 42.5 });
-    for (const kind of ["ellipse", "picture-ellipse"]) {
-      expect(runAroundExclusionMm(box({ runAround: true, kind }))).toMatchObject({ shape: "ellipse" });
+    for (const kind of ["ellipse", "round-rect", "line", "picture-ellipse", "picture-round-rect"]) {
+      expect(runAroundExclusionMm(box({ runAround: true, kind }))).toBeNull();
     }
-    for (const kind of ["round-rect", "picture-round-rect"]) {
-      expect(runAroundExclusionMm(box({ runAround: true, kind }))?.shape).toBe("round-rect");
-    }
-    expect(runAroundExclusionMm(box({ runAround: true, kind: "line" }))).toBeNull();
     expect(runAroundExclusionMm(box({ runAround: true, kind: "text", textShape: "ellipse" }))).toBeNull();
     expect(runAroundExclusionMm(box({ runAround: true, angle1Deg: 15 }))).toBeNull();
     expect(runAroundExclusionMm(box({ runAround: true, angle1Deg: 0 }))).not.toBeNull();
-  });
-
-  it("uses curved contours instead of rectangular exclusions", () => {
-    const ellipse: RunAroundRect = { left: 50, right: 150, top: 0, bottom: 100, shape: "ellipse" };
-    const top = splitLineAroundExclusions(line({ top: 0, bottom: 10 }), [ellipse]);
-    expect(top.segments[0].right).toBeCloseTo(70, 0);
-    expect(top.segments[1].left).toBeCloseTo(130, 0);
-    const bottom = splitLineAroundExclusions(line({ top: 90, bottom: 100 }), [ellipse]);
-    expect(bottom.segments[0].right).toBeCloseTo(70, 0);
-    expect(bottom.segments[1].left).toBeCloseTo(130, 0);
-    const middle = splitLineAroundExclusions(line({ top: 45, bottom: 55 }), [ellipse]);
-    expect(middle.segments[0].right).toBeCloseTo(50, 0);
-    expect(middle.segments[1].left).toBeCloseTo(150, 0);
-
-    const rounded: RunAroundRect = { left: 50, right: 150, top: 0, bottom: 100, shape: "round-rect", radius: 20 };
-    const corner = splitLineAroundExclusions(line({ top: 0, bottom: 5 }), [rounded]);
-    expect(corner.segments[0].right).toBeGreaterThan(50);
-    expect(corner.segments[1].left).toBeLessThan(150);
-    const middleBand = splitLineAroundExclusions(line({ top: 20, bottom: 30 }), [rounded]);
-    expect(middleBand.segments[0].right).toBe(50);
-    expect(middleBand.segments[1].left).toBe(150);
   });
 
   it("stacks the exclusion on the frame's page", () => {

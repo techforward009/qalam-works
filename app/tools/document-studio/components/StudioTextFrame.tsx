@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent as ReactChangeEvent, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type UIEvent as ReactUIEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent as ReactChangeEvent, type ClipboardEvent as ReactClipboardEvent, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { FORMATTING_TARGET_CHANGE, isFormattingSurface, readFormattingTarget, registerFrameHistory, registerFrameStyleUpdater } from "../utils/formattingSafety";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { defaultDocumentSettings } from "../utils/documentSettings";
@@ -7,7 +7,7 @@ import { editorFontFamilyStack, getFontById } from "../utils/fontRegistry";
 import type { StudioFrame } from "./StudioObjectLayer";
 import { blockLeadingPt } from "../utils/autoLeading";
 import { emptyFrameCaretLeft } from "../utils/frameCaret";
-import { autoExpandOuterHeightPx, singleLineOuterHeightPx } from "../utils/singleLineFrame";
+import { centerSingleLinePadding } from "../utils/singleLineFrame";
 import { selectedLineBoxes, lineBoxTop, type TextLineBox } from "../utils/textLineBoxes";
 import { mapLatinText, resolveKey, type KeyboardLayout } from "../utils/inpageKeyboard";
 import { frameParagraphNavigationSelection } from "../utils/frameParagraphNavigation";
@@ -20,8 +20,6 @@ export type StudioFrameHistoryBridge = {
   runHistoryCommand: (action: "undo" | "redo") => boolean;
   registerFrameControl: (frameId: string, control: { getSnapshot: () => FrameAlignSnapshot; applySnapshot: (snap: FrameAlignSnapshot) => void }) => () => void;
 };
-
-const PX_PER_MM = 96 / 25.4;
 
 export function normalizeSingleLineText(text: string): string {
   return text.replace(/\r\n|[\r\n\u2028\u2029]/g, " ");
@@ -41,30 +39,23 @@ function ParagraphColumn({ parts, aligns, textAlign }: { parts: string[]; aligns
 }
 
 /** A natural-size mirror preserves textarea wrapping even inside a zoom transform. */
-export function StudioTextFrame({ frameId, historyBridge, text, singleLine = false, frameWidthPx, frameHeightMm, editable, typography, textColor, textAlign, paragraphAligns, keyboardLayout, onFocus, onText, onRestore, onStyle, onAutoHeight }: {
+export function StudioTextFrame({ frameId, historyBridge, text, singleLine = false, editable, typography, textColor, textAlign, paragraphAligns, keyboardLayout, onFocus, onText, onRestore, onStyle }: {
   frameId?: string; historyBridge?: StudioFrameHistoryBridge;
-  text: string; singleLine?: boolean; frameWidthPx?: number; frameHeightMm?: number; editable: boolean; typography?: DocumentStudioSettings["typography"];
+  text: string; singleLine?: boolean; editable: boolean; typography?: DocumentStudioSettings["typography"];
   keyboardLayout?: KeyboardLayout | null;
   textColor?: string; textAlign?: StudioTextAlign; paragraphAligns?: ParagraphAlign[];
   onFocus: () => void; onText: (text: string, edit?: TextEditRange) => void;
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
-  onAutoHeight?: (outerHeightPx: number) => void;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null), mirror = useRef<HTMLDivElement>(null), sizerRef = useRef<HTMLDivElement>(null), visible = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLTextAreaElement | HTMLInputElement>(null), mirror = useRef<HTMLDivElement>(null), textRef = useRef<HTMLDivElement>(null), visible = useRef<HTMLDivElement>(null);
   const dismissed = useRef(false);
   const [boxes,setBoxes] = useState<TextLineBox[]>([]);
   const [caret,setCaret] = useState<TextLineBox | null>(null);
+  const [padY,setPadY] = useState({ top: 2, bottom: 2 });
   const [fontEpoch,setFontEpoch] = useState(0);
-  const [overflows,setOverflows] = useState(false);
   const [alignLabel,setAlignLabel] = useState(textAlign ?? "");
-  const customMinHeightMmRef = useRef<number | null>(null);
-  const customMinInitRef = useRef(false);
-  const autoHeightFloorRef = useRef<{ key: string; heightPx: number }>({ key: "", heightPx: 0 });
-  const frameHeightMmRef = useRef(frameHeightMm);
-  frameHeightMmRef.current = frameHeightMm;
-  const onAutoHeightRef = useRef(onAutoHeight);
-  onAutoHeightRef.current = onAutoHeight;
+  const padShifts = useRef(0);
   const history = useRef(createFrameHistory());
   const restoreSelection = useRef<[number, number] | null>(null);
   const remembered = useRef(false);
@@ -106,8 +97,8 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
   }, [rememberAt]);
   const applySnapshot = useCallback((next: FrameAlignSnapshot) => {
     restoreSelection.current = [next.start, next.end];
-    onRestoreRef.current({ text: next.text, textAlign: next.textAlign ?? null, paragraphAligns: next.paragraphAligns ?? null });
-  }, []);
+    onRestoreRef.current({ text: singleLine ? normalizeSingleLineText(next.text) : next.text, textAlign: next.textAlign ?? null, paragraphAligns: next.paragraphAligns ?? null });
+  }, [singleLine]);
   const undo = useCallback(() => {
     if (historyBridge) return historyBridge.runHistoryCommand("undo");
     const next = history.current.undo(snapshot());
@@ -120,7 +111,7 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
     if (next) applySnapshot(next);
     return true;
   }, [applySnapshot, historyBridge, snapshot]);
-  const publishAlign = useCallback((input: HTMLTextAreaElement, start: number, end: number) => {
+  const publishAlign = useCallback((input: HTMLInputElement | HTMLTextAreaElement, start: number, end: number) => {
     const current = model.current;
     const label = singleLine ? current.textAlign ?? "" : toolbarParagraphAlign(input.value, current.textAlign, current.paragraphAligns, start, end);
     input.dataset.studioFrameTextAlign = label;
@@ -130,65 +121,6 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       input.closest<HTMLElement>("[data-studio-root]")?.dispatchEvent(new Event(FORMATTING_TARGET_CHANGE));
     }
   }, [singleLine]);
-  const resetScroll = useCallback((input = ref.current) => {
-    if (!input) return;
-    if (input.scrollLeft) input.scrollLeft = 0;
-    if (input.scrollTop) input.scrollTop = 0;
-  }, []);
-  const syncAutoHeight = useCallback(() => {
-    if (!singleLine) {
-      customMinInitRef.current = false;
-      customMinHeightMmRef.current = null;
-      return;
-    }
-    const textarea = ref.current, sizer = sizerRef.current;
-    if (!textarea || !sizer || !textarea.offsetWidth || !sizer.offsetWidth) return;
-    const typographyMinPx = singleLineOuterHeightPx(leading);
-    if (!customMinInitRef.current) {
-      customMinInitRef.current = true;
-      const loadedMm = frameHeightMmRef.current;
-      if (loadedMm !== undefined) {
-        const loadedPx = loadedMm * PX_PER_MM;
-        const sizerChromeY = Math.max(0, sizer.offsetHeight - sizer.clientHeight);
-        const initialSizerOuter = Math.max(sizer.offsetHeight, sizer.scrollHeight + sizerChromeY);
-        if (loadedPx > typographyMinPx + 1.5 && initialSizerOuter < loadedPx - 4) {
-          customMinHeightMmRef.current = loadedMm;
-        }
-      }
-    }
-    const minOuterHeightPx = customMinHeightMmRef.current !== null
-      ? Math.max(customMinHeightMmRef.current * PX_PER_MM, typographyMinPx)
-      : typographyMinPx;
-    const heightKey = `${text}\0${leading}\0${family}\0${size}\0${fontEpoch}\0${textAlign ?? ""}\0${Math.round(textarea.offsetWidth)}`;
-    if (autoHeightFloorRef.current.key !== heightKey) {
-      autoHeightFloorRef.current = { key: heightKey, heightPx: 0 };
-    }
-    const measured = autoExpandOuterHeightPx({
-      minOuterHeightPx,
-      sizerOffsetHeight: sizer.offsetHeight,
-      sizerClientHeight: sizer.clientHeight,
-      sizerScrollHeight: sizer.scrollHeight,
-      textareaOffsetHeight: textarea.offsetHeight,
-      textareaClientHeight: textarea.clientHeight,
-      textareaScrollHeight: textarea.scrollHeight,
-    });
-    if (textarea.scrollHeight > textarea.clientHeight + 1) {
-      autoHeightFloorRef.current.heightPx = Math.max(autoHeightFloorRef.current.heightPx, measured);
-    }
-    const required = Math.max(measured, autoHeightFloorRef.current.heightPx);
-    onAutoHeightRef.current?.(required);
-  }, [family, fontEpoch, leading, singleLine, size, text, textAlign]);
-  const refreshOverflow = useCallback(() => {
-    if (singleLine) {
-      setOverflows(false);
-      return;
-    }
-    const input = ref.current, clone = mirror.current;
-    if (!input) return;
-    resetScroll(input);
-    const contentHeight = Math.max(input.scrollHeight, clone?.scrollHeight ?? 0);
-    setOverflows(contentHeight > input.clientHeight + 1);
-  }, [resetScroll, singleLine]);
   const measure = useCallback(() => {
     const input=ref.current, clone=mirror.current;
     const target = input ? readFormattingTarget(input) : undefined;
@@ -275,14 +207,14 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       const emptyCenter = input.offsetWidth / 2;
       const emptyPosition = textAlign === "left" ? emptyLeft : textAlign === "center" || textAlign === "justify" || textAlign === "justify-all" ? emptyCenter : emptyRight;
       const measured = Math.max(3, Math.min(input.clientWidth - 3 - 2 / scale, (rect.left - bounds.left) / scale - 3 / scale));
-      const emptyLine = emptyFrameCaretLeft(input.value, selectionStart, computed.textAlign, computed.direction === "ltr" ? "ltr" : "rtl", { left: emptyLeft, right: emptyRight, center: emptyCenter });
+      const emptyLine = singleLine ? null : emptyFrameCaretLeft(input.value, selectionStart, computed.textAlign, computed.direction === "ltr" ? "ltr" : "rtl", { left: emptyLeft, right: emptyRight, center: emptyCenter });
       setCaret({left: emptyLine ?? (input.value.length === 0 ? emptyPosition : measured), top, width: 2 / scale, height: Math.min(pitch, input.clientHeight - top - 2)});
     }else{
       setCaret(null);
       const next=selectedLineBoxes(clone,range,bounds).map(box=>({...box,left:(box.left-bounds.left)/scale,top:(box.top-bounds.top)/scale,width:box.width/scale,height:box.height/scale}));
       setBoxes(prev=>prev.length||next.length?next:prev);
     }
-  }, [editable, leading, family, textAlign, paragraphAligns, paragraphPaint, publishAlign]);
+  }, [editable, leading, family, textAlign, paragraphAligns, paragraphPaint, singleLine, publishAlign]);
   useLayoutEffect(() => {
     const pending = restoreSelection.current;
     const input = ref.current;
@@ -292,11 +224,34 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       const end = Math.max(start, Math.min(pending[1], input.value.length));
       input.setSelectionRange(start, end);
     }
-    syncAutoHeight();
-    resetScroll();
-    refreshOverflow();
     measure();
-  }, [measure, refreshOverflow, resetScroll, syncAutoHeight, text, leading, family, editable, textAlign, paragraphAligns, frameWidthPx]);
+  }, [measure, text, leading, family, editable, textAlign, paragraphAligns, padY.top, padY.bottom]);
+  const alignKey = `${text}\0${leading}\0${family}\0${size}\0${fontEpoch}`;
+  const alignKeyRef = useRef(alignKey);
+  useLayoutEffect(() => {
+    if (alignKeyRef.current !== alignKey) { alignKeyRef.current = alignKey; padShifts.current = 0; }
+    if (!singleLine) return;
+    const node = textRef.current;
+    if (!node?.textContent) {
+      setPadY(prev => prev.top === 2 && prev.bottom === 2 ? prev : { top: 2, bottom: 2 });
+      return;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const ink = range.getBoundingClientRect();
+    if (ink.height < 0.5) return;
+    const box = node.getBoundingClientRect();
+    const computed = getComputedStyle(node);
+    const above = ink.top - (box.top + (parseFloat(computed.borderTopWidth) || 0));
+    const below = box.bottom - (parseFloat(computed.borderBottomWidth) || 0) - ink.bottom;
+    if (Math.abs(below - above) < 0.5) { padShifts.current = 0; return; }
+    if (padShifts.current >= 5) return;
+    padShifts.current += 1;
+    setPadY(prev => {
+      const next = centerSingleLinePadding(prev, above, below);
+      return Math.abs(next.top - prev.top) < 0.25 && Math.abs(next.bottom - prev.bottom) < 0.25 ? prev : next;
+    });
+  }, [singleLine, alignKey, padY.top, padY.bottom]);
   useEffect(() => {
     if (!singleLine) return;
     const rerun = () => setFontEpoch(epoch => epoch + 1);
@@ -307,7 +262,7 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
     const input = ref.current;
     if (!input) return;
     return registerFrameStyleUpdater(input, (patch) => {
-      if (!patch.textAlign || singleLine) { onStyle(patch); return; }
+      if (!patch.textAlign || singleLine || !(input instanceof HTMLTextAreaElement)) { onStyle(patch); return; }
       const start = input.selectionStart ?? 0;
       const end = input.selectionEnd ?? start;
       const next = applyParagraphAlignment(input.value, model.current.textAlign, model.current.paragraphAligns, start, end, patch.textAlign);
@@ -330,7 +285,7 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
   }, [applySnapshot, frameId, historyBridge, redo, snapshot, undo]);
   useEffect(() => {
     let raf = 0;
-    const update = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; syncAutoHeight(); resetScroll(); refreshOverflow(); measure(); }); };
+    const update = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; measure(); }); };
     const root = ref.current?.closest<HTMLElement>("[data-studio-root]");
     const pointer = (event: PointerEvent) => {
       const target=event.target instanceof Element?event.target:null;
@@ -345,21 +300,20 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
     const observer = new ResizeObserver(update);
     if (ref.current) observer.observe(ref.current);
     return () => { cancelAnimationFrame(raf); observer.disconnect(); document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("selectionchange", update); root?.removeEventListener(FORMATTING_TARGET_CHANGE, update); document.fonts.removeEventListener("loadingdone", update); };
-  }, [measure, refreshOverflow, resetScroll, syncAutoHeight]);
-  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",padding:2,fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:"pre-wrap",overflowWrap:"break-word",overflow:"hidden",color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
-  const handlePaste = (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
+  }, [measure]);
+  const style: CSSProperties = { position:"absolute",inset:0,width:"100%",height:"100%",boxSizing:"border-box",border:"1px solid #000",...(singleLine ? { paddingTop: padY.top, paddingRight: 2, paddingBottom: padY.bottom, paddingLeft: 2 } : { padding: 2 }),fontFamily:family,fontSize:`${size}pt`,lineHeight:`${leading}pt`,fontVariantLigatures:"normal",fontFeatureSettings:"normal",direction:"rtl",unicodeBidi:"plaintext",textIndent:0,tabSize:8,fontKerning:"auto",whiteSpace:singleLine?"nowrap":"pre-wrap",overflowWrap:singleLine?"normal":"break-word",overflow:singleLine?"hidden":undefined,color:textColor ?? "#000",textAlign:textAlign === "justify-all" ? "justify" : textAlign,textAlignLast:textAlign === "justify-all" ? "justify" : undefined };
+  const handlePaste = (event: ReactClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!singleLine) return;
-    const pasted = event.clipboardData?.getData("text/plain");
-    if (typeof pasted !== "string") return;
     event.preventDefault();
-    const input = event.currentTarget, normalized = pasted.replace(/\r\n?/g, "\n");
+    const input = event.currentTarget, normalized = normalizeSingleLineText(event.clipboardData.getData("text/plain"));
     const start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
     rememberAt(input.value, start, end);
     const value = input.value.slice(0, start) + normalized + input.value.slice(end);
-    onText(value, { start, end });
+    onText(value);
     requestAnimationFrame(() => { input.setSelectionRange(start + normalized.length, start + normalized.length); });
   };
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (singleLine && (event.key === "Enter" || event.key === "NumpadEnter")) event.preventDefault();
     if (!event.ctrlKey && !event.metaKey && !event.altKey && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
       if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId);
       else history.current.closeGroup();
@@ -369,9 +323,10 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       if (mapped !== null) {
         event.preventDefault();
         const input = event.currentTarget, start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
-        rememberAt(input.value, start, end, /\s/.test(mapped) ? undefined : { groupKey: "insert" });
-        onText(input.value.slice(0, start) + mapped + input.value.slice(end), { start, end });
-        requestAnimationFrame(() => input.setSelectionRange(start + mapped.length, start + mapped.length));
+        const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+        rememberAt(input.value, start, end, /\s/.test(insertion) ? undefined : { groupKey: "insert" });
+        onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
+        requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
       }
     }
     // Ctrl/Cmd+Up/Down: logical paragraph starts in a multi-line textarea.
@@ -391,7 +346,6 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       event.preventDefault();
       event.stopPropagation();
       input.setSelectionRange(next.start, next.end, next.direction);
-      requestAnimationFrame(() => resetScroll());
       measure();
       return;
     }
@@ -403,9 +357,8 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       historyKey.current = true;
       if (event.shiftKey) redo(); else undo();
     }
-    if (!singleLine && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) requestAnimationFrame(() => resetScroll());
   };
-  const handleCompositionEnd = (input: HTMLTextAreaElement, data: string) => {
+  const handleCompositionEnd = (input: HTMLInputElement | HTMLTextAreaElement, data: string) => {
     if (!keyboardLayout || !data) return;
     const mapped = mapLatinText(keyboardLayout, data);
     if (mapped === data) return;
@@ -414,9 +367,10 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
     // compositionend may precede the committed input event on some keyboards;
     // in that case let beforeinput handle it instead of replacing old text.
     if (input.value.slice(start, end) !== data) return;
-    rememberAt(input.value, start, end, /\s/.test(mapped) ? undefined : { groupKey: "insert" });
-    onText(input.value.slice(0, start) + mapped + input.value.slice(end), { start, end });
-    requestAnimationFrame(() => input.setSelectionRange(start + mapped.length, start + mapped.length));
+    const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+    rememberAt(input.value, start, end, /\s/.test(insertion) ? undefined : { groupKey: "insert" });
+    onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
+    requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
   };
   useLayoutEffect(() => {
     const input = ref.current;
@@ -442,9 +396,10 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
           event.stopPropagation();
           const start = input.selectionStart ?? input.value.length;
           const end = input.selectionEnd ?? start;
-          rememberAt(input.value, start, end, /\s/.test(mapped) ? undefined : { groupKey: "insert" });
-          onText(input.value.slice(0, start) + mapped + input.value.slice(end), { start, end });
-          requestAnimationFrame(() => input.setSelectionRange(start + mapped.length, start + mapped.length));
+          const insertion = singleLine ? normalizeSingleLineText(mapped) : mapped;
+          rememberAt(input.value, start, end, /\s/.test(insertion) ? undefined : { groupKey: "insert" });
+          onText(input.value.slice(0, start) + insertion + input.value.slice(end), { start, end });
+          requestAnimationFrame(() => input.setSelectionRange(start + insertion.length, start + insertion.length));
           return;
         }
       }
@@ -474,22 +429,16 @@ export function StudioTextFrame({ frameId, historyBridge, text, singleLine = fal
       input.removeEventListener("beforeinput", beforeInput);
       if (keyboardLayout) input.removeEventListener("compositionend", compositionEnd);
     };
-  }, [editable, keyboardLayout, onText, redo, rememberAt, undo]);
+  }, [editable, keyboardLayout, onText, redo, rememberAt, singleLine, undo]);
   const paragraphBlock = () => <div style={{ minHeight: "100%" }}><ParagraphColumn parts={parts} aligns={paragraphAligns} textAlign={textAlign} /></div>;
-  const handleWheel = (event: ReactWheelEvent<HTMLTextAreaElement>) => {
-    if (singleLine) return;
-    event.preventDefault();
-    event.stopPropagation();
-    resetScroll(event.currentTarget);
-  };
-  const sharedProps = { ref: (node: HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;resetScroll();onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!remembered.current) remember(); remembered.current = false; onText(event.target.value, edit ?? undefined); }, onSelect:()=>{ resetScroll(); measure(); }, onScroll:(event: ReactUIEvent<HTMLTextAreaElement>)=>{ resetScroll(event.currentTarget); measure(); }, onWheel:handleWheel, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; resetScroll(); }, onBlur:()=>{ remembered.current = false; if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId); else history.current.closeGroup(); setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
+  const sharedProps = { ref: (node: HTMLInputElement | HTMLTextAreaElement | null) => { ref.current = node; }, "data-studio-text-frame": true, "data-studio-text-single-line": singleLine || undefined, "data-studio-frame-font-family": editorFamily, "data-studio-frame-font-size-pt": size, "data-studio-frame-text-color": textColor ?? "", "data-studio-frame-text-align": alignLabel, "data-studio-frame-typography": JSON.stringify(typography ?? { ...defaultDocumentSettings().typography, defaultRtlFontId: "jameel-noori-nastaleeq" }), value: singleLine ? normalizeSingleLineText(text) : text, readOnly: !editable, tabIndex: editable?0:-1, dir:"rtl" as const, autoCorrect: keyboardLayout ? "off" : undefined, autoCapitalize: keyboardLayout ? "none" : undefined, spellCheck: keyboardLayout ? false : undefined, "aria-label": singleLine ? "Title text" : "Text box", onPointerDown:(event: ReactPointerEvent<HTMLInputElement | HTMLTextAreaElement>)=>{if(editable){event.stopPropagation();onFocus();}}, onFocus:()=>{dismissed.current=false;onFocus();measure();}, onChange:(event: ReactChangeEvent<HTMLInputElement | HTMLTextAreaElement>)=>{ const edit = pendingEdit.current; pendingEdit.current = null; if (!remembered.current) remember(); remembered.current = false; onText(singleLine?normalizeSingleLineText(event.target.value):event.target.value, edit ?? undefined); }, onSelect:measure, onScroll:measure, onPaste:handlePaste, onKeyDown:handleKeyDown, onKeyUp:()=>{ historyKey.current = false; }, onBlur:()=>{ remembered.current = false; if (historyBridge && frameId) historyBridge.closeFrameGroup(frameId); else history.current.closeGroup(); setCaret(null);requestAnimationFrame(measure);}, style:{...style,resize:"none" as const,pointerEvents:editable?"auto" as const:"none" as const,cursor:editable?"text":"inherit",background:"transparent",outline:"none",caretColor:"transparent"} };
+  const displayText = singleLine ? normalizeSingleLineText(text) : text;
   const fieldStyle = paragraphPaint ? { ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" } : sharedProps.style;
   return <>
-    {singleLine ? <div ref={sizerRef} aria-hidden data-studio-auto-height-sizer style={{ ...style, inset: undefined, top: 0, left: 0, width: "100%", height: "auto", minHeight: 0, visibility: "hidden", pointerEvents: "none", borderColor: "transparent", background: "transparent" }}>{text.length === 0 ? "\u200b" : text.endsWith("\n") ? `${text}\u200b` : text}</div> : null}
+    {singleLine ? <div ref={textRef} aria-hidden data-studio-single-line-text style={{ ...style, pointerEvents: "none", userSelect: "none" }}>{displayText}</div> : null}
     {paragraphPaint ? <div ref={visible} aria-hidden data-studio-frame-paragraphs style={{ ...style, borderColor: "transparent", overflow: "hidden", pointerEvents: "none", background: "transparent" }}>{paragraphBlock()}</div> : null}
-    <textarea {...sharedProps} data-studio-paragraph-paint={paragraphPaint ? "true" : undefined} data-studio-selection-painted={boxes.length?"true":undefined} style={{ ...fieldStyle, scrollbarWidth: "none" }} />
+    {singleLine ? <input {...sharedProps} type="text" data-studio-text-frame data-studio-text-single-line="true" data-studio-selection-painted="true" style={{ ...sharedProps.style, color: "transparent", WebkitTextFillColor: "transparent" }} /> : <textarea {...sharedProps} data-studio-paragraph-paint={paragraphPaint ? "true" : undefined} data-studio-selection-painted={boxes.length?"true":undefined} style={{ ...fieldStyle, scrollbarWidth: "none" }} />}
     <div ref={mirror} aria-hidden style={{...style,height:"auto",minHeight:"100%",visibility:"hidden",pointerEvents:"none",borderColor:"transparent",transform:`translate(${- (ref.current?.scrollLeft??0)}px,${- (ref.current?.scrollTop??0)}px)`}}>{paragraphPaint ? paragraphBlock() : null}</div>
-    {!singleLine && overflows ? <div data-studio-text-frame-overflow aria-hidden style={{ position:"absolute",left:1,right:1,bottom:1,height:4,background:"#dc2626",pointerEvents:"none" }} /> : null}
     {caret?<div key={`${caret.left}:${caret.top}:${caret.height}`} data-studio-frame-caret style={{position:"absolute",...caret,background:"#000",pointerEvents:"none",animation:"qalam-studio-caret-blink 1060ms step-end infinite"}} />:null}
     {boxes.length>0?<div data-studio-text-frame-selection style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>{boxes.map((box,i)=><div key={i} data-studio-line-selection style={{position:"absolute",...box,background:"#000",overflow:"hidden"}}><div style={{...style,inset:undefined,left:-box.left,top:-box.top,width:ref.current?.offsetWidth,height:"auto",minHeight:"100%",color:"#fff",borderColor:"transparent",background:"transparent",transform:paragraphPaint?`translate(0,${-(ref.current?.scrollTop??0)}px)`:undefined}}>{paragraphPaint ? paragraphBlock() : text+"\u200b"}</div></div>)}</div>:null}
   </>;
