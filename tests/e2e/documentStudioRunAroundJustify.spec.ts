@@ -216,9 +216,14 @@ test("holds justified story text still during object drag and reflows only after
   }
   const moved = await measure(page, "pic-justify");
   expect(moved?.align).toBe("justify");
-  // The dropped frame may end up where the text only occupies one side (or below it).
-  // The important invariant is that no glyph overlaps the final frame geometry.
-  expect(moved?.over ?? 0, JSON.stringify({ moved, frame: await picture.boundingBox() })).toBe(0);
+  // Reopen from the persisted frame geometry to distinguish an immediate reflow
+  // scheduling issue from a layout calculation issue.
+  await page.reload();
+  await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
+  await expect.poll(() => page.locator("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]").count(), { timeout: 15000 }).toBeGreaterThan(0);
+  const afterReload = await measure(page, "pic-justify");
+  expect(moved?.over ?? 0, JSON.stringify({ afterDrop: moved, afterReload, frame: await page.locator('[data-studio-frame-id="pic-justify"]').boundingBox() })).toBe(0);
+  expect(afterReload?.over ?? 0, JSON.stringify(afterReload)).toBe(0);
 });
 
 test("justified Urdu keeps word spacing beside image and text boxes", async ({ page }) => {
