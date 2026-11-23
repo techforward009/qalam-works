@@ -118,6 +118,73 @@ async function measure(page: Page, frameId: string) {
   }, { frameId, words });
 }
 
+async function storyInkSignature(page: Page) {
+  return page.evaluate(() => {
+    const paragraph = document.querySelector(".ProseMirror p");
+    if (!paragraph) return "";
+    const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+    const rects: string[] = [];
+    for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+      if (!node.data.trim() || node.parentElement?.closest("[data-run-around-gap], [data-run-around-space], [data-run-around-skip]")) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const rect of range.getClientRects()) {
+        if (rect.width < 1 || rect.height < 1) continue;
+        rects.push(`${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`);
+      }
+    }
+    return rects.join("|");
+  });
+}
+
+async function wrapDecorationSignature(page: Page) {
+  return page.evaluate(() => [...document.querySelectorAll("[data-run-around-gap], [data-run-around-space], [data-run-around-break], [data-run-around-skip]")].map(el => {
+    const rect = el.getBoundingClientRect();
+    const kind = el.hasAttribute("data-run-around-gap") ? "g"
+      : el.hasAttribute("data-run-around-space") ? "s"
+      : el.hasAttribute("data-run-around-break") ? "b" : "k";
+    return `${kind}${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
+  }).join("|"));
+}
+
+test("holds justified story text still during object drag and reflows only after drop", async ({ page }) => {
+  test.setTimeout(120000);
+  await open(page);
+  await seed(page, "justify");
+  await expect(page.locator('[data-run-around-justify="true"]')).toHaveCount(1);
+  const initialStory = await storyInkSignature(page);
+  const initialWrap = await wrapDecorationSignature(page);
+  const picture = page.locator('[data-studio-frame-id="pic-justify"]');
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const start = await picture.boundingBox();
+  expect(start).toBeTruthy();
+  const x = start!.x + start!.width / 2;
+  const y = start!.y + start!.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let step = 1; step <= 6; step += 1) {
+    await page.mouse.move(x, y + step * 18);
+    await page.waitForTimeout(40);
+    expect(await storyInkSignature(page), `story moved during drag step ${step}`).toBe(initialStory);
+    expect(await wrapDecorationSignature(page), `wrap changed during drag step ${step}`).toBe(initialWrap);
+    const moving = await picture.boundingBox();
+    expect(moving?.y ?? 0, "picture preview should follow the pointer").toBeGreaterThan(start!.y + step * 12);
+  }
+  await page.mouse.up();
+  await expect.poll(() => storyInkSignature(page), { timeout: 10000 }).not.toBe(initialStory);
+  await expect.poll(() => wrapDecorationSignature(page), { timeout: 10000 }).not.toBe(initialWrap);
+  const settledStory = await storyInkSignature(page);
+  const settledWrap = await wrapDecorationSignature(page);
+  for (let index = 0; index < 4; index += 1) {
+    await page.waitForTimeout(60);
+    expect(await storyInkSignature(page)).toBe(settledStory);
+    expect(await wrapDecorationSignature(page)).toBe(settledWrap);
+  }
+  const moved = await measure(page, "pic-justify");
+  expect(moved?.align).toBe("justify");
+  expect(moved?.left && moved?.right).toBe(true);
+});
+
 test("justified Urdu keeps word spacing beside image and text boxes", async ({ page }) => {
   test.setTimeout(120000);
   await open(page);
