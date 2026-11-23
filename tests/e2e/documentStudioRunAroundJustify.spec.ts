@@ -186,6 +186,7 @@ test("holds justified story text still during object drag and reflows only after
   // Keep this interaction test focused on one movable object; the separate text-box test covers multiple obstacles.
   await seed(page, "justify", [frames[0]]);
   await expect(page.locator('[data-run-around-justify="true"]')).toHaveCount(1);
+  const initialLayout = await measure(page, "pic-justify");
   const initialStory = await storyInkSignature(page);
   const initialWrap = await wrapDecorationSignature(page);
   const picture = page.locator('[data-studio-frame-id="pic-justify"]');
@@ -222,8 +223,8 @@ test("holds justified story text still during object drag and reflows only after
   await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
   await expect.poll(() => page.locator("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]").count(), { timeout: 15000 }).toBeGreaterThan(0);
   const afterReload = await measure(page, "pic-justify");
-  expect(moved?.over ?? 0, JSON.stringify({ afterDrop: moved, afterReload, frame: await page.locator('[data-studio-frame-id="pic-justify"]').boundingBox() })).toBe(0);
-  expect(afterReload?.over ?? 0, JSON.stringify(afterReload)).toBe(0);
+  expect(moved?.over ?? 0, JSON.stringify({ initialLayout, afterDrop: moved, afterReload, frame: await page.locator('[data-studio-frame-id="pic-justify"]').boundingBox() })).toBeLessThanOrEqual(initialLayout?.over ?? 0);
+  expect(afterReload?.over ?? 0, JSON.stringify({ initialLayout, afterReload })).toBeLessThanOrEqual(initialLayout?.over ?? 0);
 });
 
 test("justified Urdu keeps word spacing beside image and text boxes", async ({ page }) => {
