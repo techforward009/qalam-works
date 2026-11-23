@@ -22,7 +22,7 @@ import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../
 import { pictureContentDeltaMm } from "../utils/pictureFit";
 import { DEFAULT_PICTURE_TOOL_DEFAULTS, type PictureToolDefaults } from "../utils/objectAttributes";
 import { resolveBorderStrokes, type BorderPatternId } from "../utils/borderPatterns";
-import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
+import { isRunAroundBox } from "../utils/runAroundFlow";
 
 export type FrameKind =
   | "rect"
@@ -663,6 +663,10 @@ export function StudioObjectLayer({
     }
     const frameTypography = typography ?? defaultDocumentSettings().typography;
     const defaults = pictureBoxDefaults ?? DEFAULT_PICTURE_TOOL_DEFAULTS;
+    const runAroundDefault = isRunAroundBox({
+      kind,
+      angle1Deg: isPictureBox(kind) ? defaults.angle1Deg : 0,
+    });
     const frame: StudioFrame = {
       id: newId(),
       kind,
@@ -675,9 +679,9 @@ export function StudioObjectLayer({
       text: "",
       typography,
       ...(singleLine ? { singleLine: true } : {}),
+      ...(runAroundDefault ? { runAround: true } : {}),
       ...(isPictureBox(kind)
         ? {
-            ...(isRectangularRunAroundBox({ kind, angle1Deg: defaults.angle1Deg }) ? { runAround: true } : {}),
             borderColor: defaults.borderColor,
             borderWidthMm: defaults.borderWidthMm,
             borderPattern: defaults.borderPattern,

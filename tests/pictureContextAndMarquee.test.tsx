@@ -666,12 +666,12 @@ describe("Pasteboard marquee, facing-page selection, InPage menu visuals, and to
         { ...makeFrame("facing-box", 20, 40, 40, 30), page: 2 },
       ];
       let latest: StudioFrame[] = initial;
-      let switchTool!: (next: "select" | "cross-square" | "textbox" | "text") => void;
+      let switchTool!: (next: "select" | "cross-square" | "cross-circle" | "cross-round" | "textbox" | "text" | "rect" | "ellipse" | "round-rect") => void;
       let selectIds!: (ids: string[]) => void;
       function Harness() {
         const [frames, setFrames] = useState<StudioFrame[]>(initial);
         const [selected, setSelected] = useState<string[]>(["single-line-f"]);
-        const [tool, setTool] = useState<"select" | "cross-square" | "textbox" | "text">("cross-square");
+        const [tool, setTool] = useState<"select" | "cross-square" | "cross-circle" | "cross-round" | "textbox" | "text" | "rect" | "ellipse" | "round-rect">("cross-square");
         latest = frames;
         switchTool = setTool;
         selectIds = setSelected;
@@ -726,9 +726,37 @@ describe("Pasteboard marquee, facing-page selection, InPage menu visuals, and to
       expect(drawnTb.page).toBe(2);
       expect(drawnTb.xMm).toBeCloseTo(15, 2);
       expect(drawnTb.yMm).toBeCloseTo(45, 2);
-      // Newly inserted Text Boxes keep Run Around off by default, while newly inserted rectangular Picture Boxes default ON.
-      expect(drawnTb.runAround).toBeUndefined();
+      // Newly inserted Text Boxes and Picture Boxes both default Run Around ON.
+      expect(drawnTb.runAround).toBe(true);
       expect(drawnPic.runAround).toBe(true);
+
+      const drawAndExpectRunAround = (
+        nextTool: Exclude<"select" | "cross-square" | "cross-circle" | "cross-round" | "textbox" | "text" | "rect" | "ellipse" | "round-rect", "select" | "text">,
+        kind: StudioFrame["kind"],
+        xMm: number,
+        yMm: number,
+        wMm: number,
+        hMm: number,
+        pointerId: number,
+      ) => {
+        switchTool(nextTool);
+        rerender(<Harness />);
+        const beforeIds = new Set(latest.map((item) => item.id));
+        const startX = slot1.x + xMm * PX_PER_MM;
+        const startY = slot1.y + yMm * PX_PER_MM;
+        fireEvent.pointerDown(layer, { clientX: startX, clientY: startY, pointerId, button: 0 });
+        fireEvent.pointerMove(layer, { clientX: startX + wMm * PX_PER_MM, clientY: startY + hMm * PX_PER_MM, pointerId });
+        fireEvent.pointerUp(layer, { clientX: startX + wMm * PX_PER_MM, clientY: startY + hMm * PX_PER_MM, pointerId });
+        const created = latest.filter((item) => !beforeIds.has(item.id) && item.kind === kind).slice(-1)[0];
+        expect(created).toMatchObject({ kind, runAround: true });
+      };
+
+      // Newly drawn elliptical/rounded Picture Boxes and drawing Shapes must also default ON.
+      drawAndExpectRunAround("cross-circle", "picture-ellipse", 25, 100, 30, 25, 20);
+      drawAndExpectRunAround("cross-round", "picture-round-rect", 70, 100, 30, 25, 21);
+      drawAndExpectRunAround("rect", "rect", 115, 100, 25, 20, 22);
+      drawAndExpectRunAround("ellipse", "ellipse", 25, 145, 25, 20, 23);
+      drawAndExpectRunAround("round-rect", "round-rect", 70, 145, 25, 20, 24);
 
       // 3. Switch to select tool, select singleLine Title Text Box in Facing Pages and resize east handle -> no slot1.x jump!
       switchTool("select");
