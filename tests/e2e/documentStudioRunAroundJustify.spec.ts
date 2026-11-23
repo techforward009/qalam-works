@@ -15,13 +15,13 @@ async function open(page: Page) {
   await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1")), { timeout: 20000 }).not.toBeNull();
 }
 
-async function seed(page: Page, align: string) {
+async function seed(page: Page, align: string, framesToSeed: typeof frames = frames) {
   await page.evaluate(next => {
     const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
     const map = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}") as Record<string, unknown>;
     map[id] = next;
     localStorage.setItem("qalam-studio-frames-v1", JSON.stringify(map));
-  }, frames);
+  }, framesToSeed);
   await page.reload();
   await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
   await page.locator(".ProseMirror").click();
@@ -164,7 +164,8 @@ async function wrapDecorationSignature(page: Page) {
 test("holds justified story text still during object drag and reflows only after drop", async ({ page }) => {
   test.setTimeout(120000);
   await open(page);
-  await seed(page, "justify");
+  // Keep this interaction test focused on one movable object; the separate text-box test covers multiple obstacles.
+  await seed(page, "justify", [frames[0]]);
   await expect(page.locator('[data-run-around-justify="true"]')).toHaveCount(1);
   const initialStory = await storyInkSignature(page);
   const initialWrap = await wrapDecorationSignature(page);
