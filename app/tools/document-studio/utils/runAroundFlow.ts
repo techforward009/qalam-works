@@ -427,7 +427,95 @@ function runAroundEngineFactory() {
   ): { pieces: RunAroundPiece[]; next: number } {
     const ordered = direction === "ltr"
       ? [...segments].sort((a, b) => a.left - b.left || a.right - b.right)
-      : [...segments].sort((a, b) => b.right - a.right || b.left - a.left);
+      : [...segments].sort((a, b) => b.right - a.right || a.left - b.left);
+
+    if (fit) {
+      type Candidate = {
+        next: number;
+        pieces: RunAroundPiece[];
+        usedWidth: number[];
+        spacing: number[];
+      };
+      const max = (values: readonly number[]) => values.length ? Math.max(...values) : 0;
+      const min = (values: readonly number[]) => values.length ? Math.min(...values) : 0;
+      const better = (candidate: Candidate, current: Candidate): boolean => {
+        // Prefer using both sides when they can carry justified runs. For the
+        // same text progress, prefer the most even spacing between those runs.
+        if (candidate.pieces.length !== current.pieces.length) {
+          return candidate.pieces.length > current.pieces.length;
+        }
+        const maxDifference = max(candidate.spacing) - max(current.spacing);
+        if (Math.abs(maxDifference) > 1e-6) return maxDifference < 0;
+        const spreadDifference =
+          (max(candidate.spacing) - min(candidate.spacing)) -
+          (max(current.spacing) - min(current.spacing));
+        if (Math.abs(spreadDifference) > 1e-6) return spreadDifference < 0;
+        const totalCandidate = candidate.spacing.reduce((sum, value) => sum + value, 0);
+        const totalCurrent = current.spacing.reduce((sum, value) => sum + value, 0);
+        return totalCandidate < totalCurrent - 1e-6;
+      };
+
+      let states: Candidate[] = [{ next: start, pieces: [], usedWidth: [], spacing: [] }];
+      for (const segment of ordered) {
+        const nextStates = new Map<number, Candidate>();
+        const keep = (candidate: Candidate) => {
+          const current = nextStates.get(candidate.next);
+          if (!current || better(candidate, current)) nextStates.set(candidate.next, candidate);
+        };
+        for (const state of states) {
+          // A narrow or excessively sparse side may be left empty. The next
+          // side then gets the same unconsumed word sequence.
+          keep(state);
+          const capacity = segment.right - segment.left;
+          let maxEnd = state.next;
+          let measured = 0;
+          while (maxEnd < widths.length && measured + widths[maxEnd] <= capacity + 1e-6) {
+            measured += widths[maxEnd];
+            maxEnd += 1;
+          }
+
+          let used = 0;
+          for (let end = state.next + 1; end <= maxEnd; end += 1) {
+            used += widths[end - 1];
+            if (tooSparse(fit, state.next, end, capacity, used)) continue;
+            const piece: RunAroundPiece = {
+              from: state.next,
+              to: end,
+              left: segment.left,
+              right: segment.right,
+              side: segment.side,
+              gapAfter: 0,
+            };
+            const spacing = segmentJustify(widths, fit.spaceAt, piece).wordSpacing;
+            keep({
+              next: end,
+              pieces: [...state.pieces, piece],
+              usedWidth: [...state.usedWidth, used],
+              spacing: [...state.spacing, spacing],
+            });
+          }
+        }
+        states = [...nextStates.values()];
+      }
+
+      let best = states[0] ?? { next: start, pieces: [], usedWidth: [], spacing: [] };
+      for (const candidate of states.slice(1)) {
+        if (candidate.next > best.next || (candidate.next === best.next && better(candidate, best))) best = candidate;
+      }
+
+      // The hole has to start where the ink stops. A gap the width of the box
+      // alone slides toward a short run and the next word lands on the object.
+      for (let i = 0; i < best.pieces.length - 1; i += 1) {
+        const inkEnd = direction === "ltr"
+          ? best.pieces[i].left + best.usedWidth[i]
+          : best.pieces[i].right - best.usedWidth[i];
+        best.pieces[i].gapAfter = direction === "ltr"
+          ? Math.max(0, best.pieces[i + 1].left - inkEnd)
+          : Math.max(0, inkEnd - best.pieces[i + 1].right);
+      }
+      return { pieces: best.pieces, next: best.next };
+    }
+
     const pieces: RunAroundPiece[] = [];
     const usedWidth: number[] = [];
     let index = start;
@@ -442,7 +530,6 @@ function runAroundEngineFactory() {
         tryIndex += 1;
       }
       if (tryIndex === from) continue;
-      if (tooSparse(fit, from, tryIndex, capacity, used)) continue;
       index = tryIndex;
       pieces.push({ from, to: index, left: segment.left, right: segment.right, side: segment.side, gapAfter: 0 });
       usedWidth.push(used);
