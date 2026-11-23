@@ -61,20 +61,23 @@ async function measure(page: Page, frameId: string) {
         const range = document.createRange();
         range.setStart(node, cursor);
         range.setEnd(node, cursor + found.length);
-        const rect = range.getBoundingClientRect();
+        // Use each painted line fragment, not the union bounding box. A bidi
+        // Range can span both sides of a Run Around hole; its union includes
+        // the empty hole and falsely reports ink over the object.
+        const rects = [...range.getClientRects()].filter(rect => rect.width >= 2 && rect.height >= 2);
         cursor += found.length;
-        if (rect.width < 2 || rect.height < 2) continue;
-        wordWidths.push(rect.width);
-        const key = Math.round(rect.top / 2);
-        const band = bands.get(key) ?? [];
-        band.push(rect);
-        bands.set(key, band);
-        const crosses = rect.bottom > frame.top + 2 && rect.top < frame.bottom - 2;
-        if (!crosses) continue;
-        const mid = (rect.left + rect.right) / 2;
-        if (mid <= frame.left + 1) left = true;
-        else if (mid >= frame.right - 1) right = true;
-        else over += 1;
+        for (const rect of rects) {
+          wordWidths.push(rect.width);
+          const key = Math.round(rect.top / 2);
+          const band = bands.get(key) ?? [];
+          band.push(rect);
+          bands.set(key, band);
+          const crosses = rect.bottom > frame.top + 2 && rect.top < frame.bottom - 2;
+          if (!crosses) continue;
+          if (rect.right <= frame.left + 1) left = true;
+          else if (rect.left >= frame.right - 1) right = true;
+          else over += 1;
+        }
       }
     }
     const column = paragraph.getBoundingClientRect();
