@@ -184,6 +184,22 @@ async function wrapDecorationSignature(page: Page) {
   }).join("|"));
 }
 
+async function waitForStableRunAroundLayout(page: Page) {
+  let previous = "";
+  let consecutiveMatches = 0;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const current = `${await storyInkSignature(page)}\n${await wrapDecorationSignature(page)}`;
+    if (current === previous) consecutiveMatches += 1;
+    else {
+      previous = current;
+      consecutiveMatches = 0;
+    }
+    if (consecutiveMatches >= 5) return;
+    await page.waitForTimeout(60);
+  }
+  throw new Error("Run Around layout did not remain stable for six consecutive samples");
+}
+
 test("holds justified story text still during object drag and reflows only after drop", async ({ page }) => {
   test.setTimeout(120000);
   await open(page);
@@ -212,6 +228,9 @@ test("holds justified story text still during object drag and reflows only after
   await page.mouse.up();
   await expect.poll(() => storyInkSignature(page), { timeout: 10000 }).not.toBe(initialStory);
   await expect.poll(() => wrapDecorationSignature(page), { timeout: 10000 }).not.toBe(initialWrap);
+  // Pointer-up triggers a real reflow; allow its successive layout frames to settle
+  // before recording the final signature. A persistent oscillation still fails.
+  await waitForStableRunAroundLayout(page);
   const settledStory = await storyInkSignature(page);
   const settledWrap = await wrapDecorationSignature(page);
   for (let index = 0; index < 4; index += 1) {
