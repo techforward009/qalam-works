@@ -163,7 +163,7 @@ async function caretMetrics(input: ReturnType<typeof box>) {
   });
 }
 
-test('a multi-line box clips overflow, anchors its viewport, and marks the hidden text', async ({ page }) => {
+test('a multi-line box hides its scrollbar and still scrolls', async ({ page }) => {
   const before = await snapshot(page);
   const input = box(page, 'multi');
   const heightBefore = await input.evaluate(el => (el as HTMLTextAreaElement).offsetHeight);
@@ -173,28 +173,19 @@ test('a multi-line box clips overflow, anchors its viewport, and marks the hidde
   await expect.poll(async () => (await caretMetrics(input)).scrollHeight).toBeGreaterThan((await caretMetrics(input)).clientHeight);
   const fitted = await caretMetrics(input);
   expect(fitted.scrollbarWidth).toBe('none');
-  expect(fitted.overflowY).toBe('hidden');
+  expect(fitted.overflowY).toBe('auto');
   expect(fitted.borderTop).toBe('1px');
   expect(fitted.offsetHeight).toBe(heightBefore);
   expect(fitted.value).toBe(lines);
-  await expect(object(page, 'multi').locator('[data-studio-text-frame-overflow]')).toBeVisible();
+  await input.evaluate(el => { (el as HTMLTextAreaElement).scrollTop = 36; });
+  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(20);
+  await input.evaluate(el => { (el as HTMLTextAreaElement).scrollTop = 0; });
   await input.hover();
   await page.mouse.wheel(0, 120);
-  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBe(0);
-  await input.press('ArrowDown');
-  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBe(0);
+  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(10);
   await input.press('Control+End');
-  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBe(0);
+  await expect.poll(async () => (await caretMetrics(input)).scrollTop).toBeGreaterThan(20);
   expect(await input.inputValue()).toBe(lines);
-  await page.emulateMedia({ media: 'print' });
-  await expect(object(page, 'multi').locator('[data-studio-text-frame-overflow]')).toBeHidden();
-  await page.emulateMedia({ media: 'screen' });
-  await page.locator('[data-studio-tool-button="select"]').click();
-  await object(page, 'multi').click();
-  const handle = (await object(page, 'multi').locator('[data-studio-frame-handle="s"]').boundingBox())!;
-  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
-  await page.mouse.down(); await page.mouse.move(handle.x + handle.width / 2, handle.y + 500, { steps: 4 }); await page.mouse.up();
-  await expect(object(page, 'multi').locator('[data-studio-text-frame-overflow]')).toHaveCount(0);
   expect(await snapshot(page)).toEqual(before);
 });
 
