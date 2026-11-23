@@ -48,6 +48,7 @@ async function measure(page: Page, frameId: string) {
     let left = false;
     let right = false;
     let over = 0;
+    const overlaps: Array<{ word: string; left: number; right: number; top: number; bottom: number }> = [];
     let fullLine = false;
     const bands = new Map<number, DOMRect[]>();
     const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
@@ -76,7 +77,16 @@ async function measure(page: Page, frameId: string) {
           if (!crosses) continue;
           if (rect.right <= frame.left + 1) left = true;
           else if (rect.left >= frame.right - 1) right = true;
-          else over += 1;
+          else {
+            over += 1;
+            overlaps.push({
+              word: found,
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              top: Math.round(rect.top),
+              bottom: Math.round(rect.bottom),
+            });
+          }
         }
       }
     }
@@ -112,6 +122,7 @@ async function measure(page: Page, frameId: string) {
       left,
       right,
       over,
+      overlaps,
       fullLine,
       maxBeside: besideGaps.length ? Math.max(...besideGaps) : 0,
       maxBelow: belowGaps.length ? Math.max(...belowGaps) : 0,
@@ -187,7 +198,7 @@ test("holds justified story text still during object drag and reflows only after
   expect(moved?.align).toBe("justify");
   // The dropped frame may end up where the text only occupies one side (or below it).
   // The important invariant is that no glyph overlaps the final frame geometry.
-  expect(moved?.over ?? 0).toBe(0);
+  expect(moved?.over ?? 0, JSON.stringify({ moved, frame: await picture.boundingBox() })).toBe(0);
 });
 
 test("justified Urdu keeps word spacing beside image and text boxes", async ({ page }) => {
