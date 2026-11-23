@@ -854,6 +854,111 @@ export default function DateConverterContent({
             })()}
           </>
         )}
+
+        <section
+          aria-labelledby="date-converter-guide"
+          className="mt-8 rounded-2xl border border-[#1A3A2A]/10 bg-white p-5 sm:p-7 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]"
+        >
+          <div className="max-w-3xl">
+            <h2
+              id="date-converter-guide"
+              className={`text-xl sm:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-nastaliq font-normal" : ""} ${naskh}`}
+            >
+              {isUr ? "تاریخ کنورٹر کیسے استعمال کریں؟" : "How to use the date converter"}
+            </h2>
+            <p className={`mt-3 text-sm sm:text-base leading-7 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+              {isUr
+                ? "یہ آن لائن تاریخ کنورٹر عیسوی، ہجری قمری اور ہجری شمسی تقویموں کے درمیان تاریخ تبدیل کرتا ہے۔ ماخذ تقویم منتخب کریں، دن، مہینہ اور سال درج کریں، پھر دوسری تقویموں کی مساوی تاریخیں دیکھیں۔"
+                : "Use this online date converter to move between the Gregorian, Hijri (Islamic lunar), and Solar Hijri calendars. Choose the source calendar, enter the day, month, and year, and view the equivalent dates."}
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <article className="rounded-xl bg-[#F7F5EF] p-4 dark:bg-[#1b2c20]">
+              <h3 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                {isUr ? "تین تقویموں کے درمیان تبدیلی" : "Convert between three calendars"}
+              </h3>
+              <p className={`mt-2 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                {isUr
+                  ? "عیسوی، ہجری قمری یا ہجری شمسی کو ماخذ تقویم کے طور پر منتخب کریں۔ دن، مہینہ اور سال درج کرنے پر دوسری دونوں تقویموں کی مساوی تاریخیں دیکھی جا سکتی ہیں۔"
+                  : "Select Gregorian, Hijri, or Solar Hijri as the source calendar. Enter a day, month, and year to see the matching dates in the other calendars."}
+              </p>
+            </article>
+
+            <article className="rounded-xl bg-[#F7F5EF] p-4 dark:bg-[#1b2c20]">
+              <h3 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                {isUr ? "ہجری تاریخ تلاش کریں" : "Find a date from its Hijri day and month"}
+              </h3>
+              <p className={`mt-2 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                {isUr
+                  ? "اگر ہجری دن اور مہینہ معلوم ہو لیکن عیسوی تاریخ معلوم نہ ہو تو “تاریخ تلاش کریں” منتخب کریں، ہجری دن، مہینہ اور عیسوی سال درج کریں۔ ٹول اسی سال کی حسابی مطابقتیں دکھائے گا۔"
+                  : "If you know the Hijri day and month but not the Gregorian date, choose “Find Date”, enter the Hijri day and month plus a Gregorian year, and review the calculated matches."}
+              </p>
+            </article>
+
+            <article className="rounded-xl bg-[#F7F5EF] p-4 dark:bg-[#1b2c20]">
+              <h3 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                {isUr ? "پاکستانی ہجری تاریخ" : "Pakistan's Hijri date"}
+              </h3>
+              <p className={`mt-2 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                {isUr
+                  ? "جہاں نظرثانی شدہ پاکستانی سرکاری اعلان دستیاب ہو، وہاں اسے ترجیح دی جاتی ہے۔ بصورتِ دیگر حسابی تاریخ دکھائی جاتی ہے۔ مقامی رؤیتِ ہلال اور حسابی تقویم میں ایک دن یا اس سے زیادہ فرق ممکن ہے۔"
+                  : "Where a reviewed Pakistani official announcement is available, it is preferred for the local Hijri date. Otherwise, the result is shown as a calculation. Local moon-sighting dates can differ from calculated calendar dates."}
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-7 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30]">
+            <h3 className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-nastaliq font-normal" : ""} ${naskh}`}>
+              {isUr ? "اکثر پوچھے گئے سوالات" : "Frequently asked questions"}
+            </h3>
+            <div className="mt-4 grid gap-5 md:grid-cols-2">
+              <article>
+                <h4 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                  {isUr ? "کیا ہجری تاریخ کو عیسوی تاریخ میں تبدیل کیا جا سکتا ہے؟" : "Can I convert a Hijri date to Gregorian?"}
+                </h4>
+                <p className={`mt-1 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                  {isUr
+                    ? "جی ہاں۔ ماخذ تقویم میں ہجری قمری منتخب کریں، دن، مہینہ اور سال درج کریں۔ نتیجے میں عیسوی اور ہجری شمسی تاریخ بھی دکھائی جائے گی۔"
+                    : "Yes. Select Hijri as the source calendar, enter the day, month, and year, and the converter will show the Gregorian and Solar Hijri equivalents too."}
+                </p>
+              </article>
+
+              <article>
+                <h4 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                  {isUr ? "پاکستانی سرکاری اور حسابی ہجری تاریخ میں فرق کیوں ہوتا ہے؟" : "Why can an official Hijri date differ from a calculated date?"}
+                </h4>
+                <p className={`mt-1 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                  {isUr
+                    ? "حسابی تقویم مقررہ ریاضیاتی طریقہ استعمال کرتی ہے، جبکہ پاکستان میں سرکاری ہجری تاریخ کا تعلق مقامی رؤیتِ ہلال اور اعلان سے ہو سکتا ہے۔ اسی لیے دونوں میں فرق ممکن ہے۔"
+                    : "A calculated calendar follows a defined mathematical method, while Pakistan's official Hijri date can depend on local moon sighting and an official announcement. The two can therefore differ."}
+                </p>
+              </article>
+
+              <article>
+                <h4 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                  {isUr ? "کیا ہجری شمسی تاریخ بھی تبدیل ہو سکتی ہے؟" : "Does the converter support Solar Hijri dates?"}
+                </h4>
+                <p className={`mt-1 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                  {isUr
+                    ? "جی ہاں۔ عیسوی اور ہجری قمری کے ساتھ ہجری شمسی تقویم بھی ماخذ یا نتیجے کے طور پر دستیاب ہے۔"
+                    : "Yes. Solar Hijri is supported alongside Gregorian and Hijri lunar dates as both a source calendar and a conversion result."}
+                </p>
+              </article>
+
+              <article>
+                <h4 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                  {isUr ? "صرف ہجری دن اور مہینہ معلوم ہو تو عیسوی تاریخ کیسے تلاش کروں؟" : "How can I find a Gregorian date if I only know the Hijri day and month?"}
+                </h4>
+                <p className={`mt-1 text-sm leading-6 text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                  {isUr
+                    ? "“تاریخ تلاش کریں” والے حصے میں ہجری دن، مہینہ اور متعلقہ عیسوی سال درج کریں۔ یہ سہولت منتخب سال میں حسابی طور پر ملنے والی تاریخیں دکھاتی ہے۔"
+                    : "Open the “Find Date” tab and enter the Hijri day, month, and Gregorian year. The tool lists the dates calculated for that year."}
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
