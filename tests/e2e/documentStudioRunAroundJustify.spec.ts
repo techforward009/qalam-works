@@ -170,6 +170,15 @@ async function storyInkSignature(page: Page) {
   });
 }
 
+async function storyDocumentText(page: Page) {
+  return page.locator(".ProseMirror").evaluate(root => {
+    const editor = (root as HTMLElement & {
+      editor?: { state?: { doc?: { textContent?: string } } };
+    }).editor;
+    return editor?.state?.doc?.textContent ?? root.textContent ?? "";
+  });
+}
+
 async function wrapDecorationSignature(page: Page) {
   return page.evaluate(() => [...document.querySelectorAll("[data-run-around-gap], [data-run-around-space], [data-run-around-break], [data-run-around-skip]")].map(el => {
     const rect = el.getBoundingClientRect();
@@ -206,6 +215,7 @@ test("holds justified story text still during object drag and reflows only after
   // Keep this interaction test focused on one movable object; the separate text-box test covers multiple obstacles.
   await seed(page, "justify", [frames[0]]);
   await expect(page.locator('[data-run-around-justify="true"]')).toHaveCount(1);
+  const initialText = await storyDocumentText(page);
   const initialLayout = await measure(page, "pic-justify");
   const initialStory = await storyInkSignature(page);
   const initialWrap = await wrapDecorationSignature(page);
@@ -226,6 +236,7 @@ test("holds justified story text still during object drag and reflows only after
     expect(moving?.y ?? 0, "picture preview should follow the pointer").toBeGreaterThan(start!.y + step * 12);
   }
   await page.mouse.up();
+  expect(await storyDocumentText(page), "object movement must not duplicate, remove, or reorder source text").toBe(initialText);
   await expect.poll(() => storyInkSignature(page), { timeout: 10000 }).not.toBe(initialStory);
   await expect.poll(() => wrapDecorationSignature(page), { timeout: 10000 }).not.toBe(initialWrap);
   // Pointer-up triggers a real reflow; allow its successive layout frames to settle
@@ -245,6 +256,7 @@ test("holds justified story text still during object drag and reflows only after
   await page.reload();
   await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
   await expect.poll(() => page.locator("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]").count(), { timeout: 15000 }).toBeGreaterThan(0);
+  expect(await storyDocumentText(page), "saved/reopened text must remain byte-for-byte identical after object movement").toBe(initialText);
   const afterReload = await measure(page, "pic-justify");
   expect(moved?.over ?? 0, JSON.stringify({ initialLayout, afterDrop: moved, afterReload, frame: await page.locator('[data-studio-frame-id="pic-justify"]').boundingBox() })).toBeLessThanOrEqual(initialLayout?.over ?? 0);
   expect(afterReload?.over ?? 0, JSON.stringify({ initialLayout, afterReload })).toBeLessThanOrEqual(initialLayout?.over ?? 0);
