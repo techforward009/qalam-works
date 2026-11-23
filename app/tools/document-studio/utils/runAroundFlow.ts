@@ -427,7 +427,7 @@ function runAroundEngineFactory() {
   ): { pieces: RunAroundPiece[]; next: number } {
     const ordered = direction === "ltr"
       ? [...segments].sort((a, b) => a.left - b.left || a.right - b.right)
-      : [...segments].sort((a, b) => b.right - a.right || a.left - b.left);
+      : [...segments].sort((a, b) => b.right - a.right || b.left - a.left);
 
     if (fit) {
       type Candidate = {
