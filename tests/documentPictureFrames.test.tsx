@@ -580,14 +580,16 @@ describe("picture box move keeps the picture inside the box", () => {
     const onFramesChange = vi.fn();
     const { container } = render(<PictureFrameHarness frame={frame} onFramesChange={onFramesChange} />);
     const node = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
+    const initialLeft = node.style.left;
+    const initialTop = node.style.top;
     fireEvent.pointerDown(node, { clientX: 120, clientY: 140, pointerId: 1, button: 0 });
     const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
     fireEvent.pointerMove(layer, { clientX: 200, clientY: 210, pointerId: 1, buttons: 1 });
     // Pointer movement updates only the visual preview; the committed story/object state stays untouched.
     expect(onFramesChange).not.toHaveBeenCalled();
     const preview = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
-    expect(preview.style.left).not.toBe(node.style.left);
-    expect(preview.style.top).not.toBe(node.style.top);
+    expect(preview.style.left).not.toBe(initialLeft);
+    expect(preview.style.top).not.toBe(initialTop);
     const img = container.querySelector("img") as HTMLElement;
     expect(parseFloat(img.style.left)).toBeCloseTo(5 * PX_PER_MM);
     expect(parseFloat(img.style.top)).toBeCloseTo(3 * PX_PER_MM);
