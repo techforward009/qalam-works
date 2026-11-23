@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import DateConverterContent from "./DateConverterContent";
 
 export const metadata: Metadata = {
-  title: "Date Converter | تاریخ کنورٹر | Qalam Works",
+  title: "Date Converter: Gregorian, Hijri & Solar Hijri | Qalam Works",
   description:
-    "Convert dates between Gregorian, Hijri, and Solar Hijri calendars. عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کو باہم تبدیل کریں۔",
+    "Convert Gregorian, Hijri, and Solar Hijri dates online. Find a Gregorian date from a Hijri day and month, and check Pakistan's reviewed Hijri date when available.",
   alternates: { canonical: "/tools/date-converter" },
 };
 
