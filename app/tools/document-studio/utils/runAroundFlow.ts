@@ -444,6 +444,10 @@ function runAroundEngineFactory() {
         if (candidate.pieces.length !== current.pieces.length) {
           return candidate.pieces.length > current.pieces.length;
         }
+        const leadingSpaces = (value: Candidate) =>
+          value.pieces.reduce((count, piece) => count + (fit.spaceAt[piece.from] ? 1 : 0), 0);
+        const leadingSpaceDifference = leadingSpaces(candidate) - leadingSpaces(current);
+        if (leadingSpaceDifference !== 0) return leadingSpaceDifference < 0;
         const maxDifference = max(candidate.spacing) - max(current.spacing);
         if (Math.abs(maxDifference) > 1e-6) return maxDifference < 0;
         const spreadDifference =
