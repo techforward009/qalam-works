@@ -32,7 +32,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: Resolve bundled Chromium for browser tests
+        run: |
+          echo "PLAYWRIGHT_CHROMIUM_PATH=$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Install Poppler utilities for full repository PDF tests
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
       # One Playwright invocation per project: each starts its own fresh
