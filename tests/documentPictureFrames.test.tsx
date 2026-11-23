@@ -448,11 +448,18 @@ describe("template picture peel drag", () => {
     expect(clone.dataset.studioFrameId).not.toBe(baseFrame.id);
     expect(clone.getAttribute("data-studio-frame-id")).not.toBe(original.getAttribute("data-studio-frame-id"));
     expect(container.querySelector("[data-selected]")?.getAttribute("data-selected")).toBe(clone.dataset.studioFrameId);
-    const persistedFrames = JSON.parse(container.querySelector("[data-frames-json]")!.getAttribute("data-frames-json")!) as StudioFrame[];
+    // The detached clone is a local preview until the user releases the pointer.
+    let persistedFrames = JSON.parse(container.querySelector("[data-frames-json]")!.getAttribute("data-frames-json")!) as StudioFrame[];
+    expect(persistedFrames).toHaveLength(1);
+    expect(persistedFrames[0].id).toBe(baseFrame.id);
+    expect(persistedFrames[0].template).toBe(true);
+
+    fireEvent.pointerUp(layer, { clientX: 90, clientY: 58, pointerId: 1, button: 0 });
+    persistedFrames = JSON.parse(container.querySelector("[data-frames-json]")!.getAttribute("data-frames-json")!) as StudioFrame[];
+    expect(persistedFrames).toHaveLength(2);
     expect(persistedFrames.find(frame => frame.id === clone.dataset.studioFrameId)?.template).toBeUndefined();
     expect(persistedFrames.find(frame => frame.id === baseFrame.id)?.template).toBe(true);
     expect(persistedFrames.find(frame => frame.id === clone.dataset.studioFrameId)?.locked).toBe(false);
-    fireEvent.pointerUp(layer, { clientX: 90, clientY: 58, pointerId: 1, button: 0 });
   });
 });
 
@@ -576,7 +583,17 @@ describe("picture box move keeps the picture inside the box", () => {
     fireEvent.pointerDown(node, { clientX: 120, clientY: 140, pointerId: 1, button: 0 });
     const layer = container.querySelector("[data-studio-objects]") as HTMLElement;
     fireEvent.pointerMove(layer, { clientX: 200, clientY: 210, pointerId: 1, buttons: 1 });
-    expect(onFramesChange).toHaveBeenCalled();
+    // Pointer movement updates only the visual preview; the committed story/object state stays untouched.
+    expect(onFramesChange).not.toHaveBeenCalled();
+    const preview = container.querySelector('[data-studio-frame="picture-rect"]') as HTMLElement;
+    expect(preview.style.left).not.toBe(node.style.left);
+    expect(preview.style.top).not.toBe(node.style.top);
+    const img = container.querySelector("img") as HTMLElement;
+    expect(parseFloat(img.style.left)).toBeCloseTo(5 * PX_PER_MM);
+    expect(parseFloat(img.style.top)).toBeCloseTo(3 * PX_PER_MM);
+
+    fireEvent.pointerUp(layer, { clientX: 200, clientY: 210, pointerId: 1, button: 0 });
+    expect(onFramesChange).toHaveBeenCalledTimes(1);
     const moved = onFramesChange.mock.calls.at(-1)![0][0] as StudioFrame;
     expect(moved.xMm).not.toBeCloseTo(frame.xMm);
     expect(moved.yMm).not.toBeCloseTo(frame.yMm);
@@ -584,9 +601,6 @@ describe("picture box move keeps the picture inside the box", () => {
     expect(moved.imageYMm).toBeCloseTo(3);
     expect(moved.imageWMm).toBeCloseTo(frame.imageWMm!);
     expect(moved.imageHMm).toBeCloseTo(frame.imageHMm!);
-    const img = container.querySelector("img") as HTMLElement;
-    expect(parseFloat(img.style.left)).toBeCloseTo(5 * PX_PER_MM);
-    expect(parseFloat(img.style.top)).toBeCloseTo(3 * PX_PER_MM);
   });
 
   it("hides resize handles for a rotated frame while retaining visual frame rotation", () => {
