@@ -103,8 +103,11 @@ describe("appearance patches", () => {
 });
 
 describe("Run Around eligibility and transitions", () => {
-  it("allows Run Around and clearances on unrotated rectangular picture, text, and shape frames", () => {
-    for (const kind of ["picture-rect", "text", "rect"] as const) {
+  it("allows Run Around and clearances on every supported unrotated box family", () => {
+    for (const kind of [
+      "picture-rect", "picture-ellipse", "picture-round-rect",
+      "text", "rect", "ellipse", "round-rect",
+    ] as const) {
       const target: StudioFrame = { ...frame, kind, angle1Deg: 0 };
       const updated = applyObjectGeometry(target, {
         runAround: true,
@@ -124,10 +127,6 @@ describe("Run Around eligibility and transitions", () => {
   });
 
   it.each([
-    { kind: "picture-ellipse", angle1Deg: 0 },
-    { kind: "picture-round-rect", angle1Deg: 0 },
-    { kind: "ellipse", angle1Deg: 0 },
-    { kind: "round-rect", angle1Deg: 0 },
     { kind: "line", angle1Deg: 0 },
     { kind: "picture-rect", angle1Deg: 15 },
     { kind: "text", angle1Deg: -5 },
@@ -137,10 +136,13 @@ describe("Run Around eligibility and transitions", () => {
     expect(applyObjectGeometry(target, { runAround: true })).toBeNull();
   });
 
-  it("clears active Run Around when a rectangular box is switched to an ellipse or rotated", () => {
+  it("preserves Run Around when a rectangle becomes curved, and clears it when rotated", () => {
     const wrapping: StudioFrame = { ...frame, kind: "picture-rect", angle1Deg: 0, runAround: true };
     const asEllipse = applyObjectGeometry(wrapping, { kind: "picture-ellipse" });
-    expect(asEllipse).toMatchObject({ kind: "picture-ellipse", runAround: false });
+    expect(asEllipse).toMatchObject({ kind: "picture-ellipse", runAround: true });
+
+    const asRounded = applyObjectGeometry(wrapping, { kind: "picture-round-rect" });
+    expect(asRounded).toMatchObject({ kind: "picture-round-rect", runAround: true });
 
     const asRotated = applyObjectGeometry(wrapping, { angle1Deg: 15 });
     expect(asRotated).toMatchObject({ kind: "picture-rect", angle1Deg: 15, runAround: false });
