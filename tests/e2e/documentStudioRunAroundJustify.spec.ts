@@ -15,13 +15,13 @@ async function open(page: Page) {
   await expect.poll(() => page.evaluate(() => localStorage.getItem("qalam-document-studio-active-document-v1")), { timeout: 20000 }).not.toBeNull();
 }
 
-async function seed(page: Page, align: string) {
+async function seed(page: Page, align: string, framesToSeed: typeof frames = frames) {
   await page.evaluate(next => {
     const id = localStorage.getItem("qalam-document-studio-active-document-v1")!;
     const map = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}") as Record<string, unknown>;
     map[id] = next;
     localStorage.setItem("qalam-studio-frames-v1", JSON.stringify(map));
-  }, frames);
+  }, framesToSeed);
   await page.reload();
   await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
   await page.locator(".ProseMirror").click();
@@ -48,6 +48,7 @@ async function measure(page: Page, frameId: string) {
     let left = false;
     let right = false;
     let over = 0;
+    const overlaps: Array<{ word: string; left: number; right: number; top: number; bottom: number }> = [];
     let fullLine = false;
     const bands = new Map<number, DOMRect[]>();
     const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
@@ -61,20 +62,32 @@ async function measure(page: Page, frameId: string) {
         const range = document.createRange();
         range.setStart(node, cursor);
         range.setEnd(node, cursor + found.length);
-        const rect = range.getBoundingClientRect();
+        // Use each painted line fragment, not the union bounding box. A bidi
+        // Range can span both sides of a Run Around hole; its union includes
+        // the empty hole and falsely reports ink over the object.
+        const rects = [...range.getClientRects()].filter(rect => rect.width >= 2 && rect.height >= 2);
         cursor += found.length;
-        if (rect.width < 2 || rect.height < 2) continue;
-        wordWidths.push(rect.width);
-        const key = Math.round(rect.top / 2);
-        const band = bands.get(key) ?? [];
-        band.push(rect);
-        bands.set(key, band);
-        const crosses = rect.bottom > frame.top + 2 && rect.top < frame.bottom - 2;
-        if (!crosses) continue;
-        const mid = (rect.left + rect.right) / 2;
-        if (mid <= frame.left + 1) left = true;
-        else if (mid >= frame.right - 1) right = true;
-        else over += 1;
+        for (const rect of rects) {
+          wordWidths.push(rect.width);
+          const key = Math.round(rect.top / 2);
+          const band = bands.get(key) ?? [];
+          band.push(rect);
+          bands.set(key, band);
+          const crosses = rect.bottom > frame.top + 2 && rect.top < frame.bottom - 2;
+          if (!crosses) continue;
+          if (rect.right <= frame.left + 1) left = true;
+          else if (rect.left >= frame.right - 1) right = true;
+          else {
+            over += 1;
+            overlaps.push({
+              word: found,
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              top: Math.round(rect.top),
+              bottom: Math.round(rect.bottom),
+            });
+          }
+        }
       }
     }
     const column = paragraph.getBoundingClientRect();
@@ -109,14 +122,110 @@ async function measure(page: Page, frameId: string) {
       left,
       right,
       over,
+      overlaps,
       fullLine,
       maxBeside: besideGaps.length ? Math.max(...besideGaps) : 0,
       maxBelow: belowGaps.length ? Math.max(...belowGaps) : 0,
       widest,
       narrowest,
+      modelFrame: (() => {
+        const documentId = localStorage.getItem("qalam-document-studio-active-document-v1");
+        const map = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}") as Record<string, Array<Record<string, unknown>>>;
+        return documentId ? (map[documentId] || []).find(item => item.id === id) ?? null : null;
+      })(),
+      storyRoot: (() => {
+        const root = paragraph.closest(".ProseMirror")?.getBoundingClientRect();
+        return root ? { left: root.left, top: root.top, width: root.width, height: root.height } : null;
+      })(),
+      nearbyWrap: [...document.querySelectorAll("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]")].map(element => {
+        const rect = element.getBoundingClientRect();
+        return {
+          kind: element.hasAttribute("data-run-around-gap") ? "gap" : element.hasAttribute("data-run-around-break") ? "break" : "skip",
+          left: Math.round(rect.left),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        };
+      }).filter(rect => rect.top > frame.top - 60 && rect.top < frame.bottom + 60),
     };
   }, { frameId, words });
 }
+
+async function storyInkSignature(page: Page) {
+  return page.evaluate(() => {
+    const paragraph = document.querySelector(".ProseMirror p");
+    if (!paragraph) return "";
+    const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+    const rects: string[] = [];
+    for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+      if (!node.data.trim() || node.parentElement?.closest("[data-run-around-gap], [data-run-around-space], [data-run-around-skip]")) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const rect of range.getClientRects()) {
+        if (rect.width < 1 || rect.height < 1) continue;
+        rects.push(`${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`);
+      }
+    }
+    return rects.join("|");
+  });
+}
+
+async function wrapDecorationSignature(page: Page) {
+  return page.evaluate(() => [...document.querySelectorAll("[data-run-around-gap], [data-run-around-space], [data-run-around-break], [data-run-around-skip]")].map(el => {
+    const rect = el.getBoundingClientRect();
+    const kind = el.hasAttribute("data-run-around-gap") ? "g"
+      : el.hasAttribute("data-run-around-space") ? "s"
+      : el.hasAttribute("data-run-around-break") ? "b" : "k";
+    return `${kind}${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
+  }).join("|"));
+}
+
+test("holds justified story text still during object drag and reflows only after drop", async ({ page }) => {
+  test.setTimeout(120000);
+  await open(page);
+  // Keep this interaction test focused on one movable object; the separate text-box test covers multiple obstacles.
+  await seed(page, "justify", [frames[0]]);
+  await expect(page.locator('[data-run-around-justify="true"]')).toHaveCount(1);
+  const initialLayout = await measure(page, "pic-justify");
+  const initialStory = await storyInkSignature(page);
+  const initialWrap = await wrapDecorationSignature(page);
+  const picture = page.locator('[data-studio-frame-id="pic-justify"]');
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const start = await picture.boundingBox();
+  expect(start).toBeTruthy();
+  const x = start!.x + start!.width / 2;
+  const y = start!.y + start!.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let step = 1; step <= 6; step += 1) {
+    await page.mouse.move(x, y + step * 18);
+    await page.waitForTimeout(40);
+    expect(await storyInkSignature(page), `story moved during drag step ${step}`).toBe(initialStory);
+    expect(await wrapDecorationSignature(page), `wrap changed during drag step ${step}`).toBe(initialWrap);
+    const moving = await picture.boundingBox();
+    expect(moving?.y ?? 0, "picture preview should follow the pointer").toBeGreaterThan(start!.y + step * 12);
+  }
+  await page.mouse.up();
+  await expect.poll(() => storyInkSignature(page), { timeout: 10000 }).not.toBe(initialStory);
+  await expect.poll(() => wrapDecorationSignature(page), { timeout: 10000 }).not.toBe(initialWrap);
+  const settledStory = await storyInkSignature(page);
+  const settledWrap = await wrapDecorationSignature(page);
+  for (let index = 0; index < 4; index += 1) {
+    await page.waitForTimeout(60);
+    expect(await storyInkSignature(page)).toBe(settledStory);
+    expect(await wrapDecorationSignature(page)).toBe(settledWrap);
+  }
+  const moved = await measure(page, "pic-justify");
+  expect(moved?.align).toBe("justify");
+  // Reopen from the persisted frame geometry to distinguish an immediate reflow
+  // scheduling issue from a layout calculation issue.
+  await page.reload();
+  await expect(page.locator(".ProseMirror")).toHaveAttribute("data-studio-font-layout", "ready", { timeout: 25000 });
+  await expect.poll(() => page.locator("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]").count(), { timeout: 15000 }).toBeGreaterThan(0);
+  const afterReload = await measure(page, "pic-justify");
+  expect(moved?.over ?? 0, JSON.stringify({ initialLayout, afterDrop: moved, afterReload, frame: await page.locator('[data-studio-frame-id="pic-justify"]').boundingBox() })).toBeLessThanOrEqual(initialLayout?.over ?? 0);
+  expect(afterReload?.over ?? 0, JSON.stringify({ initialLayout, afterReload })).toBeLessThanOrEqual(initialLayout?.over ?? 0);
+});
 
 test("justified Urdu keeps word spacing beside image and text boxes", async ({ page }) => {
   test.setTimeout(120000);
