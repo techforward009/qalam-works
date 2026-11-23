@@ -420,11 +420,13 @@ export function StudioObjectLayer({
     onSelectedChange?.(resolved);
   };
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
+  // Keep object geometry local while dragging: story wrapping is committed only on drop.
+  const [movePreviewFrames, setMovePreviewFrames] = useState<StudioFrame[] | null>(null);
   const [panningFrameId, setPanningFrameId] = useState<string | null>(null);
   const dragRef = useRef<
     | { mode: "draw"; x: number; y: number; pointer: number }
     | { mode: "marquee"; x: number; y: number; pointer: number; initialSelected: string[] }
-    | { mode: "move"; frames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string; peeled?: boolean }
+    | { mode: "move"; frames: StudioFrame[]; baseFrames: StudioFrame[]; x: number; y: number; pointer: number; pressedId: string; initialSelected: string[]; peeled?: boolean; previewFrames?: StudioFrame[] }
     | { mode: "resize"; id: string; edge: string; pointer: number; startFrame: StudioFrame; startSlot: { x: number; y: number } }
     | { mode: "pan"; id: string; x: number; y: number; pointer: number; startX: number; startY: number; angle: number }
     | null
@@ -494,6 +496,7 @@ export function StudioObjectLayer({
         setSelected([]);
         setDraft(null);
         dragRef.current = null;
+        setMovePreviewFrames(null);
       }
     };
     document.addEventListener("pointerdown", clearOnEmpty, true);
@@ -791,40 +794,17 @@ export function StudioObjectLayer({
               let id = newId();
               while (framesRef.current.some((frame) => frame.id === id)) id = newId();
               const { template: _templateFlag, ...ordinaryFields } = template;
-              // Keep the clone's snapshot at the pad's start position so later moves apply dx/dy from pointer-down once.
+              // Keep the template fixed and preview its detached clone locally until drop.
               const clone: StudioFrame = { ...ordinaryFields, id, locked: false };
               drag.frames = [...drag.frames.filter((frame) => frame.id !== template.id), clone];
+              drag.baseFrames = [...drag.baseFrames, clone];
               drag.peeled = true;
               setSelected([id]);
-              const withClone = [...framesRef.current, clone];
-              const peeled = new Map(drag.frames.map((frame) => [frame.id, frame]));
-              emitFrames(withClone.map((frame) => {
-                const original = peeled.get(frame.id);
-                if (!original) return frame;
-                const placement = resolveMovedFramePlacement(original, dxPx, dyPx, placementOptions);
-                return {
-                  ...frame,
-                  page: placement.page,
-                  xMm: placement.xMm,
-                  yMm: placement.yMm,
-                  ...(isPictureBox(original.kind)
-                    ? {
-                        imageXMm: original.imageXMm,
-                        imageYMm: original.imageYMm,
-                        imageWMm: original.imageWMm,
-                        imageHMm: original.imageHMm,
-                      }
-                    : {}),
-                };
-              }), "gesture");
-              return;
             }
           }
           const moved = new Map(drag.frames.map((frame) => [frame.id, frame]));
-          emitFrames(framesRef.current.map((frame) => {
+          const previewFrames = drag.baseFrames.map((frame) => {
             const original = moved.get(frame.id);
-            // Offsets stay box-relative so the picture travels with the box.
-            // Top/left resize, below, is what keeps the picture on the page.
             if (!original) return frame;
             const placement = resolveMovedFramePlacement(original, dxPx, dyPx, placementOptions);
             return {
@@ -841,7 +821,11 @@ export function StudioObjectLayer({
                   }
                 : {}),
             };
-          }), "gesture");
+          });
+          // The frame follows the pointer, but the committed frame list supplied to
+          // StudioRunAround stays unchanged until pointer-up.
+          drag.previewFrames = previewFrames;
+          setMovePreviewFrames(previewFrames);
           return;
         }
         if (drag.mode === "pan") {
@@ -868,7 +852,10 @@ export function StudioObjectLayer({
         updateFrame(live.id, patch, "gesture");
       }}
       onPointerCancel={(event) => {
+        const drag = dragRef.current;
         dragRef.current = null;
+        if (drag?.mode === "move" && drag.peeled) setSelected(drag.initialSelected);
+        setMovePreviewFrames(null);
         setPanningFrameId(null);
         setDraft(null);
         endGesture();
@@ -876,7 +863,10 @@ export function StudioObjectLayer({
         releaseCapturedPointer(event.target, event.pointerId);
       }}
       onLostPointerCapture={() => {
+        const drag = dragRef.current;
         dragRef.current = null;
+        if (drag?.mode === "move" && drag.peeled) setSelected(drag.initialSelected);
+        setMovePreviewFrames(null);
         setPanningFrameId(null);
         setDraft(null);
         endGesture();
@@ -903,13 +893,17 @@ export function StudioObjectLayer({
             }),
           );
         }
+        if (drag?.mode === "move" && drag.previewFrames) {
+          emitFrames(drag.previewFrames, "gesture");
+        }
+        setMovePreviewFrames(null);
         setDraft(null);
         endGesture();
         releaseCapturedPointer(event.currentTarget, event.pointerId);
         releaseCapturedPointer(event.target, event.pointerId);
       }}
     >
-      {frames.map((frame) => {
+      {(movePreviewFrames ?? frames).map((frame) => {
         const stride = pageHeightPx + gapPx;
         // Snap the frame to screen pixels, including a fractional page origin.
         const rootBox = rootRef.current?.getBoundingClientRect();
@@ -998,10 +992,12 @@ export function StudioObjectLayer({
               dragRef.current = {
                 mode: "move",
                 frames: framesRef.current.filter((item) => next.includes(item.id) && !item.locked),
+                baseFrames: framesRef.current,
                 x: point.x,
                 y: point.y,
                 pointer: event.pointerId,
                 pressedId: frame.id,
+                initialSelected: [...next],
               };
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
