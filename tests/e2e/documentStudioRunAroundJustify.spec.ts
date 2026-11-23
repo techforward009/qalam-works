@@ -128,6 +128,25 @@ async function measure(page: Page, frameId: string) {
       maxBelow: belowGaps.length ? Math.max(...belowGaps) : 0,
       widest,
       narrowest,
+      modelFrame: (() => {
+        const documentId = localStorage.getItem("qalam-document-studio-active-document-v1");
+        const map = JSON.parse(localStorage.getItem("qalam-studio-frames-v1") || "{}") as Record<string, Array<Record<string, unknown>>>;
+        return documentId ? (map[documentId] || []).find(item => item.id === id) ?? null : null;
+      })(),
+      storyRoot: (() => {
+        const root = paragraph.closest(".ProseMirror")?.getBoundingClientRect();
+        return root ? { left: root.left, top: root.top, width: root.width, height: root.height } : null;
+      })(),
+      nearbyWrap: [...document.querySelectorAll("[data-run-around-gap], [data-run-around-break], [data-run-around-skip]")].map(element => {
+        const rect = element.getBoundingClientRect();
+        return {
+          kind: element.hasAttribute("data-run-around-gap") ? "gap" : element.hasAttribute("data-run-around-break") ? "break" : "skip",
+          left: Math.round(rect.left),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        };
+      }).filter(rect => rect.top > frame.top - 60 && rect.top < frame.bottom + 60),
     };
   }, { frameId, words });
 }
