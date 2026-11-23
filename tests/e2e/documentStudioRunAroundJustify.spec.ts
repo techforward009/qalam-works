@@ -176,7 +176,11 @@ async function wrapDecorationSignature(page: Page) {
     const kind = el.hasAttribute("data-run-around-gap") ? "g"
       : el.hasAttribute("data-run-around-space") ? "s"
       : el.hasAttribute("data-run-around-break") ? "b" : "k";
-    return `${kind}${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
+    // A zero-width BR caret x-coordinate can vary with bidi font metrics without moving ink or a gap.
+    // Compare its vertical line position, but keep x/width checks for actual wrap spacers.
+    return kind === "b"
+      ? `b:${Math.round(rect.top)}:${Math.round(rect.height)}`
+      : `${kind}${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
   }).join("|"));
 }
 
