@@ -48,27 +48,3 @@ export function centerSingleLinePadding(
   }
   return { top, bottom };
 }
-
-/**
- * Outer border-box height in CSS pixels needed for a fixed-width, downward-expanding
- * text frame so wrapped or pasted lines never clip vertically and short content
- * retains the configured minimum height without rounding drift.
- */
-export function autoExpandOuterHeightPx(params: {
-  minOuterHeightPx: number;
-  sizerOffsetHeight: number;
-  sizerClientHeight: number;
-  sizerScrollHeight: number;
-  textareaOffsetHeight: number;
-  textareaClientHeight: number;
-  textareaScrollHeight: number;
-}): number {
-  const sizerChromeY = Math.max(0, params.sizerOffsetHeight - params.sizerClientHeight);
-  const sizerOuter = Math.max(params.sizerOffsetHeight, params.sizerScrollHeight + sizerChromeY);
-  const textareaChromeY = Math.max(0, params.textareaOffsetHeight - params.textareaClientHeight);
-  const textareaOverflows = params.textareaScrollHeight > params.textareaClientHeight + 1;
-  const textareaOuter = textareaOverflows ? params.textareaScrollHeight + textareaChromeY : 0;
-  const contentOuter = Math.max(sizerOuter, textareaOuter);
-  if (contentOuter <= params.minOuterHeightPx + 1) return params.minOuterHeightPx;
-  return Math.ceil(contentOuter);
-}
