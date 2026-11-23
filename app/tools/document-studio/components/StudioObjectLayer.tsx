@@ -22,7 +22,7 @@ import { paragraphTextPatch, type ParagraphAlign, type TextEditRange } from "../
 import { pictureContentDeltaMm } from "../utils/pictureFit";
 import { DEFAULT_PICTURE_TOOL_DEFAULTS, type PictureToolDefaults } from "../utils/objectAttributes";
 import { resolveBorderStrokes, type BorderPatternId } from "../utils/borderPatterns";
-import { isRunAroundBox } from "../utils/runAroundFlow";
+import { isRectangularRunAroundBox } from "../utils/runAroundFlow";
 
 export type FrameKind =
   | "rect"
@@ -663,10 +663,6 @@ export function StudioObjectLayer({
     }
     const frameTypography = typography ?? defaultDocumentSettings().typography;
     const defaults = pictureBoxDefaults ?? DEFAULT_PICTURE_TOOL_DEFAULTS;
-    const runAroundDefault = isRunAroundBox({
-      kind,
-      angle1Deg: isPictureBox(kind) ? defaults.angle1Deg : 0,
-    });
     const frame: StudioFrame = {
       id: newId(),
       kind,
@@ -679,9 +675,9 @@ export function StudioObjectLayer({
       text: "",
       typography,
       ...(singleLine ? { singleLine: true } : {}),
-      ...(runAroundDefault ? { runAround: true } : {}),
       ...(isPictureBox(kind)
         ? {
+            ...(isRectangularRunAroundBox({ kind, angle1Deg: defaults.angle1Deg }) ? { runAround: true } : {}),
             borderColor: defaults.borderColor,
             borderWidthMm: defaults.borderWidthMm,
             borderPattern: defaults.borderPattern,
@@ -1006,13 +1002,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} historyBridge={frameHistoryBridge} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} onAutoHeight={(outerHeightPx) => {
-              const current = framesRef.current.find((item) => item.id === frame.id);
-              if (!current || !current.singleLine) return;
-              const nextHMm = outerHeightPx / PX_PER_MM;
-              if (Math.abs(nextHMm - current.hMm) * PX_PER_MM <= 1) return;
-              updateFrame(current.id, { hMm: nextHMm }, "gesture");
-            }} />
+            <FrameShape frame={frame} width={width} height={height} active={active} editable={tool === "text"} keyboardLayout={keyboardLayout} historyBridge={frameHistoryBridge} onTextFocus={() => setSelected([])} onText={(next, edit) => { const current = framesRef.current.find((item) => item.id === frame.id); updateFrame(frame.id, current ? paragraphTextPatch(current, next, edit) : { text: next }); }} onRestore={(snap) => updateFrame(frame.id, snap)} onStyle={(patch) => updateFrame(frame.id, frame.singleLine && patch.typography ? { ...patch, hMm: singleLineOuterHeightMm(patch.typography) } : patch)} />
             {isPictureBox(frame.kind) && !frame.imageSrc ? (
               <svg
                 data-studio-picture-hit={frame.kind}
@@ -1153,7 +1143,6 @@ function FrameShape({
   onText,
   onRestore,
   onStyle,
-  onAutoHeight,
   keyboardLayout,
   historyBridge,
 }: {
@@ -1166,12 +1155,11 @@ function FrameShape({
   onText: (text: string, edit?: TextEditRange) => void;
   onRestore: (snap: { text: string; textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
   onStyle: (patch: Partial<Pick<StudioFrame, "typography" | "textColor">> & { textAlign?: StudioTextAlign | null; paragraphAligns?: ParagraphAlign[] | null }) => void;
-  onAutoHeight?: (outerHeightPx: number) => void;
   keyboardLayout?: KeyboardLayout | null;
   historyBridge?: StudioFrameHistoryBridge;
 }) {
   if (frame.kind === "text") {
-    return <StudioTextFrame frameId={frame.id} historyBridge={historyBridge} text={frame.text} singleLine={frame.singleLine} frameWidthPx={width} frameHeightMm={frame.hMm} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} onAutoHeight={onAutoHeight} />;
+    return <StudioTextFrame frameId={frame.id} historyBridge={historyBridge} text={frame.text} singleLine={frame.singleLine} paragraphAligns={frame.paragraphAligns} typography={frame.typography} textColor={frame.textColor} textAlign={frame.textAlign} keyboardLayout={keyboardLayout} editable={editable} onFocus={onTextFocus} onText={onText} onRestore={onRestore} onStyle={onStyle} />;
   }
   // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
   const hasExplicitNonePattern = frame.borderPattern === "none";
