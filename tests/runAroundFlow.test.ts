@@ -473,6 +473,7 @@ describe("run-around line splitting", () => {
     expect(flow.segments.map(segment => segment.edge)).toEqual(["right", "left"]);
     expect(flow.segments[0]).toMatchObject({ from: 0, to: 5, width: 80 });
     expect(flow.segments[1]).toMatchObject({ from: 6, to: 9, width: 80 });
+    expect(widgets.find(widget => widget.kind === "gap" && widget.side === -4)?.pos).toBe(7);
     expect(flow.segments.every(segment => segment.wordSpacing <= 40)).toBe(true);
     expect(widgets.some(widget => widget.kind === "break" && widget.pos === 11)).toBe(true);
   });
