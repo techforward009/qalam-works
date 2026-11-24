@@ -34,6 +34,13 @@ export type ResearchBlobSdk = {
 
 const MAX_LIST_PAGES = 50;
 
+/** Only SHA-versioned book objects may use provider caching.
+ * The active pointer and user research documents remain uncached.
+ */
+export function isImmutableBookObject(pathname: string): boolean {
+  return /^khateeb-foundational\/v1\/[0-9a-f]{64}\/[a-z0-9-]+\.json$/.test(pathname);
+}
+
 function authOptions(auth: BlobAuth): Record<string, unknown> {
   if ("token" in auth) return { token: auth.token };
   return { storeId: auth.storeId, oidcToken: auth.oidcToken };
@@ -101,7 +108,7 @@ export function createVercelResearchBlobClient(
       const result = await sdk.get(pathname, {
         ...authFields,
         access: "private",
-        useCache: false,
+        useCache: isImmutableBookObject(pathname),
       });
       if (!result) return null;
       if (result.statusCode !== 200 || !result.stream) {
