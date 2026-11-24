@@ -1,0 +1,56 @@
+name: PDF Studio Phase 1B Isolated Root-Cause Test
+on:
+  push:
+    branches: [audit/pdf-studio-phase1b-root-cause-20261014]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked packages without unrelated ONNX binary
+        run: npm ci --ignore-scripts
+      - name: Run font and shared-HTML diagnostic against original production PDF helpers
+        run: npx vitest run tests/pdfStudioPhase1bIsolation.test.ts --reporter=verbose
+      - name: Inspect Digital Khatt WOFF2 cmap with fontTools
+        if: always()
+        run: |
+          python3 -m pip install --break-system-packages fonttools brotli
+          python3 - <<'PY' | tee artifacts/pdf-phase1b/digital-khatt-cmap.json
+          import json
+          from fontTools.ttLib import TTFont
+          font=TTFont("public/fonts/DigitalKhattIndoPak.woff2")
+          chars=set().union(*(set(t.cmap) for t in font["cmap"].tables if t.isUnicode()))
+          print(json.dumps({"font":"DigitalKhattIndoPak.woff2","U+002E":0x002e in chars,"U+0627":0x0627 in chars,"U+064E":0x064e in chars,"U+06D7":0x06d7 in chars},indent=2))
+          PY
+      - name: Convert prototype to inspectable fonts and page images
+        if: always()
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          for p in artifacts/pdf-phase1b/*.pdf; do
+            test -f "$p" || continue
+            pdfinfo "$p" > "$p.info.txt"
+            pdffonts "$p" > "$p.fonts.txt"
+            pdftotext -bbox-layout "$p" "$p.bbox.html"
+            pdftoppm -f 1 -l 1 -singlefile -r 96 -png "$p" "${p%.pdf}"
+          done
+      - name: Upload isolated experimental evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-studio-phase1b-root-cause
+          path: artifacts/pdf-phase1b/
+          if-no-files-found: warn

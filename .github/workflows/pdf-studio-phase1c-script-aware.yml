@@ -1,0 +1,44 @@
+name: PDF Studio Phase 1C Script-Aware Validation (No Deployment)
+on:
+  push:
+    branches: [audit/pdf-studio-phase1c-script-aware-20261014]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install lockfile without irrelevant ONNX binary
+        run: npm ci --ignore-scripts
+      - name: Run isolated font-classification and real Chromium tests
+        run: npx vitest run tests/pdfStudioPhase1cScriptAware.test.ts --reporter=verbose
+      - name: Inspect PDF actual embedded fonts
+        if: always()
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          for p in artifacts/pdf-phase1c/*.pdf; do
+            test -f "$p" || continue
+            pdffonts "$p" > "$p.fonts.txt"
+            pdfinfo "$p" > "$p.info.txt"
+            pdftoppm -f 1 -l 1 -singlefile -r 96 -png "$p" "${p%.pdf}-raster"
+          done
+      - name: Upload diagnostics and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-phase1c-script-aware-evidence
+          path: artifacts/pdf-phase1c/
+          if-no-files-found: warn
