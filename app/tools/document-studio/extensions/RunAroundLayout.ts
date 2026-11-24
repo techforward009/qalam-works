@@ -145,8 +145,12 @@ class RunAroundView {
   private burst = 0;
   private burstKey = "";
   private docEpoch = 0;
+  private fontEpoch = 0;
+  private destroyed = false;
+  private fonts: FontFaceSet | null = null;
 
   constructor(private view: EditorView) {
+    this.attachFontListeners();
     this.schedule();
   }
 
@@ -157,15 +161,47 @@ class RunAroundView {
   }
 
   destroy() {
+    this.destroyed = true;
     if (this.raf) cancelCanonicalFrame(this.raf);
     this.raf = 0;
+    if (this.fonts && typeof this.fonts.removeEventListener === "function") {
+      this.fonts.removeEventListener("loadingdone", this.onFontsDone);
+    }
+    this.fonts = null;
   }
 
+  private attachFontListeners() {
+    const fonts = this.view.dom.ownerDocument?.fonts ?? (typeof document !== "undefined" ? document.fonts : undefined);
+    if (!fonts) return;
+    this.fonts = fonts;
+    const initiallyLoaded = fonts.status === "loaded";
+    if (typeof fonts.addEventListener === "function") {
+      fonts.addEventListener("loadingdone", this.onFontsDone);
+    }
+    if (fonts.ready && typeof fonts.ready.then === "function") {
+      void fonts.ready.then(() => {
+        if (this.destroyed || this.view.isDestroyed) return;
+        if (!initiallyLoaded) {
+          intrinsicWidthCache.clear();
+          this.fontEpoch += 1;
+        }
+        this.schedule();
+      }, () => {});
+    }
+  }
+
+  private onFontsDone = () => {
+    if (this.destroyed || this.view.isDestroyed) return;
+    intrinsicWidthCache.clear();
+    this.fontEpoch += 1;
+    this.schedule();
+  };
+
   private schedule = () => {
-    if (this.raf || this.view.isDestroyed) return;
+    if (this.raf || this.destroyed || this.view.isDestroyed) return;
     this.raf = requestCanonicalFrame(this.view.dom, () => {
       this.raf = 0;
-      if (this.view.isDestroyed || this.view.composing) return;
+      if (this.destroyed || this.view.isDestroyed || this.view.composing) return;
       withCanonicalPages(this.view.dom, () => this.measure());
     });
   };
@@ -175,7 +211,7 @@ class RunAroundView {
     const state = runAroundKey.getState(view.state);
     const geometry = getQalamPaginationState({ state: view.state })?.geometry;
     const frames = framesOf.get(view) ?? [];
-    const burstKey = `${this.docEpoch}:${runAroundFrameKey(frames)}:${geometry?.enabled ? geometry.pageWidthPx : 0}`;
+    const burstKey = `${this.docEpoch}:${this.fontEpoch}:${runAroundFrameKey(frames)}:${geometry?.enabled ? geometry.pageWidthPx : 0}`;
     if (burstKey !== this.burstKey) {
       this.burstKey = burstKey;
       this.burst = 0;
@@ -299,8 +335,9 @@ class RunAroundView {
         }
         // Widths come from an undecorated probe. A gap widget changes
         // Nastaliq shaping, so measuring the decorated line makes one word
-        // jump from side to side on every pass.
-        if (pieces.length === 1 && !/[A-Za-z0-9]/.test(pieces[0].text)) {
+        // jump from side to side on every pass. Only use the block-style fast
+        // path when the single text node carries no inline font/size overrides.
+        if (pieces.length === 1 && !/[A-Za-z0-9]/.test(pieces[0].text) && pieces[0].font === fontSignature(style)) {
           const widths = intrinsicWordWidths(dom, pieces[0].text);
           let offset = 0;
           let unit = 0;
@@ -436,15 +473,26 @@ function firstFamily(signature: string): string {
   return signature.split("\n")[0].replace(/["']/g, "").split(",")[0].trim().toLowerCase();
 }
 
-function fontAtNode(view: EditorView, pos: number, fallback: CSSStyleDeclaration): string {
-  const dom = view.nodeDOM(pos);
-  let el = dom instanceof Text ? dom.parentElement : dom instanceof HTMLElement ? dom : null;
-  while (el && el.hasAttribute("data-run-around-segment")) el = el.parentElement;
-  return fontSignature(el ? getComputedStyle(el) : fallback);
+function elementFontSignature(el: Element | null, fallback: CSSStyleDeclaration): string {
+  if (!el) return fontSignature(fallback);
+  const computed = getComputedStyle(el);
+  // ProseMirror merges inline decorations (e.g. LatinScriptRuns font-family/size)
+  // onto the same span as data-run-around-segment. Keep the element's font
+  // properties and neutralize only the injected word-spacing/letter-spacing.
+  if (el.closest("[data-run-around-segment]") && !el.closest("[data-tracking]")) {
+    return fontSignature(computed, fallback.letterSpacing, fallback.wordSpacing);
+  }
+  return fontSignature(computed);
 }
 
-function fontSignature(style: CSSStyleDeclaration): string {
-  return [style.fontFamily, style.fontSize, style.fontWeight, style.fontStyle, style.letterSpacing, style.wordSpacing, style.fontFeatureSettings, style.fontVariantLigatures, style.textRendering].join("\n");
+function fontAtNode(view: EditorView, pos: number, fallback: CSSStyleDeclaration): string {
+  const dom = view.nodeDOM(pos);
+  const el = dom instanceof Text ? dom.parentElement : dom instanceof HTMLElement ? dom : null;
+  return elementFontSignature(el, fallback);
+}
+
+function fontSignature(style: CSSStyleDeclaration, letterSpacing = style.letterSpacing, wordSpacing = style.wordSpacing): string {
+  return [style.fontFamily, style.fontSize, style.fontWeight, style.fontStyle, letterSpacing, wordSpacing, style.fontFeatureSettings, style.fontVariantLigatures, style.textRendering].join("\n");
 }
 
 function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration, seen: Map<Element, string>): string {
@@ -456,11 +504,10 @@ function fontAt(view: EditorView, pos: number, fallback: CSSStyleDeclaration, se
   } catch {
     el = null;
   }
-  while (el && el.hasAttribute("data-run-around-segment")) el = el.parentElement;
   if (!el) return fontSignature(fallback);
   const cached = seen.get(el);
   if (cached) return cached;
-  const signature = fontSignature(getComputedStyle(el));
+  const signature = elementFontSignature(el, fallback);
   seen.set(el, signature);
   return signature;
 }
@@ -480,7 +527,8 @@ function pushShapedWords(glyphs: Glyph[], source: HTMLElement, pieces: readonly 
   const style = getComputedStyle(source);
   const joined = pieces.map(piece => piece.text).join("");
   const key = `${style.direction}\n${pieces.map(piece => `${piece.font}\n${piece.text}`).join("\n")}`;
-  let widths = intrinsicWidthCache.get(key);
+  const canCache = fontsLoaded(source.ownerDocument);
+  let widths = canCache ? intrinsicWidthCache.get(key) : undefined;
   if (!widths) {
     widths = [];
     const probe = document.createElement("div");
@@ -535,8 +583,10 @@ function pushShapedWords(glyphs: Glyph[], source: HTMLElement, pieces: readonly 
       }
     }
     probe.remove();
-    if (intrinsicWidthCache.size > 80) intrinsicWidthCache.clear();
-    intrinsicWidthCache.set(key, widths);
+    if (canCache) {
+      if (intrinsicWidthCache.size > 80) intrinsicWidthCache.clear();
+      intrinsicWidthCache.set(key, widths);
+    }
   }
   let unit = 0;
   for (let offset = 0; offset < joined.length && glyphs.length < 8000;) {
@@ -556,11 +606,17 @@ function pushShapedWords(glyphs: Glyph[], source: HTMLElement, pieces: readonly 
 
 const intrinsicWidthCache = new Map<string, number[]>();
 
+function fontsLoaded(doc?: Document | null): boolean {
+  const fonts = doc?.fonts ?? (typeof document !== "undefined" ? document.fonts : undefined);
+  return !fonts || fonts.status === "loaded";
+}
+
 /** Shaped width of each word in `text`, with its real neighbors and no wrap widgets. */
 function intrinsicWordWidths(source: HTMLElement, text: string): number[] {
   const style = getComputedStyle(source);
   const key = `${style.fontFamily}\n${style.fontSize}\n${style.fontWeight}\n${style.fontStyle}\n${style.direction}\n${style.letterSpacing}\n${style.fontFeatureSettings}\n${style.fontVariantLigatures}\n${style.textRendering}\n${text}`;
-  const cached = intrinsicWidthCache.get(key);
+  const canCache = fontsLoaded(source.ownerDocument);
+  const cached = canCache ? intrinsicWidthCache.get(key) : undefined;
   if (cached) return cached;
   const probe = document.createElement("div");
   probe.setAttribute("aria-hidden", "true");
@@ -584,7 +640,9 @@ function intrinsicWordWidths(source: HTMLElement, text: string): number[] {
     }
   }
   probe.remove();
-  if (intrinsicWidthCache.size > 80) intrinsicWidthCache.clear();
-  intrinsicWidthCache.set(key, widths);
+  if (canCache) {
+    if (intrinsicWidthCache.size > 80) intrinsicWidthCache.clear();
+    intrinsicWidthCache.set(key, widths);
+  }
   return widths;
 }
