@@ -20,13 +20,15 @@ describe("bounded and shared-cacheable date pages", () => {
   it.each(["1900-01-01", "2026-10-23", "2100-12-31"])("renders %s", async date => {
     expect(await DatePage({params:Promise.resolve({date})})).toBeTruthy();
   });
-  it("uses daily on-demand ISR and nofollow metadata", async () => {
+  it("uses daily on-demand ISR and noindex, follow metadata", async () => {
     expect(revalidate).toBe(86400);
     expect(await generateStaticParams()).toEqual([]);
-    expect(await generateMetadata({params:Promise.resolve({date:"2026-10-23"})})).toMatchObject({robots:{index:true,follow:false}});
+    expect(await generateMetadata({params:Promise.resolve({date:"2026-10-23"})})).toMatchObject({robots:{index:false,follow:true}});
+    expect(await generateMetadata({params:Promise.resolve({date:"2026-02-30"})})).toMatchObject({robots:{index:false,follow:true}});
   });
-  it("disallows crawler date walks while keeping the discovery sitemap", () => {
-    expect(robots().rules).toMatchObject({allow:"/",disallow:["/api/","/tools/research-studio","/date/"]});
+  it("allows crawler access to noindex date pages while keeping the discovery sitemap limited", () => {
+    expect(robots().rules).toMatchObject({allow:"/",disallow:["/api/","/tools/research-studio"]});
+    expect((robots().rules as {disallow?: string[]}).disallow).not.toContain("/date/");
     const urls=sitemap().map(item=>item.url);
     expect(urls).not.toContain("https://www.qalamworks.com/today");
     expect(urls).toContain(`https://www.qalamworks.com/calendar/${new Date().getFullYear()}`);
