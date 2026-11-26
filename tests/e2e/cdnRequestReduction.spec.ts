@@ -19,7 +19,10 @@ test("date bounds and shared caching in a production build", async ({request,pag
     const robots=await page.evaluate(html=>new DOMParser().parseFromString(html,"text/html").querySelector('meta[name="robots"]')?.getAttribute("content"),await response.text());
     expect(robots?.split(/,\s*/).sort(),phase).toEqual(["index","nofollow"]);
   }
-  expect(await (await get("/robots.txt")).text()).toContain("Disallow: /date/");
+  const robotsTxt=await (await get("/robots.txt")).text();
+  expect(robotsTxt).toContain("Disallow: /api/");
+  expect(robotsTxt).toContain("Disallow: /tools/research-studio");
+  expect(robotsTxt).not.toContain("Disallow: /date/");
   expect((await get("/fonts/MehrNastaliqWeb.woff2")).headers()["cache-control"]).toBe("public, max-age=31536000, immutable");
   for (const reader of ["/quran/madinah/1/1", "/quran/indopak-digital-khatt/1/1", "/quran/1/1"]) {
     const readerResponse=await get(reader,0);
