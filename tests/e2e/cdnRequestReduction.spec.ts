@@ -17,7 +17,7 @@ test("date bounds and shared caching in a production build", async ({request,pag
     expect(response.headers()["cache-control"],phase).toContain("s-maxage=86400");
     expect(response.headers()["cache-control"],phase).not.toMatch(/private|no-store/);
     const robots=await page.evaluate(html=>new DOMParser().parseFromString(html,"text/html").querySelector('meta[name="robots"]')?.getAttribute("content"),await response.text());
-    expect(robots?.split(/,\s*/).sort(),phase).toEqual(["index","nofollow"]);
+    expect(robots?.split(/,\s*/).sort(),phase).toEqual(["follow","noindex"]);
   }
   const robotsTxt=await (await get("/robots.txt")).text();
   expect(robotsTxt).toContain("Disallow: /api/");
