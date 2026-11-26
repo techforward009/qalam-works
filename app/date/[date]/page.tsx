@@ -21,12 +21,17 @@ function parseValidDate(value: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ date: string }> }) {
   const parsed = parseValidDate((await params).date);
-  if (!parsed) return { title: "Date Studio | Qalam Works" };
+  if (!parsed) {
+    return {
+      title: "Date Studio | Qalam Works",
+      robots: { index: false, follow: true },
+    };
+  }
   const profile = buildDateProfile(parsed);
   const officialDate = profile.pakistanOfficialHijri?.hijri;
   const shownDate = officialDate ?? profile.hijri;
   return {
-    robots: { index: true, follow: false },
+    robots: { index: false, follow: true },
     title: `${formatGregorianDate(parsed)} | ${formatHijriDate(shownDate)} | Qalam Works Date Studio`,
     description: officialDate
       ? `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(officialDate)} in the Pakistan Hijri calendar.`
