@@ -180,6 +180,7 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
   });
 
   test("upcoming lunar-month shortcut opens the corresponding national moon-sighting evening", async ({page}) => {
+    await page.clock.install({ time: new Date("2026-11-10T12:00:00+05:00") });
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     await expect(page.getByTestId("upcoming-crescent-months")).toBeVisible();
     const next = page.getByTestId("upcoming-crescent-month-0");
@@ -368,6 +369,7 @@ test.describe("Crescent result — Urdu typography and concise forecast", () => 
   });
 
   test("three Urdu month cards per desktop row with Western Gregorian date figures", async ({ page }) => {
+    await page.clock.install({ time: new Date("2026-11-10T12:00:00+05:00") });
     await page.setViewportSize({ width: 1006, height: 820 });
     await page.goto("/tools/crescent-visibility?date=2026-11-10");
     const months = page.getByTestId("upcoming-crescent-months");
