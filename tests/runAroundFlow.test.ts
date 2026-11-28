@@ -534,6 +534,242 @@ describe("run-around line splitting", () => {
     expect(flow.segments.every(segment => segment.to - segment.from >= 3)).toBe(true);
   });
 
+  describe("asymmetric justified lanes", () => {
+    // Synthetic widths. Eight short words (35px) fill the wide first lane, so
+    // greedy packing leaves one long word (95px) for the narrow lane. One word
+    // is a justified sliver, so the narrow lane used to stay empty.
+    const asymmetric = (): Array<{ pos: number; width: number; space?: boolean }> => {
+      const words = [35, 35, 35, 35, 35, 35, 35, 35, 95, 35, 35];
+      const glyphs: Array<{ pos: number; width: number; space?: boolean }> = [];
+      words.forEach((width, index) => {
+        if (index) glyphs.push({ pos: glyphs.length + 1, width: 5, space: true });
+        glyphs.push({ pos: glyphs.length + 1, width });
+      });
+      return glyphs;
+    };
+    const fitOf = (glyphs: ReadonlyArray<{ space?: boolean }>) => ({ minWords: 2, maxExtraPerSpace: 40, spaceAt: glyphs.map(glyph => !!glyph.space) });
+    const covers = (pieces: ReadonlyArray<{ from: number; to: number }>, start: number, next: number) => {
+      // Pieces must tile [start, next) in reading order: no gap, overlap or reorder.
+      let cursor = start;
+      for (const piece of pieces) {
+        expect(piece.from).toBe(cursor);
+        expect(piece.to).toBeGreaterThan(piece.from);
+        cursor = piece.to;
+      }
+      expect(cursor).toBe(next);
+    };
+
+    it("fills a narrow RTL left lane instead of stranding it empty beside the object", () => {
+      const glyphs = asymmetric();
+      const widths = glyphs.map(glyph => glyph.width);
+      // Box near the left edge: left lane 110px, right lane 377px.
+      const exclusion = { left: 110, right: 320, top: -2, bottom: 14 };
+      const greedy = layoutLineAroundExclusions(line({ right: 697 }), widths, [exclusion], RUN_AROUND_MIN_SEGMENT_PX, 0, "rtl");
+      const layout = layoutLineAroundExclusions(line({ right: 697 }), widths, [exclusion], RUN_AROUND_MIN_SEGMENT_PX, 0, "rtl", fitOf(glyphs));
+      expect(layout.pieces.map(piece => piece.side)).toEqual(["right", "left"]);
+      // Same words on the line as plain packing; only the boundary moves.
+      expect(layout.next).toBe(16);
+      expect(greedy.next).toBeGreaterThanOrEqual(layout.next);
+      covers(layout.pieces, 0, layout.next);
+      expect(layout.pieces[0]).toMatchObject({ from: 0, to: 12, left: 320, right: 697 });
+      expect(layout.pieces[1]).toMatchObject({ from: 12, to: 16, left: 0, right: 110 });
+      // The hole still starts where the right-side ink stops.
+      expect(layout.pieces[0].gapAfter).toBeCloseTo(697 - 240 - 110);
+    });
+
+    it("mirrors the correction for LTR with a narrow right lane", () => {
+      const glyphs = asymmetric();
+      const widths = glyphs.map(glyph => glyph.width);
+      // Box near the right edge: left lane 377px, right lane 110px.
+      const exclusion = { left: 377, right: 587, top: -2, bottom: 14 };
+      const layout = layoutLineAroundExclusions(line({ right: 697 }), widths, [exclusion], RUN_AROUND_MIN_SEGMENT_PX, 0, "ltr", fitOf(glyphs));
+      expect(layout.pieces.map(piece => piece.side)).toEqual(["left", "right"]);
+      expect(layout.next).toBe(16);
+      covers(layout.pieces, 0, layout.next);
+      expect(layout.pieces[1]).toMatchObject({ from: 12, to: 16, left: 587, right: 697 });
+    });
+
+    it("justifies both asymmetric lanes in the planner within the spacing cap and keeps every word", () => {
+      const glyphs = asymmetric();
+      const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+      const widgets = planRunAroundWidgets(glyphs, 0, 12, () => ({ left: 0, right: 697 }), [{ left: 110, right: 320, top: -2, bottom: 14 }], "rtl", flow);
+      expect(flow.segments.map(segment => [segment.edge, segment.from, segment.to, segment.width])).toEqual([
+        ["right", 0, 11, 377],
+        ["left", 12, 15, 110],
+      ]);
+      expect(flow.segments.every(segment => segment.wordSpacing > 0 && segment.wordSpacing <= 40)).toBe(true);
+      // The long word starts the next line; nothing is dropped or duplicated.
+      expect(widgets.filter(widget => widget.kind === "break").map(widget => widget.pos)).toEqual([17]);
+    });
+
+    it("keeps greedy packing when the narrow lane cannot take two words without exceeding the cap", () => {
+      // Narrow lane 60px: two 35px words never fit, so it stays empty as before.
+      const glyphs = asymmetric();
+      const widths = glyphs.map(glyph => glyph.width);
+      const exclusion = { left: 60, right: 320, top: -2, bottom: 14 };
+      const fit = fitOf(glyphs);
+      const layout = layoutLineAroundExclusions(line({ right: 697 }), widths, [exclusion], RUN_AROUND_MIN_SEGMENT_PX, 0, "rtl", fit);
+      expect(layout.pieces.map(piece => [piece.from, piece.to, piece.side])).toEqual([[0, 16, "right"]]);
+    });
+
+    it("leaves non-justified packing unchanged", () => {
+      const glyphs = asymmetric();
+      const widths = glyphs.map(glyph => glyph.width);
+      const layout = layoutLineAroundExclusions(line({ right: 697 }), widths, [{ left: 110, right: 320, top: -2, bottom: 14 }], RUN_AROUND_MIN_SEGMENT_PX, 0, "rtl");
+      expect(layout.pieces.map(piece => [piece.from, piece.to, piece.side])).toEqual([[0, 16, "right"], [16, 18, "left"]]);
+    });
+
+    it("keeps the paragraph-final line packed", () => {
+      const glyphs = asymmetric().slice(0, 17);
+      const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+      planRunAroundWidgets(glyphs, 0, 12, () => ({ left: 0, right: 697 }), [{ left: 110, right: 320, top: -2, bottom: 14 }], "rtl", flow);
+      expect(flow.segments).toEqual([]);
+    });
+
+    it("does not let a single trailing space prefer leaving the narrow lane empty", () => {
+      // Words 0..6 = 35px, word 7 = 53px, word 8 = 49px, word 9 = 95px (5px spaces).
+      // Greedy right (380px) fits 0..8 PLUS trailing space (373px, next=18) and
+      // drops the left lane (word 9 alone is too sparse). Moving words 7..8 to
+      // the 110px left lane fits 53+5+49=107px (within the 2px safety margin, no
+      // trailing space, next=17) for the exact same 9 words across both lanes.
+      const words = [35, 35, 35, 35, 35, 35, 35, 53, 49, 95, 35, 35];
+      const glyphs: Array<{ pos: number; width: number; space?: boolean }> = [];
+      words.forEach((width, index) => {
+        if (index) glyphs.push({ pos: glyphs.length + 1, width: 5, space: true });
+        glyphs.push({ pos: glyphs.length + 1, width });
+      });
+      const widths = glyphs.map(glyph => glyph.width);
+      const layout = layoutLineAroundExclusions(
+        line({ right: 700 }),
+        widths,
+        [{ left: 110, right: 320, top: -2, bottom: 14 }],
+        RUN_AROUND_MIN_SEGMENT_PX,
+        0,
+        "rtl",
+        fitOf(glyphs),
+      );
+      expect(layout.pieces.map(piece => piece.side)).toEqual(["right", "left"]);
+      covers(layout.pieces, 0, layout.next);
+      expect(layout.pieces[0]).toMatchObject({ from: 0, to: 14 });
+      expect(layout.pieces[1]).toMatchObject({ from: 14, to: 17 });
+    });
+
+    it("reserves the 2px Nastaliq safety allowance on a tight justified lane instead of packing within subpixel overflow", () => {
+      // Models the owner-x-y50 tight-lane failure: right lane 377.24px, left lane
+      // 110.15px. Six words on the left lane sum to 110.12px (only 0.03px slack),
+      // which wraps the last word in Nastaliq and triggers browser justify drift.
+      // Reserving the 2px safety margin keeps the final word off the tight edge.
+      // Right lane words sum (with 15 x 0.45px spaces) to 374.23px inside 377.24px;
+      // next six words sum (with 5 x 0.45px spaces) to 110.12px inside 110.15px.
+      const words = [
+        23, 20, 32, 23, 11, 18, 35, 20, 56, 22, 12, 21, 10, 23, 22, 19.48,
+        6.03, 15.98, 20.8, 20.8, 9.73, 34.53,
+        30, 30,
+      ];
+      const glyphs: Array<{ pos: number; width: number; space?: boolean }> = [];
+      words.forEach((width, index) => {
+        if (index) glyphs.push({ pos: glyphs.length + 1, width: 0.45, space: true });
+        glyphs.push({ pos: glyphs.length + 1, width });
+      });
+      const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+      const layout = layoutLineAroundExclusions(
+        line({ right: 697.69 }),
+        glyphs.map(glyph => glyph.width),
+        [{ left: 110.15, right: 320.45, top: -2, bottom: 14 }],
+        RUN_AROUND_MIN_SEGMENT_PX,
+        0,
+        "rtl",
+        fitOf(glyphs),
+      );
+      expect(layout.pieces.map(piece => piece.side)).toEqual(["right", "left"]);
+      covers(layout.pieces, 0, layout.next);
+      // Every justified piece must leave >= 2px of trimmed safety headroom.
+      for (const piece of layout.pieces) {
+        let from = piece.from;
+        let to = piece.to;
+        while (from < to && glyphs[from].space) from += 1;
+        while (to > from && glyphs[to - 1].space) to -= 1;
+        let trimmed = 0;
+        for (let i = from; i < to; i += 1) trimmed += glyphs[i].width;
+        expect((piece.right - piece.left) - trimmed).toBeGreaterThanOrEqual(2 - 1e-6);
+      }
+      planRunAroundWidgets(
+        glyphs,
+        0,
+        14,
+        () => ({ left: 0, right: 697.69 }),
+        [{ left: 110.15, right: 320.45, top: -2, bottom: 14 }],
+        "rtl",
+        flow,
+      );
+      expect(flow.segments).toHaveLength(2);
+      expect(flow.segments.every(segment => segment.wordSpacing > 0 && segment.wordSpacing <= 40)).toBe(true);
+    });
+
+    it("never shortens a lane past the 40px spacing cap just to populate the second lane", () => {
+      // Right lane 377px, left lane 110px. Words 0..2 = 25px, 3..4 = 40px, word 5 = 250px.
+      // Greedy right takes 0..4 (175px, 5 words, raw=50px, overflow=10px). Shortening
+      // right to 0..2 (85px, raw=145px -> capped 40px) would open a ~210px hole just
+      // to place words 3..4 in the left lane; the planner must reject that split.
+      const words = [25, 25, 25, 40, 40, 250, 35, 35];
+      const glyphs: Array<{ pos: number; width: number; space?: boolean }> = [];
+      words.forEach((width, index) => {
+        if (index) glyphs.push({ pos: glyphs.length + 1, width: 5, space: true });
+        glyphs.push({ pos: glyphs.length + 1, width });
+      });
+      const widths = glyphs.map(glyph => glyph.width);
+      const layout = layoutLineAroundExclusions(
+        line({ right: 697 }),
+        widths,
+        [{ left: 110, right: 320, top: -2, bottom: 14 }],
+        RUN_AROUND_MIN_SEGMENT_PX,
+        0,
+        "rtl",
+        fitOf(glyphs),
+      );
+      expect(layout.pieces).toHaveLength(1);
+      expect(layout.pieces[0]).toMatchObject({ from: 0, to: 10, side: "right" });
+    });
+
+    it("preserves exact Urdu text, punctuation, combining marks, ZWJ/ZWNJ and continuation across left, center, and right boxes", () => {
+      const sentence = "خُوب\u200cصورت اُردو عبارت، ”تَحقیق“ و تَصنیف کے اُصول، می\u200cخواہم اور ہ\u200dو کی مثال کے ساتھ، متوازن فاصلوں اور واضح حاشیوں کو برقرار رکھتی ہے۔";
+      const text = `${sentence} ${sentence} ${sentence}`;
+      const tokens: Array<{ text: string; space: boolean }> = [];
+      for (let cursor = 0; cursor < text.length;) {
+        const end = wordEnd(text, cursor);
+        const slice = text.slice(cursor, end);
+        tokens.push({ text: slice, space: !slice.trim() });
+        cursor = end;
+      }
+      // Concatenating all tokens must reproduce the authored Unicode byte-for-byte.
+      expect(tokens.map(token => token.text).join("")).toBe(text);
+      expect(tokens.some(token => token.text.includes("\u200c"))).toBe(true);
+      expect(tokens.some(token => token.text.includes("\u200d"))).toBe(true);
+      expect(tokens.some(token => token.text.includes("تَحقیق"))).toBe(true);
+
+      const glyphs = tokens.map((token, index) => ({
+        pos: index + 1,
+        width: token.space ? 5 : Math.max(24, token.text.length * 8),
+        space: token.space,
+      }));
+      const boxes: RunAroundRect[] = [
+        { left: 110, right: 300, top: 12, bottom: 38 }, // left-shifted
+        { left: 250, right: 440, top: 12, bottom: 38 }, // centered
+        { left: 390, right: 580, top: 24, bottom: 50 }, // right-shifted, lower vertical band
+      ];
+      for (const boxRect of boxes) {
+        const flow: { align: "justify"; endY?: number; segments: Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> } = { align: "justify", segments: [] };
+        const widgets = planRunAroundWidgets(glyphs, 0, 14, () => ({ left: 0, right: 690 }), [boxRect], "rtl", flow);
+        expect(flow.segments.length).toBeGreaterThan(0);
+        expect(flow.segments.every(segment => segment.wordSpacing > 0 && segment.wordSpacing <= 40)).toBe(true);
+        // Every widget position refers to an existing glyph boundary; breaks strictly ascend.
+        const breaks = widgets.filter(widget => widget.kind === "break").map(widget => widget.pos);
+        for (let i = 1; i < breaks.length; i += 1) expect(breaks[i]).toBeGreaterThan(breaks[i - 1]);
+        expect(flow.endY ?? 0).toBeGreaterThan(boxRect.bottom);
+      }
+    });
+  });
+
   it("still wraps two objects when each gap holds one word", () => {
     const glyphs = Array.from({ length: 30 }, (_, index) => (
       index % 2 === 1 ? { pos: index, width: 6, space: true } : { pos: index, width: 22 }

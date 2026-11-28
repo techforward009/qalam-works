@@ -186,6 +186,8 @@ function runAroundEngineFactory() {
   const RUN_AROUND_MIN_SEGMENT_PX = 8;
   // A two-word side with more leftover than this looks like a hole of its own.
   const RUN_AROUND_MAX_JUSTIFY_EXTRA_PX = 40;
+  // Reserve 2px per justified lane so Nastaliq ink/subpixel rounding cannot wrap a tight lane.
+  const RUN_AROUND_JUSTIFY_SAFETY_PX = 2;
 
   function verticalOverlap(a: RunAroundRect, b: RunAroundRect): boolean {
     return a.top < b.bottom && b.top < a.bottom;
@@ -393,14 +395,15 @@ function runAroundEngineFactory() {
     return words;
   }
 
-  function tooSparse(fit: { minWords: number; maxExtraPerSpace: number; spaceAt: readonly boolean[] } | null | undefined, from: number, to: number, capacity: number, used: number): boolean {
-    if (!fit) return false;
-    const words = wordCount(fit.spaceAt, from, to);
+  function sparseByCounts(fit: { minWords: number; maxExtraPerSpace: number }, words: number, spaces: number, slack: number): boolean {
     if (words < fit.minWords) return true;
-    const spaces = interiorSpaceCount(fit.spaceAt, from, to);
-    const slack = Math.max(0, capacity - used);
     if (spaces < 1) return slack > 1;
     return words <= 2 && slack / spaces > fit.maxExtraPerSpace;
+  }
+
+  function tooSparse(fit: { minWords: number; maxExtraPerSpace: number; spaceAt: readonly boolean[] } | null | undefined, from: number, to: number, capacity: number, used: number): boolean {
+    if (!fit) return false;
+    return sparseByCounts(fit, wordCount(fit.spaceAt, from, to), interiorSpaceCount(fit.spaceAt, from, to), Math.max(0, capacity - used));
   }
 
   function segmentJustify(widths: readonly number[], spaceAt: readonly boolean[], piece: RunAroundPiece): { slack: number; spaces: number; wordSpacing: number; used: number } {
@@ -413,7 +416,7 @@ function runAroundEngineFactory() {
     const spaces = interiorSpaceCount(spaceAt, from, to);
     const slack = Math.max(0, piece.right - piece.left - used);
     // Leave a 2px safety margin so Nastaliq ink cannot spill into the hole or wrap a full lane.
-    const raw = spaces > 0 ? Math.max(0, slack - 2) / spaces : 0;
+    const raw = spaces > 0 ? Math.max(0, slack - RUN_AROUND_JUSTIFY_SAFETY_PX) / spaces : 0;
     const wordSpacing = Math.min(RUN_AROUND_MAX_JUSTIFY_EXTRA_PX, raw);
     return { slack, spaces, wordSpacing, used };
   }
@@ -428,6 +431,168 @@ function runAroundEngineFactory() {
     const ordered = direction === "ltr"
       ? [...segments].sort((a, b) => a.left - b.left || a.right - b.right)
       : [...segments].sort((a, b) => b.right - a.right || b.left - a.left);
+
+    // When a justified line spans multiple segments (e.g. unequal left/right lanes
+    // around a Picture Box), greedy packing on the first lane can strand a single
+    // long word on the second lane, which tooSparse() then drops. Explore bounded
+    // word-boundary allocations across the lanes, keeping every non-greedy split
+    // within fit.maxExtraPerSpace so moving a boundary never opens a capped hole.
+    if (fit && ordered.length > 1 && ordered.length <= 4) {
+      const MAX_BOUNDARIES_PER_SEGMENT = 24;
+      const MAX_STATES = 64;
+      type Candidate = {
+        next: number;
+        words: number;
+        pieces: RunAroundPiece[];
+        usedWidth: number[];
+        rawSpacing: number[];
+        overflow: number;
+        leadingSpaces: number;
+      };
+      const maxOf = (values: readonly number[]) => values.length ? Math.max(...values) : 0;
+      const minOf = (values: readonly number[]) => values.length ? Math.min(...values) : 0;
+      const sumOf = (values: readonly number[]) => {
+        let total = 0;
+        for (let i = 0; i < values.length; i += 1) total += values[i];
+        return total;
+      };
+      const better = (a: Candidate, b: Candidate): boolean => {
+        if (a.words !== b.words) return a.words > b.words;
+        if (Math.abs(a.overflow - b.overflow) > 1e-6) return a.overflow < b.overflow;
+        if (a.pieces.length !== b.pieces.length) return a.pieces.length > b.pieces.length;
+        if (a.leadingSpaces !== b.leadingSpaces) return a.leadingSpaces < b.leadingSpaces;
+        const maxA = maxOf(a.rawSpacing);
+        const maxB = maxOf(b.rawSpacing);
+        if (Math.abs(maxA - maxB) > 1e-6) return maxA < maxB;
+        const spreadA = maxA - minOf(a.rawSpacing);
+        const spreadB = maxB - minOf(b.rawSpacing);
+        if (Math.abs(spreadA - spreadB) > 1e-6) return spreadA < spreadB;
+        const totalA = sumOf(a.rawSpacing);
+        const totalB = sumOf(b.rawSpacing);
+        if (Math.abs(totalA - totalB) > 1e-6) return totalA < totalB;
+        return a.next > b.next;
+      };
+
+      let states: Candidate[] = [{
+        next: start,
+        words: 0,
+        pieces: [],
+        usedWidth: [],
+        rawSpacing: [],
+        overflow: 0,
+        leadingSpaces: 0,
+      }];
+
+      for (const segment of ordered) {
+        const nextStates = new Map<number, Candidate>();
+        const keep = (candidate: Candidate) => {
+          const existing = nextStates.get(candidate.next);
+          if (!existing || better(candidate, existing)) nextStates.set(candidate.next, candidate);
+        };
+        const capacity = segment.right - segment.left;
+        for (const state of states) {
+          // A lane that cannot carry a valid justified run may stay empty.
+          keep(state);
+          if (state.next >= widths.length) continue;
+
+          let maxEnd = state.next;
+          let measured = 0;
+          while (maxEnd < widths.length && measured + widths[maxEnd] <= capacity + 1e-6) {
+            measured += widths[maxEnd];
+            maxEnd += 1;
+          }
+          if (maxEnd === state.next) continue;
+
+          const maxWords = wordCount(fit.spaceAt, state.next, maxEnd);
+          if (maxWords < fit.minWords) continue;
+
+          // Walk downward from greedy maxEnd; slack/spaces grows monotonically as
+          // words are removed, so stop as soon as a shorter split exceeds the cap.
+          let used = measured;
+          let tried = 0;
+          let safeMaxWords = 0;
+          for (let end = maxEnd; end > state.next; end -= 1) {
+            if (end < maxEnd) used -= widths[end];
+            // Only test greedy maxEnd, word endings, or a single space right after a word.
+            const isBoundary = end === maxEnd
+              || !fit.spaceAt[end - 1]
+              || (end - 2 >= state.next && !fit.spaceAt[end - 2]);
+            if (!isBoundary) continue;
+
+            let trimFrom = state.next;
+            let trimTo = end;
+            while (trimFrom < trimTo && fit.spaceAt[trimFrom]) trimFrom += 1;
+            while (trimTo > trimFrom && fit.spaceAt[trimTo - 1]) trimTo -= 1;
+            if (trimFrom >= trimTo) break;
+
+            const segWords = wordCount(fit.spaceAt, trimFrom, trimTo);
+            if (segWords < fit.minWords) break;
+
+            let trimmedUsed = 0;
+            for (let i = trimFrom; i < trimTo; i += 1) trimmedUsed += widths[i];
+            // Keep the same 2px Nastaliq safety allowance that segmentJustify reserves,
+            // so a tightly packed lane never wraps its last word from subpixel drift.
+            if (capacity > RUN_AROUND_JUSTIFY_SAFETY_PX && trimmedUsed > capacity - RUN_AROUND_JUSTIFY_SAFETY_PX + 1e-6) {
+              continue;
+            }
+            if (safeMaxWords === 0) safeMaxWords = segWords;
+
+            const spaces = interiorSpaceCount(fit.spaceAt, trimFrom, trimTo);
+            const rawSlack = Math.max(0, capacity - used);
+            if (sparseByCounts(fit, segWords, spaces, rawSlack)) {
+              if (segWords <= 2 && spaces >= 1 && rawSlack / spaces > fit.maxExtraPerSpace) break;
+              continue;
+            }
+
+            const trimmedSlack = Math.max(0, capacity - trimmedUsed);
+            const raw = spaces > 0 ? Math.max(0, trimmedSlack - RUN_AROUND_JUSTIFY_SAFETY_PX) / spaces : trimmedSlack;
+            if (segWords < safeMaxWords && raw > fit.maxExtraPerSpace + 1e-6) break;
+
+            const piece: RunAroundPiece = {
+              from: state.next,
+              to: end,
+              left: segment.left,
+              right: segment.right,
+              side: segment.side,
+              gapAfter: 0,
+            };
+            keep({
+              next: end,
+              words: state.words + segWords,
+              pieces: [...state.pieces, piece],
+              usedWidth: [...state.usedWidth, used],
+              rawSpacing: [...state.rawSpacing, raw],
+              overflow: state.overflow + Math.max(0, raw - fit.maxExtraPerSpace),
+              leadingSpaces: state.leadingSpaces + (fit.spaceAt[state.next] ? 1 : 0),
+            });
+            tried += 1;
+            if (tried >= MAX_BOUNDARIES_PER_SEGMENT) break;
+          }
+        }
+        states = [...nextStates.values()];
+        if (states.length > MAX_STATES) {
+          states.sort((a, b) => (better(a, b) ? -1 : better(b, a) ? 1 : 0));
+          states.length = MAX_STATES;
+        }
+      }
+
+      let best = states[0];
+      for (let i = 1; i < states.length; i += 1) {
+        if (better(states[i], best)) best = states[i];
+      }
+      const bestPieces = best ? best.pieces.map(piece => ({ ...piece })) : [];
+      const bestUsed = best ? best.usedWidth : [];
+      for (let i = 0; i < bestPieces.length - 1; i += 1) {
+        const inkEnd = direction === "ltr"
+          ? bestPieces[i].left + bestUsed[i]
+          : bestPieces[i].right - bestUsed[i];
+        bestPieces[i].gapAfter = direction === "ltr"
+          ? Math.max(0, bestPieces[i + 1].left - inkEnd)
+          : Math.max(0, inkEnd - bestPieces[i + 1].right);
+      }
+      return { pieces: bestPieces, next: best ? best.next : start };
+    }
+
     const pieces: RunAroundPiece[] = [];
     const usedWidth: number[] = [];
     let index = start;
@@ -440,6 +605,19 @@ function runAroundEngineFactory() {
       while (tryIndex < widths.length && used + widths[tryIndex] <= capacity + 1e-6) {
         used += widths[tryIndex];
         tryIndex += 1;
+      }
+      if (fit && capacity > RUN_AROUND_JUSTIFY_SAFETY_PX) {
+        while (tryIndex > from) {
+          let trimFrom = from;
+          let trimTo = tryIndex;
+          while (trimFrom < trimTo && fit.spaceAt[trimFrom]) trimFrom += 1;
+          while (trimTo > trimFrom && fit.spaceAt[trimTo - 1]) trimTo -= 1;
+          let trimmedUsed = 0;
+          for (let i = trimFrom; i < trimTo; i += 1) trimmedUsed += widths[i];
+          if (trimmedUsed <= capacity - RUN_AROUND_JUSTIFY_SAFETY_PX + 1e-6) break;
+          tryIndex -= 1;
+          used -= widths[tryIndex];
+        }
       }
       if (tryIndex === from) continue;
       if (tooSparse(fit, from, tryIndex, capacity, used)) continue;
