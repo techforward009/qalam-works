@@ -41,6 +41,8 @@ jobs:
       # webServer, so the per-instance PDF export rate limiter is not shared
       # between the desktop and mobile runs.
       - run: npx playwright test tests/e2e/documentStudioRunAroundJustify.spec.ts --project=desktop-chrome --workers=1 --reporter=github --grep="holds justified story text still during object drag"
+      - run: npx vitest run tests/runAroundFlow.test.ts
+      - run: npx playwright test tests/e2e/documentStudioRunAroundJustify.spec.ts --project=desktop-chrome --workers=1 --reporter=github
       - run: npx playwright test tests/e2e/documentStudio.spec.ts tests/e2e/documentStudioUrduTableCells.spec.ts --project=desktop-chrome --workers=1 --reporter=github
       - run: npx playwright test tests/e2e/documentStudio.spec.ts tests/e2e/documentStudioUrduTableCells.spec.ts --project=mobile-android --workers=1 --reporter=github
       - run: npx vitest run tests/documentImages.test.ts tests/documentPageSections.test.ts tests/documentTables.test.ts tests/documentStudioSchemaAttrs.test.ts tests/documentStudioShell.test.ts tests/buildDocxDocument.test.ts tests/documentCommands.test.ts tests/documentStudioMultilingual.test.ts tests/pdfRealPipeline.test.ts

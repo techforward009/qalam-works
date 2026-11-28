@@ -437,6 +437,47 @@ describe("run-around line splitting", () => {
     expect(packed.find(widget => widget.kind === "gap" && widget.side === -1)?.size).toBeGreaterThan(40);
   });
 
+  it("balances word distribution when greedy packing would strand one long word on the second side", () => {
+    const glyphs = [
+      { pos: 1, width: 10 },
+      { pos: 2, width: 5, space: true },
+      { pos: 3, width: 10 },
+      { pos: 4, width: 5, space: true },
+      { pos: 5, width: 10 },
+      { pos: 6, width: 5, space: true },
+      { pos: 7, width: 10 },
+      { pos: 8, width: 5, space: true },
+      { pos: 9, width: 40 },
+      { pos: 10, width: 5, space: true },
+      { pos: 11, width: 40 },
+      { pos: 12, width: 5, space: true },
+      { pos: 13, width: 20 },
+      { pos: 14, width: 5, space: true },
+      { pos: 15, width: 20 },
+    ];
+    const flow = { align: "justify" as const, segments: [] as Array<{ from: number; to: number; width: number; wordSpacing: number; edge: "left" | "right" }> };
+    const widgets = planRunAroundWidgets(
+      glyphs,
+      0,
+      12,
+      () => ({ left: 0, right: 200 }),
+      [{ left: 80, right: 120, top: -2, bottom: 14 }],
+      "rtl",
+      flow,
+    );
+
+    // Greedy packing takes four short words on the right, leaving only one
+    // long word for the left. Moving one short word across lets both lanes
+    // carry a justified two-word-or-more run before the next line.
+    expect(flow.segments).toHaveLength(2);
+    expect(flow.segments.map(segment => segment.edge)).toEqual(["right", "left"]);
+    expect(flow.segments[0]).toMatchObject({ from: 0, to: 5, width: 80 });
+    expect(flow.segments[1]).toMatchObject({ from: 6, to: 9, width: 80 });
+    expect(widgets.find(widget => widget.kind === "gap" && widget.side === -4)?.pos).toBe(7);
+    expect(flow.segments.every(segment => segment.wordSpacing <= 40)).toBe(true);
+    expect(widgets.some(widget => widget.kind === "break" && widget.pos === 11)).toBe(true);
+  });
+
   it("accounts for trailing spaces and capped word spacing when sizing justified Run Around gaps", () => {
     // RTL line [0, 220], exclusion [80, 140] -> right lane [140, 220] (80px), left lane [0, 80] (80px).
     // Right lane has two 25px words separated by a 5px space (used = 55px) plus a 5px trailing space before the gap.
